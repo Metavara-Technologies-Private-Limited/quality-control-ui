@@ -128,19 +128,18 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd }) => {
       },
       
       "& .MuiOutlinedInput-root": {
-        // --- 3. Set Height and Padding for the Input Area ---
-        height: "50px", // Enforces the reduced height
+        height: "50px",
         paddingTop: "0", 
         paddingBottom: "0",
 
         "& fieldset": {
-          borderColor: "#CFD1D4", // normal
+          borderColor: "#CFD1D4", 
         },
         "&:hover fieldset": {
-          borderColor: "#CFD1D4", // hover
+          borderColor: "#CFD1D4", 
         },
         "&.Mui-focused fieldset": {
-          borderColor: "#CFD1D4 !important", // focused (gray border)
+          borderColor: "#CFD1D4 !important", 
         },
       },
     }}
@@ -160,29 +159,25 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd }) => {
   {/* Min °C TextField */}
   <TextField
     label="Min °C"
-    // Removed fullWidth to use custom width
-    size="small" // Keep size="small" as a helpful base
+    
+    size="small" 
     value={minValue}
     onChange={(e) => setMinValue(e.target.value)}
     InputLabelProps={{ shrink: true }}
     sx={{
-      // --- 1. SET WIDTH ---
-      width: "182px",
       
-      // Removed the height: "50px" from the TextField root, 
-      // as it's better applied to the input root
-      
+      width: "182px",     
       "& .MuiInputLabel-root": { color: "#5F646F !important" },
       "& .MuiInputLabel-root.Mui-focused": { color: "#5F646F !important" },
       
       "& .MuiOutlinedInput-root": {
-        // --- 2. SET HEIGHT AND BORDER-RADIUS ---
-        height: "50px", // New height
-        borderRadius: "10px", // New border-radius
+       
+        height: "50px", 
+        borderRadius: "10px",
         
         "& fieldset": { 
           borderColor: "#CFD1D4",
-          borderWidth: "1px", // New border-width
+          borderWidth: "1px", 
         },
         "&:hover fieldset": { borderColor: "#CFD1D4" },
         "&.Mui-focused fieldset": { borderColor: "#CFD1D4" },
@@ -190,7 +185,6 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd }) => {
       
       "& .MuiInputBase-input": { 
         color: "#5F646F", 
-        // --- 3. SET PADDING (top/bottom/left/right) ---
         padding: "10px 10px",
       },
     }}
@@ -199,26 +193,23 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd }) => {
   {/* Max °C TextField */}
   <TextField
     label="Max °C"
-    // Removed fullWidth to use custom width
     size="small"
     value={maxValue}
     onChange={(e) => setMaxValue(e.target.value)}
     InputLabelProps={{ shrink: true }}
     sx={{
-      // --- 1. SET WIDTH ---
       width: "182px",
 
       "& .MuiInputLabel-root": { color: "#5F646F !important" },
       "& .MuiInputLabel-root.Mui-focused": { color: "#5F646F !important" },
       
       "& .MuiOutlinedInput-root": {
-        // --- 2. SET HEIGHT AND BORDER-RADIUS ---
-        height: "50px", // New height
-        borderRadius: "10px", // New border-radius
+        height: "50px", 
+        borderRadius: "10px", 
         
         "& fieldset": { 
           borderColor: "#CFD1D4", 
-          borderWidth: "1px", // New border-width
+          borderWidth: "1px", 
         },
         "&:hover fieldset": { borderColor: "#CFD1D4" },
         "&.Mui-focused fieldset": { borderColor: "#CFD1D4" },
@@ -226,7 +217,6 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd }) => {
       
       "& .MuiInputBase-input": { 
         color: "#5F646F", 
-        // --- 3. SET PADDING (top/bottom/left/right) ---
         padding: "10px 16px",
       },
     }}
@@ -252,9 +242,6 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd }) => {
               }
             }}
             sx={{
-      // Removed the height: "50px" property from the main container
-      
-      // --- 2. Fix: Focused Label Color (to gray) ---
       "& .MuiInputLabel-root.Mui-focused": {
         color: "#232323 !important", 
       },
@@ -264,19 +251,17 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd }) => {
       },
       
       "& .MuiOutlinedInput-root": {
-        // --- 3. Set Height and Padding for the Input Area ---
-       // Enforces the reduced height
         paddingTop: "0", 
         paddingBottom: "0",
 
         "& fieldset": {
-          borderColor: "#CFD1D4", // normal
+          borderColor: "#CFD1D4", 
         },
         "&:hover fieldset": {
-          borderColor: "#CFD1D4", // hover
+          borderColor: "#CFD1D4", 
         },
         "&.Mui-focused fieldset": {
-          borderColor: "#CFD1D4 !important", // focused (gray border)
+          borderColor: "#CFD1D4 !important", 
         },
       },
     }}
@@ -301,11 +286,8 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd }) => {
     onChange={(e) => setDropdownValue(e.target.value)}
     InputLabelProps={{ shrink: true }}
     sx={{
-      // --- 1. Set Width ---
+     
       width: "380px", 
-      // Removed the height: "50px" property from the main container
-      
-      // --- 2. Fix: Focused Label Color (to gray) ---
       "& .MuiInputLabel-root.Mui-focused": {
         color: "#232323 !important", 
       },
@@ -315,19 +297,18 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd }) => {
       },
       
       "& .MuiOutlinedInput-root": {
-        // --- 3. Set Height and Padding for the Input Area ---
-        height: "50px", // Enforces the reduced height
+        height: "50px", 
         paddingTop: "0", 
         paddingBottom: "0",
 
         "& fieldset": {
-          borderColor: "#CFD1D4", // normal
+          borderColor: "#CFD1D4", 
         },
         "&:hover fieldset": {
-          borderColor: "#CFD1D4", // hover
+          borderColor: "#CFD1D4", 
         },
         "&.Mui-focused fieldset": {
-          borderColor: "#CFD1D4 !important", // focused (gray border)
+          borderColor: "#CFD1D4 !important", 
         },
       },
     }}
@@ -350,9 +331,7 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd }) => {
       fullWidth
       InputLabelProps={{ shrink: true }}
       sx={{
-        width: "380px", // Example decreased width
-        
-        // --- 1. Fix: Label Color when Focused ---
+        width: "380px", 
         "& .MuiInputLabel-root.Mui-focused": {
         color: "#232323 !important", 
       },
@@ -362,7 +341,7 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd }) => {
       },
               
         "& .MuiOutlinedInput-root": {
-          height: "50px", // Example decreased height
+          height: "50px",
           borderRadius: "10px",
 
           "& fieldset": {
@@ -372,10 +351,8 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd }) => {
           "&:hover fieldset": {
             borderColor: "#CFD1D4",
           },
-          
-          // --- 2. Fix: Border Color when Focused ---
           "&.Mui-focused fieldset": {
-            borderColor: "#CFD1D4 !important", // Ensures the border is gray, not green
+            borderColor: "#CFD1D4 !important", 
           },
         },
 
@@ -398,9 +375,6 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd }) => {
       InputLabelProps={{ shrink: true }}
       sx={{
          width: "380px", 
-      // Removed the height: "50px" property from the main container
-      
-      // --- 2. Fix: Focused Label Color (to gray) ---
       "& .MuiInputLabel-root.Mui-focused": {
         color: "#232323 !important", 
       },
@@ -410,19 +384,19 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd }) => {
       },
       
       "& .MuiOutlinedInput-root": {
-        // --- 3. Set Height and Padding for the Input Area ---
-        height: "50px", // Enforces the reduced height
+       
+        height: "50px", 
         paddingTop: "0", 
         paddingBottom: "0",
 
         "& fieldset": {
-          borderColor: "#CFD1D4", // normal
+          borderColor: "#CFD1D4", 
         },
         "&:hover fieldset": {
-          borderColor: "#CFD1D4", // hover
+          borderColor: "#CFD1D4", 
         },
         "&.Mui-focused fieldset": {
-          borderColor: "#CFD1D4 !important", // focused (gray border)
+          borderColor: "#CFD1D4 !important", 
         },
       },
     }}
