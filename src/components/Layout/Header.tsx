@@ -12,11 +12,8 @@ import {
   KeyboardArrowDown,
 } from '@mui/icons-material';
 import { useLocation, Link as RouterLink } from 'react-router-dom';
-// ViewSwitcher removed per request (technical view dropdown)
-import CalendarIcon from '../../assets/icons/calendar.svg';
-import NotificationIcon from '../../assets/icons/notification.svg';
-import MessageQuestionIcon from '../../assets/icons/message-question.svg';
-import EllipseIcon from '../../assets/icons/Ellipse_12.svg';
+import ViewSwitcher from './ViewSwitcher';
+import { useView } from '@/utils/viewContext';
 
 const Header = () => {
   const location = useLocation();
@@ -44,21 +41,9 @@ const Header = () => {
         backgroundColor: '#FAFAFA',
         borderRadius: 2,
         color: '#111827',
-        width: '100%',
-        maxWidth: { xs: '100%', sm: '100%', md: 1200 },
-        height: { xs: 'auto', sm: 48 },
-        minHeight: 48,
       }}
     >
-      <Toolbar sx={{ 
-        justifyContent: 'space-between', 
-        px: { xs: 1, sm: 2 }, 
-        py: { xs: 1, sm: 0.5 }, 
-        width: '100%', 
-        height: '100%', 
-        minHeight: '48px',
-        flexWrap: { xs: 'wrap', md: 'nowrap' },
-      }}>
+      <Toolbar sx={{ justifyContent: 'space-between', px: 3, py: 1.5 }}>
         {/* Left: Logo and Breadcrumbs */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2, md: 3 }, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
           <Typography
@@ -159,20 +144,14 @@ const Header = () => {
         </Box>
 
         {/* Right: View Switcher, Clinic, Icons, User */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 }, ml:'auto', mr: { xs: 0, md: -12 }, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <ViewSwitcher currentView={currentView} onViewChange={setCurrentView} />
+
           <Typography
             variant="body2"
             sx={{
-              height: 22,
-              fontFamily: 'Nunito, sans-serif',
-              fontWeight: 500,
-              fontSize: { xs: '14px', sm: '16px' },
-              lineHeight: '145%',
-              letterSpacing: '0%',
-              color: '#232323',
-              opacity: 1,
-              ml:0,
-              display: { xs: 'none', md: 'block' },
+              color: '#6b7280',
+              fontSize: '0.875rem',
             }}
           >
             Clinic: Crysta IVF, Banglore
@@ -181,13 +160,7 @@ const Header = () => {
           <IconButton
             size="small"
             sx={{
-              width: { xs: 40, sm: 48 },
-              height: { xs: 40, sm: 48 },
-              padding: { xs: '8px', sm: '12px' },
-              borderRadius: '8px',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #e5e7eb',
-              opacity: 1,
+              color: '#6b7280',
               '&:hover': {
                 backgroundColor: '#f3f4f6',
               },
@@ -207,26 +180,24 @@ const Header = () => {
           <IconButton
             size="small"
             sx={{
-              width: { xs: 40, sm: 48 },
-              height: { xs: 40, sm: 48 },
-              padding: { xs: '8px', sm: '12px' },
-              borderRadius: '8px',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #e5e7eb',
-              opacity: 1,
+              color: '#6b7280',
               position: 'relative',
               '&:hover': {
                 backgroundColor: '#f3f4f6',
               },
             }}
           >
-            <img
-              src={NotificationIcon}
-              alt="Notifications"
-              style={{
-                width: 24,
-                height: 24,
-                objectFit: 'contain',
+            <Notifications fontSize="small" />
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 6,
+                right: 6,
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                backgroundColor: '#ef4444',
+                border: '2px solid #ffffff',
               }}
             />
           </IconButton>
@@ -234,13 +205,7 @@ const Header = () => {
           <IconButton
             size="small"
             sx={{
-              width: { xs: 40, sm: 48 },
-              height: { xs: 40, sm: 48 },
-              padding: { xs: '8px', sm: '12px' },
-              borderRadius: '8px',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #e5e7eb',
-              opacity: 1,
+              color: '#6b7280',
               '&:hover': {
                 backgroundColor: '#f3f4f6',
               },
@@ -264,83 +229,29 @@ const Header = () => {
               alignItems: 'center',
               gap: { xs: 0.5, sm: 1 },
               cursor: 'pointer',
-              width: { xs: 'auto', sm: 158 },
-              height: 42,
-              opacity: 1,
+              px: 1.5,
+              py: 0.75,
+              borderRadius: 2,
+              '&:hover': { backgroundColor: '#f3f4f6' },
             }}
+            onClick={handleMenuOpen}
           >
-            <Box
+            <Avatar
               sx={{
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
-                border: '1px solid #FFFFFF',
-                backgroundColor: '#D9D9D9',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: 1,
+                width: 36,
+                height: 36,
+                bgcolor: '#14b8a6',
+                fontSize: '0.875rem',
+                fontWeight: 600,
               }}
             >
-              <img
-                src={EllipseIcon}
-                alt="User Avatar"
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: '50%',
-                  objectFit: 'cover',
-                }}
-              />
-            </Box>
-            <Box
-              sx={{
-                width: 110,
-                height: 42,
-                display: { xs: 'none', sm: 'flex' },
-                flexDirection: 'column',
-                gap: 0.5,
-                opacity: 1,
-              }}
-            >
-              <Box
-                sx={{
-                  width: 110,
-                  height: 20,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                  opacity: 1,
-                }}
-              >
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    fontWeight: 500, 
-                    fontSize: '0.875rem', 
-                    lineHeight: 1.2,
-                    flex: 1,
-                    color: '#232323',
-                  }}
-                >
-                  Kate Russell
-                </Typography>
-                <KeyboardArrowDown fontSize="small" sx={{ color: '#6b7280' }} />
-              </Box>
-              <Typography 
-                variant="caption" 
-                sx={{ 
-                  width: 82,
-                  height: 18,
-                  fontFamily: 'Noto Sans, sans-serif',
-                  fontWeight: 400,
-                  fontSize: '14px',
-                  lineHeight: '18px',
-                  letterSpacing: '0px',
-                  color: '#9E9E9E',
-                  opacity: 1,
-                }}
-              >
+              KR
+            </Avatar>
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.875rem', lineHeight: 1.2 }}>
+                Kate Russell
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#6b7280', fontSize: '0.75rem', lineHeight: 1.2 }}>
                 Receptionist
               </Typography>
             </Box>
