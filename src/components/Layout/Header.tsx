@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   AppBar,
   Toolbar,
@@ -8,16 +7,19 @@ import {
   Breadcrumbs,
   Link,
 } from '@mui/material';
-import {
-  KeyboardArrowDown,
-} from '@mui/icons-material';
 import { useLocation, Link as RouterLink } from 'react-router-dom';
-import ViewSwitcher from './ViewSwitcher';
-import { useView } from '@/utils/viewContext';
+import CalendarIcon from '@/assets/icons/calendar.svg';
+import NotificationIcon from '@/assets/icons/notification.svg';
+import MessageQuestionIcon from '@/assets/icons/message-question.svg';
+import UserAvatarIcon from '@/assets/icons/ellipse_12.svg';
+import DropdownArrowIcon from '@/assets/icons/vector.svg';
 
 const Header = () => {
   const location = useLocation();
-  // removed technical view dropdown (ViewSwitcher)
+  
+  const handleMenuOpen = () => {
+    // Menu handler implementation
+  };
 
   // Get breadcrumb path
   const pathnames = location.pathname.split('/').filter((x) => x);
@@ -143,15 +145,14 @@ const Header = () => {
           </Breadcrumbs>
         </Box>
 
-        {/* Right: View Switcher, Clinic, Icons, User */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <ViewSwitcher currentView={currentView} onViewChange={setCurrentView} />
-
+        {/* Right: Clinic, Icons, User */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5, md: 2 } }}>
           <Typography
             variant="body2"
             sx={{
               color: '#6b7280',
-              fontSize: '0.875rem',
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+              display: { xs: 'none', md: 'block' },
             }}
           >
             Clinic: Crysta IVF, Banglore
@@ -160,16 +161,21 @@ const Header = () => {
           <IconButton
             size="small"
             sx={{
-              color: '#6b7280',
+              width: 48,
+              height: 48,
+              p: 1.5,
+              borderRadius: '8px',
+              backgroundColor: '#FFFFFF',
               '&:hover': {
-                backgroundColor: '#f3f4f6',
+                backgroundColor: '#f9fafb',
               },
             }}
           >
-            <img
+            <Box
+              component="img"
               src={CalendarIcon}
               alt="Calendar"
-              style={{
+              sx={{
                 width: 24,
                 height: 24,
                 objectFit: 'contain',
@@ -180,24 +186,24 @@ const Header = () => {
           <IconButton
             size="small"
             sx={{
-              color: '#6b7280',
-              position: 'relative',
+              width: 48,
+              height: 48,
+              p: 1.5,
+              borderRadius: '8px',
+              backgroundColor: '#FFFFFF',
               '&:hover': {
-                backgroundColor: '#f3f4f6',
+                backgroundColor: '#f9fafb',
               },
             }}
           >
-            <Notifications fontSize="small" />
             <Box
+              component="img"
+              src={NotificationIcon}
+              alt="Notifications"
               sx={{
-                position: 'absolute',
-                top: 6,
-                right: 6,
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                backgroundColor: '#ef4444',
-                border: '2px solid #ffffff',
+                width: 24,
+                height: 24,
+                objectFit: 'contain',
               }}
             />
           </IconButton>
@@ -205,20 +211,24 @@ const Header = () => {
           <IconButton
             size="small"
             sx={{
-              color: '#6b7280',
+              width: 48,
+              height: 48,
+              p: 1.5,
+              borderRadius: '8px',
+              backgroundColor: '#FFFFFF',
               '&:hover': {
-                backgroundColor: '#f3f4f6',
+                backgroundColor: '#f9fafb',
               },
             }}
           >
-            <img
+            <Box
+              component="img"
               src={MessageQuestionIcon}
               alt="Help"
-              style={{
+              sx={{
                 width: 24,
                 height: 24,
                 objectFit: 'contain',
-                display: 'block',
               }}
             />
           </IconButton>
@@ -236,25 +246,37 @@ const Header = () => {
             }}
             onClick={handleMenuOpen}
           >
-            <Avatar
+            <Box
+              component="img"
+              src={UserAvatarIcon}
+              alt="User Avatar"
               sx={{
-                width: 36,
-                height: 36,
-                bgcolor: '#14b8a6',
-                fontSize: '0.875rem',
-                fontWeight: 600,
+                width: { xs: 32, sm: 36 },
+                height: { xs: 32, sm: 36 },
+                objectFit: 'cover',
+                borderRadius: '50%',
               }}
-            >
-              KR
-            </Avatar>
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.875rem', lineHeight: 1.2 }}>
+            />
+            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+              <Typography variant="body2" sx={{ color:'#232323',fontWeight: 500, fontSize: '0.875rem', lineHeight: 1.2 }}>
                 Kate Russell
               </Typography>
               <Typography variant="caption" sx={{ color: '#6b7280', fontSize: '0.75rem', lineHeight: 1.2 }}>
                 Receptionist
               </Typography>
             </Box>
+            <Box
+              component="img"
+              src={DropdownArrowIcon}
+              alt="Dropdown"
+              sx={{
+                width: 12,
+                height: 6,
+                objectFit: 'contain',
+                display: { xs: 'none', sm: 'block' },
+                marginTop: '-20px',
+              }}
+            />
           </Box>
         </Box>
       </Toolbar>
