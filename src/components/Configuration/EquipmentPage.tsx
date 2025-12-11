@@ -10,10 +10,6 @@ import {
   TextField,
   Menu,
   MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
 } from "@mui/material";
 
 import AddIcon from "@mui/icons-material/Add";
@@ -30,80 +26,87 @@ const EquipmentPage = () => {
 
   const [equipmentData, setEquipmentData] = useState<Equipment[]>([]);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedEquipmentId, setSelectedEquipmentId] = useState<number | null>(null);
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState<number | null>(
+    null
+  );
   const open = Boolean(anchorEl);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [openAddEquipmentPopup, setOpenAddEquipmentPopup] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`http://127.0.0.1:8000/api/get_clinic/1/`);
+        const response = await fetch(
+          `http://127.0.0.1:8000/api/get_clinic/1/`
+        );
         const data = await response.json();
 
         let departmentList: Department[] = [];
         let equipmentList: Equipment[] = [];
         let parametersList: Parameter[] = [];
+
         // ---------- Departments ----------
-          departmentList = data.department.map((d: any, depIndex: number) => ({
+        departmentList = data.department.map(
+          (d: any, depIndex: number) => ({
             id: depIndex + 1,
             name: d.name,
             is_active: d.is_active,
             clinic_id: 1,
             created_at: new Date().toISOString(),
-          }));
-        
-          // ---------- Equipments + Parameters ----------
-          let equipmentCounter = 1;
-          let parameterCounter = 1;
-        
-          data.department.forEach((dep: any, depIndex: number) => {
-            dep.equipments.forEach((eq: any) => {
-              const newEquipment: Equipment = {
-                id: equipmentCounter,
-                equipment_name: eq.equipment_name,
-                dep_id: depIndex + 1,
-                created_at: new Date().toISOString(),
-                department: departmentList[depIndex],
-                parameters: [], // add parameter array
-              };
-        
-              equipmentList.push(newEquipment);
-        
-              // parameters
-              eq.parameters.forEach((param: any) => {
-                const newParam: Parameter = {
-                  id: parameterCounter,
-                  parameter_name: param.parameter_name,
-                  equipment_id: equipmentCounter,
-                  is_active: param.is_active,
-                  Content: {
-                    ...param.content,
-                    unit: "N/A",
-                    min_value: 0,
-                    max_value: 0,
-                    control_limits: {
-                      warning_min: 0,
-                      warning_max: 0,
-                      critical_min: 0,
-                      critical_max: 0,
-                    },
+          })
+        );
+
+        // ---------- Equipments + Parameters ----------
+        let equipmentCounter = 1;
+        let parameterCounter = 1;
+
+        data.department.forEach((dep: any, depIndex: number) => {
+          dep.equipments.forEach((eq: any) => {
+            const newEquipment: Equipment = {
+              id: equipmentCounter,
+              equipment_name: eq.equipment_name,
+              dep_id: depIndex + 1,
+              created_at: new Date().toISOString(),
+              department: departmentList[depIndex],
+              parameters: [],
+            };
+
+            equipmentList.push(newEquipment);
+
+            // parameters
+            eq.parameters.forEach((param: any) => {
+              const newParam: Parameter = {
+                id: parameterCounter,
+                parameter_name: param.parameter_name,
+                equipment_id: equipmentCounter,
+                is_active: param.is_active,
+                Content: {
+                  ...param.content,
+                  unit: "N/A",
+                  min_value: 0,
+                  max_value: 0,
+                  control_limits: {
+                    warning_min: 0,
+                    warning_max: 0,
+                    critical_min: 0,
+                    critical_max: 0,
                   },
-                  created_at: new Date().toISOString(),
-                  equipment: newEquipment,
-                };
-        
-                parametersList.push(newParam);
-                newEquipment.parameters.push(newParam); // store inside equipment
-        
-                parameterCounter++;
-              });
-        
-              equipmentCounter++;
+                },
+                created_at: new Date().toISOString(),
+                equipment: newEquipment,
+              };
+
+              parametersList.push(newParam);
+              newEquipment.parameters.push(newParam);
+
+              parameterCounter++;
             });
+
+            equipmentCounter++;
           });
-          setEquipmentData(equipmentList);
+        });
+
+        setEquipmentData(equipmentList);
       } catch (error) {
         console.error("Error loading equipments:", error);
       }
@@ -116,29 +119,20 @@ const EquipmentPage = () => {
     item.equipment_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-
   const getCreatedDate = (dateString: string) => {
     let date = new Date(dateString);
     return date.toLocaleDateString();
   };
 
-  // Handle Delete Equipment
+  // ---------- DELETE WITHOUT POPUP ----------
   const handleDeleteEquipment = (equipmentId: number) => {
-    setSelectedEquipmentId(equipmentId);
-    setShowDeleteDialog(true);
+    setEquipmentData((prev) =>
+      prev.filter((item) => item.id !== equipmentId)
+    );
     setAnchorEl(null);
   };
 
-  // Confirm Delete
-  const confirmDelete = () => {
-    setEquipmentData((prev) =>
-      prev.filter((item) => item.id !== selectedEquipmentId)
-    );
-    setShowDeleteDialog(false);
-    setSelectedEquipmentId(null);
-  };
-
-  // Handle Inactive Equipment
+  // Inactive
   const handleInactiveEquipment = (equipmentId: number) => {
     setEquipmentData((prev) =>
       prev.map((item) =>
@@ -148,7 +142,7 @@ const EquipmentPage = () => {
     setAnchorEl(null);
   };
 
-  // Handle Active Equipment (toggle back to active)
+  // Activate
   const handleActiveEquipment = (equipmentId: number) => {
     setEquipmentData((prev) =>
       prev.map((item) =>
@@ -174,7 +168,15 @@ const EquipmentPage = () => {
             placeholder="Search Equipment's"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ width: 260, background: "#fff", "& .MuiOutlinedInput-root": {"& fieldset": { borderColor: "#CFD1D4" }, "&:hover fieldset": { borderColor: "#CFD1D4" }, "&.Mui-focused fieldset": { borderColor: "#CFD1D4" }}}}
+            sx={{
+              width: 260,
+              background: "#fff",
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": { borderColor: "#CFD1D4" },
+                "&:hover fieldset": { borderColor: "#CFD1D4" },
+                "&.Mui-focused fieldset": { borderColor: "#CFD1D4" },
+              },
+            }}
           />
 
           <Button
@@ -195,7 +197,7 @@ const EquipmentPage = () => {
       <Grid container spacing={2}>
         {filteredEquipments.map((item) => {
           const isInactive = item.status === "inactive";
-          
+
           return (
             <Grid item xs={12} sm={6} md={4} lg={3} key={item.id}>
               <Card
@@ -209,7 +211,13 @@ const EquipmentPage = () => {
                 }}
               >
                 <CardContent sx={{ pb: 1 }}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
                     <Typography sx={{ fontWeight: 600, fontSize: "14px" }}>
                       {item.equipment_name}
                     </Typography>
@@ -274,7 +282,7 @@ const EquipmentPage = () => {
                   </Typography>
 
                   <Box sx={{ display: "flex", gap: 1 }}>
-                    {/* VIEW BUTTON - Disabled when inactive */}
+                    {/* View */}
                     <IconButton
                       disabled={isInactive}
                       sx={{
@@ -283,17 +291,20 @@ const EquipmentPage = () => {
                         border: "1px solid #E5E7EB",
                         borderRadius: "8px",
                         opacity: isInactive ? 0.5 : 1,
-                        cursor: isInactive ? "not-allowed" : "pointer",
                       }}
                     >
                       <img
                         src={ViewIcon}
                         alt="view"
-                        style={{ width: 18, height: 18, opacity: isInactive ? 0.5 : 1 }}
+                        style={{
+                          width: 18,
+                          height: 18,
+                          opacity: isInactive ? 0.5 : 1,
+                        }}
                       />
                     </IconButton>
 
-                    {/* MENU BUTTON - Disabled when inactive */}
+                    {/* Menu Icon */}
                     <IconButton
                       onClick={(e) => {
                         if (!isInactive) {
@@ -305,7 +316,6 @@ const EquipmentPage = () => {
                       sx={{
                         p: 0.5,
                         opacity: isInactive ? 0.5 : 1,
-                        cursor: isInactive ? "not-allowed" : "pointer",
                       }}
                     >
                       <MoreHoriz fontSize="small" />
@@ -320,39 +330,32 @@ const EquipmentPage = () => {
 
       {/* Menu */}
       <Menu anchorEl={anchorEl} open={open} onClose={() => setAnchorEl(null)}>
-        {selectedEquipmentId && equipmentData.find(e => e.id === selectedEquipmentId)?.status === "inactive" ? (
-          <MenuItem onClick={() => handleActiveEquipment(selectedEquipmentId)}>
+        {selectedEquipmentId &&
+        equipmentData.find((e) => e.id === selectedEquipmentId)?.status ===
+          "inactive" ? (
+          <MenuItem
+            onClick={() => handleActiveEquipment(selectedEquipmentId)}
+          >
             Activate
           </MenuItem>
         ) : (
-          <MenuItem onClick={() => handleInactiveEquipment(selectedEquipmentId || 0)}>
+          <MenuItem
+            onClick={() =>
+              handleInactiveEquipment(selectedEquipmentId || 0)
+            }
+          >
             Inactive
           </MenuItem>
         )}
-        <MenuItem onClick={() => handleDeleteEquipment(selectedEquipmentId || 0)} sx={{ color: "#d32f2f" }}>
+
+        {/* DELETE WITHOUT POPUP */}
+        <MenuItem
+          onClick={() => handleDeleteEquipment(selectedEquipmentId || 0)}
+          sx={{ color: "#d32f2f" }}
+        >
           Delete
         </MenuItem>
       </Menu>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteDialog} onClose={() => setShowDeleteDialog(false)}>
-        <DialogTitle>Confirm Delete</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete this equipment? 
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
-          <Button
-            onClick={confirmDelete}
-            variant="contained"
-            color="error"
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Add Equipment Popup */}
       <AddEquipmentPopup
