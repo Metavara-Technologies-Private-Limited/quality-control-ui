@@ -20,32 +20,43 @@ const Dashboard = () => {
   const [parameters, setParameters] = useState<Parameter[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // FILTERING EQUIPMENTS BASED ON SELECTED DEPARTMENT
   useEffect(() => {
-    // Load mock equipments
-    setEquipments(mockEquipments);
-    // Auto-select first equipment
-    if (mockEquipments.length > 0 && !selectedEquipment) {
-      const firstEquipment = mockEquipments[0];
+    // STRICT department filtering
+    const filtered = mockEquipments.filter(
+      (eq) =>
+        eq.department?.name?.trim().toLowerCase() ===
+        selectedDepartment.trim().toLowerCase()
+    );
+
+    setEquipments(filtered);
+
+    // Auto-select first equipment of that department
+    if (filtered.length > 0) {
+      const firstEquipment = filtered[0];
       setSelectedEquipment(firstEquipment);
-      // Also load parameters for first equipment
-      const equipmentParams = mockParameters.filter(p => p.equipment_id === firstEquipment.id);
+
+      const equipmentParams = mockParameters.filter(
+        (p) => p.equipment_id === firstEquipment.id
+      );
+
       setParameters(equipmentParams);
-      if (equipmentParams.length > 0) {
-        setSelectedParameter(equipmentParams[0]);
-      }
+      setSelectedParameter(equipmentParams[0] || null);
+    } else {
+      setSelectedEquipment(null);
+      setParameters([]);
+      setSelectedParameter(null);
     }
   }, [selectedDepartment]);
 
+  // LOAD PARAMETERS WHEN EQUIPMENT CHANGES
   useEffect(() => {
-    // Load parameters for selected equipment
     if (selectedEquipment) {
-      const equipmentParams = mockParameters.filter(p => p.equipment_id === selectedEquipment.id);
+      const equipmentParams = mockParameters.filter(
+        (p) => p.equipment_id === selectedEquipment.id
+      );
       setParameters(equipmentParams);
-      if (equipmentParams.length > 0) {
-        setSelectedParameter(equipmentParams[0]);
-      } else {
-        setSelectedParameter(null);
-      }
+      setSelectedParameter(equipmentParams[0] || null);
     }
   }, [selectedEquipment]);
 
@@ -73,12 +84,30 @@ const Dashboard = () => {
         onChange={handleDepartmentChange}
       />
 
-      <EquipmentCards
-        equipments={equipments}
-        selected={selectedEquipment}
-        onSelect={handleEquipmentSelect}
-        loading={loading}
-      />
+      <Box
+        sx={{
+          overflowX: "auto",
+          whiteSpace: "nowrap",
+          pb: 1,
+          "&::-webkit-scrollbar": { height: 6 },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "#ccc",
+            borderRadius: 10,
+          },
+        }}
+      >
+        <Box sx={{ display: "inline-flex", gap: 2 }}>
+          {equipments.map((eq) => (
+            <EquipmentCards
+              key={eq.id}
+              equipments={[eq]}
+              selected={selectedEquipment}
+              onSelect={handleEquipmentSelect}
+              loading={loading}
+            />
+          ))}
+        </Box>
+      </Box>
 
       {selectedEquipment && (
         <>
@@ -119,4 +148,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-

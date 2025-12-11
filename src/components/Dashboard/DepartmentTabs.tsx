@@ -11,7 +11,7 @@ const DepartmentTabs: React.FC<DepartmentTabsProps> = ({ selected, onChange }) =
   return (
     <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
       <Tabs
-        value={selected || DEPARTMENTS[0]} // default first tab if none selected
+        value={selected} // selected is always a string from state
         onChange={(_, newValue) => onChange(newValue)}
         sx={{
           '& .MuiTab-root': {
@@ -19,14 +19,14 @@ const DepartmentTabs: React.FC<DepartmentTabsProps> = ({ selected, onChange }) =
             fontWeight: 500,
             minHeight: 48,
             fontSize: '0.875rem',
-            color: '#000000', // default black
+            color: '#000000',
             transition: 'color 0.2s ease',
             '&:hover': {
-              color: '#ea580c', // orange on hover
+              color: '#ea580c',
             },
           },
           '& .Mui-selected': {
-            color: '#ea580c !important', // stay orange when selected
+            color: '#ea580c !important',
             fontWeight: 600,
           },
           '& .MuiTabs-indicator': {
