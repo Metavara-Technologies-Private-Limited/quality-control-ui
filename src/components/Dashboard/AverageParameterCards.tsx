@@ -47,7 +47,7 @@ const AverageParameterCards: React.FC<AverageParameterCardsProps> = ({
   return (
     <Box>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, fontSize: '1rem' }}>
-        Average {parameterName}
+        Average Humidity {parameterName}
       </Typography>
       <Grid container spacing={2}>
         {averages.map((avg) => (
