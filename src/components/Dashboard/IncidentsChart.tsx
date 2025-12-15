@@ -123,7 +123,7 @@ const statusItemSx = {
     gridTemplateColumns: { xs: '1fr', sm: '220px 1fr' },
     columnGap: 3,
     rowGap: 1,
-    alignItems: 'start',
+    alignItems: 'start'
   }}
 >
   {/* ------------------------LEFT : PIE --------------------------*/}

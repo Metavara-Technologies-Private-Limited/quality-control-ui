@@ -1,34 +1,36 @@
 import React, { useState, useEffect } from 'react';
+import search_icon_incubatorassignees from "../../assets/icons/search_icon_incubatorassignees.svg";
+import List_incubatorassignees from "../../assets/icons/List_incubatorassignees.svg";
+
 import {
   Card,
   CardContent,
   Typography,
   Box,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  IconButton,
-  Avatar,
-  TextField,
-  InputAdornment,
+ // List,
+ // ListItem,
+ // ListItemAvatar,
+ // ListItemText,
+ // IconButton,
+ // Avatar,
+ // TextField,
+ // InputAdornment,
 } from '@mui/material';
-import {
-  Search,
-  Add,
-} from '@mui/icons-material';
-import type { Assignee } from '@/types';
+//import {Search, Add,} from '@mui/icons-material';
+//import type { Assignee } from '@/types';
 
 interface AssigneePanelProps {
   equipmentId: number;
 }
 
 const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
-  const [assignees, setAssignees] = useState<Assignee[]>([]);
-  const [availablePersonnel, setAvailablePersonnel] = useState<Assignee[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  //const [assignees, setAssignees] = useState<Assignee[]>([]);
+ // const [availablePersonnel, setAvailablePersonnel] = useState<Assignee[]>([]);
+  //const [loading, setLoading] = useState(true);
+  //const [searchTerm, setSearchTerm] = useState('');
 
+  
+  /*
   useEffect(() => {
     loadAssignees();
   }, [equipmentId]);
@@ -45,7 +47,11 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
       setLoading(false);
     }
   };
+*/
 
+{/*
+
+  }
   const handleAdd = async (assigneeId: number) => {
     const person = availablePersonnel.find(a => a.id === assigneeId);
     if (person) {
@@ -71,59 +77,73 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
     a.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  return (
+  */}
+
+
+  return(
     <Card
       sx={{
         borderRadius: 2,
         border: '1px solid #e5e7eb',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-        height: '100%',
+        boxShadow: '0 1px 3px 0 rgba(138, 9, 9, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+        height: '103%',
         display: 'flex',
         flexDirection: 'column',
+        mt:1,
+        width:495
       }}
     >
       <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Box sx={{
+    width: '100%',
+    height: 50,
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    p: 1,
+    borderBottom: '1px solid #e2e3e5',   // 👈 THIS IS THE HORIZONTAL LINE AFTER THE SEARCH ICON
+  }}>
           <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>
             Incubator Assignees
           </Typography>
-          <IconButton 
-            size="small"
-            sx={{
-              color: '#6b7280',
-              '&:hover': {
-                backgroundColor: '#f9fafb',
-                color: '#14b8a6',
-              },
-            }}
-          >
-            <Search fontSize="small" />
-          </IconButton>
+          <img                                      // Search icon in Incubator Assignees
+      src={search_icon_incubatorassignees}
+      alt="search_icon"
+      style={{
+        width: 30,
+        height: 30,
+        cursor: 'pointer',
+        position: 'relative',
+        bottom:6
+      }}
+    />
         </Box>
 
-        <TextField
-          size="small"
-          placeholder="Search assignees..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{
-            mb: 2,
-            '& .MuiOutlinedInput-root': {
-              backgroundColor: '#f9fafb',
-              borderRadius: 2,
-              '& fieldset': {
-                borderColor: '#e5e7eb',
-              },
-            },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search fontSize="small" sx={{ color: '#9ca3af' }} />
-              </InputAdornment>
-            ),
-          }}
-        />
+{/* List incubator assignees icon */}
+<Box
+  sx={{
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    px: 1,
+    py: 1,
+  }}
+>
+  <img
+    src={List_incubatorassignees}
+    alt="list_incubator_assignees"
+    style={{
+      width: '100%',
+      maxWidth: 460,
+         transform: 'scaleY(1.2)',   
+    transformOrigin: 'top',
+      
+    }}
+  />
+</Box>
+
+{/*
+
 
         <List sx={{ flex: 1, overflow: 'auto', px: 0 }}>
           {filteredAssignees.map((assignee) => (
@@ -244,6 +264,10 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
             </Typography>
           )}
         </List>
+
+
+
+        */}
       </CardContent>
     </Card>
   );
