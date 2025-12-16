@@ -1,101 +1,85 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+
+import Average_humidity_values from "../../assets/icons/Average_humidity_values.svg";
+import filter_icon from "../../assets/icons/filter_icon_in_pie.svg";
+
 import {
   Card,
   CardContent,
   Typography,
   Box,
-  Grid,
 } from '@mui/material';
-import {
-  TrendingUp,
-  TrendingDown,
-} from '@mui/icons-material';
-import { formatUnit } from '@/utils/formatters';
-import type { AverageData } from '@/types';
 
-interface AverageParameterCardsProps {
+interface AverageHumidityProps {
   equipmentId: number;
-  parameterId: number;
-  parameterName?: string;
 }
 
-const AverageParameterCards: React.FC<AverageParameterCardsProps> = ({
-  equipmentId,
-  parameterId,
-  parameterName = 'Temperature',
-}) => {
-  const [averages, setAverages] = useState<AverageData[]>([]);
-  const [loading, setLoading] = useState(true);
+const AverageHumidity: React.FC<AverageHumidityProps> = ({ equipmentId }) => {
 
   useEffect(() => {
-    loadAverages();
-  }, [equipmentId, parameterId]);
-
-  const loadAverages = async () => {
-    try {
-      setLoading(true);
-      const { getMockAverages } = await import('@/utils/mockData');
-      const mockData = getMockAverages(parameterName);
-      setAverages(mockData);
-    } catch (error) {
-      console.error('Error loading averages:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    console.log('Equipment ID:', equipmentId);
+  }, [equipmentId]);
 
   return (
-    <Box>
-      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, fontSize: '1rem' }}>
-        Average Humidity {parameterName}
-      </Typography>
-      <Grid container spacing={2}>
-        {averages.map((avg) => (
-          <Grid item xs={6} key={avg.equipment_id}>
-            <Card
-              sx={{
-                border: '1px solid #e5e7eb',
-                borderRadius: 2,
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                  transform: 'translateY(-2px)',
-                },
-              }}
-            >
-              <CardContent>
-                <Typography variant="body2" sx={{ color: '#6b7280', mb: 1.5, fontSize: '0.8125rem' }}>
-                  {avg.equipment_name}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>
-                    {formatUnit(avg.average_value, avg.unit)}
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.5,
-                      color: avg.trend === 'up' ? '#10b981' : '#ef4444',
-                    }}
-                  >
-                    {avg.trend === 'up' ? (
-                      <TrendingUp fontSize="small" />
-                    ) : (
-                      <TrendingDown fontSize="small" />
-                    )}
-                    <Typography variant="caption" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
-                      {avg.change_percentage}% vs last week
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+    <Box sx={{ height: '100%' }}>
+      <Card
+        sx={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {/* HEADER */}
+        <CardContent
+          sx={{
+            pb: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottom: '1px solid #e5e7eb',
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Average Humidity
+          </Typography>
+
+          <Box
+            component="img"
+            src={filter_icon}
+            alt="filter"
+            sx={{
+              width: 24,
+              height: 24,
+              cursor: 'pointer',
+            }}
+          />
+        </CardContent>
+
+        {/* BODY */}
+        <Box
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            p: 2,
+          }}
+        >
+          {/* SVG fills available space */}
+          <Box
+            component="img"
+            src={Average_humidity_values}
+            alt="average_humidity"
+            sx={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+            }}
+          />
+        </Box>
+      </Card>
     </Box>
   );
 };
 
-export default AverageParameterCards;
+export default AverageHumidity;
