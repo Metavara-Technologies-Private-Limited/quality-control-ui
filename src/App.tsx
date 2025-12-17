@@ -11,8 +11,8 @@ import AuditTrail from './pages/AuditTrail';
 import { useEffect } from 'react';
 import { initializeMockData } from "@/utils/mockData";
 import AddParameterPage from './components/Configuration/AddParameterPage';
-
-
+import ViewEquipment from './components/Configuration/ViewEquipment';
+import EquipmentPage from './components/Configuration/EquipmentPage';
 
 function App() {
   
@@ -29,6 +29,8 @@ useEffect(() => {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="admin-dashboard" element={<AdminDashboard />} />
         <Route path="configuration" element={<Configuration />} />
+        <Route path="configuration/equipment" element={<EquipmentPage />} />
+        <Route path="configuration/equipment/view" element={<ViewEquipment />} />
         <Route path="configuration/equipment/add-parameter" element={<AddParameterPage />} />
         <Route path="user-configuration" element={<UserConfiguration />} />
         <Route path="clinical" element={<Clinical />} />
@@ -36,6 +38,7 @@ useEffect(() => {
         <Route path="reports" element={<Reports />} />
         <Route path="audit-trail" element={<AuditTrail />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
+       
       </Route>
     </Routes>
   );
