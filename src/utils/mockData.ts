@@ -3,44 +3,43 @@ import type {
   Department,
   Equipment,
   Parameter,
+  Activity,
 } from "@/types";
 
-// ------------------------------
-// API FETCH FUNCTION
-// ------------------------------
-
+// ==============================
+// API FETCH
+// ==============================
 const API_BASE = "http://127.0.0.1:8000/api/get_clinic";
 
 export const loadClinicData = async (clinic_id: number) => {
   const response = await fetch(`${API_BASE}/${clinic_id}/`);
-  const json = await response.json();
-  return json;
+  return await response.json();
 };
 
-// ------------------------------
-// STORAGE FOR DYNAMIC MOCK DATA
-// ------------------------------
-
+// ==============================
+// STORAGE
+// ==============================
 export let mockClinic: Clinic | null = null;
 export let mockDepartments: Department[] = [];
 export let mockEquipments: Equipment[] = [];
 export let mockParameters: Parameter[] = [];
 
-// ------------------------------
-// TRANSFORM API → Dashboard-friendly format
-// ------------------------------
-
+// ==============================
+// INITIALIZE DATA
+// ==============================
 export const initializeMockData = async (clinic_id: number) => {
-  mockClinic = null; mockDepartments = []; mockEquipments = []; mockParameters = [];
+  mockClinic = null;
+  mockDepartments = [];
+  mockEquipments = [];
+  mockParameters = [];
+
   const api = await loadClinicData(clinic_id);
 
-  // ---------- Clinic ----------
   mockClinic = {
     id: clinic_id,
     name: api.name,
   };
 
-  // ---------- Departments ----------
   mockDepartments = api.department.map((d: any, depIndex: number) => ({
     id: depIndex + 1,
     name: d.name,
@@ -49,33 +48,50 @@ export const initializeMockData = async (clinic_id: number) => {
     created_at: new Date().toISOString(),
   }));
 
-  // ---------- Equipments + Parameters ----------
   let equipmentCounter = 1;
   let parameterCounter = 1;
 
   api.department.forEach((dep: any, depIndex: number) => {
     dep.equipments.forEach((eq: any) => {
-      const newEquipment: Equipment = {
-        id: equipmentCounter,
-        equipment_name: eq.equipment_name,
-        dep_id: depIndex + 1,
-        created_at: new Date().toISOString(),
-        department: mockDepartments[depIndex],
-        parameters: [], // add parameter array
-      };
+      let equipment = mockEquipments.find(
+        (e) =>
+          e.equipment_name === eq.equipment_name &&
+          e.dep_id === depIndex + 1
+      );
 
-      mockEquipments.push(newEquipment);
+      if (!equipment) {
+        equipment = {
+          id: equipmentCounter++,
+          equipment_name: eq.equipment_name,
+          dep_id: depIndex + 1,
+          created_at: new Date().toISOString(),
+          department: mockDepartments[depIndex],
+          parameters: [],
+        };
+        mockEquipments.push(equipment);
+      }
 
-      // parameters
       eq.parameters.forEach((param: any) => {
+        const exists = equipment!.parameters.find(
+          (p) => p.parameter_name === param.parameter_name
+        );
+        if (exists) return;
+
+        const normalizedName = param.parameter_name
+          .toLowerCase()
+          .replace("₂", "2");
+
+        const isCO2 = normalizedName.includes("co2");
+        const isHumidity = normalizedName.includes("humidity");
+
         const newParam: Parameter = {
-          id: parameterCounter,
+          id: parameterCounter++,
           parameter_name: param.parameter_name,
-          equipment_id: equipmentCounter,
+          equipment_id: equipment!.id,
           is_active: param.is_active,
           Content: {
             ...param.content,
-            unit: "N/A",
+            unit: isCO2 ? "%" : isHumidity ? "%" : "°C",
             min_value: 0,
             max_value: 0,
             control_limits: {
@@ -86,16 +102,135 @@ export const initializeMockData = async (clinic_id: number) => {
             },
           },
           created_at: new Date().toISOString(),
-          equipment: newEquipment,
+          equipment: equipment!,
         };
 
         mockParameters.push(newParam);
-        newEquipment.parameters.push(newParam); // store inside equipment
-
-        parameterCounter++;
+        equipment!.parameters.push(newParam);
       });
-
-      equipmentCounter++;
     });
   });
 };
+
+// ==============================
+// PARAMETER CHART DATA
+// ==============================
+export const getMockChartData = (
+  equipmentId: number,
+  parameterName: string
+) => {
+  const param = parameterName.toLowerCase().replace("₂", "2").trim();
+
+  // TEMPERATURE
+  if (param === "temperature") {
+    return {
+      chartType: "line",
+      unit: "°C",
+      xAxisLabel: "Time (Months)",
+      yAxisLabel: "Temperature (°C)",
+      equipment_names: ["Incubator A", "Incubator B", "Incubator C", "Incubator D"],
+      data: [
+        { date: "Jan", "Incubator A": 37.5, "Incubator B": 37.2, "Incubator C": 37.1, "Incubator D": 37.4 },
+        { date: "Feb", "Incubator A": 37.6, "Incubator B": 37.4, "Incubator C": 37.2, "Incubator D": 37.5 },
+        { date: "Mar", "Incubator A": 37.4, "Incubator B": 37.3, "Incubator C": 37.0, "Incubator D": 37.3 },
+        { date: "Apr", "Incubator A": 37.5, "Incubator B": 37.3, "Incubator C": 37.1, "Incubator D": 37.4 },
+        { date: "May", "Incubator A": 37.6, "Incubator B": 37.4, "Incubator C": 37.2, "Incubator D": 37.5 },
+        { date: "Jun", "Incubator A": 37.5, "Incubator B": 37.3, "Incubator C": 37.1, "Incubator D": 37.4 },
+        { date: "Jul", "Incubator A": 37.6, "Incubator B": 37.4, "Incubator C": 37.3, "Incubator D": 37.5 },
+      ],
+    };
+  }
+
+  // CO2
+  if (param.includes("co2")) {
+    return {
+      chartType: "bar",
+      unit: "%",
+      xAxisLabel: "Time (Months)",
+      yAxisLabel: "CO₂ Concentration (%)",
+      equipment_names: ["Incubator A", "Incubator B", "Incubator C", "Incubator D"],
+      data: [
+        { date: "Jan", "Incubator A": 5.35, "Incubator B": 5.42, "Incubator C": 5.38, "Incubator D": 5.40 },
+        { date: "Feb", "Incubator A": 5.36, "Incubator B": 5.45, "Incubator C": 5.39, "Incubator D": 5.41 },
+        { date: "Mar", "Incubator A": 5.34, "Incubator B": 5.43, "Incubator C": 5.37, "Incubator D": 5.39 },
+        { date: "Apr", "Incubator A": 5.35, "Incubator B": 5.44, "Incubator C": 5.38, "Incubator D": 5.40 },
+        { date: "May", "Incubator A": 5.36, "Incubator B": 5.46, "Incubator C": 5.39, "Incubator D": 5.41 },
+        { date: "Jun", "Incubator A": 5.35, "Incubator B": 5.45, "Incubator C": 5.38, "Incubator D": 5.40 },
+        { date: "Jul", "Incubator A": 5.37, "Incubator B": 5.47, "Incubator C": 5.40, "Incubator D": 5.42 },
+      ],
+    };
+  }
+
+  // HUMIDITY
+  if (param === "humidity") {
+    return {
+      chartType: "line",
+      unit: "%",
+      xAxisLabel: "Time (Months)",
+      yAxisLabel: "Relative Humidity (%)",
+      equipment_names: ["Incubator A", "Incubator B", "Incubator C", "Incubator D"],
+      data: [
+        { date: "Jan", "Incubator A": 88, "Incubator B": 82, "Incubator C": 86, "Incubator D": 85 },
+        { date: "Feb", "Incubator A": 87, "Incubator B": 83, "Incubator C": 87, "Incubator D": 83 },
+        { date: "Mar", "Incubator A": 89, "Incubator B": 81, "Incubator C": 86, "Incubator D": 84 },
+        { date: "Apr", "Incubator A": 88, "Incubator B": 83, "Incubator C": 87, "Incubator D": 85 },
+        { date: "May", "Incubator A": 89, "Incubator B": 82, "Incubator C": 85, "Incubator D": 86 },
+        { date: "Jun", "Incubator A": 87, "Incubator B": 83, "Incubator C": 86, "Incubator D": 84 },
+        { date: "Jul", "Incubator A": 89, "Incubator B": 81, "Incubator C": 87, "Incubator D": 85 },
+      ],
+    };
+  }
+
+  // AIRFLOW
+  if (param.includes("airflow")) {
+    return {
+      chartType: "line",
+      unit: "m/s",
+      xAxisLabel: "Time (Months)",
+      yAxisLabel: "Airflow Velocity (m/s)",
+      equipment_names: ["Incubator A", "Incubator B", "Incubator C", "Incubator D"],
+      data: [
+        { date: "Jan", "Incubator A": 0.65, "Incubator B": 0.55, "Incubator C": 0.60, "Incubator D": 0.57 },
+        { date: "Feb", "Incubator A": 0.66, "Incubator B": 0.56, "Incubator C": 0.61, "Incubator D": 0.58 },
+        { date: "Mar", "Incubator A": 0.60, "Incubator B": 0.54, "Incubator C": 0.59, "Incubator D": 0.56 },
+        { date: "Apr", "Incubator A": 0.62, "Incubator B": 0.55, "Incubator C": 0.60, "Incubator D": 0.57 },
+        { date: "May", "Incubator A": 0.63, "Incubator B": 0.56, "Incubator C": 0.61, "Incubator D": 0.58 },
+        { date: "Jun", "Incubator A": 0.61, "Incubator B": 0.55, "Incubator C": 0.60, "Incubator D": 0.57 },
+        { date: "Jul", "Incubator A": 0.64, "Incubator B": 0.56, "Incubator C": 0.61, "Incubator D": 0.58 },
+        { date: "Aug", "Incubator A": 0.63, "Incubator B": 0.55, "Incubator C": 0.62, "Incubator D": 0.59 },
+        { date: "Sep", "Incubator A": 0.62, "Incubator B": 0.54, "Incubator C": 0.60, "Incubator D": 0.57 },
+        { date: "Oct", "Incubator A": 0.61, "Incubator B": 0.56, "Incubator C": 0.61, "Incubator D": 0.58 },
+        { date: "Nov", "Incubator A": 0.63, "Incubator B": 0.55, "Incubator C": 0.62, "Incubator D": 0.57 },
+        { date: "Dec", "Incubator A": 0.64, "Incubator B": 0.56, "Incubator C": 0.61, "Incubator D": 0.58 },
+      ],
+    };
+  }
+
+  return {
+    chartType: "line",
+    unit: "",
+    xAxisLabel: "",
+    yAxisLabel: "",
+    equipment_names: [],
+    data: [],
+  };
+};
+
+// ==============================
+// MOCK RECENT ACTIVITY DATA
+// ==============================
+export const mockActivities: Activity[] = [
+  { id: 1, equipment_id: 1, type: "temperature", message: "Temperature increased to 37.6°C", timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString() },
+  { id: 2, equipment_id: 1, type: "temperature", message: "Temperature stabilized at 37.4°C", timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString() },
+
+  { id: 3, equipment_id: 1, type: "co2", message: "CO₂ level adjusted to 5.4%", timestamp: new Date(Date.now() - 20 * 60 * 1000).toISOString() },
+  { id: 4, equipment_id: 2, type: "co2", message: "CO₂ dropped to 5.2%", timestamp: new Date(Date.now() - 35 * 60 * 1000).toISOString() },
+
+  { id: 5, equipment_id: 1, type: "humidity", message: "Humidity increased to 85%", timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString() },
+  { id: 6, equipment_id: 2, type: "humidity", message: "Humidity stabilized at 82%", timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString() },
+
+  { id: 7, equipment_id: 1, type: "airflow", message: "Airflow velocity recorded: 0.65 m/s", timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString() },
+  { id: 8, equipment_id: 2, type: "airflow", message: "Airflow velocity adjusted to 0.56 m/s", timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
+
+  { id: 9, equipment_id: 1, type: "assignee", message: "Technician assigned to Incubator A", timestamp: new Date(Date.now() - 90 * 60 * 1000).toISOString() },
+];

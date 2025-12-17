@@ -33,9 +33,9 @@ const AddEquipmentPopup: React.FC<Props> = ({ open, onClose }) => {
           sx={{"& .MuiInputLabel-root": { color: "#5F646F !important" }, "& .MuiInputLabel-root.Mui-focused": { color: "#5F646F !important" }, "& .MuiOutlinedInput-root": {"& fieldset": { borderColor: "#CFD1D4" }, "&:hover fieldset": { borderColor: "#CFD1D4" }, "&.Mui-focused fieldset": { borderColor: "#CFD1D4" }}, "& .MuiInputBase-input": { color: "#5F646F", fontSize: "16px" }}}>
             <MenuItem value="Embryology">Embryology</MenuItem>
             <MenuItem value="Andrology">Andrology</MenuItem>
-            <MenuItem value="Surgery">Surgery</MenuItem>
-            <MenuItem value="Ultrasound">Ultrasound</MenuItem>
-            <MenuItem value="Environment">Environment</MenuItem>
+            <MenuItem value="Cryopreservation">Cryopreservation</MenuItem>
+            <MenuItem value="Environmental">Environmental</MenuItem>
+            <MenuItem value="Lab Equipment">Lab Equipment</MenuItem>
         </TextField>
 
         <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3, gap: 2 }}>
