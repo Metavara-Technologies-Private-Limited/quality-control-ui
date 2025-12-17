@@ -1,10 +1,10 @@
 // Department Types
 export const DEPARTMENTS = [
-  'Ambrology',
+  'Embryology',
   'Andrology',
-  'Surgery',
-  'Ultrasound',
-  'Environment',
+  'Cryopresevation',
+  'Environmental',
+  'Lab Equipment'
 ] as const;
 
 // Equipment Types for Embryology

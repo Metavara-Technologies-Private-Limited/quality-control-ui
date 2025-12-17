@@ -17,8 +17,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Cell,
-  ReferenceLine,
 } from 'recharts';
 import { FilterList, GetApp } from '@mui/icons-material';
 import { CHART_COLORS } from '@/utils/constants';
@@ -31,6 +29,13 @@ interface ParameterChartProps {
   unit: string;
 }
 
+const CO2_BAR_COLORS = [
+  '#111827', // Incubator A
+  '#D1D5DB', // Incubator B
+  '#FBCFE8', // Incubator C
+  '#F97316', // Incubator D
+];
+
 const ParameterChart: React.FC<ParameterChartProps> = ({
   equipmentId,
   parameterId,
@@ -38,204 +43,134 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
   unit,
 }) => {
   const [chartData, setChartData] = useState<ParameterChartData | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadChartData();
   }, [equipmentId, parameterId]);
 
   const loadChartData = async () => {
-    try {
-      setLoading(true);
-      const { getMockChartData } = await import('@/utils/mockData');
-      const mockData = getMockChartData(parameterName);
-      setChartData({
-        ...mockData,
-        parameter_name: parameterName,
-        unit,
-      });
-    } catch (error) {
-      console.error('Error loading chart data:', error);
-    } finally {
-      setLoading(false);
-    }
+    const { getMockChartData } = await import('@/utils/mockData');
+    const data = getMockChartData(equipmentId, parameterName);
+
+    setChartData({
+      ...data,
+      parameter_name: parameterName,
+      unit,
+      xAxisLabel: 'Time (in days)',
+      yAxisLabel: `${parameterName} (${unit})`,
+    });
   };
 
-  if (loading || !chartData) {
-    return (
-      <Card
-        sx={{
-          borderRadius: 2,
-          border: '1px solid #e5e7eb',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-        }}
-      >
-        <CardContent>
-          <Typography variant="h6">Loading chart...</Typography>
-        </CardContent>
-      </Card>
-    );
+  if (!chartData) {
+    return <Typography>Loading chart...</Typography>;
   }
 
-  const isCO2 = parameterName.toLowerCase().includes('co₂') || parameterName.toLowerCase().includes('co2');
-  
-  // Colors for CO₂ bar chart (matching the design - gray shades and pink)
-  const barColors = ['#9ca3af', '#f3f4f6', '#fce7f3', '#e5e7eb'];
+  const isCO2 = parameterName
+    .toLowerCase()
+    .replace('₂', '2')
+    .includes('co2');
 
   return (
-    <Card
-      sx={{
-        borderRadius: 2,
-        border: '1px solid #e5e7eb',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-      }}
-    >
+    <Card sx={{ borderRadius: 2, border: '1px solid #e5e7eb' }}>
       <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>
+        {/* HEADER */}
+        <Box display="flex" justifyContent="space-between" mb={2}>
+          <Typography fontWeight={600}>
             {parameterName} Chart
           </Typography>
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <IconButton 
-              size="small"
-              sx={{
-                color: '#6b7280',
-                '&:hover': {
-                  backgroundColor: '#f9fafb',
-                  color: '#14b8a6',
-                },
-              }}
-            >
-              <FilterList fontSize="small" />
-            </IconButton>
-            <IconButton 
-              size="small"
-              sx={{
-                color: '#6b7280',
-                '&:hover': {
-                  backgroundColor: '#f9fafb',
-                  color: '#14b8a6',
-                },
-              }}
-            >
-              <GetApp fontSize="small" />
-            </IconButton>
+          <Box>
+            <IconButton size="small"><FilterList fontSize="small" /></IconButton>
+            <IconButton size="small"><GetApp fontSize="small" /></IconButton>
           </Box>
         </Box>
 
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={320}>
           {isCO2 ? (
-            <BarChart data={chartData.data} margin={{ top: 40, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            /* ================= CO2 BAR ================= */
+            <BarChart
+              data={chartData.data}
+              margin={{ top: 40, right: 30, left: 40, bottom: 40 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+
+              <Legend
+                verticalAlign="top"
+                align="center"
+                height={36}
+                iconType="circle"
+              />
+
               <XAxis
                 dataKey="date"
-                stroke="#6b7280"
-                style={{ fontSize: '0.75rem' }}
-                tick={{ fill: '#6b7280' }}
+                label={{
+                  value: chartData.xAxisLabel,
+                  position: 'insideBottom',
+                  offset: -10,
+                }}
               />
+
               <YAxis
-                label={{ 
-                  value: `${parameterName} (${unit})`, 
-                  angle: -90, 
+                label={{
+                  value: chartData.yAxisLabel,
+                  angle: -90,
                   position: 'insideLeft',
-                  style: { fontSize: '0.75rem', fill: '#6b7280' }
                 }}
-                stroke="#6b7280"
-                style={{ fontSize: '0.75rem' }}
-                domain={[5.0, 7.0]}
-                tickFormatter={(value) => `${value}%`}
-                tick={{ fill: '#6b7280' }}
               />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 8,
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                }}
-                formatter={(value: number) => `${value}%`}
-              />
-              <Legend 
-                wrapperStyle={{ fontSize: '0.75rem' }}
-                iconType="square"
-              />
+
+              <Tooltip />
+
               {chartData.equipment_names.map((name, index) => (
                 <Bar
                   key={name}
                   dataKey={name}
-                  fill={barColors[index % barColors.length]}
-                  radius={[4, 4, 0, 0]}
-                >
-                  {chartData.data.map((entry: any, idx: number) => (
-                    <Cell
-                      key={`cell-${idx}`}
-                      fill={barColors[index % barColors.length]}
-                    />
-                  ))}
-                </Bar>
+                  fill={CO2_BAR_COLORS[index]}
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={26}
+                />
               ))}
-              {/* Custom annotation for Incubator C on Tuesday */}
-              {chartData.data.map((entry: any, entryIndex: number) => {
-                if (entry.date === 'Tuesday' && entry['Incubator C'] === 6.39) {
-                  return (
-                    <ReferenceLine
-                      key={`annotation-${entryIndex}`}
-                      x="Tuesday"
-                      stroke="transparent"
-                      label={{
-                        value: '6.39%',
-                        position: 'top',
-                        fill: '#111827',
-                        fontSize: 12,
-                        fontWeight: 500,
-                      }}
-                    />
-                  );
-                }
-                return null;
-              })}
             </BarChart>
           ) : (
-            <LineChart data={chartData.data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            /* ================= LINE CHART (FIGMA STYLE) ================= */
+            <LineChart
+              data={chartData.data}
+              margin={{ top: 40, right: 30, left: 40, bottom: 40 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+
+              {/* LEGEND TOP CENTER */}
+              <Legend
+                verticalAlign="top"
+                align="center"
+                height={36}
+                iconType="circle"
+              />
+
               <XAxis
                 dataKey="date"
-                stroke="#6b7280"
-                style={{ fontSize: '0.75rem' }}
-                tick={{ fill: '#6b7280' }}
+                label={{
+                  value: chartData.xAxisLabel,
+                  position: 'insideBottom',
+                  offset: -10,
+                }}
               />
+
               <YAxis
-                label={{ 
-                  value: `${parameterName} (${unit})`, 
-                  angle: -90, 
+                label={{
+                  value: chartData.yAxisLabel,
+                  angle: -90,
                   position: 'insideLeft',
-                  style: { fontSize: '0.75rem', fill: '#6b7280' }
-                }}
-                stroke="#6b7280"
-                style={{ fontSize: '0.75rem' }}
-                tick={{ fill: '#6b7280' }}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 8,
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                 }}
               />
-              <Legend 
-                wrapperStyle={{ fontSize: '0.75rem' }}
-                iconType="line"
-              />
+
+              <Tooltip />
+
               {chartData.equipment_names.map((name, index) => (
                 <Line
                   key={name}
-                  type="monotone"
                   dataKey={name}
-                  stroke={CHART_COLORS[index % CHART_COLORS.length]}
+                  stroke={CHART_COLORS[index]}
                   strokeWidth={2}
-                  dot={{ r: 4, fill: CHART_COLORS[index % CHART_COLORS.length] }}
-                  activeDot={{ r: 6 }}
+                  dot={{ r: 4 }}
                 />
               ))}
             </LineChart>
