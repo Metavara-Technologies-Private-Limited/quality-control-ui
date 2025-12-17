@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Container } from '@mui/material';
+
 import DepartmentTabs from '@/components/Dashboard/DepartmentTabs';
 import EquipmentCards from '@/components/Dashboard/EquipmentCards';
 import ParameterTabs from '@/components/Dashboard/ParameterTabs';
@@ -9,6 +10,7 @@ import IncidentsChart from '@/components/Dashboard/IncidentsChart';
 import AverageParameterCards from '@/components/Dashboard/AverageParameterCards';
 import AssigneePanel from '@/components/Dashboard/AssigneePanel';
 import DashboardHeader from '@/components/Dashboard/DashboardHeader';
+
 import type { Equipment, Parameter } from '@/types';
 import { mockEquipments, mockParameters } from '@/utils/mockData';
 
@@ -18,11 +20,10 @@ const Dashboard = () => {
   const [selectedParameter, setSelectedParameter] = useState<Parameter | null>(null);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [parameters, setParameters] = useState<Parameter[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
 
-  // FILTERING EQUIPMENTS BASED ON SELECTED DEPARTMENT
+  /* ---------- FILTER EQUIPMENTS ---------- */
   useEffect(() => {
-    // STRICT department filtering
     const filtered = mockEquipments.filter(
       (eq) =>
         eq.department?.name?.trim().toLowerCase() ===
@@ -31,7 +32,6 @@ const Dashboard = () => {
 
     setEquipments(filtered);
 
-    // Auto-select first equipment of that department
     if (filtered.length > 0) {
       const firstEquipment = filtered[0];
       setSelectedEquipment(firstEquipment);
@@ -49,7 +49,7 @@ const Dashboard = () => {
     }
   }, [selectedDepartment]);
 
-  // LOAD PARAMETERS WHEN EQUIPMENT CHANGES
+  /* ---------- LOAD PARAMETERS ---------- */
   useEffect(() => {
     if (selectedEquipment) {
       const equipmentParams = mockParameters.filter(
@@ -60,49 +60,35 @@ const Dashboard = () => {
     }
   }, [selectedEquipment]);
 
-  const handleDepartmentChange = (department: string) => {
-    setSelectedDepartment(department);
-    setSelectedEquipment(null);
-    setSelectedParameter(null);
-  };
-
-  const handleEquipmentSelect = (equipment: Equipment) => {
-    setSelectedEquipment(equipment);
-    setSelectedParameter(null);
-  };
-
-  const handleParameterSelect = (parameter: Parameter) => {
-    setSelectedParameter(parameter);
-  };
-
   return (
     <Container maxWidth={false} sx={{ py: 2 }}>
       <DashboardHeader />
 
       <DepartmentTabs
         selected={selectedDepartment}
-        onChange={handleDepartmentChange}
+        onChange={setSelectedDepartment}
       />
 
+      {/* ---------- EQUIPMENT CARDS ---------- */}
       <Box
         sx={{
-          overflowX: "auto",
-          whiteSpace: "nowrap",
+          overflowX: 'auto',
+          whiteSpace: 'nowrap',
           pb: 1,
-          "&::-webkit-scrollbar": { height: 6 },
-          "&::-webkit-scrollbar-thumb": {
-            backgroundColor: "#ccc",
+          '&::-webkit-scrollbar': { height: 6 },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: '#ccc',
             borderRadius: 10,
           },
         }}
       >
-        <Box sx={{ display: "inline-flex", gap: 2 }}>
+        <Box sx={{ display: 'inline-flex', gap: 2 }}>
           {equipments.map((eq) => (
             <EquipmentCards
               key={eq.id}
               equipments={[eq]}
               selected={selectedEquipment}
-              onSelect={handleEquipmentSelect}
+              onSelect={setSelectedEquipment}
               loading={loading}
             />
           ))}
@@ -114,13 +100,24 @@ const Dashboard = () => {
           <ParameterTabs
             parameters={parameters}
             selected={selectedParameter}
-            onSelect={handleParameterSelect}
+            onSelect={setSelectedParameter}
             loading={loading}
           />
 
           {selectedParameter && (
             <Box sx={{ mt: 3 }}>
-              <Box sx={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 3, mb: 3 }}>
+              {/* ---------- TOP ROW ---------- */}
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: '1fr',
+                    md: '2fr 1fr',
+                  },
+                  gap: 3,
+                  mb: 3,
+                }}
+              >
                 <ParameterChart
                   equipmentId={selectedEquipment.id}
                   parameterId={selectedParameter.id}
@@ -130,13 +127,23 @@ const Dashboard = () => {
                 <RecentActivity equipmentId={selectedEquipment.id} />
               </Box>
 
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: 3 }}>
+              {/* ---------- 🔥 FINAL 3 CARD GRID (FIXED) ---------- */}
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                  gap: 3,
+                  alignItems: 'stretch',
+                }}
+              >
                 <IncidentsChart equipmentId={selectedEquipment.id} />
+
                 <AverageParameterCards
                   equipmentId={selectedEquipment.id}
                   parameterId={selectedParameter.id}
                   parameterName={selectedParameter.parameter_name}
                 />
+
                 <AssigneePanel equipmentId={selectedEquipment.id} />
               </Box>
             </Box>
