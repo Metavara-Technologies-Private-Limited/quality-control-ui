@@ -8,7 +8,7 @@ import {
   IconButton,
 } from "@mui/material";
 import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, ResponsiveContainer } from "recharts";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import RemoveIcon from "@mui/icons-material/Remove";
@@ -30,18 +30,14 @@ const INCUBATOR_COLORS = [
 ];
 
 /* -----------------------------
-   INCIDENT SUMMARY
+   INCIDENT SUMMARY (LOGIC FIXED)
 ----------------------------- */
-const getIncidentSummary = (equipmentId: number) => {
-  const activities = mockActivities.filter(
-    (a) => a.equipment_id === equipmentId
-  );
-
+const getIncidentSummary = () => {
   let high = 0;
   let normal = 0;
   let low = 0;
 
-  activities.forEach((a) => {
+  mockActivities.forEach((a) => {
     if (a.type === "temperature" || a.type === "co2") high++;
     else if (a.type === "humidity") normal++;
     else low++;
@@ -51,30 +47,12 @@ const getIncidentSummary = (equipmentId: number) => {
 };
 
 /* -----------------------------
-   PIE DATA
------------------------------ */
-const buildPieData = (high: number, normal: number, low: number) => {
-  return [
-    { name: "High", value: high, color: INCUBATOR_COLORS[3] },
-    { name: "Normal", value: normal, color: INCUBATOR_COLORS[2] },
-    { name: "Low", value: low, color: INCUBATOR_COLORS[1] },
-  ];
-};
-
-/* -----------------------------
    COMPONENT
 ----------------------------- */
 const IncidentsChart: React.FC<IncidentsChartProps> = ({ equipmentId }) => {
-  const { high, normal, low } = useMemo(
-    () => getIncidentSummary(equipmentId),
-    [equipmentId]
-  );
+  const { high, normal, low } = useMemo(() => getIncidentSummary(), []);
 
-  const total = high + normal + low || 0;
-  const pieData = useMemo(
-    () => buildPieData(high, normal, low),
-    [high, normal, low]
-  );
+  const total = high + normal + low;
 
   return (
     <Card
@@ -113,33 +91,53 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({ equipmentId }) => {
           alignItems: "center",
         }}
       >
-        {/* DONUT */}
+        {/* TOTAL DONUT (MATCHES IMAGE STYLE) */}
         <Box sx={{ position: "relative", height: 220 }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
+              {/* Incubator A */}
               <Pie
                 data={[{ value: total }]}
                 dataKey="value"
-                innerRadius={85}
+                innerRadius={90}
                 outerRadius={100}
-                fill="#E5E7EB"
+                fill={INCUBATOR_COLORS[0]}
                 stroke="none"
               />
 
+              {/* Incubator B */}
               <Pie
-                data={pieData}
+                data={[{ value: total }]}
                 dataKey="value"
-                innerRadius={60}
-                outerRadius={80}
+                innerRadius={78}
+                outerRadius={86}
+                fill={INCUBATOR_COLORS[1]}
                 stroke="none"
-              >
-                {pieData.map((entry, index) => (
-                  <Cell key={index} fill={entry.color} />
-                ))}
-              </Pie>
+              />
+
+              {/* Incubator C */}
+              <Pie
+                data={[{ value: total }]}
+                dataKey="value"
+                innerRadius={66}
+                outerRadius={74}
+                fill={INCUBATOR_COLORS[2]}
+                stroke="none"
+              />
+
+              {/* Incubator D */}
+              <Pie
+                data={[{ value: total }]}
+                dataKey="value"
+                innerRadius={54}
+                outerRadius={62}
+                fill={INCUBATOR_COLORS[3]}
+                stroke="none"
+              />
             </PieChart>
           </ResponsiveContainer>
 
+          {/* CENTER TEXT */}
           <Box
             sx={{
               position: "absolute",
@@ -158,7 +156,7 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({ equipmentId }) => {
           </Box>
         </Box>
 
-        {/* RIGHT PANEL */}
+        {/* RIGHT PANEL (UNCHANGED) */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
           {/* HIGH */}
           <Box
@@ -177,7 +175,7 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({ equipmentId }) => {
                 width: 22,
                 height: 22,
                 borderRadius: "50%",
-                backgroundColor: "#F25B5B", 
+                backgroundColor: "#F25B5B",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -207,13 +205,13 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({ equipmentId }) => {
                 width: 22,
                 height: 22,
                 borderRadius: "50%",
-                backgroundColor: "#47B35F", 
+                backgroundColor: "#47B35F",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <RemoveIcon sx={{ fontSize: 14, color: "#fff" }} /> {/* stays white */}
+              <RemoveIcon sx={{ fontSize: 14, color: "#fff" }} />
             </Box>
             <Typography fontWeight={600}>
               Normal ({normal} logs)
@@ -237,7 +235,7 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({ equipmentId }) => {
                 width: 22,
                 height: 22,
                 borderRadius: "50%",
-                backgroundColor: "#9E9E9E", // 🔁 change here for LOW
+                backgroundColor: "#9E9E9E",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -19,11 +19,13 @@ interface AssigneePanelProps {
 }
 
 const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
-  const assigned = mockAssignees.filter(
+  const [assignees, setAssignees] = useState(mockAssignees);
+
+  const assigned = assignees.filter(
     (a) => a.equipment_id === equipmentId
   );
 
-  const available = mockAssignees.filter(
+  const available = assignees.filter(
     (a) => a.equipment_id === null
   );
 
@@ -31,19 +33,24 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
     mockEquipments.find((e) => e.id === equipmentId)?.equipment_name ||
     "Incubator";
 
+  const handleAssign = (id: number) => {
+    setAssignees((prev) =>
+      prev.map((a) =>
+        a.id === id ? { ...a, equipment_id: equipmentId } : a
+      )
+    );
+  };
+
+  const handleUnassign = (id: number) => {
+    setAssignees((prev) =>
+      prev.map((a) =>
+        a.id === id ? { ...a, equipment_id: null } : a
+      )
+    );
+  };
+
   return (
-    <Card
-      sx={{
-        height: "100%",
-        minHeight: 350,
-        width: "100%",
-        maxWidth: "100%",
-        overflow: "hidden",
-        borderRadius: 3,
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
+    <Card sx={{ height: "100%", minHeight: 350, borderRadius: 3 }}>
       <CardContent
         sx={{
           height: 56,
@@ -60,6 +67,7 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
 
       <Divider />
 
+      {/* Assigned bar */}
       <Box sx={{ p: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
         {assigned.map((a) => (
           <Box
@@ -83,7 +91,7 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
                 {equipmentName}
               </Typography>
             </Box>
-            <IconButton size="small">
+            <IconButton size="small" onClick={() => handleUnassign(a.id)}>
               <CloseIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Box>
@@ -92,6 +100,7 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
 
       <Divider />
 
+      {/* Available list */}
       <Box sx={{ p: 2 }}>
         {available.map((a) => (
           <Box
@@ -107,7 +116,7 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
               <Avatar src={a.avatar} />
               <Typography>{a.name}</Typography>
             </Box>
-            <IconButton size="small">
+            <IconButton size="small" onClick={() => handleAssign(a.id)}>
               <AddIcon />
             </IconButton>
           </Box>
