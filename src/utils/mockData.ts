@@ -234,3 +234,56 @@ export const mockActivities: Activity[] = [
 
   { id: 9, equipment_id: 1, type: "assignee", message: "Technician assigned to Incubator A", timestamp: new Date(Date.now() - 90 * 60 * 1000).toISOString() },
 ];
+
+
+// ==============================
+// MOCK ASSIGNEES (UI SUPPORT)
+// ==============================
+
+export interface Assignee {
+  id: number;
+  name: string;
+  avatar: string;
+  equipment_id: number | null; // null = unassigned
+}
+
+export const mockAssignees: Assignee[] = [
+  {
+    id: 1,
+    name: "Jacob Jones",
+    avatar: "https://i.pravatar.cc/150?img=12",
+    equipment_id: 1, // Incubator A
+  },
+  {
+    id: 2,
+    name: "Arlene McCoy",
+    avatar: "https://i.pravatar.cc/150?img=32",
+    equipment_id: 3, // Incubator C
+  },
+  {
+    id: 3,
+    name: "Leslie Alexander",
+    avatar: "https://i.pravatar.cc/150?img=47",
+    equipment_id: 2, // Incubator B
+  },
+
+  // Available users
+  {
+    id: 4,
+    name: "Floyd Miles",
+    avatar: "https://i.pravatar.cc/150?img=56",
+    equipment_id: null,
+  },
+  {
+    id: 5,
+    name: "Jacob Jones",
+    avatar: "https://i.pravatar.cc/150?img=13",
+    equipment_id: null,
+  },
+  {
+    id: 6,
+    name: "Darlene Robertson",
+    avatar: "https://i.pravatar.cc/150?img=44",
+    equipment_id: null,
+  },
+];

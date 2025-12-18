@@ -1,78 +1,119 @@
-import React from 'react';
-import search_icon_incubatorassignees from "../../assets/icons/search_icon_incubatorassignees.svg";
-import List_incubatorassignees from "../../assets/icons/List_incubatorassignees.svg";
-
+import React from "react";
 import {
   Card,
   CardContent,
   Typography,
   Box,
-} from '@mui/material';
+  Avatar,
+  IconButton,
+  Divider,
+} from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import AddIcon from "@mui/icons-material/Add";
+import SearchIcon from "@mui/icons-material/Search";
+
+import { mockAssignees, mockEquipments } from "@/utils/mockData";
 
 interface AssigneePanelProps {
   equipmentId: number;
 }
 
 const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
+  const assigned = mockAssignees.filter(
+    (a) => a.equipment_id === equipmentId
+  );
+
+  const available = mockAssignees.filter(
+    (a) => a.equipment_id === null
+  );
+
+  const equipmentName =
+    mockEquipments.find((e) => e.id === equipmentId)?.equipment_name ||
+    "Incubator";
+
   return (
-    <Box sx={{ height: '100%' }}>
-      <Card
+    <Card
+      sx={{
+        height: "100%",
+        minHeight: 350,
+        width: "100%",
+        maxWidth: "100%",
+        overflow: "hidden",
+        borderRadius: 3,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <CardContent
         sx={{
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
+          height: 56,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
-        {/* HEADER */}
-        <CardContent
-          sx={{
-            pb: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderBottom: '1px solid #e5e7eb',
-          }}
-        >
-          <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>
-            Incubator Assignees
-          </Typography>
+        <Typography fontWeight={700}>Incubator Assignees</Typography>
+        <IconButton size="small">
+          <SearchIcon />
+        </IconButton>
+      </CardContent>
 
-          <Box
-            component="img"
-            src={search_icon_incubatorassignees}
-            alt="search"
-            sx={{
-              width: 24,
-              height: 24,
-              cursor: 'pointer',
-            }}
-          />
-        </CardContent>
+      <Divider />
 
-        {/* BODY */}
-        <Box
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            p: 2,
-          }}
-        >
-          {/* SVG fills available card space */}
+      <Box sx={{ p: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
+        {assigned.map((a) => (
           <Box
-            component="img"
-            src={List_incubatorassignees}
-            alt="assignee_list"
+            key={a.id}
             sx={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'contain',
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 3,
+              backgroundColor: "#f3f4f6",
             }}
-          />
-        </Box>
-      </Card>
-    </Box>
+          >
+            <Avatar src={a.avatar} sx={{ width: 28, height: 28 }} />
+            <Box>
+              <Typography fontSize={13} fontWeight={500}>
+                {a.name}
+              </Typography>
+              <Typography fontSize={11} color="text.secondary">
+                {equipmentName}
+              </Typography>
+            </Box>
+            <IconButton size="small">
+              <CloseIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Box>
+        ))}
+      </Box>
+
+      <Divider />
+
+      <Box sx={{ p: 2 }}>
+        {available.map((a) => (
+          <Box
+            key={a.id}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              mb: 1.5,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Avatar src={a.avatar} />
+              <Typography>{a.name}</Typography>
+            </Box>
+            <IconButton size="small">
+              <AddIcon />
+            </IconButton>
+          </Box>
+        ))}
+      </Box>
+    </Card>
   );
 };
 
