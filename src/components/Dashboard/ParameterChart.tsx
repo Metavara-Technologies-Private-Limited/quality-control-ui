@@ -17,6 +17,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceDot,
 } from 'recharts';
 import { FilterList, GetApp } from '@mui/icons-material';
 import { CHART_COLORS } from '@/utils/constants';
@@ -30,8 +31,8 @@ interface ParameterChartProps {
 }
 
 const CO2_BAR_COLORS = [
-  '#111827', // Incubator A
-  '#D1D5DB', // Incubator B
+  '#6B7280', // Incubator A
+  '#9CA3AF', // Incubator B
   '#FBCFE8', // Incubator C
   '#F97316', // Incubator D
 ];
@@ -43,26 +44,33 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
   unit,
 }) => {
   const [chartData, setChartData] = useState<ParameterChartData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadChartData();
   }, [equipmentId, parameterId]);
 
   const loadChartData = async () => {
+    setLoading(true);
     const { getMockChartData } = await import('@/utils/mockData');
-    const data = getMockChartData(equipmentId, parameterName);
+    const mockData = getMockChartData(equipmentId, parameterName);
 
     setChartData({
-      ...data,
+      ...mockData,
       parameter_name: parameterName,
       unit,
-      xAxisLabel: 'Time (in days)',
-      yAxisLabel: `${parameterName} (${unit})`,
     });
+    setLoading(false);
   };
 
-  if (!chartData) {
-    return <Typography>Loading chart...</Typography>;
+  if (loading || !chartData) {
+    return (
+      <Card>
+        <CardContent>
+          <Typography>Loading chart...</Typography>
+        </CardContent>
+      </Card>
+    );
   }
 
   const isCO2 = parameterName
@@ -73,7 +81,7 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
   return (
     <Card sx={{ borderRadius: 2, border: '1px solid #e5e7eb' }}>
       <CardContent>
-        {/* HEADER */}
+        {/* Header */}
         <Box display="flex" justifyContent="space-between" mb={2}>
           <Typography fontWeight={600}>
             {parameterName} Chart
@@ -86,38 +94,40 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
 
         <ResponsiveContainer width="100%" height={320}>
           {isCO2 ? (
-            /* ================= CO2 BAR ================= */
+            /* ================= CO₂ BAR CHART ================= */
             <BarChart
               data={chartData.data}
-              margin={{ top: 40, right: 30, left: 40, bottom: 40 }}
+              barCategoryGap={18}
+              barGap={4}
+              margin={{ top: 30, right: 30, left: 20, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-
-              <Legend
-                verticalAlign="top"
-                align="center"
-                height={36}
-                iconType="circle"
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="#E5E7EB"
               />
 
               <XAxis
                 dataKey="date"
-                label={{
-                  value: chartData.xAxisLabel,
-                  position: 'insideBottom',
-                  offset: -10,
-                }}
+                tick={{ fill: '#6B7280', fontSize: 12 }}
               />
 
               <YAxis
+                domain={[5, 7]}
+                tickCount={5}
+                tickFormatter={(v) => `${v.toFixed(1)}`}
+                tick={{ fill: '#6B7280', fontSize: 12 }}
                 label={{
-                  value: chartData.yAxisLabel,
+                  value: 'CO₂ Conc. (%)',
                   angle: -90,
                   position: 'insideLeft',
+                  style: { fill: '#6B7280', fontSize: 12 },
                 }}
               />
 
-              <Tooltip />
+              <Tooltip formatter={(v: number) => `${v}%`} />
+
+              <Legend iconType="circle" />
 
               {chartData.equipment_names.map((name, index) => (
                 <Bar
@@ -128,47 +138,35 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
                   maxBarSize={26}
                 />
               ))}
+
+              {/* Highlight bubble (Tuesday – Incubator C) */}
+              <ReferenceDot
+                x="Tuesday"
+                y={6.39}
+                r={0}
+                label={{
+                  value: '6.39%',
+                  position: 'top',
+                  fill: '#111827',
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              />
             </BarChart>
           ) : (
-            /* ================= LINE CHART (FIGMA STYLE) ================= */
-            <LineChart
-              data={chartData.data}
-              margin={{ top: 40, right: 30, left: 40, bottom: 40 }}
-            >
+            /* ================= LINE CHART ================= */
+            <LineChart data={chartData.data}>
               <CartesianGrid strokeDasharray="3 3" />
-
-              {/* LEGEND TOP CENTER */}
-              <Legend
-                verticalAlign="top"
-                align="center"
-                height={36}
-                iconType="circle"
-              />
-
-              <XAxis
-                dataKey="date"
-                label={{
-                  value: chartData.xAxisLabel,
-                  position: 'insideBottom',
-                  offset: -10,
-                }}
-              />
-
-              <YAxis
-                label={{
-                  value: chartData.yAxisLabel,
-                  angle: -90,
-                  position: 'insideLeft',
-                }}
-              />
-
+              <XAxis dataKey="date" />
+              <YAxis />
               <Tooltip />
+              <Legend />
 
               {chartData.equipment_names.map((name, index) => (
                 <Line
                   key={name}
                   dataKey={name}
-                  stroke={CHART_COLORS[index]}
+                  stroke={CHART_COLORS[index % CHART_COLORS.length]}
                   strokeWidth={2}
                   dot={{ r: 4 }}
                 />

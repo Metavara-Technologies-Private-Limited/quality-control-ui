@@ -23,7 +23,7 @@ const Dashboard = () => {
 
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [parameters, setParameters] = useState<Parameter[]>([]);
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // ===============================
   // FILTER EQUIPMENT BY DEPARTMENT
@@ -84,7 +84,7 @@ const Dashboard = () => {
 
       <DepartmentTabs
         selected={selectedDepartment}
-        onChange={setSelectedDepartment}
+        onChange={handleDepartmentChange}
       />
 
       {/* EQUIPMENT CARDS */}
@@ -95,7 +95,7 @@ const Dashboard = () => {
               key={eq.id}
               equipments={[eq]}
               selected={selectedEquipment}
-              onSelect={setSelectedEquipment}
+              onSelect={handleEquipmentSelect}
               loading={loading}
             />
           ))}
@@ -107,7 +107,7 @@ const Dashboard = () => {
           <ParameterTabs
             parameters={parameters}
             selected={selectedParameter}
-            onSelect={setSelectedParameter}
+            onSelect={handleParameterSelect}
             loading={loading}
           />
 
