@@ -26,615 +26,680 @@ const normalizeDropdownValue = (data: any): string[] => {
 
 
 const AddParameterPage = () => {
-    const navigate = useNavigate();
-    const location = useLocation(); 
+    const navigate = useNavigate();
+    const location = useLocation(); 
 
-    const [equipmentName, setEquipmentName] = useState("");
-    const [department, setDepartment] = useState("");
-    const [count, setCount] = useState(1);
-    const [selected, setSelected] = useState<number[]>([]);
-    const [openParamPopup, setOpenParamPopup] = useState(false);
-    const [parameters, setParameters] = useState<any[]>([]);
-    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-    const open = Boolean(anchorEl);
-    const equipmentQuantity = Array.from({ length: count }, (_, i) => i + 1);
-    const [make, setMake] = useState("");
-    const [model, setModel] = useState("");
-    const [equipmentTable, setEquipmentTable] = useState<any[]>([]);
-    const [isEditMode, setIsEditMode] = useState(false);
-    const [originalEquipment, setOriginalEquipment] = useState<any>(null); 
+    const [equipmentName, setEquipmentName] = useState("");
+    const [department, setDepartment] = useState("");
+    const [count, setCount] = useState(1);
+    const [selected, setSelected] = useState<number[]>([]);
+    const [openParamPopup, setOpenParamPopup] = useState(false);
+    const [parameters, setParameters] = useState<any[]>([]);
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const [menuParamIndex, setMenuParamIndex] = useState<number | null>(null);
+    const open = Boolean(anchorEl);
+    const equipmentQuantity = Array.from({ length: count }, (_, i) => i + 1);
+    const [make, setMake] = useState("");
+    const [model, setModel] = useState("");
+    const [equipmentTable, setEquipmentTable] = useState<any[]>([]);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [originalEquipment, setOriginalEquipment] = useState<any>(null); 
 
+    const [paramToEdit, setParamToEdit] = useState<any>(null);
+    const [editingParamIndex, setEditingParamIndex] = useState<number | null>(null);
 
-    // Helper to save parameters to localStorage
-    const saveParametersToLocalStorage = (params: any[]) => {
-        try {
-            localStorage.setItem(PARAM_DRAFT_STORAGE_KEY, JSON.stringify(params));
-        } catch (error) {
-            console.error("Error saving parameters to localStorage:", error);
-        }
-    };
+    // Helper to save parameters to localStorage
+    const saveParametersToLocalStorage = (params: any[]) => {
+        try {
+            localStorage.setItem(PARAM_DRAFT_STORAGE_KEY, JSON.stringify(params));
+        } catch (error) {
+            console.error("Error saving parameters to localStorage:", error);
+        }
+    };
 
-    // Helper to load parameters from localStorage
-    const loadParametersFromLocalStorage = (): any[] => {
-        try {
-            const storedParams = localStorage.getItem(PARAM_DRAFT_STORAGE_KEY);
-            return storedParams ? JSON.parse(storedParams) : [];
-        } catch (error) {
-            console.error("Error loading parameters from localStorage:", error);
-            return [];
-        }
-    };
+    // Helper to load parameters from localStorage
+    const loadParametersFromLocalStorage = (): any[] => {
+        try {
+            const storedParams = localStorage.getItem(PARAM_DRAFT_STORAGE_KEY);
+            return storedParams ? JSON.parse(storedParams) : [];
+        } catch (error) {
+            console.error("Error loading parameters from localStorage:", error);
+            return [];
+        }
+    };
 
-    // Data Loading Logic for Add vs. Edit
-    useEffect(() => {
-        const passedEquipment = location.state?.equipment;
+    // Data Loading Logic for Add vs. Edit
+    useEffect(() => {
+        const passedEquipment = location.state?.equipment;
 
-        if (passedEquipment) {
-            setIsEditMode(true);
-            setOriginalEquipment(passedEquipment);
-            
-            // 1. Set basic equipment details
-            setEquipmentName(passedEquipment.equipment_name || passedEquipment.name || "");
-            setDepartment(passedEquipment.department?.name || "");
-            
-            // 2. Set Make/Model table data
-            const loadedEquipmentTable = passedEquipment.equipment_details || [];
-            setEquipmentTable(loadedEquipmentTable);
-            
-            if (loadedEquipmentTable.length > 0) {
-                setCount(loadedEquipmentTable.length);
-                setSelected(loadedEquipmentTable.map((_, i) => i + 1));
-            }
-            
-            // 3. Transform and set Parameters (UPDATED MAPPING HERE)
-            const loadedParams = (passedEquipment.parameters || []).map((p: any) => ({
-                name: p.parameter_name,
-                dataType: p.content?.data_type,
-                minValue: p.content?.min_value,
-                maxValue: p.content?.max_value,
-                integerValue: p.content?.integer_value,
-                percentageValue: p.content?.percentage, 
-                textValue: p.content?.text,
-                // CRITICAL FIX: Ensure dropdownValue is an array here
-                dropdownValue: normalizeDropdownValue(p.content?.dropdown || p.content?.selectedOptions), 
-                ...p.content, 
-            }));
-            setParameters(loadedParams);
+        if (passedEquipment) {
+            setIsEditMode(true);
+            setOriginalEquipment(passedEquipment);
+            
+            // 1. Set basic equipment details
+            setEquipmentName(passedEquipment.equipment_name || passedEquipment.name || "");
+            setDepartment(passedEquipment.department?.name || "");
+            
+            // 2. Set Make/Model table data
+            const loadedEquipmentTable = passedEquipment.equipment_details || [];
+            setEquipmentTable(loadedEquipmentTable);
+            
+            if (loadedEquipmentTable.length > 0) {
+                setCount(loadedEquipmentTable.length);
+                setSelected(loadedEquipmentTable.map((_, i) => i + 1));
+            }
+            
+            // 3. Transform and set Parameters (UPDATED MAPPING HERE)
+            const loadedParams = (passedEquipment.parameters || []).map((p: any) => ({
+                name: p.parameter_name,
+                dataType: p.content?.data_type,
+                minValue: p.content?.min_value,
+                maxValue: p.content?.max_value,
+                integerValue: p.content?.integer_value,
+                percentageValue: p.content?.percentage, 
+                textValue: p.content?.text,
+                // CRITICAL FIX: Ensure dropdownValue is an array here
+                dropdownValue: normalizeDropdownValue(p.content?.dropdown || p.content?.selectedOptions), 
+                ...p.content, 
+            }));
+            setParameters(loadedParams);
 
-            localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
-            
-        } else {
-            setIsEditMode(false);
-            setEquipmentName(localStorage.getItem("equipmentName") || "");
-            setDepartment(localStorage.getItem("department") || "");
-            setParameters(loadParametersFromLocalStorage());
-        }
-    }, [location]);
+            localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
+            
+        } else {
+            setIsEditMode(false);
+            setEquipmentName(localStorage.getItem("equipmentName") || "");
+            setDepartment(localStorage.getItem("department") || "");
+            setParameters(loadParametersFromLocalStorage());
+        }
+    }, [location]);
 
-    useEffect(() => {
-        if (!isEditMode) {
-            saveParametersToLocalStorage(parameters);
-        }
-    }, [parameters, isEditMode]);
+    useEffect(() => {
+        if (!isEditMode) {
+            saveParametersToLocalStorage(parameters);
+        }
+    }, [parameters, isEditMode]);
 
-    const toggleSelection = (num: number) => {
-        setSelected((prev) =>
-            prev.includes(num) ? prev.filter((i) => i !== num) : [...prev, num]
-        );
-    };
+    const toggleSelection = (num: number) => {
+        setSelected((prev) =>
+            prev.includes(num) ? prev.filter((i) => i !== num) : [...prev, num]
+        );
+    };
 
-    const handleClose = () => {
-        setAnchorEl(null);
-    };
+    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, index: number) => {
+        setAnchorEl(event.currentTarget);
+        setMenuParamIndex(index);
+    };
 
-    const handleSaveEquipmentDetails = () => {
-        const newRows = selected.map((num) => ({
-            sr: equipmentTable.length + 1 + selected.indexOf(num),
-            equipmentNum: num,
-            make,
-            model
-        }));
+    const handleClose = () => {
+        setAnchorEl(null);
+        setMenuParamIndex(null);
+    };
 
-        setEquipmentTable((prev) => [...prev, ...newRows]);
+    const handleEditParameter = () => {
+        if (menuParamIndex !== null) {
+            const param = parameters[menuParamIndex];
+            setParamToEdit(param);
+            setEditingParamIndex(menuParamIndex);
+            setOpenParamPopup(true);
+        }
+        handleClose();
+    };
 
-        // Reset fields
-        setMake("");
-        setModel("");
-        setSelected([]);
-    };
+    const handleDeleteParameter = () => {
+        if (menuParamIndex !== null) {
+            setParameters((prev) => prev.filter((_, i) => i !== menuParamIndex));
+        }
+        handleClose();
+    };
 
-    const headerStyle: React.CSSProperties = {
-        padding: "10px",
-        textAlign: "left",
-        fontSize: "14px",
-        fontWeight: 600,
-        color: "#4B5563",
-        borderBottom: "1px solid #E5E7EB"
-    };
+    const handleSaveEquipmentDetails = () => {
+        const newRows = selected.map((num) => ({
+            sr: equipmentTable.length + 1 + selected.indexOf(num),
+            equipmentNum: num,
+            make,
+            model
+        }));
 
-    const cellStyle: React.CSSProperties = {
-        padding: "10px",
-        fontSize: "14px",
-        color: "#4B5563"
-    };
+        setEquipmentTable((prev) => [...prev, ...newRows]);
 
-    const handleClearAll = () => {
-        setSelected([]);
-        setCount(1);
-        setMake("");
-        setModel("");
-        setEquipmentTable([]);
-        setParameters([]);
-        localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
-    };
+        // Reset fields
+        setMake("");
+        setModel("");
+        setSelected([]);
+    };
 
-    const handleAddParameter = (data: any) => {
-        setParameters((prev) => [...prev, data]);
-        setOpenParamPopup(false);
-    };
+    const headerStyle: React.CSSProperties = {
+        padding: "10px",
+        textAlign: "left",
+        fontSize: "14px",
+        fontWeight: 600,
+        color: "#4B5563",
+        borderBottom: "1px solid #E5E7EB"
+    };
 
-    const handleFinalSave = async () => {
-        try {
-            const clinicId = 1;
-            const isUpdate = isEditMode && originalEquipment && originalEquipment.id;
+    const cellStyle: React.CSSProperties = {
+        padding: "10px",
+        fontSize: "14px",
+        color: "#4B5563"
+    };
 
-            // 1. Prepare the NEW/UPDATED equipment object structure
-            const currentEquipmentData = {
-                equipment_name: equipmentName,
-                equipment_details: equipmentTable.map((row) => ({
-                    equipment_num: `${equipmentName}-${row.equipmentNum}`,
-                    make: row.make,
-                    model: row.model,
-                    is_active: true,
-                })),
-                parameters: parameters.map((p) => ({
-                    parameter_name: p.name,
-                    is_active: true,
-                    content: {
-                        data_type: p.dataType,
-                        min_value: p.minValue,
-                        max_value: p.maxValue,
-                        integer_value: p.integerValue,
-                        percentage: p.percentageValue,
-                        text: p.textValue,
-                        // Ensure this is stored as a proper array/list in the backend structure
-                        dropdown: p.dropdownValue || p.selectedOptions || [],
-                    },
-                })),
-            };
-            
-            let updatedClinic;
+    const handleClearAll = () => {
+        setSelected([]);
+        setCount(1);
+        setMake("");
+        setModel("");
+        setEquipmentTable([]);
+        setParameters([]);
+        localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
+    };
 
-            if (isUpdate) {
-                const res = await fetch(`http://127.0.0.1:8000/api/get_clinic/${clinicId}/`);
-                const existingClinic = await res.json();
-                
-                const selectedDeptName = (department || "").trim().toLowerCase();
+    const handleAddParameter = (data: any) => {
+        if (editingParamIndex !== null) {
+            // Update existing parameter
+            setParameters((prev) => 
+                prev.map((p, i) => i === editingParamIndex ? data : p)
+            );
+            setEditingParamIndex(null);
+            setParamToEdit(null);
+        } else {
+            // Add new parameter
+            setParameters((prev) => [...prev, data]);
+        }
+        setOpenParamPopup(false);
+    };
 
-                updatedClinic = {
-                    name: existingClinic.name,
-                    department: existingClinic.department.map((dept: any) => {
-                        const deptName = typeof dept.name === 'string' ? dept.name.trim().toLowerCase() : '';
-                        
-                        if (deptName === selectedDeptName) {
-                            const filteredEquipments = dept.equipments.filter((eq: any) => 
-                                eq.equipment_name.toLowerCase() !== originalEquipment.equipment_name.toLowerCase()
-                            );
-                            return {
-                                ...dept,
-                                equipments: [...filteredEquipments, currentEquipmentData],
-                            };
-                        }
-                        return dept;
-                    }),
-                };
-                
-            } else {
-                const res = await fetch(`http://127.0.0.1:8000/api/get_clinic/${clinicId}/`);
-                const existingClinic = await res.json();
-                const selectedDeptName = (department || "").trim().toLowerCase();
+    const handleFinalSave = async () => {
+        console.log("Save button clicked...");
 
-                updatedClinic = {
-                    name: existingClinic.name,
-                    department: existingClinic.department.map((dept: any) => {
-                        const deptName = typeof dept.name === 'string' ? dept.name.trim().toLowerCase() : '';
-                        const equipments = deptName === selectedDeptName ? [...(dept.equipments || []), currentEquipmentData] : dept.equipments;
+        try {
+            const clinicId = 1; // TODO: make dynamic later
 
-                        return {
-                            name: dept.name,
-                            is_active: dept.is_active,
-                            equipments,
-                        };
-                    }),
-                };
-            }
+            /* 1️⃣ Build equipment payload */
+            const newEquipmentEntry = {
+                equipment_name: equipmentName,
+                is_active: true,
+                equipment_details: equipmentTable.map((row) => ({
+                    equipment_num: `${equipmentName}-${row.equipmentNum}`,
+                    make: row.make,
+                    model: row.model,
+                    is_active: true,
+                })),
+                parameters: parameters.map((p) => ({
+                    parameter_name: p.name,
+                    is_active: true,
+                    content: {
+                        data_type: p.dataType,
+                        min_value: p.minValue,
+                        max_value: p.maxValue,
+                        integer_value: p.integerValue,
+                        percentage: p.percentageValue,
+                        text: p.textValue,
+                        dropdown: p.dropdownValue || [],
+                    },
+                })),
+            };
 
-            // 2. PUT updated clinic structure to the API
-            const saveRes = await fetch(`http://127.0.0.1:8000/api/clinics/${clinicId}/`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(updatedClinic),
-            });
+            /* 2️⃣ Fetch existing clinic */
+            const getRes = await fetch(
+                `http://127.0.0.1:8000/api/get_clinic/${clinicId}/`
+            );
+            if (!getRes.ok) throw new Error("Failed to fetch clinic");
 
-            if (!saveRes.ok) throw new Error("Failed to save/update clinic");
+            const clinicData = await getRes.json();
 
-            // 3. Clean up and navigate
-            localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
-            navigate("/configuration"); 
+            /* 3️⃣ Merge / Create department */
+            const targetDeptName = department.trim();
+            let deptFound = false;
 
-        } catch (error) {
-            console.error("Error while saving:", error);
-        }
-    };
+            const updatedDepartments = clinicData.department.map((dept: any) => {
+                if (dept.name.trim().toLowerCase() === targetDeptName.toLowerCase()) {
+                    deptFound = true;
 
-    // Render parameter details based on data type (UPDATED LOGIC HERE)
-    const renderParameterContent = (p: any) => {
-        const dataType = p.dataType || p.data_type;
-        
-        switch(dataType) {
-            case "Min/Max":
-            case "Decimal":
-                return (
-                    <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>
-                        Min {p.min_value || p.minValue} °C   –   Max {p.max_value || p.maxValue} °C
-                    </Typography>
-                );
-            
-            case "Integer":
-                return (
-                    <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>
-                        Integer Value: {p.integerValue || p.integer_value}
-                    </Typography>
-                );
-            
-            case "Percentage":
-                return (
-                    <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>
-                        Parameter Value: {p.percentageValue || p.percentage}
-                    </Typography>
-                );
-            
-            case "Text":
-                return (
-                    <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>
-                        Text Value: {p.textValue || p.text}
-                    </Typography>
-                );
-            
-            case "Dropdown":
-            case "Select":
-                // Since the useEffect now correctly populates p.dropdownValue as an array, use it directly
-                let options: any[] = Array.isArray(p.dropdownValue) ? p.dropdownValue : [];
+                    const filteredEquipments = isEditMode
+                        ? dept.equipments.filter(
+                                (e: any) =>
+                                    e.equipment_name !==
+                                    originalEquipment?.equipment_name
+                            )
+                        : dept.equipments;
+
+                    return {
+                        ...dept,
+                        equipments: [...filteredEquipments, newEquipmentEntry],
+                    };
+                }
+                return dept;
+            });
+
+            /* 4️⃣ If department does NOT exist → create it */
+            if (!deptFound) {
+                updatedDepartments.push({
+                    name: targetDeptName,
+                    is_active: true,
+                    equipments: [newEquipmentEntry],
+                });
+            }
+
+            /* 5️⃣ Final payload */
+            const finalPayload = {
+                ...clinicData,
+                department: updatedDepartments,
+            };
+
+            console.log("Final Payload:", finalPayload);
+
+            /* 6️⃣ ALWAYS PUT (clinic already exists) */
+            const response = await fetch(
+                `http://127.0.0.1:8000/api/clinics/${clinicId}/`,
+                {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(finalPayload),
+                }
+            );
+
+            if (!response.ok) {
+                const err = await response.json();
+                console.error("Backend error:", err);
+                throw new Error("Failed to save clinic");
+            }
+
+            alert("Equipment saved successfully ✅");
+            localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
+            navigate("/configuration");
+
+        } catch (error) {
+            console.error("Save failed:", error);
+            alert("Save failed. Check console for details.");
+        }
+    };
+
+    // Render parameter details based on data type (UPDATED LOGIC HERE)
+    const renderParameterContent = (p: any) => {
+        const dataType = p.dataType || p.data_type;
+        
+        switch(dataType) {
+            case "Min/Max":
+            case "Decimal":
+                return (
+                    <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>
+                        Min {p.min_value || p.minValue} °C   –   Max {p.max_value || p.maxValue} °C
+                    </Typography>
+                );
+            
+            case "Integer":
+                return (
+                    <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>
+                        Integer Value: {p.integerValue || p.integer_value}
+                    </Typography>
+                );
+            
+            case "Percentage":
+                return (
+                    <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>
+                        Parameter Value: {p.percentageValue || p.percentage}
+                    </Typography>
+                );
+            
+            case "Text":
+                return (
+                    <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>
+                        Text Value: {p.textValue || p.text}
+                    </Typography>
+                );
+            
+            case "Dropdown":
+            case "Select":
+                // Since the useEffect now correctly populates p.dropdownValue as an array, use it directly
+                let options: any[] = Array.isArray(p.dropdownValue) ? p.dropdownValue : [];
                 
                 // Fallback for old data structure if p.dropdownValue is missing
                 if (options.length === 0) {
                     options = normalizeDropdownValue(p.selectedOptions || p.dropdown);
                 }
-                
-                // Only show Selection if there are options
-                if (options.length === 0) {
-                    return null;
-                }
-                
-                return (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mt: 0.5 }}>
-                        <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>Selection:</Typography>
-                        {options.map((val: any, i: number) => (
-                            <Chip key={i} label={String(val)} size="small" sx={{ background: "#F3F4F6" }} />
-                        ))}
-                    </Box>
-                );
-            
-            default:
-                return null;
-        }
-    };
+                
+                // Only show Selection if there are options
+                if (options.length === 0) {
+                    return null;
+                }
+                
+                return (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mt: 0.5 }}>
+                        <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>Selection:</Typography>
+                        {options.map((val: any, i: number) => (
+                            <Chip key={i} label={String(val)} size="small" sx={{ background: "#F3F4F6" }} />
+                        ))}
+                    </Box>
+                );
+            
+            default:
+                return null;
+        }
+    };
 
-    return (
-        <Box>
-            <Box sx={{ p: 1, background: "#FFFFFF", minHeight: "100vh" }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <IconButton onClick={() => navigate("/configuration/equipment")} sx={{width: "32px", height: "32px", border: "1px solid #E5E7EB", borderRadius: "8px",}}>
-                        <ArrowBackRoundedIcon sx={{ fontSize: "18px", color: "#4B5563" }} />
-                    </IconButton>
+    return (
+        <Box>
+            <Box sx={{ p: 1, background: "#FFFFFF", minHeight: "100vh" }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <IconButton onClick={() => navigate("/configuration/equipment")} sx={{width: "32px", height: "32px", border: "1px solid #E5E7EB", borderRadius: "8px",}}>
+                        <ArrowBackRoundedIcon sx={{ fontSize: "18px", color: "#4B5563" }} />
+                    </IconButton>
 
-                    <Typography sx={{ fontWeight: 700, fontSize: "20px" }}>
-                        {isEditMode ? "Edit Equipment" : "Add Equipment"}
-                    </Typography>
-                </Box>
+                    <Typography sx={{ fontWeight: 700, fontSize: "20px" }}>
+                        {isEditMode ? "Edit Equipment" : "Add Equipment"}
+                    </Typography>
+                </Box>
 
-                <Box sx={{ height: "1px", background: "#E5E7EB", mt: 2, mb: 2 }}></Box>
+                <Box sx={{ height: "1px", background: "#E5E7EB", mt: 2, mb: 2 }}></Box>
 
-                <Typography sx={{fontWeight: 700, fontSize: "18px", display: "flex", alignItems: "center", gap: 1,}}>
-                    {equipmentName}
-                    <Chip label={department} sx={{background: "#E0F1E6", color: "#3D8B61", fontWeight: 600, height: "22px",}}/>
-                </Typography>
+                <Typography sx={{fontWeight: 700, fontSize: "18px", display: "flex", alignItems: "center", gap: 1,}}>
+                    {equipmentName}
+                    <Chip label={department} sx={{background: "#E0F1E6", color: "#3D8B61", fontWeight: 600, height: "22px",}}/>
+                </Typography>
 
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 3 }}>
-                    <Typography sx={{ fontWeight: 700, fontSize: "16px" }}>Parameters (e.g. Temperature)</Typography>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 3 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: "16px" }}>Parameters (e.g. Temperature)</Typography>
 
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, cursor: "pointer" }} onClick={() => setOpenParamPopup(true)}>
-                        <Typography sx={{ color: "#2563EB", fontSize: "14px" }}>+</Typography>
-                        <Typography sx={{ color: "#2563EB", fontSize: "14px", fontWeight: 500 }}>Add Parameters</Typography>
-                    </Box>
-                </Box>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, cursor: "pointer" }} onClick={() => {
+                        setParamToEdit(null);
+                        setEditingParamIndex(null);
+                        setOpenParamPopup(true);
+                    }}>
+                        <Typography sx={{ color: "#2563EB", fontSize: "14px" }}>+</Typography>
+                        <Typography sx={{ color: "#2563EB", fontSize: "14px", fontWeight: 500 }}>Add Parameters</Typography>
+                    </Box>
+                </Box>
 
-                {parameters.length > 0 && (
-                    <Box sx={{ mt: 3, display: "flex", flexWrap: "wrap", gap: 2 }}>
-                        {parameters.map((p, index) => (
-                            <Box
-                                key={index}
-                                sx={{
-                                    width: "260px",
-                                    border: "1px solid #E5E7EB",
-                                    borderRadius: "12px",
-                                    background: "#FFFFFF",
-                                    p: 2,
-                                    boxShadow: "0px 1px 2px rgba(0,0,0,0.04)",
-                                }}
-                            >
-                                {/* Header row */}
-                                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                    <Typography sx={{ fontWeight: 600, fontSize: "15px" }}>
-                                        {p.name || p.parameter_name}
-                                    </Typography>
+                {parameters.length > 0 && (
+                    <Box sx={{ mt: 3, display: "flex", flexWrap: "wrap", gap: 2 }}>
+                        {parameters.map((p, index) => (
+                            <Box
+                                key={index}
+                                sx={{
+                                    width: "260px",
+                                    border: "1px solid #E5E7EB",
+                                    borderRadius: "12px",
+                                    background: "#FFFFFF",
+                                    p: 2,
+                                    boxShadow: "0px 1px 2px rgba(0,0,0,0.04)",
+                                }}
+                            >
+                                {/* Header row */}
+                                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                    <Typography sx={{ fontWeight: 600, fontSize: "15px" }}>
+                                        {p.name || p.parameter_name}
+                                    </Typography>
 
-                                    {/* 3 dots menu button */}
-                                    <IconButton size="small" onClick={(e)=>setAnchorEl(e.currentTarget)} sx={{ padding: "4px", borderRadius: "6px", backgroundColor: "#F3F4F6" }}>
-                                        <MoreHoriz sx={{ fontSize: "18px", color: "#6B7280" }} />
-                                    </IconButton>
-                                </Box>
+                                    {/* 3 dots menu button */}
+                                    <IconButton 
+                                        size="small" 
+                                        onClick={(e) => handleMenuOpen(e, index)} 
+                                        sx={{ padding: "4px", borderRadius: "6px", backgroundColor: "#F3F4F6" }}
+                                    >
+                                        <MoreHoriz sx={{ fontSize: "18px", color: "#6B7280" }} />
+                                    </IconButton>
+                                </Box>
 
-                                {/* Data Type */}
-                                <Typography sx={{ fontSize: "12px", color: "#6B7280", mt: 0.5 }}>
-                                    Data Type : {p.dataType || p.data_type}
-                                </Typography>
+                                {/* Data Type */}
+                                <Typography sx={{ fontSize: "12px", color: "#6B7280", mt: 0.5 }}>
+                                    Data Type : {p.dataType || p.data_type}
+                                </Typography>
 
-                                {/* Divider */}
-                                <Box sx={{ height: "1px", background: "#E5E7EB", mt: 1.2, mb: 1.2 }} />
+                                {/* Divider */}
+                                <Box sx={{ height: "1px", background: "#E5E7EB", mt: 1.2, mb: 1.2 }} />
 
-                                {/* Render content based on data type */}
-                                {renderParameterContent(p)}
-                            </Box>
-                        ))}
-                    </Box>
-                )}
+                                {/* Render content based on data type */}
+                                {renderParameterContent(p)}
+                            </Box>
+                        ))}
+                    </Box>
+                )}
 
-                <Box sx={{ height: "1px", background: "#E5E7EB", mt: 2 }}></Box>
+                <Box sx={{ height: "1px", background: "#E5E7EB", mt: 2 }}></Box>
 
-                <Box sx={{ mt: 3 }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                        <Typography sx={{ fontSize: "14px", fontWeight: 600 }}>
-                            #No. of {equipmentName}s :
-                        </Typography>
+                <Box sx={{ mt: 3 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        <Typography sx={{ fontSize: "14px", fontWeight: 600 }}>
+                            #No. of {equipmentName}s :
+                        </Typography>
 
-                        {/* Minus Button */}
-                        <Button
-                            variant="outlined"
-                            onClick={() => setCount((c) => (c > 1 ? c - 1 : c))}
-                            sx={{
-                                minWidth: "38px",
-                                height: "32px",
-                                borderRadius: "8px",
-                                color: "#565656",
-                                borderColor: "#CFCFCF",
-                                textTransform: "none",
-                                fontSize: "20px",
-                                fontWeight: 500,
-                                px: 0,
-                            }}
-                        >
-                            –
-                        </Button>
+                        {/* Minus Button */}
+                        <Button
+                            variant="outlined"
+                            onClick={() => setCount((c) => (c > 1 ? c - 1 : c))}
+                            sx={{
+                                minWidth: "38px",
+                                height: "32px",
+                                borderRadius: "8px",
+                                color: "#565656",
+                                borderColor: "#CFCFCF",
+                                textTransform: "none",
+                                fontSize: "20px",
+                                fontWeight: 500,
+                                px: 0,
+                            }}
+                        >
+                            –
+                        </Button>
 
-                        {/* Value Box */}
-                        <Box
-                            sx={{
-                                width: "48px",
-                                height: "32px",
-                                border: "1px solid #CFCFCF",
-                                borderRadius: "8px",
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                fontWeight: 600,
-                                color: "#565656",
-                                background: "#FFFFFF",
-                                fontSize: "14px",
-                            }}
-                        >
-                            {String(count).padStart(2, "0")}
-                        </Box>
+                        {/* Value Box */}
+                        <Box
+                            sx={{
+                                width: "48px",
+                                height: "32px",
+                                border: "1px solid #CFCFCF",
+                                borderRadius: "8px",
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                fontWeight: 600,
+                                color: "#565656",
+                                background: "#FFFFFF",
+                                fontSize: "14px",
+                            }}
+                        >
+                            {String(count).padStart(2, "0")}
+                        </Box>
 
-                        {/* Plus Button */}
-                        <Button
-                            variant="outlined"
-                            onClick={() => setCount((c) => c + 1)}
-                            sx={{
-                                minWidth: "38px",
-                                height: "32px",
-                                borderRadius: "8px",
-                                color: "#565656",
-                                borderColor: "#CFCFCF",
-                                textTransform: "none",
-                                fontSize: "20px",
-                                fontWeight: 500,
-                                px: 0,
-                            }}
-                        >
-                            +
-                        </Button>
-                    </Box>
-                </Box>
+                        {/* Plus Button */}
+                        <Button
+                            variant="outlined"
+                            onClick={() => setCount((c) => c + 1)}
+                            sx={{
+                                minWidth: "38px",
+                                height: "32px",
+                                borderRadius: "8px",
+                                color: "#565656",
+                                borderColor: "#CFCFCF",
+                                textTransform: "none",
+                                fontSize: "20px",
+                                fontWeight: 500,
+                                px: 0,
+                            }}
+                        >
+                            +
+                        </Button>
+                    </Box>
+                </Box>
 
-                <Typography sx={{ fontSize: "14px", fontWeight: 600, mt: 3 }}>
-                    Select {equipmentName}s
-                </Typography>
+                <Typography sx={{ fontSize: "14px", fontWeight: 600, mt: 3 }}>
+                    Select {equipmentName}s
+                </Typography>
 
-                <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mt: 1 }}>
-                    {equipmentQuantity.map((num) => (
-                        <Box
-                            key={num}
-                            onClick={() => toggleSelection(num)}
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                px: 2,
-                                height: "36px",
-                                borderRadius: "8px",
-                                cursor: "pointer",
-                                borderColor: "#E2E3E5",
-                                background: "#FAFAFA",
-                                transition: "0.2s",
-                            }}
-                        >
-                            {selected.includes(num) ? (
-                                <Box
-                                    sx={{
-                                        width: "20px",
-                                        height: "20px",
-                                        borderRadius: "6px",
-                                        background: "#DEEFE1",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                    }}
-                                >
-                                    <svg
-                                        width="13"
-                                        height="13"
-                                        fill="#3D8B61"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path d="M20.285 6.708l-11.285 11.292-5.285-5.292 1.414-1.414 3.871 3.879 9.871-9.878z" />
-                                    </svg>
-                                </Box>
-                            ) : (
-                            <Box
-                                sx={{
-                                    width: "20px",
-                                    height: "20px",
-                                    borderRadius: "6px",
-                                    border: "1.8px solid #D1D5DB",
-                                }}
-                            />
-                            )}
+                <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mt: 1 }}>
+                    {equipmentQuantity.map((num) => (
+                        <Box
+                            key={num}
+                            onClick={() => toggleSelection(num)}
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                px: 2,
+                                height: "36px",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                borderColor: "#E2E3E5",
+                                background: "#FAFAFA",
+                                transition: "0.2s",
+                            }}
+                        >
+                            {selected.includes(num) ? (
+                                <Box
+                                    sx={{
+                                        width: "20px",
+                                        height: "20px",
+                                        borderRadius: "6px",
+                                        background: "#DEEFE1",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <svg
+                                        width="13"
+                                        height="13"
+                                        fill="#3D8B61"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path d="M20.285 6.708l-11.285 11.292-5.285-5.292 1.414-1.414 3.871 3.879 9.871-9.878z" />
+                                    </svg>
+                                </Box>
+                            ) : (
+                            <Box
+                                sx={{
+                                    width: "20px",
+                                    height: "20px",
+                                    borderRadius: "6px",
+                                    border: "1.8px solid #D1D5DB",
+                                }}
+                            />
+                            )}
 
-                            <Typography
-                                sx={{
-                                fontSize: "14px",
-                                fontWeight: 500,
-                                color: "#4B5563",
-                                }}
-                            >
-                                {equipmentName} {num}
-                            </Typography>
-                        </Box>
-                    ))}
-                </Box>
+                            <Typography
+                                sx={{
+                                fontSize: "14px",
+                                fontWeight: 500,
+                                color: "#4B5563",
+                                }}
+                            >
+                                {equipmentName} {num}
+                            </Typography>
+                        </Box>
+                    ))}
+                </Box>
 
-                {/* Details Section Title */}
-                {selected.length > 0 && (
-                    <Typography
-                        sx={{
-                        mt: 4,
-                        fontSize: "15px",
-                        fontWeight: 600,
-                        mb: 2
-                        }}
-                    >
-                        Details of {selected.map((n) => `${equipmentName} ${n}`).join(", ")}
-                    </Typography>
-                )}
+                {/* Details Section Title */}
+                {selected.length > 0 && (
+                    <Typography
+                        sx={{
+                        mt: 4,
+                        fontSize: "15px",
+                        fontWeight: 600,
+                        mb: 2
+                        }}
+                    >
+                        Details of {selected.map((n) => `${equipmentName} ${n}`).join(", ")}
+                    </Typography>
+                )}
 
-                {/* Make & Model Inputs */}
-                {selected.length > 0 && (
-                    <Box sx={{ display: "flex", gap: 3 }}>
-                        <TextField
-                            placeholder="Enter Make"
-                            label="Make"
-                            value={make}
-                            onChange={(e) => setMake(e.target.value)}
-                            fullWidth
-                            size="small"
-                            InputLabelProps={{ shrink: true }}
-                            sx={{"& .MuiInputLabel-root": { color: "#5F646F !important" }, "& .MuiInputLabel-root.Mui-focused": { color: "#5F646F !important" }, "& .MuiOutlinedInput-root": {"& fieldset": { borderColor: "#CFD1D4" }, "&:hover fieldset": { borderColor: "#CFD1D4" }, "&.Mui-focused fieldset": { borderColor: "#CFD1D4" }}, "& .MuiInputBase-input": { color: "#5F646F" }}}
-                        />
+                {/* Make & Model Inputs */}
+                {selected.length > 0 && (
+                    <Box sx={{ display: "flex", gap: 3 }}>
+                        <TextField
+                            placeholder="Enter Make"
+                            label="Make"
+                            value={make}
+                            onChange={(e) => setMake(e.target.value)}
+                            fullWidth
+                            size="small"
+                            InputLabelProps={{ shrink: true }}
+                            sx={{"& .MuiInputLabel-root": { color: "#5F646F !important" }, "& .MuiInputLabel-root.Mui-focused": { color: "#5F646F !important" }, "& .MuiOutlinedInput-root": {"& fieldset": { borderColor: "#CFD1D4" }, "&:hover fieldset": { borderColor: "#CFD1D4" }, "&.Mui-focused fieldset": { borderColor: "#CFD1D4" }}, "& .MuiInputBase-input": { color: "#5F646F" }}}
+                        />
 
-                        <TextField
-                            placeholder="Enter Model"
-                            label="Model"
-                            value={model}
-                            onChange={(e) => setModel(e.target.value)}
-                            fullWidth
-                            size="small"
-                            InputLabelProps={{ shrink: true }}
-                            sx={{"& .MuiInputLabel-root": { color: "#5F646F !important" }, "& .MuiInputLabel-root.Mui-focused": { color: "#5F646F !important" }, "& .MuiOutlinedInput-root": {"& fieldset": { borderColor: "#CFD1D4" }, "&:hover fieldset": { borderColor: "#CFD1D4" }, "&.Mui-focused fieldset": { borderColor: "#CFD1D4" }}, "& .MuiInputBase-input": { color: "#5F646F" }}}
-                        />
-                    </Box>
-                )}
-                {selected.length > 0 && (
-                    <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
-                        <Button
-                        variant="contained"
-                        onClick={handleSaveEquipmentDetails}
-                        sx={{
-                            borderRadius: "8px", background: "#383838", textTransform: "none", "&:hover": { background: "#2f2f2f" } }}
-                        >
-                        Save
-                        </Button>
-                    </Box>
-                )}
-                {equipmentTable.length > 0 && (
-                    <Box
-                        sx={{
-                        mt: 4,
-                        border: "1px solid #E5E7EB",
-                        borderRadius: "10px",
-                        overflow: "hidden",
-                        }}
-                    >
-                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                            <thead>
-                                <tr style={{ background: "#F9FAFB", height: "42px" }}>
-                                    <th style={headerStyle}>Sr. No.</th>
-                                    <th style={headerStyle}>{equipmentName} Name</th>
-                                    <th style={headerStyle}>Make</th>
-                                    <th style={headerStyle}>Model</th>
-                                </tr>
-                            </thead>
+                        <TextField
+                            placeholder="Enter Model"
+                            label="Model"
+                            value={model}
+                            onChange={(e) => setModel(e.target.value)}
+                            fullWidth
+                            size="small"
+                            InputLabelProps={{ shrink: true }}
+                            sx={{"& .MuiInputLabel-root": { color: "#5F646F !important" }, "& .MuiInputLabel-root.Mui-focused": { color: "#5F646F !important" }, "& .MuiOutlinedInput-root": {"& fieldset": { borderColor: "#CFD1D4" }, "&:hover fieldset": { borderColor: "#CFD1D4" }, "&.Mui-focused fieldset": { borderColor: "#CFD1D4" }}, "& .MuiInputBase-input": { color: "#5F646F" }}}
+                        />
+                    </Box>
+                )}
+                {selected.length > 0 && (
+                    <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
+                        <Button
+                        variant="contained"
+                        onClick={handleSaveEquipmentDetails}
+                        sx={{
+                            borderRadius: "8px", background: "#383838", textTransform: "none", "&:hover": { background: "#2f2f2f" } }}
+                        >
+                        Save
+                        </Button>
+                    </Box>
+                )}
+                {equipmentTable.length > 0 && (
+                    <Box
+                        sx={{
+                        mt: 4,
+                        border: "1px solid #E5E7EB",
+                        borderRadius: "10px",
+                        overflow: "hidden",
+                        }}
+                    >
+                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                            <thead>
+                                <tr style={{ background: "#F9FAFB", height: "42px" }}>
+                                    <th style={headerStyle}>Sr. No.</th>
+                                    <th style={headerStyle}>{equipmentName} Name</th>
+                                    <th style={headerStyle}>Make</th>
+                                    <th style={headerStyle}>Model</th>
+                                </tr>
+                            </thead>
 
-                            <tbody>
-                                {equipmentTable.map((row, index) => (
-                                <tr key={index} style={{ height: "42px", borderTop: "1px solid #E5E7EB" }}>
-                                    <td style={cellStyle}>{index + 1}</td>
-                                    <td style={cellStyle}>{row.equipmentNum}</td>
-                                    <td style={cellStyle}>{row.make}</td>
-                                    <td style={cellStyle}>{row.model}</td>
-                                </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </Box>
-                )}
-                <Box sx={{ mt: 10, display: "flex", justifyContent: "flex-end", gap: 2 }}>
-                    <Button variant="outlined" onClick={handleClearAll} sx={{borderRadius: "10px", borderColor: "#505050", "&:hover": { borderColor: "#505050", backgroundColor: "white" }, color: "#505050", textTransform: "none" }}>Clear All</Button>
-                    <Button variant="contained" onClick={handleFinalSave} sx={{ borderRadius: "10px", background: "#383838", textTransform: "none", "&:hover": { background: "#2f2f2f" } }}>Save</Button>
-                </Box>
-            </Box>
-            <Menu anchorEl={anchorEl} open={open} onClose={handleClose} 
-                PaperProps={{ sx:{ width:"96px", borderRadius:"8px", ml: "-60px", mt: "10px", boxShadow:"0px 1px 4px rgba(0,0,0,0.1)" }}}>
-                <MenuItem onClick={handleClose} sx={{ width:"96px", height:"33px", p:"8px", gap:"6px", borderBottom:"1px solid #E5E7EB" }}>Edit</MenuItem>
-                <MenuItem onClick={handleClose} sx={{ width:"96px", height:"33px", p:"8px", gap:"6px" }}>Delete</MenuItem>
-            </Menu>
-            <AddParameterPopup 
-                open={openParamPopup} 
-                onClose={() => setOpenParamPopup(false)} 
-                onAdd={handleAddParameter}
-            />
-        </Box>
-    );
+                            <tbody>
+                                {equipmentTable.map((row, index) => (
+                                <tr key={index} style={{ height: "42px", borderTop: "1px solid #E5E7EB" }}>
+                                    <td style={cellStyle}>{index + 1}</td>
+                                    <td style={cellStyle}>{row.equipmentNum}</td>
+                                    <td style={cellStyle}>{row.make}</td>
+                                    <td style={cellStyle}>{row.model}</td>
+                                </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </Box>
+                )}
+                <Box sx={{ mt: 10, display: "flex", justifyContent: "flex-end", gap: 2 }}>
+                    <Button variant="outlined" onClick={handleClearAll} sx={{borderRadius: "10px", borderColor: "#505050", "&:hover": { borderColor: "#505050", backgroundColor: "white" }, color: "#505050", textTransform: "none" }}>Clear All</Button>
+                    <Button variant="contained" onClick={handleFinalSave} sx={{ borderRadius: "10px", background: "#383838", textTransform: "none", "&:hover": { background: "#2f2f2f" } }}>Save</Button>
+                </Box>
+            </Box>
+            <Menu 
+                anchorEl={anchorEl} 
+                open={open} 
+                onClose={handleClose} 
+                PaperProps={{ sx:{ width:"96px", borderRadius:"8px", ml: "-60px", mt: "10px", boxShadow:"0px 1px 4px rgba(0,0,0,0.1)" }}}
+            >
+                <MenuItem onClick={handleEditParameter} sx={{ width:"96px", height:"33px", p:"8px", gap:"6px", borderBottom:"1px solid #E5E7EB" }}>Edit</MenuItem>
+                <MenuItem onClick={handleDeleteParameter} sx={{ width:"96px", height:"33px", p:"8px", gap:"6px" }}>Delete</MenuItem>
+            </Menu>
+            <AddParameterPopup 
+                open={openParamPopup} 
+                onClose={() => {
+                    setOpenParamPopup(false);
+                    setParamToEdit(null);
+                    setEditingParamIndex(null);
+                }}
+                onAdd={handleAddParameter}
+                initialData={paramToEdit}
+            />
+        </Box>
+    );
 };
 
 export default AddParameterPage;
