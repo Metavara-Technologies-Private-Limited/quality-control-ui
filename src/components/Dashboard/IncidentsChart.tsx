@@ -1,192 +1,281 @@
-import React, { useEffect } from 'react';
-
-import pie_chart from "../../assets/icons/pie_chart.svg";
-import High_in_pie from "../../assets/icons/High_in_pie.svg";
-import Normal_in_pie from "../../assets/icons/Normal_in_pie.svg";
-import Low_in_pie from "../../assets/icons/Low_in_pie.svg";
-import Incubator_D from "../../assets/icons/Incubator_D.svg";
-import Incubator_C from "../../assets/icons/Incubator_C.svg";
-import Incubator_B from "../../assets/icons/Incubator_B.svg";
-import Incubator_A from "../../assets/icons/Incubator_A.svg";
-import filter_icon from "../../assets/icons/filter_icon_in_pie.svg";
-
+import React, { useMemo } from "react";
 import {
   Card,
   CardContent,
   Typography,
   Box,
-} from '@mui/material';
+  Divider,
+  IconButton,
+} from "@mui/material";
+import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
+import { PieChart, Pie, ResponsiveContainer } from "recharts";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import RemoveIcon from "@mui/icons-material/Remove";
 
-import {
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-} from 'recharts';
+import { mockActivities } from "@/utils/mockData";
 
 interface IncidentsChartProps {
   equipmentId: number;
 }
 
-const IncidentsChart: React.FC<IncidentsChartProps> = ({ equipmentId }) => {
+/* -----------------------------
+   INCUBATOR COLORS
+----------------------------- */
+const INCUBATOR_COLORS = [
+  "#6B7280", // Incubator A
+  "#9CA3AF", // Incubator B
+  "#FBCFE8", // Incubator C
+  "#FB7185", // Incubator D
+];
 
-  useEffect(() => {
-    console.log('Equipment ID:', equipmentId);
-  }, [equipmentId]);
+/* -----------------------------
+   INCIDENT SUMMARY (LOGIC FIXED)
+----------------------------- */
+const getIncidentSummary = () => {
+  let high = 0;
+  let normal = 0;
+  let low = 0;
+
+  mockActivities.forEach((a) => {
+    if (a.type === "temperature" || a.type === "co2") high++;
+    else if (a.type === "humidity") normal++;
+    else low++;
+  });
+
+  return { high, normal, low };
+};
+
+/* -----------------------------
+   COMPONENT
+----------------------------- */
+const IncidentsChart: React.FC<IncidentsChartProps> = ({ equipmentId }) => {
+  const { high, normal, low } = useMemo(() => getIncidentSummary(), []);
+
+  const total = high + normal + low;
 
   return (
-    <Box sx={{ height: '100%' }}>
-      <Card
+    <Card
+      sx={{
+        height: "100%",
+        minHeight: 350,
+        borderRadius: 3,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* HEADER */}
+      <CardContent
         sx={{
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
+          height: 56,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        {/* HEADER */}
-        <CardContent
-          sx={{
-            pb: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderBottom: '1px solid #e5e7eb',
-          }}
-        >
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Incidents
-          </Typography>
+        <Typography fontWeight={700}>Incidents</Typography>
+        <IconButton size="small">
+          <FilterAltOutlinedIcon fontSize="small" />
+        </IconButton>
+      </CardContent>
 
-          <Box
-            component="img"
-            src={filter_icon}
-            alt="filter"
-            sx={{
-              width: 24,
-              height: 24,
-              cursor: 'pointer',
-            }}
-          />
-        </CardContent>
+      <Divider />
 
-        {/* BODY */}
-        <Box
-          sx={{
-            flexGrow: 1,
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: '1fr 1fr',
-            },
-            gap: 2,
-            p: 2,
-          }}
-        >
-          {/* LEFT : PIE (RESPONSIVE) */}
-          <Box
-            sx={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <foreignObject x={0} y={0} width="100%" height="100%">
-                  <Box
-                    sx={{
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Box
-                      component="img"
-                      src={pie_chart}
-                      alt="pie"
-                      sx={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'contain',
-                      }}
-                    />
-                  </Box>
-                </foreignObject>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </Box>
+      {/* BODY */}
+      <Box
+        sx={{
+          p: 2.5,
+          display: "grid",
+          gridTemplateColumns: "1.2fr 1fr",
+          gap: 3,
+          alignItems: "center",
+        }}
+      >
+        {/* TOTAL DONUT (MATCHES IMAGE STYLE) */}
+        <Box sx={{ position: "relative", height: 220 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              {/* Incubator A */}
+              <Pie
+                data={[{ value: total }]}
+                dataKey="value"
+                innerRadius={90}
+                outerRadius={100}
+                fill={INCUBATOR_COLORS[0]}
+                stroke="none"
+              />
 
-          {/* RIGHT : DETAILS */}
+              {/* Incubator B */}
+              <Pie
+                data={[{ value: total }]}
+                dataKey="value"
+                innerRadius={78}
+                outerRadius={86}
+                fill={INCUBATOR_COLORS[1]}
+                stroke="none"
+              />
+
+              {/* Incubator C */}
+              <Pie
+                data={[{ value: total }]}
+                dataKey="value"
+                innerRadius={66}
+                outerRadius={74}
+                fill={INCUBATOR_COLORS[2]}
+                stroke="none"
+              />
+
+              {/* Incubator D */}
+              <Pie
+                data={[{ value: total }]}
+                dataKey="value"
+                innerRadius={54}
+                outerRadius={62}
+                fill={INCUBATOR_COLORS[3]}
+                stroke="none"
+              />
+            </PieChart>
+          </ResponsiveContainer>
+
+          {/* CENTER TEXT */}
           <Box
             sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: 2,
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              textAlign: "center",
             }}
           >
-            {/* HIGH / NORMAL / LOW (RESPONSIVE) */}
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 1,
-              }}
-            >
-              {[High_in_pie, Normal_in_pie, Low_in_pie].map((src, idx) => (
-                <Box
-                  key={idx}
-                  sx={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Box
-                    component="img"
-                    src={src}
-                    sx={{
-                      width: '100%',
-                      height: 'auto',
-                      objectFit: 'contain',
-                    }}
-                  />
-                </Box>
-              ))}
-            </Box>
-
-            {/* INCUBATORS (RESPONSIVE GRID) */}
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: 1.5,
-              }}
-            >
-              {[Incubator_A, Incubator_B, Incubator_C, Incubator_D].map(
-                (src, idx) => (
-                  <Box
-                    key={idx}
-                    component="img"
-                    src={src}
-                    sx={{
-                      width: '100%',
-                      height: 'auto',
-                      objectFit: 'contain',
-                    }}
-                  />
-                )
-              )}
-            </Box>
+            <Typography fontSize={28} fontWeight={700}>
+              {total}
+            </Typography>
+            <Typography fontSize={13} color="text.secondary">
+              Total Logs
+            </Typography>
           </Box>
         </Box>
-      </Card>
-    </Box>
+
+        {/* RIGHT PANEL (UNCHANGED) */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          {/* HIGH */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              px: 2,
+              py: 1.2,
+              borderRadius: 3,
+              backgroundColor: "#F9FAFB",
+            }}
+          >
+            <Box
+              sx={{
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                backgroundColor: "#F25B5B",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <ArrowUpwardIcon sx={{ fontSize: 14, color: "#fff" }} />
+            </Box>
+            <Typography fontWeight={600}>
+              High ({high} logs)
+            </Typography>
+          </Box>
+
+          {/* NORMAL */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              px: 2,
+              py: 1.2,
+              borderRadius: 3,
+              backgroundColor: "#F9FAFB",
+            }}
+          >
+            <Box
+              sx={{
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                backgroundColor: "#47B35F",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <RemoveIcon sx={{ fontSize: 14, color: "#fff" }} />
+            </Box>
+            <Typography fontWeight={600}>
+              Normal ({normal} logs)
+            </Typography>
+          </Box>
+
+          {/* LOW */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              px: 2,
+              py: 1.2,
+              borderRadius: 3,
+              backgroundColor: "#F9FAFB",
+            }}
+          >
+            <Box
+              sx={{
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                backgroundColor: "#9E9E9E",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <ArrowDownwardIcon sx={{ fontSize: 14, color: "#fff" }} />
+            </Box>
+            <Typography fontWeight={600}>
+              Low ({low} logs)
+            </Typography>
+          </Box>
+
+          {/* INCUBATOR LEGEND */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 1,
+              mt: 1,
+            }}
+          >
+            {["Incubator A", "Incubator B", "Incubator C", "Incubator D"].map(
+              (name, idx) => (
+                <Box key={name} sx={{ display: "flex", gap: 1 }}>
+                  <Box
+                    sx={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      backgroundColor: INCUBATOR_COLORS[idx],
+                    }}
+                  />
+                  <Typography fontSize={12}>{name}</Typography>
+                </Box>
+              )
+            )}
+          </Box>
+        </Box>
+      </Box>
+    </Card>
   );
 };
 

@@ -113,7 +113,7 @@ export const initializeMockData = async (clinic_id: number) => {
 };
 
 // ==============================
-// PARAMETER CHART DATA
+// PARAMETER CHART DATA for AVERAGE HUMIDITY CARD
 // ==============================
 export const getMockChartData = (
   equipmentId: number,
@@ -215,22 +215,112 @@ export const getMockChartData = (
     data: [],
   };
 };
-
 // ==============================
-// MOCK RECENT ACTIVITY DATA
+// MOCK RECENT ACTIVITY DATA for pie chart (FINAL)
 // ==============================
 export const mockActivities: Activity[] = [
-  { id: 1, equipment_id: 1, type: "temperature", message: "Temperature increased to 37.6°C", timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString() },
-  { id: 2, equipment_id: 1, type: "temperature", message: "Temperature stabilized at 37.4°C", timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString() },
+  // =========================
+  // 🔴 HIGH = 12 logs
+  // (temperature / co2)
+  // =========================
+  ...Array.from({ length: 12 }).map((_, i) => ({
+    id: i + 1,
+    equipment_id: 1,
+    type: "temperature",
+    message: `Temperature incident ${i + 1}`,
+    timestamp: new Date().toISOString(),
+  })),
 
-  { id: 3, equipment_id: 1, type: "co2", message: "CO₂ level adjusted to 5.4%", timestamp: new Date(Date.now() - 20 * 60 * 1000).toISOString() },
-  { id: 4, equipment_id: 2, type: "co2", message: "CO₂ dropped to 5.2%", timestamp: new Date(Date.now() - 35 * 60 * 1000).toISOString() },
+  ...Array.from({ length: 10 }).map((_, i) => ({
+    id: i + 13,
+    equipment_id: 1,
+    type: "co2",
+    message: `CO2 incident ${i + 1}`,
+    timestamp: new Date().toISOString(),
+  })),
 
-  { id: 5, equipment_id: 1, type: "humidity", message: "Humidity increased to 85%", timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString() },
-  { id: 6, equipment_id: 2, type: "humidity", message: "Humidity stabilized at 82%", timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString() },
+  // =========================
+  // 🟢 NORMAL = 10 logs
+  // (humidity)
+  // =========================
+  ...Array.from({ length: 10 }).map((_, i) => ({
+    id: i + 23,
+    equipment_id: 1,
+    type: "humidity",
+    message: `Humidity normal ${i + 1}`,
+    timestamp: new Date().toISOString(),
+  })),
 
-  { id: 7, equipment_id: 1, type: "airflow", message: "Airflow velocity recorded: 0.65 m/s", timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString() },
-  { id: 8, equipment_id: 2, type: "airflow", message: "Airflow velocity adjusted to 0.56 m/s", timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
+  // =========================
+  // ⚪ LOW = 4 logs
+  // (airflow / assignee)
+  // =========================
+  ...Array.from({ length: 4 }).map((_, i) => ({
+    id: i + 33,
+    equipment_id: 1,
+    type: "airflow",
+    message: `Airflow low ${i + 1}`,
+    timestamp: new Date().toISOString(),
+  })),
 
-  { id: 9, equipment_id: 1, type: "assignee", message: "Technician assigned to Incubator A", timestamp: new Date(Date.now() - 90 * 60 * 1000).toISOString() },
+  ...Array.from({ length: 4 }).map((_, i) => ({
+    id: i + 37,
+    equipment_id: 1,
+    type: "assignee",
+    message: `Assignee change ${i + 1}`,
+    timestamp: new Date().toISOString(),
+  })),
+];
+
+
+// ==============================
+// MOCK ASSIGNEES (UI SUPPORT)
+// ==============================
+
+export interface Assignee {
+  id: number;
+  name: string;
+  avatar: string;
+  equipment_id: number | null; // null = unassigned
+}
+
+export const mockAssignees: Assignee[] = [
+  {
+    id: 1,
+    name: "Anil Kumar",
+    avatar: "https://i.pravatar.cc/150?img=12",
+    equipment_id: 1, // Incubator A
+  },
+  {
+    id: 2,
+    name: "Hari Krishna",
+    avatar: "https://i.pravatar.cc/150?img=32",
+    equipment_id: 3, // Incubator C
+  },
+  {
+    id: 3,
+    name: "Pallavi",
+    avatar: "https://i.pravatar.cc/150?img=47",
+    equipment_id: 2, // Incubator B
+  },
+
+  // Available users
+  {
+    id: 4,
+    name: "Anil kumar",
+    avatar: "https://i.pravatar.cc/150?img=56",
+    equipment_id: null,
+  },
+  {
+    id: 5,
+    name: "Neeraj",
+    avatar: "https://i.pravatar.cc/150?img=13",
+    equipment_id: null,
+  },
+  {
+    id: 6,
+    name: "Shradha",
+    avatar: "https://i.pravatar.cc/150?img=44",
+    equipment_id: null,
+  },
 ];
