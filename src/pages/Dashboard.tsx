@@ -21,15 +21,11 @@ const Dashboard = () => {
 
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [parameters, setParameters] = useState<Parameter[]>([]);
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-<<<<<<< Updated upstream
-  /* ---------- FILTER EQUIPMENTS ---------- */
-=======
   // ===============================
   // FILTER EQUIPMENT BY DEPARTMENT
   // ===============================
->>>>>>> Stashed changes
   useEffect(() => {
     const filtered = mockEquipments.filter(
       (eq) =>
@@ -56,13 +52,9 @@ const Dashboard = () => {
     }
   }, [selectedDepartment]);
 
-<<<<<<< Updated upstream
-  /* ---------- LOAD PARAMETERS ---------- */
-=======
   // ===============================
   // LOAD PARAMETERS ON EQUIPMENT CHANGE
   // ===============================
->>>>>>> Stashed changes
   useEffect(() => {
     if (!selectedEquipment) return;
 
@@ -74,8 +66,6 @@ const Dashboard = () => {
     setSelectedParameter(equipmentParams[0] || null);
   }, [selectedEquipment]);
 
-<<<<<<< Updated upstream
-=======
   // ===============================
   // HANDLERS
   // ===============================
@@ -95,52 +85,44 @@ const Dashboard = () => {
   };
 
   // ===============================
-  // MAP PARAMETER → ACTIVITY TYPE
-  // ===============================
-  /**
-   * IMPORTANT:
-   * Activity.type supports ONLY:
-   * "temperature" | "humidity" | "co2" | "assignee" | "other"
-   *
-   * Laminar Flow parameters MUST use "other"
-   */
-  const getParameterType = (parameterName: string) => {
-    const name = parameterName.toLowerCase().replace('₂', '2');
+// MAP PARAMETER NAME TO RECENT ACTIVITY TYPE (FIXED)
+// ===============================
+const getParameterType = (parameterName: string) => {
+  const name = parameterName.toLowerCase().replace('₂', '2');
 
-    if (name.includes('co2')) return 'co2';
-    if (name.includes('humid')) return 'humidity';
+  if (name.includes('airflow') || name.includes('laminar')) {
+    return 'airflow';
+  }
 
-    // Laminar Flow parameters
-    if (
-      name.includes('airflow') ||
-      name.includes('hepa') ||
-      name.includes('uv')
-    ) {
-      return 'other';
-    }
+  if (name.includes('co2')) {
+    return 'co2';
+  }
 
-    // Default (Incubator temperature, etc.)
-    return 'temperature';
-  };
+  if (name.includes('humid')) {
+    return 'humidity';
+  }
+
+  if (name.includes('gas') || name.includes('gasmix')) {
+    return 'gasmix'; // ✅ new type
+  }
+
+  return 'temperature';
+};
+
 
   // ===============================
   // RENDER
   // ===============================
->>>>>>> Stashed changes
   return (
     <Container maxWidth={false} sx={{ py: 2 }}>
       <DashboardHeader />
 
       <DepartmentTabs
         selected={selectedDepartment}
-        onChange={setSelectedDepartment}
+        onChange={handleDepartmentChange}
       />
 
-<<<<<<< Updated upstream
-      {/* ---------- EQUIPMENT CARDS ---------- */}
-=======
       {/* EQUIPMENT CARDS */}
->>>>>>> Stashed changes
       <Box
         sx={{
           overflowX: 'auto',
@@ -159,7 +141,7 @@ const Dashboard = () => {
               key={eq.id}
               equipments={[eq]}
               selected={selectedEquipment}
-              onSelect={setSelectedEquipment}
+              onSelect={handleEquipmentSelect}
               loading={loading}
             />
           ))}
@@ -172,28 +154,17 @@ const Dashboard = () => {
           <ParameterTabs
             parameters={parameters}
             selected={selectedParameter}
-            onSelect={setSelectedParameter}
+            onSelect={handleParameterSelect}
             loading={loading}
           />
 
           {selectedParameter && (
             <Box sx={{ mt: 3 }}>
-<<<<<<< Updated upstream
-              {/* ---------- TOP ROW ---------- */}
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: {
-                    xs: '1fr',
-                    md: '2fr 1fr',
-                  },
-=======
               {/* TOP ROW */}
               <Box
                 sx={{
                   display: 'grid',
                   gridTemplateColumns: '2fr 1fr',
->>>>>>> Stashed changes
                   gap: 3,
                   mb: 3,
                 }}
@@ -207,28 +178,16 @@ const Dashboard = () => {
 
                 <RecentActivity
                   equipmentId={selectedEquipment.id}
-                  parameterType={getParameterType(
-                    selectedParameter.parameter_name
-                  )}
+                  parameterType={getParameterType(selectedParameter.parameter_name)}
                 />
               </Box>
 
-<<<<<<< Updated upstream
-              {/* ---------- 🔥 FINAL 3 CARD GRID (FIXED) ---------- */}
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                  gap: 3,
-                  alignItems: 'stretch',
-=======
               {/* BOTTOM ROW */}
               <Box
                 sx={{
                   display: 'grid',
                   gridTemplateColumns: '1fr 2fr 1fr',
                   gap: 3,
->>>>>>> Stashed changes
                 }}
               >
                 <IncidentsChart equipmentId={selectedEquipment.id} />
