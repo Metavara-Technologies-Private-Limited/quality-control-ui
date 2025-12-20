@@ -20,48 +20,66 @@ const ParameterTabs: React.FC<ParameterTabsProps> = ({
   }
 
   return (
-    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+    <Box sx={{ mb: 3 }}>
+      {/* PARAMETERS ROW */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Typography
           variant="body2"
           sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}
         >
-          Parameters:
+          Parameters :
         </Typography>
+
+        {/* GREEN BACKGROUND CARD */}
+        <Box
+          sx={{
+            backgroundColor: '#fafafa', 
+            borderRadius: 1, 
+            display: 'inline-block',
+          }}
+        >
+          <Tabs
+            value={selected?.id || parameters[0]?.id}
+            onChange={(_, value) => {
+              const param = parameters.find((p) => p.id === value);
+              if (param) onSelect(param);
+            }}
+            sx={{
+              minHeight: 40,
+              '& .MuiTab-root': {
+                textTransform: 'none',
+                fontWeight: 500,
+                minHeight: 40,
+                fontSize: '0.875rem',
+                color: '#9e9e9e', 
+                px: 2,
+                '&:hover': {
+                  color: '#000000',
+                },
+              },
+              '& .Mui-selected': {
+                backgroundColor: '#ffffff',
+                borderRadius:1,
+                boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.2)',
+                m:0.8,
+                color: '#E17E61 !important',
+                fontWeight: 600,
+              },
+              '& .MuiTabs-indicator': {
+                display: 'none',
+              },
+            }}
+          >
+            {parameters.map((param) => (
+              <Tab
+                key={param.id}
+                label={param.parameter_name}
+                value={param.id}
+              />
+            ))}
+          </Tabs>
+        </Box>
       </Box>
-      <Tabs
-        value={selected?.id || parameters[0]?.id} // default to first parameter
-        onChange={(_, value) => {
-          const param = parameters.find((p) => p.id === value);
-          if (param) onSelect(param);
-        }}
-        sx={{
-          '& .MuiTab-root': {
-            textTransform: 'none',
-            fontWeight: 500,
-            minHeight: 40,
-            fontSize: '0.875rem',
-            color: '#000000', // default black
-            transition: 'color 0.2s ease',
-            '&:hover': {
-              color: '#ea580c', // orange on hover
-            },
-          },
-          '& .Mui-selected': {
-            color: '#ea580c !important', // orange when selected
-            fontWeight: 600,
-          },
-          '& .MuiTabs-indicator': {
-            backgroundColor: '#ea580c',
-            height: 3,
-            borderRadius: '3px 3px 0 0',
-          },
-        }}
-      >
-        {parameters.map((param) => (
-          <Tab key={param.id} label={param.parameter_name} value={param.id} />
-        ))}
-      </Tabs>
     </Box>
   );
 };
