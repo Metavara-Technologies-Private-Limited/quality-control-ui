@@ -214,6 +214,12 @@ const AddParameterPage = () => {
     };
 
     const handleSaveEquipmentDetails = () => {
+        // Validate make and model are not empty
+        if (!make.trim() || !model.trim()) {
+            alert("Please enter both Make and Model");
+            return;
+        }
+
         // Filter out items that are already in the table
         const newSelections = selected.filter((num) => !equipmentTable.some((row) => row.equipmentNum === num));
         
@@ -277,6 +283,18 @@ const AddParameterPage = () => {
 
     const handleFinalSave = async () => {
         console.log("Save button clicked...");
+
+        // Validate parameters
+        if (parameters.length === 0) {
+            alert("Please add at least one parameter");
+            return;
+        }
+
+        // Validate equipment table (make and model)
+        if (equipmentTable.length === 0) {
+            alert("Please add equipment details with Make and Model");
+            return;
+        }
 
         try {
             const clinicId = 1; // TODO: make dynamic later
@@ -683,6 +701,7 @@ const AddParameterPage = () => {
                             onChange={(e) => setMake(e.target.value)}
                             fullWidth
                             size="small"
+                            required
                             InputLabelProps={{ shrink: true }}
                             sx={{"& .MuiInputLabel-root": { color: "#5F646F !important" }, "& .MuiInputLabel-root.Mui-focused": { color: "#5F646F !important" }, "& .MuiOutlinedInput-root": {"& fieldset": { borderColor: "#CFD1D4" }, "&:hover fieldset": { borderColor: "#CFD1D4" }, "&.Mui-focused fieldset": { borderColor: "#CFD1D4" }}, "& .MuiInputBase-input": { color: "#5F646F" }}}
                         />
@@ -694,6 +713,7 @@ const AddParameterPage = () => {
                             onChange={(e) => setModel(e.target.value)}
                             fullWidth
                             size="small"
+                            required
                             InputLabelProps={{ shrink: true }}
                             sx={{"& .MuiInputLabel-root": { color: "#5F646F !important" }, "& .MuiInputLabel-root.Mui-focused": { color: "#5F646F !important" }, "& .MuiOutlinedInput-root": {"& fieldset": { borderColor: "#CFD1D4" }, "&:hover fieldset": { borderColor: "#CFD1D4" }, "&.Mui-focused fieldset": { borderColor: "#CFD1D4" }}, "& .MuiInputBase-input": { color: "#5F646F" }}}
                         />

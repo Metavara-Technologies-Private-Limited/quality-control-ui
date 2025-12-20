@@ -20,7 +20,6 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [percentage, setPercentage] = useState("");
   const [integerValue, setIntegerValue] = useState("");
-  const [integerError, setIntegerError] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -58,10 +57,26 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
     setSelectedOptions([]);
     setPercentage("");
     setIntegerValue("");
-    setIntegerError(false);
   };
 
   const handleAdd = () => {
+    // Validate required fields with alert popup
+    if (!name.trim()) {
+      alert("Please enter Parameter Name");
+      return;
+    }
+    
+    if (!dataType) {
+      alert("Please select Data Type");
+      return;
+    }
+    
+    // Validate data type specific fields
+    if (dataType === "Integer" && !integerValue.trim()) {
+      alert("Please enter Integer Value");
+      return;
+    }
+
     const payload: any = { name, dataType };
 
     if (dataType === "Decimal") {
@@ -427,13 +442,8 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
             <TextField
               label="Integer Value"
               fullWidth
-              error={integerError}
-              helperText={integerError ? "This field is required" : ""}
               value={integerValue}
-              onChange={(e) => {
-                setIntegerValue(e.target.value);
-                setIntegerError(e.target.value.trim() === "");
-              }}
+              onChange={(e) => setIntegerValue(e.target.value)}
               InputLabelProps={{ shrink: true }}
               sx={{
                 width: "380px",
