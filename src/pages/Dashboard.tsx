@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Box, Container, Grid } from "@mui/material";
-
 import DepartmentTabs from "@/components/Dashboard/DepartmentTabs";
 import EquipmentCards from "@/components/Dashboard/EquipmentCards";
 import ParameterTabs from "@/components/Dashboard/ParameterTabs";
@@ -10,10 +9,8 @@ import IncidentsChart from "@/components/Dashboard/IncidentsChart";
 import AverageParameterCards from "@/components/Dashboard/AverageParameterCards";
 import AssigneePanel from "@/components/Dashboard/AssigneePanel";
 import DashboardHeader from "@/components/Dashboard/DashboardHeader";
-
 import type { Equipment, Parameter } from "@/types";
 import { mockEquipments, mockParameters } from "@/utils/mockData";
-
 const Dashboard = () => {
   const [selectedDepartment, setSelectedDepartment] =
     useState("Embryology");
@@ -23,7 +20,6 @@ const Dashboard = () => {
 
   const [selectedParameter, setSelectedParameter] =
     useState<Parameter | null>(null);
-
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [parameters, setParameters] = useState<Parameter[]>([]);
   const [loading] = useState(false);
@@ -58,17 +54,13 @@ const Dashboard = () => {
         eq.department?.name?.trim().toLowerCase() ===
         selectedDepartment.trim().toLowerCase()
     );
-
     setEquipments(filtered);
-
     if (filtered.length > 0) {
       const firstEquipment = filtered[0];
       setSelectedEquipment(firstEquipment);
-
       const equipmentParams = mockParameters.filter(
         (p) => p.equipment_id === firstEquipment.id
       );
-
       setParameters(equipmentParams);
       setSelectedParameter(equipmentParams[0] || null);
     } else {
@@ -77,21 +69,17 @@ const Dashboard = () => {
       setSelectedParameter(null);
     }
   }, [selectedDepartment]);
-
   // ===============================
   // LOAD PARAMETERS ON EQUIPMENT CHANGE
   // ===============================
   useEffect(() => {
     if (!selectedEquipment) return;
-
     const equipmentParams = mockParameters.filter(
       (p) => p.equipment_id === selectedEquipment.id
     );
-
     setParameters(equipmentParams);
     setSelectedParameter(equipmentParams[0] || null);
   }, [selectedEquipment]);
-
   // ===============================
   // MAP PARAMETER → ACTIVITY TYPE
   // ===============================
@@ -104,11 +92,9 @@ const Dashboard = () => {
 
     return "temperature";
   };
-
   return (
     <Container maxWidth={false} sx={{ py: 2 }}>
       <DashboardHeader />
-
       <DepartmentTabs
         selected={selectedDepartment}
         onChange={handleDepartmentChange}
@@ -130,7 +116,6 @@ const Dashboard = () => {
           ))}
         </Box>
       </Box>
-
       {selectedEquipment && (
         <>
           <ParameterTabs
@@ -139,7 +124,6 @@ const Dashboard = () => {
             onSelect={handleParameterSelect}
             loading={loading}
           />
-
           {selectedParameter && (
             <Box sx={{ mt: 3 }}>
               {/* ===================== */}
@@ -154,7 +138,6 @@ const Dashboard = () => {
                     unit={selectedParameter.Content.unit}
                   />
                 </Grid>
-
                 <Grid item xs={12} md={4}>
                   {/* 🔥 NO equipmentId → SHOW ALL ACTIVITIES */}
                   <RecentActivity
@@ -164,7 +147,6 @@ const Dashboard = () => {
                   />
                 </Grid>
               </Grid>
-
               {/* ===================== */}
               {/* BOTTOM ROW */}
               {/* ===================== */}
@@ -174,7 +156,6 @@ const Dashboard = () => {
                     equipmentId={selectedEquipment.id}
                   />
                 </Grid>
-
                 <Grid item xs={12} md={4}>
                   <AverageParameterCards
                     equipmentId={selectedEquipment.id}
@@ -182,7 +163,6 @@ const Dashboard = () => {
                     parameterName={selectedParameter.parameter_name}
                   />
                 </Grid>
-
                 <Grid item xs={12} md={4}>
                   <AssigneePanel
                     equipmentId={selectedEquipment.id}
@@ -196,5 +176,4 @@ const Dashboard = () => {
     </Container>
   );
 };
-
 export default Dashboard;
