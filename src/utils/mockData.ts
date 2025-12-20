@@ -124,7 +124,7 @@ export const initializeMockData = async (clinic_id: number) => {
 };
 
 // ==============================
-// 🔢 AVERAGE CALCULATION (FIX)
+// 🔢 AVERAGE CALCULATION
 // ==============================
 
 export const calculateAverageForEquipment = (
@@ -188,13 +188,13 @@ export const getMockChartData = (
       unit: "%",
       equipment_names: equipmentNames,
       data: [
-        { date: "Mon", "Incubator A": 2.35, "Incubator B": 5.42, "Incubator C": 5.38, "Incubator D": 7.40 },
+        { date: "Mon", "Incubator A": 2.35, "Incubator B": 5.42, "Incubator C": 5.38, "Incubator D": 7.4 },
         { date: "Tue", "Incubator A": 5.36, "Incubator B": 5.45, "Incubator C": 5.39, "Incubator D": 5.41 },
         { date: "Wed", "Incubator A": 10.34, "Incubator B": 5.43, "Incubator C": 5.37, "Incubator D": 5.39 },
-        { date: "Thu", "Incubator A": 8.35, "Incubator B": 5.44, "Incubator C": 5.38, "Incubator D": 5.40 },
+        { date: "Thu", "Incubator A": 8.35, "Incubator B": 5.44, "Incubator C": 5.38, "Incubator D": 5.4 },
         { date: "Fri", "Incubator A": 5.36, "Incubator B": 7.46, "Incubator C": 5.39, "Incubator D": 5.41 },
-        { date: "Sat", "Incubator A": 1.35, "Incubator B": 5.45, "Incubator C": 9.38, "Incubator D": 8.40 },
-        { date: "Sun", "Incubator A": 3.37, "Incubator B": 5.47, "Incubator C": 5.40, "Incubator D": 5.42 },
+        { date: "Sat", "Incubator A": 1.35, "Incubator B": 5.45, "Incubator C": 9.38, "Incubator D": 8.4 },
+        { date: "Sun", "Incubator A": 3.37, "Incubator B": 5.47, "Incubator C": 5.4, "Incubator D": 5.42 },
       ],
     };
   }
@@ -222,9 +222,9 @@ export const getMockChartData = (
       unit: "m/s",
       equipment_names: equipmentNames,
       data: [
-        { date: "Jan", "Incubator A": 0.65, "Incubator B": 0.55, "Incubator C": 0.60, "Incubator D": 0.57 },
+        { date: "Jan", "Incubator A": 0.65, "Incubator B": 0.55, "Incubator C": 0.6, "Incubator D": 0.57 },
         { date: "Feb", "Incubator A": 0.66, "Incubator B": 0.56, "Incubator C": 0.61, "Incubator D": 0.58 },
-        { date: "Mar", "Incubator A": 0.60, "Incubator B": 0.54, "Incubator C": 0.59, "Incubator D": 0.56 },
+        { date: "Mar", "Incubator A": 0.6, "Incubator B": 0.54, "Incubator C": 0.59, "Incubator D": 0.56 },
         { date: "Apr", "Incubator A": 0.62, "Incubator B": 0.55, "Incubator C": 0.45, "Incubator D": 0.47 },
       ],
     };
