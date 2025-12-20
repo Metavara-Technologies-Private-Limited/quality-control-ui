@@ -187,7 +187,7 @@ const EquipmentPage = () => {
             {/* Header */}
             <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
                 <Typography sx={{ fontWeight: 700, fontSize: "20px" }}>
-                    Equipment's
+                    Equipments
                 </Typography>
 
                 <Box sx={{ display: "flex", gap: 2 }}>
@@ -195,7 +195,7 @@ const EquipmentPage = () => {
                         size="small"
                         variant="outlined"
                         InputLabelProps={{ shrink: true }}
-                        placeholder="Search Equipment's"
+                        placeholder="Search Equipments"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         sx={{ width: 260, background: "#fff" }}
@@ -210,7 +210,7 @@ const EquipmentPage = () => {
                             "&:hover": { background: "#505050" },
                         }}
                     >
-                        Add Equipment's
+                        Add Equipments
                     </Button>
                 </Box>
             </Box>
@@ -323,7 +323,7 @@ const EquipmentPage = () => {
                                                 height: 32,
                                                 border: isInactive ? "2px solid #ffffffff" : "1px solid #E5E7EB",
                                                 borderRadius: "8px",
-                                                backgroundColor: isInactive ? "#141414ff" : "1px solid #070707ff",
+                                                backgroundColor: isInactive ? "#505050" : "2px solid #000000ff",
                                                 "&:hover": {
                                                     backgroundColor: isInactive ? "#000000ff" : "rgba(0, 0, 0, 0.04)",
                                                 },
@@ -332,7 +332,7 @@ const EquipmentPage = () => {
                                             <MoreHoriz 
                                                 fontSize="small" 
                                                 sx={{ 
-                                                    color: isInactive ? "#ff9800" : "inherit",
+                                                    color: isInactive ? "#ffffffff" : "inherit",
                                                     fontWeight: isInactive ? 700 : 400,
                                                 }} 
                                             />
