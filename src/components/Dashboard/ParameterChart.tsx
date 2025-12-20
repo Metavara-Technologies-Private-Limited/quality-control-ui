@@ -1,11 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Card,
   CardContent,
   Typography,
   Box,
   IconButton,
+  Dialog,
 } from '@mui/material';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+
 import {
   LineChart,
   Line,
@@ -17,9 +21,17 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  ReferenceDot,
 } from 'recharts';
-import { FilterList, GetApp } from '@mui/icons-material';
+
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import EventOutlinedIcon from '@mui/icons-material/EventOutlined';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+
+import { LocalizationProvider, DateCalendar } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { Dayjs } from 'dayjs';
+
 import { CHART_COLORS } from '@/utils/constants';
 import type { ParameterChartData } from '@/types';
 
@@ -30,12 +42,7 @@ interface ParameterChartProps {
   unit: string;
 }
 
-const CO2_BAR_COLORS = [
-  '#6B7280', // Incubator A
-  '#9CA3AF', // Incubator B
-  '#FBCFE8', // Incubator C
-  '#F97316', // Incubator D
-];
+const CO2_BAR_COLORS = ['#6B7280', '#9CA3AF', '#FBCFE8', '#F97316'];
 
 const ParameterChart: React.FC<ParameterChartProps> = ({
   equipmentId,
@@ -45,6 +52,14 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
 }) => {
   const [chartData, setChartData] = useState<ParameterChartData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [chartType, setChartType] = useState<'line' | 'bar'>('line');
+  const [calendarOpen, setCalendarOpen] = useState(false);
+
+  const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
+
+  const [chartMenuAnchor, setChartMenuAnchor] =
+    useState<null | HTMLElement>(null);
 
   useEffect(() => {
     loadChartData();
@@ -63,6 +78,16 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
     setLoading(false);
   };
 
+  const displayData = useMemo(() => {
+    if (!chartData) return [];
+
+    const today = dayjs();
+    if (selectedDate.isSame(today, 'day')) {
+      return chartData.data;
+    }
+    return [];
+  }, [chartData, selectedDate]);
+
   if (loading || !chartData) {
     return (
       <Card>
@@ -73,107 +98,152 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
     );
   }
 
-  const isCO2 = parameterName
-    .toLowerCase()
-    .replace('₂', '2')
-    .includes('co2');
-
   return (
     <Card sx={{ borderRadius: 2, border: '1px solid #e5e7eb' }}>
       <CardContent>
-        {/* Header */}
+        {/* HEADER */}
         <Box display="flex" justifyContent="space-between" mb={2}>
           <Typography fontWeight={600}>
             {parameterName} Chart
           </Typography>
-          <Box>
-            <IconButton size="small"><FilterList fontSize="small" /></IconButton>
-            <IconButton size="small"><GetApp fontSize="small" /></IconButton>
+
+          <Box display="flex" gap={1}>
+            {/* CHART SWITCH WITH DROPDOWN */}
+            <IconButton
+              size="small"
+              onClick={(e) => setChartMenuAnchor(e.currentTarget)}
+              sx={{
+                border: '1px solid #ccc',
+                borderRadius: '8px',
+                padding: '4px 6px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '2px',
+              }}
+            >
+              {chartType === 'line' ? (
+                <ShowChartIcon fontSize="small" sx={{ color: '#E17E61' }} />
+              ) : (
+                <BarChartIcon fontSize="small" sx={{ color: '#E17E61' }} />
+              )}
+
+              <KeyboardArrowDownIcon
+                fontSize="small"
+                sx={{ color: '#111827' }}
+              />
+            </IconButton>
+
+            <Menu
+              anchorEl={chartMenuAnchor}
+              open={Boolean(chartMenuAnchor)}
+              onClose={() => setChartMenuAnchor(null)}
+            >
+              <MenuItem
+                onClick={() => {
+                  setChartType('line');
+                  setChartMenuAnchor(null);
+                }}
+              >
+                <ShowChartIcon fontSize="small" sx={{ mr: 1 }} />
+                Line Chart
+              </MenuItem>
+
+              <MenuItem
+                onClick={() => {
+                  setChartType('bar');
+                  setChartMenuAnchor(null);
+                }}
+              >
+                <BarChartIcon fontSize="small" sx={{ mr: 1 }} />
+                Bar Chart
+              </MenuItem>
+            </Menu>
+
+            {/* CALENDAR ICON */}
+            <IconButton
+              size="small"
+              onClick={() => setCalendarOpen(true)}
+              sx={{
+                border: '1px solid #ccc',
+                borderRadius: '8px',
+                padding: '4px',
+              }}
+            >
+              <EventOutlinedIcon fontSize="small" sx={{ color: '#6B7280' }} />
+            </IconButton>
           </Box>
         </Box>
 
-        <ResponsiveContainer width="100%" height={320}>
-          {isCO2 ? (
-            /* ================= CO₂ BAR CHART ================= */
-            <BarChart
-              data={chartData.data}
-              barCategoryGap={18}
-              barGap={4}
-              margin={{ top: 30, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                vertical={false}
-                stroke="#E5E7EB"
-              />
+        {/* CALENDAR DIALOG */}
+        <Dialog open={calendarOpen} onClose={() => setCalendarOpen(false)}>
+          <Box p={2}>
+            <Typography fontWeight={600} mb={1}>
+              Select Date
+            </Typography>
 
-              <XAxis
-                dataKey="date"
-                tick={{ fill: '#6B7280', fontSize: 12 }}
-              />
-
-              <YAxis
-                domain={[5, 7]}
-                tickCount={5}
-                tickFormatter={(v) => `${v.toFixed(1)}`}
-                tick={{ fill: '#6B7280', fontSize: 12 }}
-                label={{
-                  value: 'CO₂ Conc. (%)',
-                  angle: -90,
-                  position: 'insideLeft',
-                  style: { fill: '#6B7280', fontSize: 12 },
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DateCalendar
+                value={selectedDate}
+                onChange={(newValue) => {
+                  setSelectedDate(newValue!);
+                  setCalendarOpen(false);
                 }}
+                showDaysOutsideCurrentMonth
               />
+            </LocalizationProvider>
+          </Box>
+        </Dialog>
 
-              <Tooltip formatter={(v: number) => `${v}%`} />
-
-              <Legend iconType="circle" />
-
-              {chartData.equipment_names.map((name, index) => (
-                <Bar
-                  key={name}
-                  dataKey={name}
-                  fill={CO2_BAR_COLORS[index]}
-                  radius={[6, 6, 0, 0]}
-                  maxBarSize={26}
-                />
-              ))}
-
-              {/* Highlight bubble (Tuesday – Incubator C) */}
-              <ReferenceDot
-                x="Tuesday"
-                y={6.39}
-                r={0}
-                label={{
-                  value: '6.39%',
-                  position: 'top',
-                  fill: '#111827',
-                  fontSize: 12,
-                  fontWeight: 600,
-                }}
-              />
-            </BarChart>
-          ) : (
-            /* ================= LINE CHART ================= */
-            <LineChart data={chartData.data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-
-              {chartData.equipment_names.map((name, index) => (
-                <Line
-                  key={name}
-                  dataKey={name}
-                  stroke={CHART_COLORS[index % CHART_COLORS.length]}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                />
-              ))}
-            </LineChart>
-          )}
-        </ResponsiveContainer>
+        {/* NO DATA / GRAPH */}
+        {displayData.length === 0 ? (
+          <Box
+            height={320}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Typography fontWeight={600} color="text.secondary">
+              NO DATA THIS DAY
+            </Typography>
+          </Box>
+        ) : (
+          <ResponsiveContainer width="100%" height={320}>
+            {chartType === 'bar' ? (
+              <BarChart data={displayData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                {chartData.equipment_names.map((name, index) => (
+                  <Bar
+                    key={name}
+                    dataKey={name}
+                    fill={CO2_BAR_COLORS[index % CO2_BAR_COLORS.length]}
+                    radius={[6, 6, 0, 0]}
+                  />
+                ))}
+              </BarChart>
+            ) : (
+              <LineChart data={displayData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                {chartData.equipment_names.map((name, index) => (
+                  <Line
+                    key={name}
+                    dataKey={name}
+                    stroke={CHART_COLORS[index % CHART_COLORS.length]}
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                  />
+                ))}
+              </LineChart>
+            )}
+          </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   );
