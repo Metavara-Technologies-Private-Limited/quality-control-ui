@@ -73,21 +73,21 @@ const renderParameterDetails = (p: Parameter) => {
         case "Integer":
             return (
                 <Typography sx={{ fontSize: 13, color: "#374151", fontWeight: 500 }}>
-                    Integer Value: {content.integer_value ?? "-"}
+                    {content.integer_value ?? "-"}
                 </Typography>
             );
             
         case "Percentage":
             return (
                 <Typography sx={{ fontSize: 13, color: "#374151", fontWeight: 500 }}>
-                    Parameter Value: {content.percentage || content.percentage || "-"}
+                    {content.percentage || content.percentage || "-"}
                 </Typography>
             );
 
         case "Text":
             return (
                 <Typography sx={{ fontSize: 13, color: "#374151", fontWeight: 500 }}>
-                    Text Value: {content.text ?? "-"}
+                     {content.text ?? "-"}
                 </Typography>
             );
 
@@ -108,7 +108,7 @@ const renderParameterDetails = (p: Parameter) => {
             // Only show Selection block if there are actual options
             if (finalOptions.length === 0) {
                 return (
-                    <Typography sx={{ fontSize: 12, color: "#9CA3AF" }}>
+                    <Typography sx={{ fontSize: 12 }}>
                         No options available
                     </Typography>
                 );
@@ -116,8 +116,8 @@ const renderParameterDetails = (p: Parameter) => {
 
             return (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mt: 0.5 }}>
-                    <Typography sx={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>
-                        Selection:
+                    <Typography sx={{ fontSize: 13, fontWeight: 500, }}>
+                        
                     </Typography>
                     {finalOptions.map((val, i) => (
                         <Chip
@@ -378,22 +378,28 @@ const ViewEquipment = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {equipmentDetails.map((row: EquipmentDetail, idx: number) => (
-                                <TableRow key={idx} sx={{ height: "42px" }}>
-                                    <TableCell sx={{ fontSize: 14, color: "#4B5563" }}>
-                                        {idx + 1}
-                                    </TableCell>
-                                    <TableCell sx={{ fontSize: 14, color: "#4B5563" }}>
-                                        {row.equipment_num}
-                                    </TableCell>
-                                    <TableCell sx={{ fontSize: 14, color: "#4B5563" }}>
-                                        {row.make}
-                                    </TableCell>
-                                    <TableCell sx={{ fontSize: 14, color: "#4B5563" }}>
-                                        {row.model}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                            {equipmentDetails.map((row: EquipmentDetail, idx: number) => {
+                                // Extract the Sr. No from equipment_num (e.g., "CT Scanner-1" -> "1")
+                                const match = row.equipment_num?.match(/-(\d+)$/);
+                                const srNo = match ? match[1] : (idx + 1);
+                                
+                                return (
+                                    <TableRow key={idx} sx={{ height: "42px" }}>
+                                        <TableCell sx={{ fontSize: 14, color: "#4B5563" }}>
+                                            {srNo}
+                                        </TableCell>
+                                        <TableCell sx={{ fontSize: 14, color: "#4B5563" }}>
+                                            {idx + 1}
+                                        </TableCell>
+                                        <TableCell sx={{ fontSize: 14, color: "#4B5563" }}>
+                                            {row.make || "-"}
+                                        </TableCell>
+                                        <TableCell sx={{ fontSize: 14, color: "#4B5563" }}>
+                                            {row.model || "-"}
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
                         </TableBody>
                     </Table>
                 </Box>

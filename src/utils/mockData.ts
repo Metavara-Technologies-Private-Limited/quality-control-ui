@@ -38,25 +38,22 @@ export const initializeMockData = async (clinic_id: number) => {
 
   const api = await loadClinicData(clinic_id);
 
-  // ---------- Clinic ----------
   mockClinic = {
     id: clinic_id,
     name: api.name,
   };
 
-  // ---------- Departments ----------
-  mockDepartments = api.department.map((d: any, depIndex: number) => ({
-    id: depIndex + 1,
+  mockDepartments = api.department.map((d: any, index: number) => ({
+    id: index + 1,
     name: d.name,
     is_active: d.is_active,
-    clinic_id: clinic_id,
+    clinic_id,
     created_at: new Date().toISOString(),
   }));
 
   let equipmentCounter = 1;
   let parameterCounter = 1;
 
-  // ---------- Equipments + Parameters ----------
   api.department.forEach((dep: any, depIndex: number) => {
     dep.equipments.forEach((eq: any) => {
       let equipment = mockEquipments.find(
@@ -78,17 +75,25 @@ export const initializeMockData = async (clinic_id: number) => {
       }
 
       eq.parameters.forEach((param: any) => {
-        const exists = equipment!.parameters.find(
-          (p) => p.parameter_name === param.parameter_name
-        );
-        if (exists) return;
+        if (
+          equipment!.parameters.find(
+            (p) => p.parameter_name === param.parameter_name
+          )
+        )
+          return;
 
-        const normalizedName = param.parameter_name
+        const normalized = param.parameter_name
           .toLowerCase()
           .replace("₂", "2");
 
-        const isCO2 = normalizedName.includes("co2");
-        const isHumidity = normalizedName.includes("humidity");
+        const unit =
+          normalized.includes("co2")
+            ? "%"
+            : normalized.includes("humidity")
+            ? "%"
+            : normalized.includes("airflow")
+            ? "m/s"
+            : "°C";
 
         const newParam: Parameter = {
           id: parameterCounter++,
@@ -97,7 +102,7 @@ export const initializeMockData = async (clinic_id: number) => {
           is_active: param.is_active,
           Content: {
             ...param.content,
-            unit: isCO2 ? "%" : isHumidity ? "%" : "°C",
+            unit,
             min_value: 0,
             max_value: 0,
             control_limits: {
@@ -119,8 +124,31 @@ export const initializeMockData = async (clinic_id: number) => {
 };
 
 // ==============================
-// PARAMETER CHART DATA for AVERAGE HUMIDITY CARD
+// 🔢 AVERAGE CALCULATION (FIX)
 // ==============================
+
+export const calculateAverageForEquipment = (
+  chartData: any[],
+  equipmentName: string
+): number => {
+  if (!chartData?.length) return 0;
+
+  const values = chartData
+    .map((row) => row[equipmentName])
+    .filter((v) => typeof v === "number");
+
+  if (!values.length) return 0;
+
+  const avg =
+    values.reduce((sum, v) => sum + v, 0) / values.length;
+
+  return Number(avg.toFixed(2));
+};
+
+// ==============================
+// PARAMETER CHART DATA
+// ==============================
+
 export const getMockChartData = (
   equipmentId: number,
   parameterName: string
@@ -130,17 +158,23 @@ export const getMockChartData = (
     .replace("₂", "2")
     .trim();
 
-  // TEMPERATURE (LINE)
+  const equipmentNames = [
+    "Incubator A",
+    "Incubator B",
+    "Incubator C",
+    "Incubator D",
+  ];
+
   if (param === "temperature") {
     return {
       chartType: "line",
       unit: "°C",
-      equipment_names: ["Incubator A", "Incubator B", "Incubator C", "Incubator D"],
+      equipment_names: equipmentNames,
       data: [
         { date: "Mon", "Incubator A": 40.5, "Incubator B": 20.2, "Incubator C": 50.1, "Incubator D": 22.4 },
         { date: "Tue", "Incubator A": 37.6, "Incubator B": 30.4, "Incubator C": 37.2, "Incubator D": 28.5 },
         { date: "Wed", "Incubator A": 25.4, "Incubator B": 36.3, "Incubator C": 40.0, "Incubator D": 27.3 },
-        { date: "Thru", "Incubator A": 27.5, "Incubator B":32.3, "Incubator C": 22.1, "Incubator D": 40.4 },
+        { date: "Thu", "Incubator A": 27.5, "Incubator B": 32.3, "Incubator C": 22.1, "Incubator D": 40.4 },
         { date: "Fri", "Incubator A": 40.6, "Incubator B": 43.4, "Incubator C": 30.2, "Incubator D": 44.5 },
         { date: "Sat", "Incubator A": 20.5, "Incubator B": 25.3, "Incubator C": 36.1, "Incubator D": 42.4 },
         { date: "Sun", "Incubator A": 37.6, "Incubator B": 37.4, "Incubator C": 42.3, "Incubator D": 23.5 },
@@ -148,81 +182,62 @@ export const getMockChartData = (
     };
   }
 
-  // CO2 (BAR)
   if (param.includes("co2")) {
     return {
       chartType: "bar",
       unit: "%",
-      equipment_names: ["Incubator A", "Incubator B", "Incubator C", "Incubator D"],
+      equipment_names: equipmentNames,
       data: [
-        { date: "Mon", "Incubator A": 5.35, "Incubator B": 5.42, "Incubator C": 5.38, "Incubator D": 5.40 },
+        { date: "Mon", "Incubator A": 2.35, "Incubator B": 5.42, "Incubator C": 5.38, "Incubator D": 7.40 },
         { date: "Tue", "Incubator A": 5.36, "Incubator B": 5.45, "Incubator C": 5.39, "Incubator D": 5.41 },
-        { date: "Wed", "Incubator A": 5.34, "Incubator B": 5.43, "Incubator C": 5.37, "Incubator D": 5.39 },
-        { date: "Thru", "Incubator A": 5.35, "Incubator B": 5.44, "Incubator C": 5.38, "Incubator D": 5.40 },
-        { date: "Fri", "Incubator A": 5.36, "Incubator B": 5.46, "Incubator C": 5.39, "Incubator D": 5.41 },
-        { date: "Sat", "Incubator A": 5.35, "Incubator B": 5.45, "Incubator C": 5.38, "Incubator D": 5.40 },
-        { date: "Sun", "Incubator A": 5.37, "Incubator B": 5.47, "Incubator C": 5.40, "Incubator D": 5.42 },
+        { date: "Wed", "Incubator A": 10.34, "Incubator B": 5.43, "Incubator C": 5.37, "Incubator D": 5.39 },
+        { date: "Thu", "Incubator A": 8.35, "Incubator B": 5.44, "Incubator C": 5.38, "Incubator D": 5.40 },
+        { date: "Fri", "Incubator A": 5.36, "Incubator B": 7.46, "Incubator C": 5.39, "Incubator D": 5.41 },
+        { date: "Sat", "Incubator A": 1.35, "Incubator B": 5.45, "Incubator C": 9.38, "Incubator D": 8.40 },
+        { date: "Sun", "Incubator A": 3.37, "Incubator B": 5.47, "Incubator C": 5.40, "Incubator D": 5.42 },
       ],
     };
   }
 
-  // HUMIDITY (LINE)
   if (param === "humidity") {
     return {
       chartType: "line",
       unit: "%",
-      equipment_names: ["Incubator A", "Incubator B", "Incubator C", "Incubator D"],
+      equipment_names: equipmentNames,
       data: [
-        { date: "Mon", "Incubator A": 88, "Incubator B": 82, "Incubator C": 86, "Incubator D": 85 },
+        { date: "Mon", "Incubator A": 15, "Incubator B": 82, "Incubator C": 86, "Incubator D": 85 },
         { date: "Tue", "Incubator A": 50, "Incubator B": 83, "Incubator C": 87, "Incubator D": 83 },
-        { date: "Wed", "Incubator A": 79, "Incubator B": 81, "Incubator C": 86, "Incubator D": 84 },
-        { date: "Thru", "Incubator A": 88, "Incubator B": 100, "Incubator C": 87, "Incubator D": 85 },
-        { date: "Fri", "Incubator A": 89, "Incubator B": 82, "Incubator C": 85, "Incubator D": 86 },
-        { date: "Sat", "Incubator A": 87, "Incubator B": 83, "Incubator C": 86, "Incubator D": 84 },
-        { date: "Sun", "Incubator A": 89, "Incubator B": 81, "Incubator C": 87, "Incubator D": 85 },
+        { date: "Wed", "Incubator A": 50, "Incubator B": 81, "Incubator C": 50, "Incubator D": 84 },
+        { date: "Thu", "Incubator A": 88, "Incubator B": 0, "Incubator C": 87, "Incubator D": 85 },
+        { date: "Fri", "Incubator A": 20, "Incubator B": 82, "Incubator C": 85, "Incubator D": 86 },
+        { date: "Sat", "Incubator A": 87, "Incubator B": 83, "Incubator C": 70, "Incubator D": 84 },
+        { date: "Sun", "Incubator A": 10, "Incubator B": 81, "Incubator C": 87, "Incubator D": 85 },
       ],
     };
   }
 
-  // AIRFLOW (LINE)
   if (param.includes("airflow")) {
     return {
       chartType: "line",
       unit: "m/s",
-      equipment_names: ["Incubator A", "Incubator B", "Incubator C", "Incubator D"],
+      equipment_names: equipmentNames,
       data: [
         { date: "Jan", "Incubator A": 0.65, "Incubator B": 0.55, "Incubator C": 0.60, "Incubator D": 0.57 },
         { date: "Feb", "Incubator A": 0.66, "Incubator B": 0.56, "Incubator C": 0.61, "Incubator D": 0.58 },
         { date: "Mar", "Incubator A": 0.60, "Incubator B": 0.54, "Incubator C": 0.59, "Incubator D": 0.56 },
         { date: "Apr", "Incubator A": 0.62, "Incubator B": 0.55, "Incubator C": 0.45, "Incubator D": 0.47 },
-        { date: "May", "Incubator A": 0.70, "Incubator B": 0.56, "Incubator C": 0.61, "Incubator D": 0.58 },
-        { date: "Jun", "Incubator A": 0.61, "Incubator B": 0.55, "Incubator C": 0.60, "Incubator D": 0.57 },
-        { date: "Jul", "Incubator A": 0.64, "Incubator B": 0.56, "Incubator C": 0.61, "Incubator D": 0.58 },
-        { date: "Aug", "Incubator A": 0.63, "Incubator B": 0.67, "Incubator C": 0.62, "Incubator D": 0.59 },
-        { date: "Sep", "Incubator A": 0.62, "Incubator B": 0.54, "Incubator C": 0.70, "Incubator D": 0.57 },
-        { date: "Oct", "Incubator A": 0.61, "Incubator B": 0.56, "Incubator C": 0.61, "Incubator D": 0.58 },
-        { date: "Nov", "Incubator A": 0.63, "Incubator B": 0.55, "Incubator C": 0.62, "Incubator D": 0.57 },
-        { date: "Dec", "Incubator A": 0.64, "Incubator B": 0.56, "Incubator C": 0.61, "Incubator D": 0.58 },
       ],
     };
   }
 
-  // DEFAULT
-  return {
-    chartType: "line",
-    unit: "",
-    equipment_names: [],
-    data: [],
-  };
+  return { chartType: "line", unit: "", equipment_names: [], data: [] };
 };
+
 // ==============================
-// MOCK RECENT ACTIVITY DATA for pie chart (FINAL)
+// MOCK RECENT ACTIVITY DATA
 // ==============================
+
 export const mockActivities: Activity[] = [
-  // =========================
-  // 🔴 HIGH = 12 logs
-  // (temperature / co2)
-  // =========================
   ...Array.from({ length: 12 }).map((_, i) => ({
     id: i + 1,
     equipment_id: 1,
@@ -230,7 +245,6 @@ export const mockActivities: Activity[] = [
     message: `Temperature incident ${i + 1}`,
     timestamp: new Date().toISOString(),
   })),
-
   ...Array.from({ length: 10 }).map((_, i) => ({
     id: i + 13,
     equipment_id: 1,
@@ -238,11 +252,6 @@ export const mockActivities: Activity[] = [
     message: `CO2 incident ${i + 1}`,
     timestamp: new Date().toISOString(),
   })),
-
-  // =========================
-  // 🟢 NORMAL = 10 logs
-  // (humidity)
-  // =========================
   ...Array.from({ length: 10 }).map((_, i) => ({
     id: i + 23,
     equipment_id: 1,
@@ -250,11 +259,6 @@ export const mockActivities: Activity[] = [
     message: `Humidity normal ${i + 1}`,
     timestamp: new Date().toISOString(),
   })),
-
-  // =========================
-  // ⚪ LOW = 4 logs
-  // (airflow / assignee)
-  // =========================
   ...Array.from({ length: 4 }).map((_, i) => ({
     id: i + 33,
     equipment_id: 1,
@@ -262,65 +266,24 @@ export const mockActivities: Activity[] = [
     message: `Airflow low ${i + 1}`,
     timestamp: new Date().toISOString(),
   })),
-
-  ...Array.from({ length: 4 }).map((_, i) => ({
-    id: i + 37,
-    equipment_id: 1,
-    type: "assignee",
-    message: `Assignee change ${i + 1}`,
-    timestamp: new Date().toISOString(),
-  })),
 ];
 
-
 // ==============================
-// MOCK ASSIGNEES (UI SUPPORT)
+// MOCK ASSIGNEES
 // ==============================
 
 export interface Assignee {
   id: number;
   name: string;
   avatar: string;
-  equipment_id: number | null; // null = unassigned
+  equipment_id: number | null;
 }
 
 export const mockAssignees: Assignee[] = [
-  {
-    id: 1,
-    name: "Anil Kumar",
-    avatar: "https://i.pravatar.cc/150?img=12",
-    equipment_id: 1, // Incubator A
-  },
-  {
-    id: 2,
-    name: "Hari Krishna",
-    avatar: "https://i.pravatar.cc/150?img=32",
-    equipment_id: 3, // Incubator C
-  },
-  {
-    id: 3,
-    name: "Pallavi",
-    avatar: "https://i.pravatar.cc/150?img=47",
-    equipment_id: 2, // Incubator B
-  },
-
-  // Available users
-  {
-    id: 4,
-    name: "Anil kumar",
-    avatar: "https://i.pravatar.cc/150?img=56",
-    equipment_id: null,
-  },
-  {
-    id: 5,
-    name: "Neeraj",
-    avatar: "https://i.pravatar.cc/150?img=13",
-    equipment_id: null,
-  },
-  {
-    id: 6,
-    name: "Shradha",
-    avatar: "https://i.pravatar.cc/150?img=44",
-    equipment_id: null,
-  },
+  { id: 1, name: "Anil Kumar", avatar: "https://i.pravatar.cc/150?img=12", equipment_id: 1 },
+  { id: 2, name: "Hari Krishna", avatar: "https://i.pravatar.cc/150?img=32", equipment_id: 3 },
+  { id: 3, name: "Pallavi", avatar: "https://i.pravatar.cc/150?img=47", equipment_id: 2 },
+  { id: 4, name: "Anil kumar", avatar: "https://i.pravatar.cc/150?img=56", equipment_id: null },
+  { id: 5, name: "Neeraj", avatar: "https://i.pravatar.cc/150?img=13", equipment_id: null },
+  { id: 6, name: "Shradha", avatar: "https://i.pravatar.cc/150?img=44", equipment_id: null },
 ];

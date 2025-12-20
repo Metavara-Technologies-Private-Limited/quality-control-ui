@@ -14,31 +14,37 @@ import { mockEquipments, mockParameters } from "@/utils/mockData";
 const Dashboard = () => {
   const [selectedDepartment, setSelectedDepartment] =
     useState("Embryology");
+
   const [selectedEquipment, setSelectedEquipment] =
     useState<Equipment | null>(null);
+
   const [selectedParameter, setSelectedParameter] =
     useState<Parameter | null>(null);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [parameters, setParameters] = useState<Parameter[]>([]);
   const [loading] = useState(false);
+
   // ===============================
   // DEPARTMENT CHANGE
   // ===============================
   const handleDepartmentChange = (department: string) => {
     setSelectedDepartment(department);
   };
+
   // ===============================
   // EQUIPMENT SELECT
   // ===============================
   const handleEquipmentSelect = (equipment: Equipment) => {
     setSelectedEquipment(equipment);
   };
+
   // ===============================
   // PARAMETER SELECT
   // ===============================
   const handleParameterSelect = (parameter: Parameter) => {
     setSelectedParameter(parameter);
   };
+
   // ===============================
   // FILTER EQUIPMENT BY DEPARTMENT
   // ===============================
@@ -79,9 +85,11 @@ const Dashboard = () => {
   // ===============================
   const getParameterType = (parameterName: string) => {
     const name = parameterName.toLowerCase().replace("₂", "2");
+
     if (name.includes("co2")) return "co2";
     if (name.includes("humid")) return "humidity";
     if (name.includes("air")) return "airflow";
+
     return "temperature";
   };
   return (
@@ -91,6 +99,7 @@ const Dashboard = () => {
         selected={selectedDepartment}
         onChange={handleDepartmentChange}
       />
+
       {/* ===================== */}
       {/* EQUIPMENT CARDS */}
       {/* ===================== */}

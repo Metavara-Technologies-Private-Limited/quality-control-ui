@@ -5,34 +5,64 @@ import {
   Typography,
   Box,
   IconButton,
-  Divider
+  Divider,
 } from "@mui/material";
 import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
 
 import { getMockChartData } from "@/utils/mockData";
 
-interface AverageHumidityProps {
+interface AverageParameterProps {
   equipmentId: number;
+  parameterName: string;
 }
 
-const getHumidityByIncubator = (equipmentId: number) => {
-  const chart = getMockChartData(equipmentId, "humidity");
+// ------------------------------
+// Helpers
+// ------------------------------
+const normalize = (name: string) =>
+  name.toLowerCase().replace("₂", "2").trim();
+
+const getTitle = (param: string) => {
+  if (param.includes("co2")) return "Average CO₂";
+  if (param.includes("humidity")) return "Average Humidity";
+  if (param.includes("airflow")) return "Average Airflow";
+  return "Average Temperature";
+};
+
+const getUnit = (param: string) => {
+  if (param.includes("co2")) return "%";
+  if (param.includes("humidity")) return "%";
+  if (param.includes("airflow")) return " m/s";
+  return " °C";
+};
+
+const getValuesByIncubator = (
+  equipmentId: number,
+  parameterName: string
+) => {
+  const chart = getMockChartData(equipmentId, parameterName);
   if (!chart?.data?.length) return [];
 
   const latest = chart.data[chart.data.length - 1];
 
-  return [
-    { name: "Incubator A", value: latest["Incubator A"] },
-    { name: "Incubator B", value: latest["Incubator B"] },
-    { name: "Incubator C", value: latest["Incubator C"] },
-    { name: "Incubator D", value: latest["Incubator D"] },
-  ];
+  return chart.equipment_names.map((name: string) => ({
+    name,
+    value: latest[name],
+  }));
 };
 
-const AverageHumidity: React.FC<AverageHumidityProps> = ({ equipmentId }) => {
+// ------------------------------
+// Component
+// ------------------------------
+const AverageParameterCards: React.FC<AverageParameterProps> = ({
+  equipmentId,
+  parameterName,
+}) => {
+  const param = normalize(parameterName);
+
   const incubators = useMemo(
-    () => getHumidityByIncubator(equipmentId),
-    [equipmentId]
+    () => getValuesByIncubator(equipmentId, param),
+    [equipmentId, param]
   );
 
   return (
@@ -40,14 +70,12 @@ const AverageHumidity: React.FC<AverageHumidityProps> = ({ equipmentId }) => {
       sx={{
         height: "100%",
         minHeight: 350,
-        width: "100%",
-        maxWidth: "100%",
-        overflow: "hidden",
         borderRadius: 3,
         display: "flex",
         flexDirection: "column",
       }}
     >
+      {/* Header */}
       <CardContent
         sx={{
           height: 56,
@@ -56,12 +84,17 @@ const AverageHumidity: React.FC<AverageHumidityProps> = ({ equipmentId }) => {
           justifyContent: "space-between",
         }}
       >
-        <Typography fontWeight={700}>Average Humidity</Typography>
+        <Typography fontWeight={700}>
+          {getTitle(param)}
+        </Typography>
         <IconButton size="small">
           <FilterAltOutlinedIcon fontSize="small" />
         </IconButton>
       </CardContent>
-          <Divider />
+
+      <Divider />
+
+      {/* Body */}
       <Box
         sx={{
           p: 2.5,
@@ -82,9 +115,12 @@ const AverageHumidity: React.FC<AverageHumidityProps> = ({ equipmentId }) => {
             <Typography fontSize={14} color="text.secondary">
               {item.name}
             </Typography>
+
             <Typography fontSize={26} fontWeight={700}>
-              {item.value}%
+              {item.value}
+              {getUnit(param)}
             </Typography>
+
             <Typography
               fontSize={13}
               color={item.value >= 85 ? "#22c55e" : "#ef4444"}
@@ -98,4 +134,4 @@ const AverageHumidity: React.FC<AverageHumidityProps> = ({ equipmentId }) => {
   );
 };
 
-export default AverageHumidity;
+export default AverageParameterCards;

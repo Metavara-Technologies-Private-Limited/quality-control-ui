@@ -43,7 +43,8 @@ const AddParameterPage = () => {
     const [model, setModel] = useState("");
     const [equipmentTable, setEquipmentTable] = useState<any[]>([]);
     const [isEditMode, setIsEditMode] = useState(false);
-    const [originalEquipment, setOriginalEquipment] = useState<any>(null); 
+    const [originalEquipment, setOriginalEquipment] = useState<any>(null);
+    const [nextSrNo, setNextSrNo] = useState(1); // Track next available Sr. No 
 
     const [paramToEdit, setParamToEdit] = useState<any>(null);
     const [editingParamIndex, setEditingParamIndex] = useState<number | null>(null);
@@ -80,13 +81,29 @@ const AddParameterPage = () => {
             setEquipmentName(passedEquipment.equipment_name || passedEquipment.name || "");
             setDepartment(passedEquipment.department?.name || "");
             
-            // 2. Set Make/Model table data
-            const loadedEquipmentTable = passedEquipment.equipment_details || [];
+            // 2. Set Make/Model table data - transform the data correctly
+            const loadedEquipmentTable = (passedEquipment.equipment_details || []).map((detail: any, index: number) => {
+                // Extract the Sr. No from equipment_num (e.g., "Ct Scan-1" -> 1)
+                const numMatch = detail.equipment_num?.match(/-(\d+)$/);
+                const srNo = numMatch ? parseInt(numMatch[1]) : index + 1;
+                
+                return {
+                    sr: srNo, // Use the actual Sr. No from backend
+                    equipmentNum: srNo, // equipmentNum is same as Sr. No now
+                    make: detail.make || "",
+                    model: detail.model || ""
+                };
+            });
+            
             setEquipmentTable(loadedEquipmentTable);
             
             if (loadedEquipmentTable.length > 0) {
-                setCount(loadedEquipmentTable.length);
-                setSelected(loadedEquipmentTable.map((_, i) => i + 1));
+                // Set count to the maximum Sr. No
+                const maxSrNo = Math.max(...loadedEquipmentTable.map((item: any) => item.sr));
+                setCount(maxSrNo);
+                setSelected(loadedEquipmentTable.map((item) => item.sr));
+                // Set next Sr. No based on loaded data
+                setNextSrNo(maxSrNo + 1);
             }
             
             // 3. Transform and set Parameters (UPDATED MAPPING HERE)
@@ -121,10 +138,53 @@ const AddParameterPage = () => {
     }, [parameters, isEditMode]);
 
     const toggleSelection = (num: number) => {
-        setSelected((prev) =>
-            prev.includes(num) ? prev.filter((i) => i !== num) : [...prev, num]
-        );
+        setSelected((prev) => {
+            const isCurrentlySelected = prev.includes(num);
+            
+            if (isCurrentlySelected) {
+                // Deselecting - remove from table if exists (Sr. No is NOT reused)
+                setEquipmentTable((prevTable) => 
+                    prevTable.filter((row) => row.equipmentNum !== num)
+                );
+                return prev.filter((i) => i !== num);
+            } else {
+                // Selecting - add back to selection
+                return [...prev, num];
+            }
+        });
     };
+
+    // Watch for count changes and auto-adjust equipment table
+    useEffect(() => {
+        if (equipmentTable.length === 0) return; // Don't do anything if table is empty
+        
+        const currentMaxNum = Math.max(...equipmentTable.map(row => row.equipmentNum), 0);
+        
+        if (count > currentMaxNum) {
+            // Increasing count - add new entries with unique Sr. No
+            const lastEntry = equipmentTable[equipmentTable.length - 1];
+            const newEntries = [];
+            
+            for (let i = currentMaxNum + 1; i <= count; i++) {
+                newEntries.push({
+                    sr: nextSrNo + newEntries.length,
+                    equipmentNum: i,
+                    make: lastEntry?.make || "",
+                    model: lastEntry?.model || ""
+                });
+            }
+            
+            if (newEntries.length > 0) {
+                setEquipmentTable(prev => [...prev, ...newEntries]);
+                setSelected(prev => [...prev, ...newEntries.map(e => e.equipmentNum)]);
+                setNextSrNo(prev => prev + newEntries.length);
+            }
+        } else if (count < currentMaxNum) {
+            // Decreasing count - remove entries with equipmentNum > count (Sr. No is NOT reused)
+            setEquipmentTable(prev => prev.filter(row => row.equipmentNum <= count));
+            setSelected(prev => prev.filter(num => num <= count));
+        }
+    }, [count]);
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, index: number) => {
         setAnchorEl(event.currentTarget);
@@ -154,14 +214,25 @@ const AddParameterPage = () => {
     };
 
     const handleSaveEquipmentDetails = () => {
-        const newRows = selected.map((num) => ({
-            sr: equipmentTable.length + 1 + selected.indexOf(num),
+        // Validate make and model are not empty
+        if (!make.trim() || !model.trim()) {
+            alert("Please enter both Make and Model");
+            return;
+        }
+
+        // Filter out items that are already in the table
+        const newSelections = selected.filter((num) => !equipmentTable.some((row) => row.equipmentNum === num));
+        
+        // Create new rows for each selected equipment with unique Sr. No
+        const newRows = newSelections.map((num, index) => ({
+            sr: nextSrNo + index,
             equipmentNum: num,
             make,
             model
         }));
 
         setEquipmentTable((prev) => [...prev, ...newRows]);
+        setNextSrNo(prev => prev + newRows.length);
 
         // Reset fields
         setMake("");
@@ -191,6 +262,7 @@ const AddParameterPage = () => {
         setModel("");
         setEquipmentTable([]);
         setParameters([]);
+        setNextSrNo(1);
         localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
     };
 
@@ -212,6 +284,18 @@ const AddParameterPage = () => {
     const handleFinalSave = async () => {
         console.log("Save button clicked...");
 
+        // Validate parameters
+        if (parameters.length === 0) {
+            alert("Please add at least one parameter");
+            return;
+        }
+
+        // Validate equipment table (make and model)
+        if (equipmentTable.length === 0) {
+            alert("Please add equipment details with Make and Model");
+            return;
+        }
+
         try {
             const clinicId = 1; // TODO: make dynamic later
 
@@ -220,9 +304,9 @@ const AddParameterPage = () => {
                 equipment_name: equipmentName,
                 is_active: true,
                 equipment_details: equipmentTable.map((row) => ({
-                    equipment_num: `${equipmentName}-${row.equipmentNum}`,
-                    make: row.make,
-                    model: row.model,
+                    equipment_num: `${equipmentName}-${row.sr}`, // Use Sr. No instead of equipmentNum
+                    make: row.make || "",
+                    model: row.model || "",
                     is_active: true,
                 })),
                 parameters: parameters.map((p) => ({
@@ -239,6 +323,9 @@ const AddParameterPage = () => {
                     },
                 })),
             };
+
+            console.log("Equipment table before save:", equipmentTable);
+            console.log("New equipment entry:", newEquipmentEntry);
 
             /* 2️⃣ Fetch existing clinic */
             const getRes = await fetch(
@@ -614,6 +701,7 @@ const AddParameterPage = () => {
                             onChange={(e) => setMake(e.target.value)}
                             fullWidth
                             size="small"
+                            required
                             InputLabelProps={{ shrink: true }}
                             sx={{"& .MuiInputLabel-root": { color: "#5F646F !important" }, "& .MuiInputLabel-root.Mui-focused": { color: "#5F646F !important" }, "& .MuiOutlinedInput-root": {"& fieldset": { borderColor: "#CFD1D4" }, "&:hover fieldset": { borderColor: "#CFD1D4" }, "&.Mui-focused fieldset": { borderColor: "#CFD1D4" }}, "& .MuiInputBase-input": { color: "#5F646F" }}}
                         />
@@ -625,6 +713,7 @@ const AddParameterPage = () => {
                             onChange={(e) => setModel(e.target.value)}
                             fullWidth
                             size="small"
+                            required
                             InputLabelProps={{ shrink: true }}
                             sx={{"& .MuiInputLabel-root": { color: "#5F646F !important" }, "& .MuiInputLabel-root.Mui-focused": { color: "#5F646F !important" }, "& .MuiOutlinedInput-root": {"& fieldset": { borderColor: "#CFD1D4" }, "&:hover fieldset": { borderColor: "#CFD1D4" }, "&.Mui-focused fieldset": { borderColor: "#CFD1D4" }}, "& .MuiInputBase-input": { color: "#5F646F" }}}
                         />
@@ -663,9 +752,9 @@ const AddParameterPage = () => {
 
                             <tbody>
                                 {equipmentTable.map((row, index) => (
-                                <tr key={index} style={{ height: "42px", borderTop: "1px solid #E5E7EB" }}>
+                                <tr key={row.sr} style={{ height: "42px", borderTop: "1px solid #E5E7EB" }}>
+                                    <td style={cellStyle}>{row.sr}</td>
                                     <td style={cellStyle}>{index + 1}</td>
-                                    <td style={cellStyle}>{row.equipmentNum}</td>
                                     <td style={cellStyle}>{row.make}</td>
                                     <td style={cellStyle}>{row.model}</td>
                                 </tr>
