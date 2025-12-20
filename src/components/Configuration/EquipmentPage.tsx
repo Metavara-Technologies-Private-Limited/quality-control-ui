@@ -318,8 +318,24 @@ const EquipmentPage = () => {
                                                 setAnchorEl(e.currentTarget);
                                                 setSelectedEquipmentId(item.id);
                                             }}
+                                            sx={{
+                                                width: 32,
+                                                height: 32,
+                                                border: isInactive ? "2px solid #ffffffff" : "1px solid #E5E7EB",
+                                                borderRadius: "8px",
+                                                backgroundColor: isInactive ? "#141414ff" : "1px solid #070707ff",
+                                                "&:hover": {
+                                                    backgroundColor: isInactive ? "#000000ff" : "rgba(0, 0, 0, 0.04)",
+                                                },
+                                            }}
                                         >
-                                            <MoreHoriz fontSize="small" />
+                                            <MoreHoriz 
+                                                fontSize="small" 
+                                                sx={{ 
+                                                    color: isInactive ? "#ff9800" : "inherit",
+                                                    fontWeight: isInactive ? 700 : 400,
+                                                }} 
+                                            />
                                         </IconButton>
                                     </Box>
                                 </Box>

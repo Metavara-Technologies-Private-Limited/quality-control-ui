@@ -15,15 +15,39 @@ import type { Equipment, Parameter } from "@/types";
 import { mockEquipments, mockParameters } from "@/utils/mockData";
 
 const Dashboard = () => {
-  const [selectedDepartment, setSelectedDepartment] = useState("Embryology");
+  const [selectedDepartment, setSelectedDepartment] =
+    useState("Embryology");
+
   const [selectedEquipment, setSelectedEquipment] =
     useState<Equipment | null>(null);
+
   const [selectedParameter, setSelectedParameter] =
     useState<Parameter | null>(null);
 
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [parameters, setParameters] = useState<Parameter[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
+
+  // ===============================
+  // DEPARTMENT CHANGE
+  // ===============================
+  const handleDepartmentChange = (department: string) => {
+    setSelectedDepartment(department);
+  };
+
+  // ===============================
+  // EQUIPMENT SELECT
+  // ===============================
+  const handleEquipmentSelect = (equipment: Equipment) => {
+    setSelectedEquipment(equipment);
+  };
+
+  // ===============================
+  // PARAMETER SELECT
+  // ===============================
+  const handleParameterSelect = (parameter: Parameter) => {
+    setSelectedParameter(parameter);
+  };
 
   // ===============================
   // FILTER EQUIPMENT BY DEPARTMENT
@@ -73,8 +97,11 @@ const Dashboard = () => {
   // ===============================
   const getParameterType = (parameterName: string) => {
     const name = parameterName.toLowerCase().replace("₂", "2");
+
     if (name.includes("co2")) return "co2";
     if (name.includes("humid")) return "humidity";
+    if (name.includes("air")) return "airflow";
+
     return "temperature";
   };
 
@@ -87,7 +114,9 @@ const Dashboard = () => {
         onChange={handleDepartmentChange}
       />
 
+      {/* ===================== */}
       {/* EQUIPMENT CARDS */}
+      {/* ===================== */}
       <Box sx={{ overflowX: "auto", pb: 1 }}>
         <Box sx={{ display: "inline-flex", gap: 2 }}>
           {equipments.map((eq) => (
@@ -127,8 +156,8 @@ const Dashboard = () => {
                 </Grid>
 
                 <Grid item xs={12} md={4}>
+                  {/* 🔥 NO equipmentId → SHOW ALL ACTIVITIES */}
                   <RecentActivity
-                    equipmentId={selectedEquipment.id}
                     parameterType={getParameterType(
                       selectedParameter.parameter_name
                     )}
@@ -137,7 +166,7 @@ const Dashboard = () => {
               </Grid>
 
               {/* ===================== */}
-              {/* BOTTOM ROW (FIXED) */}
+              {/* BOTTOM ROW */}
               {/* ===================== */}
               <Grid container spacing={3} sx={{ mt: 1 }}>
                 <Grid item xs={12} md={4}>
