@@ -80,16 +80,16 @@ export interface DashboardData {
   averages: AverageData[];
   assignees: Assignee[];
 }
-
 export interface Activity {
   id: number;
-  type: 'temperature' | 'humidity' | 'co2' | 'assignee' | 'other';
+  type: 'temperature' | 'humidity' | 'co2' | 'airflow' | 'assignee' | 'other';
   message: string;
   timestamp: string;
   equipment_id: number;
   equipment_name?: string;
   severity?: 'high' | 'normal' | 'low';
 }
+
 
 export interface Incident {
   id: number;
