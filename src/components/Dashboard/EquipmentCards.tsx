@@ -81,6 +81,7 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
                     ? '0 4px 6px rgba(0,0,0,0.15)'
                     : '0 1px 3px rgba(0,0,0,0.1)',
                 transition: 'all 0.2s ease',
+                mt: 1,
 
                 '&:hover': {
                   transform: 'translateY(-2px)',
@@ -88,13 +89,13 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
                 },
               }}
             >
-              <CardContent sx={{ textAlign: 'center', py: 2.5, px: 2 }}>
+              <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Box
                   sx={{
                     color: isSelected ? '#ea580c' : '#ea580c',
-                    mb: 1.5,
+                    // mb: 1.5,
                     display: 'flex',
-                    justifyContent: 'center',
+                    // justifyContent: 'center',
                     '& svg': { fontSize: 32 },
                   }}
                 >

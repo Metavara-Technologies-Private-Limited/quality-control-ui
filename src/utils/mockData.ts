@@ -150,89 +150,84 @@ export const calculateAverageForEquipment = (
 // PARAMETER CHART DATA
 // ==============================
 
+const generateMockSeries = (
+  baseValue: number,
+  days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+) => {
+  return days.map((day) => ({
+    date: day,
+    value: Number(
+      (baseValue + (Math.random() * 2 - 1)).toFixed(2)
+    ),
+  }));
+};
+
+
 export const getMockChartData = (
   equipmentId: number,
   parameterName: string
 ) => {
-  const param = parameterName
-    .toLowerCase()
-    .replace("₂", "2")
-    .trim();
+  const param = mockParameters.find(
+    (p) =>
+      p.equipment_id === equipmentId &&
+      p.parameter_name.toLowerCase() === parameterName.toLowerCase()
+  );
 
-  const equipmentNames = [
-    "Incubator A",
-    "Incubator B",
-    "Incubator C",
-    "Incubator D",
-  ];
+  if (!param) {
+    return { chartType: "line", unit: "", equipment_names: [], data: [] };
+  }
 
-  if (param === "temperature") {
+  const content = param.Content;
+  const equipment = mockEquipments.find(
+    (e) => e.id === equipmentId
+  );
+
+  if (!equipment) {
+    return { chartType: "line", unit: "", equipment_names: [], data: [] };
+  }
+
+  // Decide base value from DB config
+  let baseValue = 0;
+
+  if (content.data_type === "Decimal") {
+    baseValue =
+      (Number(content.min_value) + Number(content.max_value)) / 2;
+  }
+
+  if (content.data_type === "Integer") {
+    baseValue = Number(content.integer_value || 0);
+  }
+
+  if (content.data_type === "Percentage") {
+    baseValue = Number(content.percentage || 0);
+  }
+
+  // Dropdown / Select → NO chart
+  if (
+    content.data_type === "Dropdown" ||
+    content.data_type === "Select"
+  ) {
     return {
       chartType: "line",
-      unit: "°C",
-      equipment_names: equipmentNames,
-      data: [
-        { date: "Mon", "Incubator A": 40.5, "Incubator B": 20.2, "Incubator C": 50.1, "Incubator D": 22.4 },
-        { date: "Tue", "Incubator A": 37.6, "Incubator B": 30.4, "Incubator C": 37.2, "Incubator D": 28.5 },
-        { date: "Wed", "Incubator A": 25.4, "Incubator B": 36.3, "Incubator C": 40.0, "Incubator D": 27.3 },
-        { date: "Thu", "Incubator A": 27.5, "Incubator B": 32.3, "Incubator C": 22.1, "Incubator D": 40.4 },
-        { date: "Fri", "Incubator A": 40.6, "Incubator B": 43.4, "Incubator C": 30.2, "Incubator D": 44.5 },
-        { date: "Sat", "Incubator A": 20.5, "Incubator B": 25.3, "Incubator C": 36.1, "Incubator D": 42.4 },
-        { date: "Sun", "Incubator A": 37.6, "Incubator B": 37.4, "Incubator C": 42.3, "Incubator D": 23.5 },
-      ],
+      unit: "",
+      equipment_names: [],
+      data: [],
     };
   }
 
-  if (param.includes("co2")) {
-    return {
-      chartType: "bar",
-      unit: "%",
-      equipment_names: equipmentNames,
-      data: [
-        { date: "Mon", "Incubator A": 2.35, "Incubator B": 5.42, "Incubator C": 5.38, "Incubator D": 7.4 },
-        { date: "Tue", "Incubator A": 5.36, "Incubator B": 5.45, "Incubator C": 5.39, "Incubator D": 5.41 },
-        { date: "Wed", "Incubator A": 10.34, "Incubator B": 5.43, "Incubator C": 5.37, "Incubator D": 5.39 },
-        { date: "Thu", "Incubator A": 8.35, "Incubator B": 5.44, "Incubator C": 5.38, "Incubator D": 5.4 },
-        { date: "Fri", "Incubator A": 5.36, "Incubator B": 7.46, "Incubator C": 5.39, "Incubator D": 5.41 },
-        { date: "Sat", "Incubator A": 1.35, "Incubator B": 5.45, "Incubator C": 9.38, "Incubator D": 8.4 },
-        { date: "Sun", "Incubator A": 3.37, "Incubator B": 5.47, "Incubator C": 5.4, "Incubator D": 5.42 },
-      ],
-    };
-  }
+  const series = generateMockSeries(baseValue);
 
-  if (param === "humidity") {
-    return {
-      chartType: "line",
-      unit: "%",
-      equipment_names: equipmentNames,
-      data: [
-        { date: "Mon", "Incubator A": 15, "Incubator B": 82, "Incubator C": 86, "Incubator D": 85 },
-        { date: "Tue", "Incubator A": 50, "Incubator B": 83, "Incubator C": 87, "Incubator D": 83 },
-        { date: "Wed", "Incubator A": 50, "Incubator B": 81, "Incubator C": 50, "Incubator D": 84 },
-        { date: "Thu", "Incubator A": 88, "Incubator B": 0, "Incubator C": 87, "Incubator D": 85 },
-        { date: "Fri", "Incubator A": 20, "Incubator B": 82, "Incubator C": 85, "Incubator D": 86 },
-        { date: "Sat", "Incubator A": 87, "Incubator B": 83, "Incubator C": 70, "Incubator D": 84 },
-        { date: "Sun", "Incubator A": 10, "Incubator B": 81, "Incubator C": 87, "Incubator D": 85 },
-      ],
-    };
-  }
-
-  if (param.includes("airflow")) {
-    return {
-      chartType: "line",
-      unit: "m/s",
-      equipment_names: equipmentNames,
-      data: [
-        { date: "Jan", "Incubator A": 0.65, "Incubator B": 0.55, "Incubator C": 0.6, "Incubator D": 0.57 },
-        { date: "Feb", "Incubator A": 0.66, "Incubator B": 0.56, "Incubator C": 0.61, "Incubator D": 0.58 },
-        { date: "Mar", "Incubator A": 0.6, "Incubator B": 0.54, "Incubator C": 0.59, "Incubator D": 0.56 },
-        { date: "Apr", "Incubator A": 0.62, "Incubator B": 0.55, "Incubator C": 0.45, "Incubator D": 0.47 },
-      ],
-    };
-  }
-
-  return { chartType: "line", unit: "", equipment_names: [], data: [] };
+  return {
+    chartType: "line",
+    unit: content.unit,
+    equipment_names: [equipment.equipment_name],
+    data: series.map((s) => ({
+      date: s.date,
+      [equipment.equipment_name]: s.value,
+    })),
+  };
 };
+
 
 // ==============================
 // MOCK RECENT ACTIVITY DATA
