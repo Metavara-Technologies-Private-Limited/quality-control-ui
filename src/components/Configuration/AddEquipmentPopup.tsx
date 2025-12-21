@@ -1,17 +1,41 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Dialog, DialogTitle, DialogContent, TextField, Box, Button, IconButton, MenuItem } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useNavigate } from "react-router-dom";
 
 interface Props { open: boolean; onClose: () => void; }
+interface Department {
+  id: number;
+  name: string;
+  is_active: boolean;
+}
+
 
 const AddEquipmentPopup: React.FC<Props> = ({ open, onClose }) => {
   const navigate = useNavigate();
   const [equipmentName, setEquipmentName] = useState("");
   const [department, setDepartment] = useState("");
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [departmentId, setDepartmentId] = useState<number | "">("");
+
+
+  useEffect(() => {
+    const clinic = localStorage.getItem("clinic");
+    if (!clinic) return;
+  
+    const parsed = JSON.parse(clinic);
+    setDepartments(parsed.department || []);
+  }, []);
+  
 
   const handleAdd = () => {
-    if (!equipmentName || !department) { alert("Please enter all fields"); return; }
+    if (!equipmentName || !departmentId) {
+      alert("Please enter all fields");
+      return;
+    }
+    
+    localStorage.setItem("equipmentName", equipmentName);
+    localStorage.setItem("departmentId", String(departmentId));    
     localStorage.setItem("equipmentName", equipmentName);
     localStorage.setItem("department", department);
     onClose();
@@ -29,13 +53,37 @@ const AddEquipmentPopup: React.FC<Props> = ({ open, onClose }) => {
         <TextField label="Equipment Name" fullWidth variant="outlined" size="small" value={equipmentName} onChange={(e) => setEquipmentName(e.target.value)} InputLabelProps={{ shrink: true }}
           sx={{"& .MuiInputLabel-root": { color: "#5F646F !important" }, "& .MuiInputLabel-root.Mui-focused": { color: "#5F646F !important" }, "& .MuiOutlinedInput-root": {"& fieldset": { borderColor: "#CFD1D4" }, "&:hover fieldset": { borderColor: "#CFD1D4" }, "&.Mui-focused fieldset": { borderColor: "#CFD1D4" }}, "& .MuiInputBase-input": { color: "#5F646F" }}}/>
 
-        <TextField label="Department" select fullWidth size="small" variant="outlined" value={department} onChange={(e) => setDepartment(e.target.value)} InputLabelProps={{ shrink: true }}
-          sx={{"& .MuiInputLabel-root": { color: "#5F646F !important" }, "& .MuiInputLabel-root.Mui-focused": { color: "#5F646F !important" }, "& .MuiOutlinedInput-root": {"& fieldset": { borderColor: "#CFD1D4" }, "&:hover fieldset": { borderColor: "#CFD1D4" }, "&.Mui-focused fieldset": { borderColor: "#CFD1D4" }}, "& .MuiInputBase-input": { color: "#5F646F", fontSize: "16px" }}}>
-            <MenuItem value="Embryology">Embryology</MenuItem>
-            <MenuItem value="Andrology">Andrology</MenuItem>
-            <MenuItem value="Cryopreservation">Cryopreservation</MenuItem>
-            <MenuItem value="Environmental">Environmental</MenuItem>
-            <MenuItem value="Lab Equipment">Lab Equipment</MenuItem>
+        <TextField
+          label="Department"
+          select
+          fullWidth
+          size="small"
+          variant="outlined"
+          value={departmentId}
+          onChange={(e) => {
+            const selectedId = Number(e.target.value);
+            setDepartmentId(selectedId);
+          
+            const selectedDept = departments.find(d => d.id === selectedId);
+            setDepartment(selectedDept?.name || "");
+          }}
+          InputLabelProps={{ shrink: true }}
+          sx={{
+            "& .MuiInputLabel-root": { color: "#5F646F !important" },
+            "& .MuiOutlinedInput-root": {
+              "& fieldset": { borderColor: "#CFD1D4" },
+              "&:hover fieldset": { borderColor: "#CFD1D4" },
+              "&.Mui-focused fieldset": { borderColor: "#CFD1D4" },
+            },
+          }}
+        >
+          {departments
+            .filter((d) => d.is_active)
+            .map((dept) => (
+              <MenuItem key={dept.id} value={dept.id}>
+                {dept.name}
+              </MenuItem>
+            ))}
         </TextField>
 
         <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3, gap: 2 }}>

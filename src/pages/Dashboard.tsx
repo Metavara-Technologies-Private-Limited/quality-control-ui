@@ -10,7 +10,12 @@ import AverageParameterCards from "@/components/Dashboard/AverageParameterCards"
 import AssigneePanel from "@/components/Dashboard/AssigneePanel";
 import DashboardHeader from "@/components/Dashboard/DashboardHeader";
 import type { Equipment, Parameter } from "@/types";
-import { mockEquipments, mockParameters } from "@/utils/mockData";
+import {
+  initializeMockData,
+  mockEquipments,
+  mockParameters,
+} from "@/utils/mockData";
+
 const Dashboard = () => {
   const [selectedDepartment, setSelectedDepartment] =
     useState("Embryology");
@@ -23,7 +28,33 @@ const Dashboard = () => {
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [parameters, setParameters] = useState<Parameter[]>([]);
   const [loading] = useState(false);
-
+  
+  useEffect(() => {
+    const load = async () => {
+      await initializeMockData(1); // re-fetch latest backend state
+      
+      const filtered = mockEquipments.filter(
+        (eq) =>
+          eq.department?.name?.trim().toLowerCase() ===
+          selectedDepartment.trim().toLowerCase()
+      );
+  
+      setEquipments(filtered);
+  
+      if (filtered.length > 0) {
+        setSelectedEquipment(filtered[0]);
+  
+        const params = mockParameters.filter(
+          (p) => p.equipment_id === filtered[0].id
+        );
+        setParameters(params);
+        setSelectedParameter(params[0] || null);
+      }
+    };
+  
+    load();
+  }, [selectedDepartment]);
+  
   // ===============================
   // DEPARTMENT CHANGE
   // ===============================

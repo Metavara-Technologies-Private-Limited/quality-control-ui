@@ -43,6 +43,7 @@ export const initializeMockData = async (clinic_id: number) => {
     name: api.name,
   };
 
+  localStorage.setItem("clinic", JSON.stringify(api));
   mockDepartments = api.department.map((d: any, index: number) => ({
     id: index + 1,
     name: d.name,

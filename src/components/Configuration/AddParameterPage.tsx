@@ -101,24 +101,30 @@ const AddParameterPage = () => {
                 // Set count to the maximum Sr. No
                 const maxSrNo = Math.max(...loadedEquipmentTable.map((item: any) => item.sr));
                 setCount(maxSrNo);
-                setSelected(loadedEquipmentTable.map((item) => item.sr));
+                setSelected([]);
                 // Set next Sr. No based on loaded data
                 setNextSrNo(maxSrNo + 1);
             }
             
             // 3. Transform and set Parameters (UPDATED MAPPING HERE)
-            const loadedParams = (passedEquipment.parameters || []).map((p: any) => ({
+            const loadedParams = passedEquipment.parameters.map((p: any) => {
+            const content = p.content || p.parameter_values?.[0]?.content || {};
+            
+            return {
                 name: p.parameter_name,
-                dataType: p.content?.data_type,
-                minValue: p.content?.min_value,
-                maxValue: p.content?.max_value,
-                integerValue: p.content?.integer_value,
-                percentageValue: p.content?.percentage, 
-                textValue: p.content?.text,
-                // CRITICAL FIX: Ensure dropdownValue is an array here
-                dropdownValue: normalizeDropdownValue(p.content?.dropdown || p.content?.selectedOptions), 
-                ...p.content, 
-            }));
+                dataType: content.data_type,
+            
+                minValue: content.min_value,
+                maxValue: content.max_value,
+                integerValue: content.integer_value,
+                percentageValue: content.percentage,
+                textValue: content.text,
+            
+                dropdownValue: normalizeDropdownValue(
+                content.dropdown || content.selectedOptions
+                ),
+            };
+            });              
             setParameters(loadedParams);
 
             localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
@@ -138,53 +144,47 @@ const AddParameterPage = () => {
     }, [parameters, isEditMode]);
 
     const toggleSelection = (num: number) => {
-        setSelected((prev) => {
-            const isCurrentlySelected = prev.includes(num);
-            
-            if (isCurrentlySelected) {
-                // Deselecting - remove from table if exists (Sr. No is NOT reused)
-                setEquipmentTable((prevTable) => 
-                    prevTable.filter((row) => row.equipmentNum !== num)
-                );
-                return prev.filter((i) => i !== num);
-            } else {
-                // Selecting - add back to selection
-                return [...prev, num];
-            }
-        });
-    };
+        setSelected((prev) =>
+          prev.includes(num)
+            ? prev.filter((i) => i !== num)
+            : [...prev, num]
+        );
+      };      
 
     // Watch for count changes and auto-adjust equipment table
     useEffect(() => {
-        if (equipmentTable.length === 0) return; // Don't do anything if table is empty
-        
-        const currentMaxNum = Math.max(...equipmentTable.map(row => row.equipmentNum), 0);
-        
+        if (isEditMode) return;
+      
+        if (equipmentTable.length === 0) return;
+      
+        const currentMaxNum = Math.max(
+          ...equipmentTable.map(row => row.equipmentNum),
+          0
+        );
+      
         if (count > currentMaxNum) {
-            // Increasing count - add new entries with unique Sr. No
-            const lastEntry = equipmentTable[equipmentTable.length - 1];
-            const newEntries = [];
-            
-            for (let i = currentMaxNum + 1; i <= count; i++) {
-                newEntries.push({
-                    sr: nextSrNo + newEntries.length,
-                    equipmentNum: i,
-                    make: lastEntry?.make || "",
-                    model: lastEntry?.model || ""
-                });
-            }
-            
-            if (newEntries.length > 0) {
-                setEquipmentTable(prev => [...prev, ...newEntries]);
-                setSelected(prev => [...prev, ...newEntries.map(e => e.equipmentNum)]);
-                setNextSrNo(prev => prev + newEntries.length);
-            }
-        } else if (count < currentMaxNum) {
-            // Decreasing count - remove entries with equipmentNum > count (Sr. No is NOT reused)
-            setEquipmentTable(prev => prev.filter(row => row.equipmentNum <= count));
-            setSelected(prev => prev.filter(num => num <= count));
+          // add rows ONLY in add mode
+          const newEntries = [];
+          for (let i = currentMaxNum + 1; i <= count; i++) {
+            newEntries.push({
+              sr: nextSrNo + newEntries.length,
+              equipmentNum: i,
+              make: "",
+              model: ""
+            });
+          }
+      
+          if (newEntries.length) {
+            setEquipmentTable(prev => [...prev, ...newEntries]);
+            setNextSrNo(prev => prev + newEntries.length);
+          }
         }
-    }, [count]);
+      
+        if (count < currentMaxNum) {
+          setEquipmentTable(prev => prev.filter(r => r.equipmentNum <= count));
+          setSelected(prev => prev.filter(n => n <= count));
+        }
+      }, [count, isEditMode]);      
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, index: number) => {
         setAnchorEl(event.currentTarget);
@@ -214,31 +214,79 @@ const AddParameterPage = () => {
     };
 
     const handleSaveEquipmentDetails = () => {
-        // Validate make and model are not empty
         if (!make.trim() || !model.trim()) {
-            alert("Please enter both Make and Model");
-            return;
+          alert("Please enter both Make and Model");
+          return;
         }
-
-        // Filter out items that are already in the table
-        const newSelections = selected.filter((num) => !equipmentTable.some((row) => row.equipmentNum === num));
-        
-        // Create new rows for each selected equipment with unique Sr. No
-        const newRows = newSelections.map((num, index) => ({
-            sr: nextSrNo + index,
-            equipmentNum: num,
-            make,
-            model
-        }));
-
-        setEquipmentTable((prev) => [...prev, ...newRows]);
-        setNextSrNo(prev => prev + newRows.length);
-
-        // Reset fields
+      
+        setEquipmentTable((prev) => {
+          let updated = [...prev];
+          let nextSr = nextSrNo;
+      
+          selected.forEach((num) => {
+            const index = updated.findIndex(
+              (row) => row.equipmentNum === num
+            );
+      
+            if (index >= 0) {
+              // 🔁 UPDATE existing row
+              updated[index] = {
+                ...updated[index],
+                make,
+                model,
+              };
+            } else {
+              // ➕ ADD new row
+              updated.push({
+                sr: nextSr,
+                equipmentNum: num,
+                make,
+                model,
+              });
+              nextSr++;
+            }
+          });
+      
+          setNextSrNo(nextSr);
+          return updated;
+        });
+      
         setMake("");
         setModel("");
         setSelected([]);
-    };
+      };
+      
+      useEffect(() => {
+        if (selected.length === 0) {
+          setMake("");
+          setModel("");
+          return;
+        }
+      
+        const selectedRows = equipmentTable.filter((row) =>
+          selected.includes(row.equipmentNum)
+        );
+      
+        // If nothing exists yet → blank (new rows)
+        if (selectedRows.length === 0) {
+          setMake("");
+          setModel("");
+          return;
+        }
+      
+        const firstMake = selectedRows[0]?.make || "";
+        const firstModel = selectedRows[0]?.model || "";
+      
+        const sameMake = selectedRows.every(
+          (row) => (row.make || "") === firstMake
+        );
+        const sameModel = selectedRows.every(
+          (row) => (row.model || "") === firstModel
+        );
+      
+        setMake(sameMake ? firstMake : "");
+        setModel(sameModel ? firstModel : "");
+      }, [selected, equipmentTable]);            
 
     const headerStyle: React.CSSProperties = {
         padding: "10px",
@@ -304,7 +352,7 @@ const AddParameterPage = () => {
                 equipment_name: equipmentName,
                 is_active: true,
                 equipment_details: equipmentTable.map((row) => ({
-                    equipment_num: `${equipmentName}-${row.sr}`, // Use Sr. No instead of equipmentNum
+                    equipment_num: `${equipmentName}-${row.equipmentNum}`, // Use Sr. No instead of equipmentNum
                     make: row.make || "",
                     model: row.model || "",
                     is_active: true,
@@ -312,7 +360,9 @@ const AddParameterPage = () => {
                 parameters: parameters.map((p) => ({
                     parameter_name: p.name,
                     is_active: true,
-                    content: {
+                    parameter_values: [
+                    {   
+                        content: {
                         data_type: p.dataType,
                         min_value: p.minValue,
                         max_value: p.maxValue,
@@ -321,6 +371,8 @@ const AddParameterPage = () => {
                         text: p.textValue,
                         dropdown: p.dropdownValue || [],
                     },
+                    },
+                    ],
                 })),
             };
 
@@ -439,7 +491,12 @@ const AddParameterPage = () => {
             case "Dropdown":
             case "Select":
                 // Since the useEffect now correctly populates p.dropdownValue as an array, use it directly
-                let options: any[] = Array.isArray(p.dropdownValue) ? p.dropdownValue : [];
+                let options = normalizeDropdownValue(
+                    p.dropdownValue ??
+                    p.dropdown ??
+                    p.content?.dropdown ??
+                    p.parameter_values?.[0]?.content?.dropdown
+                  );
                 
                 // Fallback for old data structure if p.dropdownValue is missing
                 if (options.length === 0) {
@@ -754,7 +811,7 @@ const AddParameterPage = () => {
                                 {equipmentTable.map((row, index) => (
                                 <tr key={row.sr} style={{ height: "42px", borderTop: "1px solid #E5E7EB" }}>
                                     <td style={cellStyle}>{row.sr}</td>
-                                    <td style={cellStyle}>{index + 1}</td>
+                                    <td style={cellStyle}>{equipmentName} {row.equipmentNum}</td>
                                     <td style={cellStyle}>{row.make}</td>
                                     <td style={cellStyle}>{row.model}</td>
                                 </tr>

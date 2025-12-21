@@ -13,10 +13,19 @@ import NotificationIcon from '@/assets/icons/notification.svg';
 import MessageQuestionIcon from '@/assets/icons/message-question.svg';
 import UserAvatarIcon from '@/assets/icons/ellipse_12.svg';
 import DropdownArrowIcon from '@/assets/icons/vector.svg';
+import { useEffect, useState } from 'react';
 
 const Header = () => {
   const location = useLocation();
-  
+  const [clinicName, setClinicName] = useState<string>("");
+
+  useEffect(() => {
+    const clinic = localStorage.getItem("clinic");
+    if (clinic) {
+      setClinicName(JSON.parse(clinic).name);
+    }
+  }, []);
+
   const handleMenuOpen = () => {
     // Menu handler implementation
   };
@@ -155,7 +164,7 @@ const Header = () => {
               display: { xs: 'none', md: 'block' },
             }}
           >
-            Clinic: Crysta IVF, Banglore
+              Clinic: {clinicName || "—"}
           </Typography>
 
           <IconButton

@@ -83,9 +83,9 @@ const EquipmentPage = () => {
                 data.department.forEach((dep: any, depIndex: number) => {
                     dep.equipments.forEach((eq: any) => {
                         const newEquipment: Equipment = {
-                            id: equipmentCounter,
+                            id: eq.id, 
                             equipment_name: eq.equipment_name,
-                            dep_id: depIndex + 1,
+                            dep_id: dep.id,
                             created_at: new Date().toISOString(),
                             department: departmentList[depIndex],
                             parameters: [],
@@ -142,13 +142,30 @@ const EquipmentPage = () => {
         setAnchorEl(null);
     };
 
-    const confirmDelete = () => {
-        const newData = equipmentData.filter((item) => item.id !== selectedEquipmentId);
-        setEquipmentData(newData);
-        saveStatus(newData);
-        setShowDeleteDialog(false);
-        setSelectedEquipmentId(null);
-    };
+    const confirmDelete = async () => {
+        if (!selectedEquipmentId) return;
+      
+        try {
+          const equipment = equipmentData.find(e => e.id === selectedEquipmentId);
+          if (!equipment) return;
+      
+          await fetch(
+            `http://127.0.0.1:8000/api/departments/${equipment.dep_id}/equipments/${equipment.id}/delete/`,
+            { method: "DELETE" }
+          );
+      
+          // Update UI after success
+          const newData = equipmentData.filter(item => item.id !== selectedEquipmentId);
+          setEquipmentData(newData);
+          saveStatus(newData);
+      
+        } catch (err) {
+          console.error("Delete failed", err);
+        } finally {
+          setShowDeleteDialog(false);
+          setSelectedEquipmentId(null);
+        }
+      };      
 
     const handleInactiveEquipment = (equipmentId: number) => {
         setSelectedEquipmentId(equipmentId);

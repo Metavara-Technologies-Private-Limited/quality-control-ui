@@ -1,6 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Tabs, Tab, Box } from '@mui/material';
-import { DEPARTMENTS } from '@/utils/constants';
+
+interface Department {
+  id: number;
+  name: string;
+  is_active: boolean;
+}
 
 interface DepartmentTabsProps {
   selected: string;
@@ -8,10 +13,20 @@ interface DepartmentTabsProps {
 }
 
 const DepartmentTabs: React.FC<DepartmentTabsProps> = ({ selected, onChange }) => {
+  const [departments, setDepartments] = useState<Department[]>([]);
+
+  useEffect(() => {
+    const clinic = localStorage.getItem('clinic');
+    if (!clinic) return;
+
+    const parsed = JSON.parse(clinic);
+    setDepartments(parsed.department || []);
+  }, []);
+
   return (
     <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
       <Tabs
-        value={selected} // selected is always a string from state
+        value={selected}
         onChange={(_, newValue) => onChange(newValue)}
         sx={{
           '& .MuiTab-root': {
@@ -36,9 +51,15 @@ const DepartmentTabs: React.FC<DepartmentTabsProps> = ({ selected, onChange }) =
           },
         }}
       >
-        {DEPARTMENTS.map((dept) => (
-          <Tab key={dept} label={dept} value={dept} />
-        ))}
+        {departments
+          .filter((d) => d.is_active)
+          .map((dept) => (
+            <Tab
+              key={dept.id}
+              label={dept.name}
+              value={dept.name}
+            />
+          ))}
       </Tabs>
     </Box>
   );

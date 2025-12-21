@@ -50,8 +50,9 @@ interface EquipmentDetail {
     PARAMETER RENDER LOGIC
 ======================= */
 
-const renderParameterDetails = (p: Parameter) => {
-    const content = p.content;
+const renderParameterDetails = (p: any) => {
+    const content = p.parameter_values?.[0]?.content;
+    if (!content) return null;
 
     if (!content || !content.data_type) { 
         return (
@@ -210,7 +211,7 @@ const ViewEquipment = () => {
             const passedEquipment = location.state.equipment;
             
             // Set initial equipment data
-            setEquipment(passedEquipment);
+            // setEquipment(passedEquipment);
             
             // Always fetch fresh data from API to ensure make/model are loaded
             fetchEquipmentData(1);
@@ -324,7 +325,7 @@ const ViewEquipment = () => {
                             <Typography sx={{ fontSize: 12, color: "#6B7280", mt: 0.5 }}>
                                 Data Type: 
                                 <Chip
-                                    label={p.content?.data_type || "N/A"} 
+                                    label={p.parameter_values?.[0]?.content?.data_type || "N/A"}
                                     size="small"
                                     sx={{
                                         ml: 0.5,
@@ -379,27 +380,18 @@ const ViewEquipment = () => {
                         </TableHead>
                         <TableBody>
                             {equipmentDetails.map((row: EquipmentDetail, idx: number) => {
-                                // Extract the Sr. No from equipment_num (e.g., "CT Scanner-1" -> "1")
                                 const match = row.equipment_num?.match(/-(\d+)$/);
-                                const srNo = match ? match[1] : (idx + 1);
-                                
+                                const equipmentNum = match ? Number(match[1]) : "-";
+
                                 return (
-                                    <TableRow key={idx} sx={{ height: "42px" }}>
-                                        <TableCell sx={{ fontSize: 14, color: "#4B5563" }}>
-                                            {srNo}
-                                        </TableCell>
-                                        <TableCell sx={{ fontSize: 14, color: "#4B5563" }}>
-                                            {idx + 1}
-                                        </TableCell>
-                                        <TableCell sx={{ fontSize: 14, color: "#4B5563" }}>
-                                            {row.make || "-"}
-                                        </TableCell>
-                                        <TableCell sx={{ fontSize: 14, color: "#4B5563" }}>
-                                            {row.model || "-"}
-                                        </TableCell>
+                                    <TableRow key={row.equipment_num}>
+                                    <TableCell>{idx + 1}</TableCell>
+                                    <TableCell>{equipmentName} {equipmentNum}</TableCell>
+                                    <TableCell>{row.make || "-"}</TableCell>
+                                    <TableCell>{row.model || "-"}</TableCell>
                                     </TableRow>
                                 );
-                            })}
+                                })}
                         </TableBody>
                     </Table>
                 </Box>
