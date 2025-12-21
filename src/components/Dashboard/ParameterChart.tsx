@@ -4,6 +4,7 @@ import {
   CardContent,
   Typography,
   Box,
+  Divider,
   IconButton,
   Dialog,
 } from '@mui/material';
@@ -88,6 +89,14 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
     return [];
   }, [chartData, selectedDate]);
 
+const INCUBATOR_BULLET_COLORS: Record<string, string> = {
+  A: '#232323',     // Incubator A bullet color
+  B: '#DDDDDD',     // Incubator B bullet color
+  C: '#FFD0C7',     // Incubator C bullet color
+  D: '#E17E61',     // Incubator D bullet color in the legend
+};
+
+
   if (loading || !chartData) {
     return (
       <Card>
@@ -102,11 +111,40 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
     <Card sx={{ borderRadius: 2, border: '1px solid #e5e7eb' }}>
       <CardContent>
         {/* HEADER */}
-        <Box display="flex" justifyContent="space-between" mb={2}>
-          <Typography fontWeight={600}>
-            {parameterName} Chart
-          </Typography>
+        <Box
+  display="flex"
+  justifyContent="space-between"
+  alignItems="center"
+  mb={2}
+>
+  {/* LEFT: TITLE ONLY */}
+  <Typography fontWeight={700}>
+    {parameterName} Chart
+  </Typography>
 
+  {/* RIGHT: LEGEND + ICONS ----- Incubator A B C D -------- on top of chart */}
+  <Box display="flex" alignItems="center" gap={2}>
+    
+    <Box display="flex" alignItems="center" gap={1}>
+      {chartData.equipment_names.map((name, index) => (
+        <Box key={name} display="flex" alignItems="center" gap={0.5}>
+          <Box
+            sx={{
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              backgroundColor:
+                INCUBATOR_BULLET_COLORS[name] ||
+                chartType === 'bar'
+                  ? CO2_BAR_COLORS[index % CO2_BAR_COLORS.length]
+                  : CHART_COLORS[index % CHART_COLORS.length],
+            }}
+          />
+          <Typography variant="caption">{name}</Typography>
+        </Box>
+      ))}
+    </Box>
+</Box>
           <Box display="flex" gap={1}>
             {/* CHART SWITCH WITH DROPDOWN */}
             <IconButton
@@ -194,6 +232,11 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
           </Box>
         </Dialog>
 
+        <Box sx={{ position: 'relative', left: -16, width: 'calc(100% + 32px)', mb: 2 }}>
+  <Divider />
+</Box>
+
+
         {/* NO DATA / GRAPH */}
         {displayData.length === 0 ? (
           <Box
@@ -214,7 +257,7 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
-                <Legend />
+                
                 {chartData.equipment_names.map((name, index) => (
                   <Bar
                     key={name}
@@ -230,7 +273,6 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
-                <Legend />
                 {chartData.equipment_names.map((name, index) => (
                   <Line
                     key={name}
