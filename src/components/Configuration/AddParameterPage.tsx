@@ -48,6 +48,15 @@ const AddParameterPage = () => {
 
     const [paramToEdit, setParamToEdit] = useState<any>(null);
     const [editingParamIndex, setEditingParamIndex] = useState<number | null>(null);
+    const [originalClinic, setOriginalClinic] = useState<any>(null);
+
+    useEffect(() => {
+        const passedClinic = location.state?.clinic;
+        if (passedClinic) {
+          setOriginalClinic(passedClinic);
+        }
+      }, []);
+      
 
     // Helper to save parameters to localStorage
     const saveParametersToLocalStorage = (params: any[]) => {
@@ -88,6 +97,7 @@ const AddParameterPage = () => {
                 const srNo = numMatch ? parseInt(numMatch[1]) : index + 1;
                 
                 return {
+                    id: detail.id, // 🔑 CRITICAL
                     sr: srNo, // Use the actual Sr. No from backend
                     equipmentNum: srNo, // equipmentNum is same as Sr. No now
                     make: detail.make || "",
@@ -107,24 +117,19 @@ const AddParameterPage = () => {
             }
             
             // 3. Transform and set Parameters (UPDATED MAPPING HERE)
-            const loadedParams = passedEquipment.parameters.map((p: any) => {
-            const content = p.content || p.parameter_values?.[0]?.content || {};
-            
-            return {
+            const loadedParams = passedEquipment.parameters.map((p: any) => ({
+                equipmentParameterId: p.id,   // 🔑 THIS IS WHAT BACKEND WANTS
                 name: p.parameter_name,
-                dataType: content.data_type,
-            
-                minValue: content.min_value,
-                maxValue: content.max_value,
-                integerValue: content.integer_value,
-                percentageValue: content.percentage,
-                textValue: content.text,
-            
+                parameterValueId: p.parameter_values?.[0]?.id,
+                dataType: p.parameter_values?.[0]?.content?.data_type,
+                minValue: p.parameter_values?.[0]?.content?.min_value,
+                maxValue: p.parameter_values?.[0]?.content?.max_value,
                 dropdownValue: normalizeDropdownValue(
-                content.dropdown || content.selectedOptions
+                  p.parameter_values?.[0]?.content?.dropdown
                 ),
-            };
-            });              
+              }));
+              
+              
             setParameters(loadedParams);
 
             localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
@@ -330,129 +335,55 @@ const AddParameterPage = () => {
     };
 
     const handleFinalSave = async () => {
-        console.log("Save button clicked...");
-
-        // Validate parameters
-        if (parameters.length === 0) {
-            alert("Please add at least one parameter");
-            return;
+        if (!originalClinic || !originalEquipment) return;
+      
+        const updatedClinic = structuredClone(originalClinic);
+      
+        const dept = updatedClinic.department.find(
+          (d: any) => d.id === originalEquipment.department.id
+        );
+      
+        const eq = dept.equipments.find(
+          (e: any) => e.id === originalEquipment.id
+        );
+      
+        eq.parameters = parameters.map((p) => ({
+          id: p.equipmentParameterId,          // required
+          parameter_name: p.name,              // required
+          is_active: true,
+          parameter_values: [
+            {
+              id: p.parameterValueId,          // omit ONLY for new value
+              content: {
+                data_type: p.dataType,
+                min_value: p.minValue,
+                max_value: p.maxValue,
+                integer_value: p.integerValue,
+                percentage: p.percentageValue,
+                text: p.textValue,
+                dropdown: p.dropdownValue,
+              },
+            },
+          ],
+        }));
+      
+        const res = await fetch(
+          `http://127.0.0.1:8000/api/clinics/${updatedClinic.id}/`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedClinic),
+          }
+        );
+      
+        if (!res.ok) {
+          console.error(await res.json());
+          return;
         }
-
-        // Validate equipment table (make and model)
-        if (equipmentTable.length === 0) {
-            alert("Please add equipment details with Make and Model");
-            return;
-        }
-
-        try {
-            const clinicId = 1; // TODO: make dynamic later
-
-            /* 1️⃣ Build equipment payload */
-            const newEquipmentEntry = {
-                equipment_name: equipmentName,
-                is_active: true,
-                equipment_details: equipmentTable.map((row) => ({
-                    equipment_num: `${equipmentName}-${row.equipmentNum}`, // Use Sr. No instead of equipmentNum
-                    make: row.make || "",
-                    model: row.model || "",
-                    is_active: true,
-                })),
-                parameters: parameters.map((p) => ({
-                    parameter_name: p.name,
-                    is_active: true,
-                    parameter_values: [
-                    {   
-                        content: {
-                        data_type: p.dataType,
-                        min_value: p.minValue,
-                        max_value: p.maxValue,
-                        integer_value: p.integerValue,
-                        percentage: p.percentageValue,
-                        text: p.textValue,
-                        dropdown: p.dropdownValue || [],
-                    },
-                    },
-                    ],
-                })),
-            };
-
-            console.log("Equipment table before save:", equipmentTable);
-            console.log("New equipment entry:", newEquipmentEntry);
-
-            /* 2️⃣ Fetch existing clinic */
-            const getRes = await fetch(
-                `http://127.0.0.1:8000/api/get_clinic/${clinicId}/`
-            );
-            if (!getRes.ok) throw new Error("Failed to fetch clinic");
-
-            const clinicData = await getRes.json();
-
-            /* 3️⃣ Merge / Create department */
-            const targetDeptName = department.trim();
-            let deptFound = false;
-
-            const updatedDepartments = clinicData.department.map((dept: any) => {
-                if (dept.name.trim().toLowerCase() === targetDeptName.toLowerCase()) {
-                    deptFound = true;
-
-                    const filteredEquipments = isEditMode
-                        ? dept.equipments.filter(
-                                (e: any) =>
-                                    e.equipment_name !==
-                                    originalEquipment?.equipment_name
-                            )
-                        : dept.equipments;
-
-                    return {
-                        ...dept,
-                        equipments: [...filteredEquipments, newEquipmentEntry],
-                    };
-                }
-                return dept;
-            });
-
-            /* 4️⃣ If department does NOT exist → create it */
-            if (!deptFound) {
-                updatedDepartments.push({
-                    name: targetDeptName,
-                    is_active: true,
-                    equipments: [newEquipmentEntry],
-                });
-            }
-
-            /* 5️⃣ Final payload */
-            const finalPayload = {
-                ...clinicData,
-                department: updatedDepartments,
-            };
-
-            console.log("Final Payload:", finalPayload);
-
-            /* 6️⃣ ALWAYS PUT (clinic already exists) */
-            const response = await fetch(
-                `http://127.0.0.1:8000/api/clinics/${clinicId}/`,
-                {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(finalPayload),
-                }
-            );
-
-            if (!response.ok) {
-                const err = await response.json();
-                console.error("Backend error:", err);
-                throw new Error("Failed to save clinic");
-            }
-
-            alert("Equipment saved successfully ✅");
-            localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
-            navigate("/configuration");
-
-        } catch (error) {
-            console.error("Save failed:", error);
-            alert("Save failed. Check console for details.");
-        }
-    };
+      
+        alert("Saved successfully");
+      };
+       
 
     // Render parameter details based on data type (UPDATED LOGIC HERE)
     const renderParameterContent = (p: any) => {

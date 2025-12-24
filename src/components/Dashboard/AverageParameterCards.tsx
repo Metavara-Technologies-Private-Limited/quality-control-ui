@@ -8,57 +8,91 @@ import {
   Divider,
 } from "@mui/material";
 import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
-import { getMockChartData } from "@/utils/mockData";
+// import { getMockChartData } from "@/utils/mockData";
 
 interface AverageHumidityProps {
   equipmentId: number;
 }
 
 /* ✅ Correct helper function */
-const getHumidityByIncubator = (equipmentId: number) => {
-  const chart = getMockChartData(equipmentId, "humidity");
-  if (!chart?.data?.length) return [];
+type HumidityItem = {
+  name: string;
+  value: number | null;
+};
 
-  const latest = chart.data[chart.data.length - 1];
+const getHumidityByIncubator = (equipmentId: number): HumidityItem[] => {
+  const rawClinic = localStorage.getItem("clinic");
+  if (!rawClinic) return [];
 
-  return [
-    { name: "Incubator A", value: latest["Incubator A"] },
-    { name: "Incubator B", value: latest["Incubator B"] },
-    { name: "Incubator C", value: latest["Incubator C"] },
-    { name: "Incubator D", value: latest["Incubator D"] },
-  ];
+  const clinic = JSON.parse(rawClinic);
+  const result: HumidityItem[] = [];
+
+  clinic.department?.forEach((dept: any) => {
+    dept.equipments
+      ?.filter((e: any) => e.id === equipmentId)
+      .forEach((equipment: any) => {
+        const humidityParam = equipment.parameters?.find((p: any) =>
+          p.parameter_name?.toLowerCase().includes("humidity")
+        );
+
+        const pv = humidityParam?.parameter_values?.[0];
+        const readings = pv?.content?.readings ?? [];
+
+        // group readings by equipment_detail_id
+        const byDetail: Record<number, any[]> = {};
+        readings.forEach((r: any) => {
+          byDetail[r.equipment_detail_id] ??= [];
+          byDetail[r.equipment_detail_id].push(r);
+        });
+
+        equipment.equipment_details?.forEach((detail: any) => {
+          const list = byDetail[detail.id];
+
+          if (!list || list.length === 0) {
+            // ✅ humidity missing OR no readings
+            result.push({
+              name: detail.equipment_num,
+              value: null,
+            });
+            return;
+          }
+
+          const latest = list
+            .sort(
+              (a, b) =>
+                new Date(a.recorded_at).getTime() -
+                new Date(b.recorded_at).getTime()
+            )
+            .at(-1);
+
+          result.push({
+            name: detail.equipment_num,
+            value: latest ? Number(latest.value) : null,
+          });
+        });
+      });
+  });
+
+  return result;
 };
 
 const AverageHumidity: React.FC<AverageHumidityProps> = ({ equipmentId }) => {
-  /* ✅ Fixed useMemo */
   const incubators = useMemo(
     () => getHumidityByIncubator(equipmentId),
     [equipmentId]
   );
 
   return (
-    <Card
-      sx={{
-        height: "100%",
-        minHeight: 350,
-        borderRadius: 3,
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      {/* HEADER */}
+    <Card sx={{ height: "100%", minHeight: 350, borderRadius: 3 }}>
       <CardContent
         sx={{
           height: 56,
           display: "flex",
-          alignItems: "center",
           justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        <Typography fontWeight={700}>
-          Average Humidity
-        </Typography>
-
+        <Typography fontWeight={700}>Average Humidity</Typography>
         <IconButton size="small">
           <FilterAltOutlinedIcon fontSize="small" />
         </IconButton>
@@ -66,7 +100,6 @@ const AverageHumidity: React.FC<AverageHumidityProps> = ({ equipmentId }) => {
 
       <Divider />
 
-      {/* BODY */}
       <Box
         sx={{
           p: 2.5,
@@ -75,31 +108,42 @@ const AverageHumidity: React.FC<AverageHumidityProps> = ({ equipmentId }) => {
           gap: 2,
         }}
       >
-        {incubators.map((item) => (
-          <Box
-            key={item.name}
-            sx={{
-              p: 2,
-              borderRadius: 3,
-              backgroundColor: "#F9FAFB",
-            }}
-          >
-            <Typography fontSize={14} color="text.secondary">
-              {item.name}
-            </Typography>
+        {incubators.map((item) => {
+          const isHigh = item.value !== null && item.value >= 85;
 
-            <Typography fontSize={26} fontWeight={700}>
-              {item.value}%
-            </Typography>
-
-            <Typography
-              fontSize={13}
-              color={item.value >= 85 ? "#22c55e" : "#ef4444"}
+          return (
+            <Box
+              key={item.name}
+              sx={{ p: 2, borderRadius: 3, backgroundColor: "#F9FAFB" }}
             >
-              {item.value >= 85 ? "▲" : "▼"} 2.5% vs last week
-            </Typography>
-          </Box>
-        ))}
+              {/* 👇 Incubator label */}
+              <Typography fontSize={15} fontWeight={600} mb={0.5}>
+                {item.name}
+              </Typography>
+
+              {/* 👇 Value / Empty */}
+              {item.value === null ? (
+                <Typography fontSize={14} color="text.secondary">
+                No humidity for this equipment
+              </Typography>
+              
+              ) : (
+                <>
+                  <Typography fontSize={26} fontWeight={700}>
+                    {item.value}%
+                  </Typography>
+
+                  <Typography
+                    fontSize={13}
+                    color={isHigh ? "#22c55e" : "#ef4444"}
+                  >
+                    {isHigh ? "▲" : "▼"} within range
+                  </Typography>
+                </>
+              )}
+            </Box>
+          );
+        })}
       </Box>
     </Card>
   );

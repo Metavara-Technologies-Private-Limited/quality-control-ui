@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Box, Container, Grid } from "@mui/material";
 import DepartmentTabs from "@/components/Dashboard/DepartmentTabs";
 import EquipmentCards from "@/components/Dashboard/EquipmentCards";
@@ -54,6 +54,25 @@ const Dashboard = () => {
   
     load();
   }, [selectedDepartment]);
+
+  const clinic = JSON.parse(localStorage.getItem("clinic") || "{}");
+
+  const equipmentDetails = useMemo(() => {
+    const clinic = JSON.parse(localStorage.getItem("clinic") || "{}");
+  
+    const dept = clinic.department?.find(
+      (d: any) =>
+        d.name?.toLowerCase() === selectedDepartment.toLowerCase()
+    );
+  
+    const equipment = dept?.equipments?.find(
+      (e: any) =>
+        e.equipment_name?.toLowerCase() ===
+        selectedEquipment?.equipment_name?.toLowerCase()
+    );
+  
+    return equipment?.equipment_details || [];
+  }, [selectedDepartment, selectedEquipment]);
   
   // ===============================
   // DEPARTMENT CHANGE
@@ -166,7 +185,7 @@ const Dashboard = () => {
                     equipmentId={selectedEquipment.id}
                     parameterId={selectedParameter.id}
                     parameterName={selectedParameter.parameter_name}
-                    unit={selectedParameter.Content.unit}
+                    unit={selectedParameter.Content.unit || ""}
                   />
                 </Grid>
                 <Grid item xs={12} md={4}>
@@ -185,13 +204,14 @@ const Dashboard = () => {
                 <Grid item xs={12} md={4}>
                   <IncidentsChart
                     equipmentId={selectedEquipment.id}
+                    equipmentDetails={equipmentDetails}
                   />
                 </Grid>
                 <Grid item xs={12} md={4}>
                   <AverageParameterCards
                     equipmentId={selectedEquipment.id}
-                    parameterId={selectedParameter.id}
-                    parameterName={selectedParameter.parameter_name}
+                    // parameterId={selectedParameter.id}
+                    // parameterName={selectedParameter.parameter_name}
                   />
                 </Grid>
                 <Grid item xs={12} md={4}>

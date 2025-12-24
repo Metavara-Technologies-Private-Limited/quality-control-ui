@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import type {
   Clinic,
   Department,
@@ -44,16 +45,17 @@ export const initializeMockData = async (clinic_id: number) => {
   };
 
   localStorage.setItem("clinic", JSON.stringify(api));
-  mockDepartments = api.department.map((d: any, index: number) => ({
-    id: index + 1,
+  mockDepartments = api.department.map((d: any, _index: number) => ({
+    // id: index + 1,
+    id: d.id,
     name: d.name,
     is_active: d.is_active,
     clinic_id,
     created_at: new Date().toISOString(),
   }));
 
-  let equipmentCounter = 1;
-  let parameterCounter = 1;
+  // let equipmentCounter = 1;
+  // let parameterCounter = 1;
 
   api.department.forEach((dep: any, depIndex: number) => {
     dep.equipments.forEach((eq: any) => {
@@ -65,7 +67,8 @@ export const initializeMockData = async (clinic_id: number) => {
 
       if (!equipment) {
         equipment = {
-          id: equipmentCounter++,
+          // id: equipmentCounter++,
+          id: eq.id,
           equipment_name: eq.equipment_name,
           dep_id: depIndex + 1,
           created_at: new Date().toISOString(),
@@ -95,24 +98,25 @@ export const initializeMockData = async (clinic_id: number) => {
             : normalized.includes("airflow")
             ? "m/s"
             : "°C";
-
+            const pv = param.parameter_values?.[0]; // take latest for now
+            const content = pv?.content || {};
+            
         const newParam: Parameter = {
-          id: parameterCounter++,
+          // id: parameterCounter++,
+          id: param.id,
           parameter_name: param.parameter_name,
           equipment_id: equipment!.id,
           is_active: param.is_active,
           Content: {
-            ...param.content,
-            unit,
-            min_value: 0,
-            max_value: 0,
+            ...content,                 // <-- readings come from here
+            unit: param?.content?.unit || unit,
             control_limits: {
               warning_min: 0,
               warning_max: 0,
               critical_min: 0,
               critical_max: 0,
             },
-          },
+          },          
           created_at: new Date().toISOString(),
           equipment: equipment!,
         };
@@ -150,84 +154,78 @@ export const calculateAverageForEquipment = (
 // PARAMETER CHART DATA
 // ==============================
 
-const generateMockSeries = (
-  baseValue: number,
-  days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-) => {
-  return days.map((day) => ({
-    date: day,
-    value: Number(
-      (baseValue + (Math.random() * 2 - 1)).toFixed(2)
-    ),
-  }));
-};
-
-
 export const getMockChartData = (
   equipmentId: number,
-  parameterName: string
+  parameterId: number
 ) => {
-  const param = mockParameters.find(
-    (p) =>
-      p.equipment_id === equipmentId &&
-      p.parameter_name.toLowerCase() === parameterName.toLowerCase()
-  );
+  const rawClinic = localStorage.getItem("clinic");
+  if (!rawClinic) return emptyChart();
 
-  if (!param) {
-    return { chartType: "line", unit: "", equipment_names: [], data: [] };
+  const clinic = JSON.parse(rawClinic);
+
+  // 1. Find equipment
+  const equipment = clinic.department
+    ?.flatMap((d: any) => d.equipments || [])
+    .find((e: any) => e.id === equipmentId);
+
+  if (!equipment) return emptyChart();
+
+  // 2. Map equipment_detail_id → equipment_num
+  const detailMap: Record<number, string> = {};
+  equipment.equipment_details?.forEach((ed: any) => {
+    detailMap[ed.id] = ed.equipment_num;
+  });
+
+  // 3. Find parameter
+  const parameter = equipment.parameters?.find(
+    (p: any) => p.id === parameterId
+  );  
+
+  const content = parameter?.parameter_values?.[0]?.content;
+  if (!content) return emptyChart();
+
+  // 4. Skip non-numeric data types
+  if (["Select", "Dropdown"].includes(content.data_type)) {
+    return emptyChart();
   }
 
-  const content = param.Content;
-  const equipment = mockEquipments.find(
-    (e) => e.id === equipmentId
-  );
-
-  if (!equipment) {
-    return { chartType: "line", unit: "", equipment_names: [], data: [] };
-  }
-
-  // Decide base value from DB config
-  let baseValue = 0;
-
-  if (content.data_type === "Decimal") {
-    baseValue =
-      (Number(content.min_value) + Number(content.max_value)) / 2;
-  }
-
-  if (content.data_type === "Integer") {
-    baseValue = Number(content.integer_value || 0);
-  }
-
-  if (content.data_type === "Percentage") {
-    baseValue = Number(content.percentage || 0);
-  }
-
-  // Dropdown / Select → NO chart
-  if (
-    content.data_type === "Dropdown" ||
-    content.data_type === "Select"
-  ) {
+  // 5. No readings
+  if (!content.readings?.length) {
     return {
-      chartType: "line",
-      unit: "",
-      equipment_names: [],
-      data: [],
+      ...emptyChart(),
+      unit: content.unit || "",
     };
   }
 
-  const series = generateMockSeries(baseValue);
+  // 6. Shape chart data
+  const dataMap: Record<string, any> = {};
+  const equipmentNames = new Set<string>();
+
+  content.readings.forEach((r: any) => {
+    const time = dayjs(r.recorded_at).format("HH:mm");
+    const eqName = detailMap[r.equipment_detail_id];
+    if (!eqName) return;
+
+    equipmentNames.add(eqName);
+    if (!dataMap[time]) dataMap[time] = { date: time };
+    dataMap[time][eqName] = Number(r.value);
+  });
 
   return {
     chartType: "line",
-    unit: content.unit,
-    equipment_names: [equipment.equipment_name],
-    data: series.map((s) => ({
-      date: s.date,
-      [equipment.equipment_name]: s.value,
-    })),
+    unit: content.unit || "",
+    equipment_names: Array.from(equipmentNames),
+    data: Object.values(dataMap),
   };
 };
 
+// Helper
+const emptyChart = () => ({
+  chartType: "line",
+  unit: "",
+  equipment_names: [],
+  data: [],
+});
 
 // ==============================
 // MOCK RECENT ACTIVITY DATA

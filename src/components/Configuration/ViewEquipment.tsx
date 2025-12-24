@@ -150,6 +150,7 @@ const ViewEquipment = () => {
     const [equipment, setEquipment] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [clinic, setClinic] = useState<any>(null);
 
     // Fetch equipment data from API
     const fetchEquipmentData = async (clinicId: number) => {
@@ -164,6 +165,7 @@ const ViewEquipment = () => {
             }
             
             const clinicData = await response.json();
+            setClinic(clinicData); // ✅ STORE FULL CLINIC
             console.log("Fetched clinic data:", clinicData);
             
             // Find the equipment from the passed state
@@ -186,8 +188,11 @@ const ViewEquipment = () => {
                             // Attach department info
                             setEquipment({
                                 ...foundEquipment,
-                                department: { name: dept.name }
-                            });
+                                department: { 
+                                  name: dept.name,
+                                  id: dept.id,          // 🔑 ADD THIS
+                                }
+                              });                              
                             setLoading(false);
                             return;
                         }
@@ -408,7 +413,11 @@ const ViewEquipment = () => {
                     variant="contained"
                     onClick={() =>
                         navigate("/configuration/equipment/add-parameter", {
-                            state: { equipment },
+                          state: {
+                            equipment,
+                            clinic,
+                            departmentId: equipment.department.id,
+                          },
                         })
                     }
                     sx={{

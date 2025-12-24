@@ -39,11 +39,23 @@ export interface EquipmentDetail {
   equipment?: Equipment;
 }
 
+export interface ParameterReading {
+  value: number;
+  recorded_at: string;
+}
+
 export interface ParameterContent {
-  min_value: number;
-  max_value: number;
-  default_value?: number;
-  unit: string;
+  data_type?: string;
+  min_value?: number | string;
+  max_value?: number | string;
+  unit?: string;
+  percentage?: string;
+  dropdown?: string[];
+  readings?: {
+    value: number | string;
+    recorded_at: string;
+    equipment_detail_id: number;
+  }[];
   control_limits: {
     warning_min: number;
     warning_max: number;

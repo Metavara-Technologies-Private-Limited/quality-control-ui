@@ -13,57 +13,100 @@ import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import RemoveIcon from "@mui/icons-material/Remove";
 
-import { mockActivities } from "@/utils/mockData";
+/* -----------------------------
+   TYPES
+----------------------------- */
+type IncidentSummary = {
+  high: number;
+  normal: number;
+  low: number;
+};
 
 interface IncidentsChartProps {
   equipmentId: number;
+  equipmentDetails: { id: number; equipment_num: string }[];
 }
 
 /* -----------------------------
-   INCUBATOR COLORS
+   COLORS
 ----------------------------- */
 const INCUBATOR_COLORS = [
-  "#6B7280", // Incubator A
-  "#9CA3AF", // Incubator B
-  "#FBCFE8", // Incubator C
-  "#FB7185", // Incubator D
+  "#6B7280",
+  "#9CA3AF",
+  "#FBCFE8",
+  "#FB7185",
 ];
 
 /* -----------------------------
-   INCIDENT SUMMARY (LOGIC FIXED)
+   INCIDENT LOGIC (API BASED)
 ----------------------------- */
-const getIncidentSummary = () => {
+const getIncidentSummary = (equipmentId: number): IncidentSummary => {
+  const rawClinic = localStorage.getItem("clinic");
+  if (!rawClinic) return { high: 0, normal: 0, low: 0 };
+
+  const clinic = JSON.parse(rawClinic);
   let high = 0;
   let normal = 0;
   let low = 0;
 
-  mockActivities.forEach((a) => {
-    if (a.type === "temperature" || a.type === "co2") high++;
-    else if (a.type === "humidity") normal++;
-    else low++;
+  clinic.department?.forEach((dept: any) => {
+    dept.equipments
+      ?.filter((e: any) => e.id === equipmentId)
+      .forEach((equipment: any) => {
+        equipment.parameters?.forEach((param: any) => {
+          const pv = param.parameter_values?.[0];
+          const readings = pv?.content?.readings ?? [];
+          const min = Number(pv?.content?.min_value);
+          const max = Number(pv?.content?.max_value);
+
+          // group by equipment_detail_id
+          const byDetail: Record<number, any[]> = {};
+          readings.forEach((r: any) => {
+            byDetail[r.equipment_detail_id] ??= [];
+            byDetail[r.equipment_detail_id].push(r);
+          });
+
+          Object.values(byDetail).forEach((list) => {
+            if (list.length === 0) return;
+
+            const latest = list.sort(
+              (a, b) =>
+                new Date(a.recorded_at).getTime() -
+                new Date(b.recorded_at).getTime()
+            ).at(-1);
+
+            if (!latest) return;
+
+            const value = Number(latest.value);
+
+            if (value > max) high++;
+            else if (value < min) low++;
+            else normal++;
+          });
+        });
+      });
   });
 
   return { high, normal, low };
 };
 
+
 /* -----------------------------
    COMPONENT
 ----------------------------- */
-const IncidentsChart: React.FC<IncidentsChartProps> = ({ equipmentId }) => {
-  const { high, normal, low } = useMemo(() => getIncidentSummary(), []);
+const IncidentsChart: React.FC<IncidentsChartProps> = ({
+  equipmentId,
+  equipmentDetails,
+}) => {
+  const { high, normal, low } = useMemo(
+    () => getIncidentSummary(equipmentId),
+    [equipmentId]
+  );
 
   const total = high + normal + low;
 
   return (
-    <Card
-      sx={{
-        height: "100%",
-        minHeight: 350,
-        borderRadius: 3,
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
+    <Card sx={{ height: "100%", minHeight: 350, borderRadius: 3 }}>
       {/* HEADER */}
       <CardContent
         sx={{
@@ -88,56 +131,26 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({ equipmentId }) => {
           display: "grid",
           gridTemplateColumns: "1.2fr 1fr",
           gap: 3,
-          alignItems: "center",
         }}
       >
-        {/* TOTAL DONUT (MATCHES IMAGE STYLE) */}
+        {/* DONUT */}
         <Box sx={{ position: "relative", height: 220 }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              {/* Incubator A */}
-              <Pie
-                data={[{ value: total }]}
-                dataKey="value"
-                innerRadius={90}
-                outerRadius={100}
-                fill={INCUBATOR_COLORS[0]}
-                stroke="none"
-              />
-
-              {/* Incubator B */}
-              <Pie
-                data={[{ value: total }]}
-                dataKey="value"
-                innerRadius={78}
-                outerRadius={86}
-                fill={INCUBATOR_COLORS[1]}
-                stroke="none"
-              />
-
-              {/* Incubator C */}
-              <Pie
-                data={[{ value: total }]}
-                dataKey="value"
-                innerRadius={66}
-                outerRadius={74}
-                fill={INCUBATOR_COLORS[2]}
-                stroke="none"
-              />
-
-              {/* Incubator D */}
-              <Pie
-                data={[{ value: total }]}
-                dataKey="value"
-                innerRadius={54}
-                outerRadius={62}
-                fill={INCUBATOR_COLORS[3]}
-                stroke="none"
-              />
+              {INCUBATOR_COLORS.map((color, idx) => (
+                <Pie
+                  key={idx}
+                  data={[{ value: total }]}
+                  dataKey="value"
+                  innerRadius={90 - idx * 12}
+                  outerRadius={100 - idx * 12}
+                  fill={color}
+                  stroke="none"
+                />
+              ))}
             </PieChart>
           </ResponsiveContainer>
 
-          {/* CENTER TEXT */}
           <Box
             sx={{
               position: "absolute",
@@ -156,127 +169,86 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({ equipmentId }) => {
           </Box>
         </Box>
 
-        {/* RIGHT PANEL (UNCHANGED) */}
+        {/* RIGHT PANEL */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-          {/* HIGH */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              px: 2,
-              py: 1.2,
-              borderRadius: 3,
-              backgroundColor: "#F9FAFB",
-            }}
-          >
-            <Box
-              sx={{
-                width: 22,
-                height: 22,
-                borderRadius: "50%",
-                backgroundColor: "#F25B5B",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <ArrowUpwardIcon sx={{ fontSize: 14, color: "#fff" }} />
-            </Box>
-            <Typography fontWeight={600}>
-              High ({high} logs)
-            </Typography>
-          </Box>
+          <SummaryRow
+            label={`High (${high} logs)`}
+            color="#F25B5B"
+            icon={<ArrowUpwardIcon />}
+          />
+          <SummaryRow
+            label={`Normal (${normal} logs)`}
+            color="#47B35F"
+            icon={<RemoveIcon />}
+          />
+          <SummaryRow
+            label={`Low (${low} logs)`}
+            color="#9E9E9E"
+            icon={<ArrowDownwardIcon />}
+          />
 
-          {/* NORMAL */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              px: 2,
-              py: 1.2,
-              borderRadius: 3,
-              backgroundColor: "#F9FAFB",
-            }}
-          >
-            <Box
-              sx={{
-                width: 22,
-                height: 22,
-                borderRadius: "50%",
-                backgroundColor: "#47B35F",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <RemoveIcon sx={{ fontSize: 14, color: "#fff" }} />
-            </Box>
-            <Typography fontWeight={600}>
-              Normal ({normal} logs)
-            </Typography>
-          </Box>
-
-          {/* LOW */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              px: 2,
-              py: 1.2,
-              borderRadius: 3,
-              backgroundColor: "#F9FAFB",
-            }}
-          >
-            <Box
-              sx={{
-                width: 22,
-                height: 22,
-                borderRadius: "50%",
-                backgroundColor: "#9E9E9E",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <ArrowDownwardIcon sx={{ fontSize: 14, color: "#fff" }} />
-            </Box>
-            <Typography fontWeight={600}>
-              Low ({low} logs)
-            </Typography>
-          </Box>
-
-          {/* INCUBATOR LEGEND */}
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 1,
-              mt: 1,
-            }}
-          >
-            {["Incubator A", "Incubator B", "Incubator C", "Incubator D"].map(
-              (name, idx) => (
-                <Box key={name} sx={{ display: "flex", gap: 1 }}>
-                  <Box
-                    sx={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: "50%",
-                      backgroundColor: INCUBATOR_COLORS[idx],
-                    }}
-                  />
-                  <Typography fontSize={12}>{name}</Typography>
-                </Box>
-              )
-            )}
+          {/* LEGEND */}
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
+            {equipmentDetails.map((ed, idx) => (
+              <Box key={ed.id} sx={{ display: "flex", gap: 1 }}>
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    backgroundColor:
+                      INCUBATOR_COLORS[idx % INCUBATOR_COLORS.length],
+                  }}
+                />
+                <Typography fontSize={12}>{ed.equipment_num}</Typography>
+              </Box>
+            ))}
           </Box>
         </Box>
       </Box>
     </Card>
   );
 };
+
+/* -----------------------------
+   SMALL UI HELPER
+----------------------------- */
+const SummaryRow = ({
+  label,
+  color,
+  icon,
+}: {
+  label: string;
+  color: string;
+  icon: React.ReactNode;
+}) => (
+  <Box
+    sx={{
+      display: "flex",
+      alignItems: "center",
+      gap: 1.5,
+      px: 2,
+      py: 1.2,
+      borderRadius: 3,
+      backgroundColor: "#F9FAFB",
+    }}
+  >
+    <Box
+      sx={{
+        width: 22,
+        height: 22,
+        borderRadius: "50%",
+        backgroundColor: color,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#fff",
+      }}
+    >
+      {icon}
+    </Box>
+    <Typography fontWeight={600}>{label}</Typography>
+  </Box>
+);
 
 export default IncidentsChart;
