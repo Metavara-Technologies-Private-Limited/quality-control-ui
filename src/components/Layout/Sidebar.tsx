@@ -96,15 +96,14 @@ const Sidebar = () => {
       }}
     >
       {/* Logo at Top */}
-      <Box sx={{ p: { xs: 1.5, sm: 2 }, pb: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Box sx={{ p: { xs: 1.5, sm: 2 }, pb: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'start' }}>
         <img
           src={ClinicLogo}
           alt="Clinic Logo"
           style={{
-            width: '80%',
-            maxWidth: 134,
-            height: 'auto',
-            transform: 'rotate(0deg)',
+            width: '134px',
+            maxWidth: '134',
+            height: '46px',
             opacity: 1,
             objectFit: 'contain',
             display: 'block',
@@ -395,10 +394,10 @@ const Sidebar = () => {
     {/* Quality Control Title */}
     <Typography
       sx={{
-        fontFamily: 'Montserrat, sans-serif',
+        fontFamily: 'Montserrat',
         fontWeight: 700,
-        fontSize: { xs: '14px', sm: '15px', md: '16px', lg: '17px' },
-        lineHeight: 1.4,
+        fontSize: { xs: '14px', sm: '16px', md: '20px', lg: '20px' },
+        lineHeight: '100%',
         color: '#E17E61',
         display: 'flex',
         alignItems: 'center',
@@ -458,8 +457,9 @@ const Sidebar = () => {
                       primary={item.text}
                       primaryTypographyProps={{
                         fontSize: { xs: '13px', sm: '14px', md: '15px', lg: '16px' },
-                        fontWeight: isActive ? 700 : 400,
-                        color: isActive ? '#111827' : '#9ca3af',
+                        fontWeight: isActive ? 700 : 500,
+                        fontFamily: 'Montserrat',
+                        color: isActive ? '#232323' : '#9E9E9E',
                         letterSpacing: '-0.01em',
                       }}
                     />
@@ -517,28 +517,16 @@ const Sidebar = () => {
                   }}
                 />
               </Box>
-              <Box
-                sx={{
-                  width: '100%',
-                  height: 'auto',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  px: { xs: 1, sm: 1.5, md: 2 },
-                }}
-              >
-                <img
-                  src={UpdatedVersionIcon}
-                  alt="Updated Version 2.0"
-                  style={{
-                    width: '60%',
-                    maxWidth: 124,
-                    height: 'auto',
-                    objectFit: 'contain',
-                    display: 'block',
-                  }}
-                />
-              </Box>
+              <Typography sx={{
+                fontSize: { xs: '10px', sm: '11px', md: '12px' },
+                fontWeight: 500,
+                fontFamily: 'Inter',
+                color: '#CFD1D4',
+                letterSpacing: '-0.01em',  
+              }}>
+                Updated Version 2.0
+              </Typography>
+                
             </Box>
           </Box>
         </Box>
