@@ -42,7 +42,7 @@ const Header = () => {
         {/* LEFT */}
         <Breadcrumbs>
           <Typography 
-          sx={{ color: '#666666', fontFamily:'montserrat', 
+          sx={{ color: '#666666', fontFamily:'sans-serif', 
                 fontWeight:'500', fontSize:'16px' }}>
             Quality Control
           </Typography>
@@ -51,7 +51,7 @@ const Header = () => {
             sx={{ textTransform: 'capitalize', 
             fontWeight: '700', 
             fontSize: '18px',
-            fontFamily:'montserrat',
+            fontFamily:'sans-serif',
             color: '#232323' }}>
               {path}
             </Typography>
@@ -156,7 +156,7 @@ const Header = () => {
                 fontWeight: 700,
                 lineHeight: '20px',
                 letterSpacing: '0px',
-                fontFamily: 'Nunito',
+                fontFamily: 'sans-serif',
               }}>Kate Russell</Typography>
 
               <Typography 
@@ -165,7 +165,7 @@ const Header = () => {
               lineHeight:'18px',
               letterSpacing:'0px',
               color:'#9E9E9E',
-              fontFamily:'noto sans'}}>Receptionist</Typography>
+              fontFamily:'sans-serif'}}>Receptionist</Typography>
 
             </Box>
             <KeyboardArrowDownIcon

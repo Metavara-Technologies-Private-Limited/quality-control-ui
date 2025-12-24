@@ -14,23 +14,32 @@ interface AverageHumidityProps {
   equipmentId: number;
 }
 
-/* ✅ Correct helper function */
-const getHumidityByIncubator = (equipmentId: number) => {
-  const chart = getMockChartData(equipmentId, "humidity");
-  if (!chart?.data?.length) return [];
+/* ✅ FIXED TYPE */
+type IncubatorHumidity = {
+  name: string;
+  value: number;
+};
 
-  const latest = chart.data[chart.data.length - 1];
+/* ✅ FIXED HELPER FUNCTION (NO TS ERROR) */
+const getHumidityByIncubator = (
+  equipmentId: number
+): IncubatorHumidity[] => {
+  const chart = getMockChartData(equipmentId, "humidity");
+  if (!chart || !chart.data || chart.data.length === 0) return [];
+
+  const latest = chart.data[
+    chart.data.length - 1
+  ] as Record<string, number>;
 
   return [
-    { name: "Incubator A", value: latest["Incubator A"] },
-    { name: "Incubator B", value: latest["Incubator B"] },
-    { name: "Incubator C", value: latest["Incubator C"] },
-    { name: "Incubator D", value: latest["Incubator D"] },
+    { name: "Incubator A", value: latest["Incubator A"] ?? 0 },
+    { name: "Incubator B", value: latest["Incubator B"] ?? 0 },
+    { name: "Incubator C", value: latest["Incubator C"] ?? 0 },
+    { name: "Incubator D", value: latest["Incubator D"] ?? 0 },
   ];
 };
 
 const AverageHumidity: React.FC<AverageHumidityProps> = ({ equipmentId }) => {
-  /* ✅ Fixed useMemo */
   const incubators = useMemo(
     () => getHumidityByIncubator(equipmentId),
     [equipmentId]
@@ -55,7 +64,13 @@ const AverageHumidity: React.FC<AverageHumidityProps> = ({ equipmentId }) => {
           justifyContent: "space-between",
         }}
       >
-        <Typography fontWeight={700}>
+        <Typography
+          sx={{
+            fontSize: 16,
+            fontFamily: "sans-serif",
+            fontWeight: 700,
+          }}
+        >
           Average Humidity
         </Typography>
 
@@ -84,16 +99,17 @@ const AverageHumidity: React.FC<AverageHumidityProps> = ({ equipmentId }) => {
               backgroundColor: "#F9FAFB",
             }}
           >
-            <Typography fontSize={14} color="text.secondary">
+            <Typography fontSize={14} fontFamily="sans-serif" color="text.secondary">
               {item.name}
             </Typography>
 
-            <Typography fontSize={26} fontWeight={700}>
+            <Typography fontSize={26} fontWeight={700} fontFamily="sans-serif">
               {item.value}%
             </Typography>
 
             <Typography
               fontSize={13}
+              fontFamily="sans-serif"
               color={item.value >= 85 ? "#22c55e" : "#ef4444"}
             >
               {item.value >= 85 ? "▲" : "▼"} 2.5% vs last week

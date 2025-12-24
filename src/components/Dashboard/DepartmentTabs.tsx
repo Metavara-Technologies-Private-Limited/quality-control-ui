@@ -34,7 +34,7 @@ const DepartmentTabs: React.FC<DepartmentTabsProps> = ({ selected, onChange }) =
             fontWeight: 500,
             minHeight: 48,
             fontSize: '16px',
-           fontFamily: 'Montserrat',
+           fontFamily: 'sans-serif',
             style:'ExtraBold',
             color: '#232323',
             lineHeight: '22px',
@@ -51,8 +51,8 @@ const DepartmentTabs: React.FC<DepartmentTabsProps> = ({ selected, onChange }) =
           },
           '& .MuiTabs-indicator': {
             backgroundColor: '#ea580c',
-            height: 3,
-            borderRadius: '3px 3px 0 0',
+            height: 2,
+            borderRadius: '2px 2px 0 0',
           },
         }}
       >

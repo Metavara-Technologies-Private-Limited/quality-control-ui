@@ -394,9 +394,9 @@ const Sidebar = () => {
     {/* Quality Control Title */}
     <Typography
       sx={{
-        fontFamily: 'Montserrat',
+        fontFamily: 'sans-serif',
         fontWeight: 700,
-        fontSize: { xs: '14px', sm: '16px', md: '20px', lg: '20px' },
+        fontSize: { xs: '14px', sm: '16px', md: '18px', lg: '18px' },
         lineHeight: '100%',
         color: '#E17E61',
         display: 'flex',
@@ -458,7 +458,7 @@ const Sidebar = () => {
                       primaryTypographyProps={{
                         fontSize: { xs: '13px', sm: '14px', md: '15px', lg: '16px' },
                         fontWeight: isActive ? 700 : 500,
-                        fontFamily: 'Montserrat',
+                        fontFamily: 'sans-serif',
                         color: isActive ? '#232323' : '#9E9E9E',
                         letterSpacing: '-0.01em',
                       }}

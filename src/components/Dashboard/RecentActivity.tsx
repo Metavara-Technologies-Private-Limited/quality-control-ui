@@ -8,6 +8,7 @@ import {
   ListItemIcon,
   ListItemText,
   IconButton,
+  Divider,
   Box,
   Button,
 } from "@mui/material";
@@ -72,15 +73,33 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ parameterType }) => {
       <CardContent>
         {/* Title + Clear All Button */}
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-          <Typography variant="h6">{getTitle()}</Typography>
-          <Button size="small" onClick={() => setActivities([])} sx={{ textTransform: "none" }}>
+          <Typography variant="h6"
+          sx={{
+            fontFamily: "sans-serif",     
+            fontWeight: 600,
+          }}>{getTitle()}</Typography>
+          <Button size="small" onClick={() => setActivities([])}
+                  sx={{
+            textTransform: "none",
+            fontFamily: "sans-serif",    
+            color: "#5A8AEA",             
+            fontWeight: 600,
+            fontSize: "16px",
+            textDecoration: "underline",
+            "&:hover": {
+              backgroundColor: "rgba(239, 68, 68, 0.08)", // ✅ HOVER EFFECT
+            },
+          }}>
             Clear All
           </Button>
         </Box>
+<Box sx={{ position: 'relative', left: -16, width: 'calc(100% + 32px)', mb: 1, mt: -1 }}>
+  <Divider />
+</Box>
 
         <List sx={{ maxHeight: 400, overflowY: "auto" }}>
           {activities.length === 0 && (
-            <Typography variant="body2" sx={{ textAlign: "center", color: "#9ca3af", py: 3 }}>
+            <Typography variant="body2" sx={{ textAlign: "center", fontFamily:'sans-serif',color: "#9ca3af", py: 3 }}>
               No recent activity
             </Typography>
           )}
