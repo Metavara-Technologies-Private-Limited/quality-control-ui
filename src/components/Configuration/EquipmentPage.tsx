@@ -256,13 +256,13 @@ const EquipmentPage = () => {
                                         position: "absolute",
                                         top: 8,
                                         right: 8,
-                                        background: isInactive ? "#ffcccc" : "#d4f8d4",
-                                        color: isInactive ? "#b30000" : "#008000",
-                                        fontSize: "10px",
+                                        background: isInactive ? "#F25B5B80" : "#d4f8d4",
+                                        color: isInactive ? "#f82a2aff" : "#008000",
+                                        fontSize: "12px",
                                         fontWeight: 700,
                                         px: 1.3,
                                         py: 0.5,
-                                        borderRadius: "6px",
+                                        borderRadius: "20px",
                                         textTransform: "uppercase",
                                     }}
                                 >
@@ -270,17 +270,17 @@ const EquipmentPage = () => {
                                 </Box>
 
                                 <CardContent sx={{ pb: 1 }}>
-                                    <Typography sx={{ fontWeight: 600, fontSize: "14px" }}>
+                                    <Typography sx={{ fontWeight: 700, fontSize: "16px", color: "#232323" }}>
                                         <b>{item.equipment_name}</b>
                                     </Typography>
 
                                     <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}>
                                         <Box>
-                                            <Typography sx={{ fontSize: 13, color: "#9CA3AF" }}>
+                                            <Typography sx={{ fontSize: 14, color: "#9CA3AF" }}>
                                                 Department:
                                             </Typography>
-                                            <Typography sx={{ fontSize: 14 }}>
-                                                <b>{item.department?.name}</b>
+                                            <Typography sx={{ fontSize: 14, fontWeight: 500 }}>
+                                                {item.department?.name}
                                             </Typography>
                                         </Box>
 
@@ -288,14 +288,14 @@ const EquipmentPage = () => {
                                             <Typography sx={{ fontSize: 13, color: "#9CA3AF" }}>
                                                 Parameters:
                                             </Typography>
-                                            <Typography sx={{ fontSize: 14 }}>
-                                                <b>{item.parameters.length}</b>
+                                            <Typography sx={{ fontSize: 16 }}>
+                                              {item.parameters.length}
                                             </Typography>
                                         </Box>
                                     </Box>
                                 </CardContent>
 
-                                <Box sx={{ height: 1, background: "#E5E7EB", mx: 2 }} />
+                                <Divider sx={{ mx: 0 }} />
 
                                 {/* Bottom Icons */}
                                 <Box
@@ -308,9 +308,9 @@ const EquipmentPage = () => {
                                     }}
                                 >
                                   
-                                    <Typography sx={{ fontSize: 14, color: "#4B5563",  gap: 1,mr : 1}}>
-                                        <span style={{ color: "#9CA3AF" }}>Created:</span>{" "}
-                                       <b> {getCreatedDate(item.created_at)}</b>
+                                    <Typography sx={{ fontSize: 16, fontWeight:500, color: "#4B5563",  gap: 1,mr : 1}}>
+                                        <span style={{ color: "#9CA3AF", fontSize: 14 }}>Created Date:</span>{" "}
+                                       {getCreatedDate(item.created_at)}
                                     </Typography>
 
                                     <Box sx={{ display: "flex", gap: 1 }}>
@@ -402,7 +402,7 @@ const EquipmentPage = () => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setShowInactiveDialog(false)}>Cancel</Button>
-                    <Button onClick={confirmInactive} variant="contained" sx={{ background: "red", "&:hover": { background: "red" } }}>
+                    <Button onClick={confirmInactive} variant="contained" sx={{ background: "red", "&:hover": { background: "#c42323ff" } }}>
                         Inactivate
                     </Button>
                 </DialogActions>
@@ -415,8 +415,8 @@ const EquipmentPage = () => {
                     <Typography>Are you sure you want to activate this equipment?</Typography>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setShowActivateDialog(false)}>Cancel</Button>
-                    <Button onClick={confirmActivate} variant="contained" sx={{ background: "#4caf50", "&:hover": { background: "#45a049" } }}>
+                    <Button onClick={() => setShowActivateDialog(false)} variant="outlined"sx={{color:"black", border:"1px solid #000"}} >Cancel</Button>
+                    <Button onClick={confirmActivate} variant="contained" sx={{ background: "#505050", "&:hover": { background: "#505050" } }}>
                         Activate
                     </Button>
                 </DialogActions>

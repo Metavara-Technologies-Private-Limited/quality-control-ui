@@ -50,44 +50,39 @@ interface EquipmentDetail {
     PARAMETER RENDER LOGIC
 ======================= */
 
-const renderParameterDetails = (p: any) => {
+ const renderParameterDetails = (p: any) => {
     const content = p.parameter_values?.[0]?.content;
-    if (!content) return null;
-
-    if (!content || !content.data_type) { 
-        return (
-            <Typography sx={{ fontSize: 12, color: "#9CA3AF" }}>
-                Content configuration missing
-            </Typography>
-        );
-    }
+    if (!content) return "-";
 
     switch (content.data_type) {
         case "Min/Max":
         case "Decimal": 
             return (
-                <Typography sx={{ fontSize: 13, color: "#374151", fontWeight: 500 }}>
-                    Min {content.min_value ?? "-"} °C   –   Max {content.max_value ?? "-"} °C
+                <Typography
+                  component="span"
+                  sx={{ fontSize: 13, color: "#374151", fontWeight: 500 }}
+                >
+                  Min {content.min_value ?? "-"} °C – Max {content.max_value ?? "-"} °C
                 </Typography>
             );
 
         case "Integer":
             return (
-                <Typography sx={{ fontSize: 13, color: "#374151", fontWeight: 500 }}>
+                <Typography component="span" sx={{ fontSize: 13, color: "#374151", fontWeight: 500 }}>
                     {content.integer_value ?? "-"}
                 </Typography>
             );
-            
+
         case "Percentage":
             return (
-                <Typography sx={{ fontSize: 13, color: "#374151", fontWeight: 500 }}>
-                    {content.percentage || content.percentage || "-"}
+                <Typography component="span" sx={{ fontSize: 13, color: "#374151", fontWeight: 500 }}>
+                    {content.percentage ?? "-"}
                 </Typography>
             );
 
         case "Text":
             return (
-                <Typography sx={{ fontSize: 13, color: "#374151", fontWeight: 500 }}>
+                <Typography component="span" sx={{ fontSize: 13, color: "#374151", fontWeight: 500 }}>
                      {content.text ?? "-"}
                 </Typography>
             );
@@ -103,42 +98,28 @@ const renderParameterDetails = (p: any) => {
             } else if (typeof content.dropdown === 'string' && content.dropdown) {
                 optionsSource = content.dropdown.split(',').map(s => s.trim());
             }
-            
-            const finalOptions = optionsSource.filter(Boolean);
 
-            // Only show Selection block if there are actual options
-            if (finalOptions.length === 0) {
-                return (
-                    <Typography sx={{ fontSize: 12 }}>
-                        No options available
-                    </Typography>
-                );
-            }
+            const finalOptions = optionsSource.filter(Boolean);
+            if (finalOptions.length === 0) return "-";
 
             return (
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mt: 0.5 }}>
-                    <Typography sx={{ fontSize: 13, fontWeight: 500, }}>
-                        
-                    </Typography>
+                <Box component="span" sx={{ display: "inline", flexWrap: "wrap" }}>
                     {finalOptions.map((val, i) => (
                         <Chip
                             key={i}
                             label={val}
                             size="small"
-                            sx={{ background: "#F3F4F6", fontSize: "11px" }}
+                            sx={{ background: "transparent", fontSize: "14px", fontWeight:400}}
                         />
                     ))}
                 </Box>
             );
 
         default:
-            return (
-                <Typography sx={{ fontSize: 12, color: "#9CA3AF" }}>
-                    Unknown data type
-                </Typography>
-            );
+            return "-";
     }
 };
+
 
 /* =======================
     MAIN COMPONENT
@@ -300,7 +281,7 @@ const ViewEquipment = () => {
             </Box>
 
             {/* Parameters Section */}
-            <Typography sx={{ fontWeight: 700, mb: 2, fontSize: 16 }}>
+            <Typography sx={{ fontWeight: 600, mb: 2, fontSize: 16 }}>
                 Parameters ({parameters.length})
             </Typography>
 
@@ -310,35 +291,25 @@ const ViewEquipment = () => {
                         <Box
                             key={index}
                             sx={{
-                                width: "260px",
+                                width: "216px",
+                                height:"90px",
                                 border: "1px solid #E5E7EB",
                                 borderRadius: "12px",
                                 background: "#FFFFFF",
-                                p: 2,
+                                px:2,
+                                py:1.5,
                                 boxShadow: "0px 1px 2px rgba(0,0,0,0.04)",
                             }}
                         >
-                            <Typography sx={{ fontWeight: 600, fontSize: 15 }}>
+                            <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
                                 {p.parameter_name}
                             </Typography>
+                     
+                          <Typography sx={{ fontSize: 14, color: "#374151", fontWeight: 400 }}>
+                            Range: {renderParameterDetails(p)}
+                           </Typography>
 
-                            <Typography sx={{ fontSize: 12, color: "#6B7280", mt: 0.5 }}>
-                                Data Type: 
-                                <Chip
-                                    label={p.parameter_values?.[0]?.content?.data_type || "N/A"}
-                                    size="small"
-                                    sx={{
-                                        ml: 0.5,
-                                        background: "#F3F4F6",
-                                        fontSize: "11px",
-                                        height: "18px",
-                                    }}
-                                />
-                            </Typography>
-
-                            <Box sx={{ height: "1px", background: "#E5E7EB", mt: 1.2, mb: 1.2 }} />
-
-                            {renderParameterDetails(p)}
+                           
                         </Box>
                     ))}
                 </Box>

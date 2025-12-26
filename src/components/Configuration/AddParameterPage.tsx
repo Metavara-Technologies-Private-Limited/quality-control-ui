@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Box, Menu, MenuItem } from "@mui/material";
+import { Box, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { Typography, Button, Chip, TextField, IconButton } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -37,6 +37,7 @@ const AddParameterPage = () => {
     const [parameters, setParameters] = useState<any[]>([]);
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [menuParamIndex, setMenuParamIndex] = useState<number | null>(null);
+    const [paramIndexToDelete, setParamIndexToDelete] = useState<number | null>(null);
     const open = Boolean(anchorEl);
     const equipmentQuantity = Array.from({ length: count }, (_, i) => i + 1);
     const [make, setMake] = useState("");
@@ -48,6 +49,10 @@ const AddParameterPage = () => {
 
     const [paramToEdit, setParamToEdit] = useState<any>(null);
     const [editingParamIndex, setEditingParamIndex] = useState<number | null>(null);
+
+    // Delete confirmation dialog states
+    const [deleteParamDialogOpen, setDeleteParamDialogOpen] = useState(false);
+    const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
 
     // Helper to save parameters to localStorage
     const saveParametersToLocalStorage = (params: any[]) => {
@@ -149,7 +154,7 @@ const AddParameterPage = () => {
             ? prev.filter((i) => i !== num)
             : [...prev, num]
         );
-      };      
+    };      
 
     // Watch for count changes and auto-adjust equipment table
     useEffect(() => {
@@ -184,7 +189,7 @@ const AddParameterPage = () => {
           setEquipmentTable(prev => prev.filter(r => r.equipmentNum <= count));
           setSelected(prev => prev.filter(n => n <= count));
         }
-      }, [count, isEditMode]);      
+    }, [count, isEditMode]);      
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, index: number) => {
         setAnchorEl(event.currentTarget);
@@ -207,10 +212,17 @@ const AddParameterPage = () => {
     };
 
     const handleDeleteParameter = () => {
-        if (menuParamIndex !== null) {
-            setParameters((prev) => prev.filter((_, i) => i !== menuParamIndex));
-        }
+        setParamIndexToDelete(menuParamIndex);
+        setDeleteParamDialogOpen(true);
         handleClose();
+    };
+
+    const confirmDeleteParameter = () => {
+        if (paramIndexToDelete !== null) {
+            setParameters((prev) => prev.filter((_, i) => i !== paramIndexToDelete));
+            setParamIndexToDelete(null);
+        }
+        setDeleteParamDialogOpen(false);
     };
 
     const handleSaveEquipmentDetails = () => {
@@ -254,9 +266,9 @@ const AddParameterPage = () => {
         setMake("");
         setModel("");
         setSelected([]);
-      };
+    };
       
-      useEffect(() => {
+    useEffect(() => {
         if (selected.length === 0) {
           setMake("");
           setModel("");
@@ -286,7 +298,7 @@ const AddParameterPage = () => {
       
         setMake(sameMake ? firstMake : "");
         setModel(sameModel ? firstModel : "");
-      }, [selected, equipmentTable]);            
+    }, [selected, equipmentTable]);            
 
     const headerStyle: React.CSSProperties = {
         padding: "10px",
@@ -304,6 +316,10 @@ const AddParameterPage = () => {
     };
 
     const handleClearAll = () => {
+        setClearAllDialogOpen(true);
+    };
+
+    const confirmClearAll = () => {
         setSelected([]);
         setCount(1);
         setMake("");
@@ -312,6 +328,7 @@ const AddParameterPage = () => {
         setParameters([]);
         setNextSrNo(1);
         localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
+        setClearAllDialogOpen(false);
     };
 
     const handleAddParameter = (data: any) => {
@@ -510,9 +527,9 @@ const AddParameterPage = () => {
                 
                 return (
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mt: 0.5 }}>
-                        <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>Selection:</Typography>
+                        <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}></Typography>
                         {options.map((val: any, i: number) => (
-                            <Chip key={i} label={String(val)} size="small" sx={{ background: "#F3F4F6" }} />
+                            <Chip key={i} label={String(val)} size="small" sx={{ background: "transparent" }} />
                         ))}
                     </Box>
                 );
@@ -591,7 +608,7 @@ const AddParameterPage = () => {
                                 </Typography>
 
                                 {/* Divider */}
-                                <Box sx={{ height: "1px", background: "#E5E7EB", mt: 1.2, mb: 1.2 }} />
+                                <Box sx={{ height: "1px", background: "#E5E7EB", mt: 1.2, mb: 1.2, mx:-2 }} />
 
                                 {/* Render content based on data type */}
                                 {renderParameterContent(p)}
@@ -825,6 +842,115 @@ const AddParameterPage = () => {
                     <Button variant="contained" onClick={handleFinalSave} sx={{ borderRadius: "10px", background: "#383838", textTransform: "none", "&:hover": { background: "#2f2f2f" } }}>Save</Button>
                 </Box>
             </Box>
+
+            {/* Parameter Delete Confirmation Dialog */}
+            <Dialog 
+                open={deleteParamDialogOpen} 
+                onClose={() => setDeleteParamDialogOpen(false)}
+                PaperProps={{
+                    sx: {
+                        borderRadius: "12px",
+                        width: "400px",
+                        padding: "8px"
+                    }
+                }}
+            >
+                <DialogTitle sx={{ fontWeight: 600, fontSize: "18px", pb: 1 }}>
+                    Delete Parameter
+                </DialogTitle>
+                <DialogContent>
+                    <Typography sx={{ color: "#4B5563", fontSize: "14px" }}>
+                        Are you sure you want to delete this parameter?
+                    </Typography>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+                    <Button 
+                        onClick={() => setDeleteParamDialogOpen(false)}
+                        variant="outlined"
+                        sx={{
+                            borderRadius: "8px",
+                            borderColor: "#E5E7EB",
+                            color: "#4B5563",
+                            textTransform: "none",
+                            "&:hover": {
+                                borderColor: "#D1D5DB",
+                                backgroundColor: "#F9FAFB"
+                            }
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button 
+                        onClick={confirmDeleteParameter}
+                        variant="contained"
+                        sx={{
+                            borderRadius: "8px",
+                            background: "#DC2626",
+                            textTransform: "none",
+                            "&:hover": {
+                                background: "#B91C1C"
+                            }
+                        }}
+                    >
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Clear All Confirmation Dialog */}
+            <Dialog 
+                open={clearAllDialogOpen} 
+                onClose={() => setClearAllDialogOpen(false)}
+                PaperProps={{
+                    sx: {
+                        borderRadius: "12px",
+                        width: "400px",
+                        padding: "8px"
+                    }
+                }}
+            >
+                <DialogTitle sx={{ fontWeight: 600, fontSize: "18px", pb: 1 }}>
+                    Clear All Data
+                </DialogTitle>
+                <DialogContent>
+                    <Typography sx={{ color: "#4B5563", fontSize: "14px" }}>
+                        Are you sure you want to clear all equipment details and parameters? 
+                    </Typography>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+                    <Button 
+                        onClick={() => setClearAllDialogOpen(false)}
+                        variant="outlined"
+                        sx={{
+                            borderRadius: "8px",
+                            borderColor: "#E5E7EB",
+                            color: "#4B5563",
+                            textTransform: "none",
+                            "&:hover": {
+                                borderColor: "#D1D5DB",
+                                backgroundColor: "#F9FAFB"
+                            }
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button 
+                        onClick={confirmClearAll}
+                        variant="contained"
+                        sx={{
+                            borderRadius: "8px",
+                            background: "#DC2626",
+                            textTransform: "none",
+                            "&:hover": {
+                                background: "#B91C1C"
+                            }
+                        }}
+                    >
+                        Clear All
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
             <Menu 
                 anchorEl={anchorEl} 
                 open={open} 
