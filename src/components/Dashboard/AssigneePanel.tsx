@@ -59,7 +59,10 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
           justifyContent: "space-between",
         }}
       >
-        <Typography fontWeight={700}>Incubator Assignees</Typography>
+        <Typography sx={{ fontWeight: 700, 
+          fontFamily: "sans-serif" }}>
+          Incubator Assignees
+        </Typography>
         <IconButton size="small">
           <SearchIcon />
         </IconButton>
@@ -114,7 +117,7 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
               <Avatar src={a.avatar} />
-              <Typography>{a.name}</Typography>
+              <Typography sx={{ fontFamily: "sans-serif" }}>{a.name}</Typography>
             </Box>
             <IconButton size="small" onClick={() => handleAssign(a.id)}>
               <AddIcon />

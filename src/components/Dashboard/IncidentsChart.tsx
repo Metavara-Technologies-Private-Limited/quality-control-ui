@@ -61,7 +61,7 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({ equipmentId }) => {
         minHeight: 350,
         borderRadius: 3,
         display: "flex",
-        flexDirection: "column",
+        flexDirection: "column"
       }}
     >
       {/* HEADER */}
@@ -73,7 +73,8 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({ equipmentId }) => {
           alignItems: "center",
         }}
       >
-        <Typography fontWeight={700}>Incidents</Typography>
+        <Typography sx={{ fontWeight: 700, 
+          fontFamily: "sans-serif" }}>Incidents</Typography>
         <IconButton size="small">
           <FilterAltOutlinedIcon fontSize="small" />
         </IconButton>
@@ -150,7 +151,10 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({ equipmentId }) => {
             <Typography fontSize={28} fontWeight={700}>
               {total}
             </Typography>
-            <Typography fontSize={13} color="text.secondary">
+            <Typography sx={{ fontWeight: 700, 
+                        fontFamily: "sans-serif",
+                        fontSize: 14,
+                        color:"text.secondary" }}>
               Total Logs
             </Typography>
           </Box>

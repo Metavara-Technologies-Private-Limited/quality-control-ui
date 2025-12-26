@@ -39,6 +39,11 @@ const DashboardHeader = () => {
           '& .MuiOutlinedInput-root': {
             backgroundColor: '#ffffff',
             borderRadius: 2,
+            fontSize: '14px',
+            fontWeight:'400',
+            fontFamily:'nunito',
+            color:'#9E9E9E',
+            lineHeight:'145%',
             '& fieldset': {
               borderColor: '#e5e7eb',
             },

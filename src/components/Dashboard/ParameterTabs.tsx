@@ -25,7 +25,7 @@ const ParameterTabs: React.FC<ParameterTabsProps> = ({
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Typography
           variant="body2"
-          sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}
+          sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 700, fontFamily: 'sans-serif' }}
         >
           Parameters :
         </Typography>
@@ -51,6 +51,7 @@ const ParameterTabs: React.FC<ParameterTabsProps> = ({
                 fontWeight: 500,
                 minHeight: 40,
                 fontSize: '0.875rem',
+                fontFamily: 'sans-serif',
                 color: '#9e9e9e', 
                 px: 2,
                 '&:hover': {
