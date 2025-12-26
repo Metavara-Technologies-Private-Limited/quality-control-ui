@@ -256,9 +256,9 @@ const EquipmentPage = () => {
                                         position: "absolute",
                                         top: 8,
                                         right: 8,
-                                        background: isInactive ? "#F25B5B80" : "#d4f8d4",
-                                        color: isInactive ? "#f82a2aff" : "#008000",
-                                        fontSize: "12px",
+                                        background: isInactive ? "#ffcccc" : "#d4f8d4",
+                                        color: isInactive ? "#b30000" : "#008000",
+                                        fontSize: "10px",
                                         fontWeight: 700,
                                         px: 1.3,
                                         py: 0.5,
@@ -295,7 +295,7 @@ const EquipmentPage = () => {
                                     </Box>
                                 </CardContent>
 
-                                <Divider sx={{ mx: 0 }} />
+                                <Box sx={{ height: 1, background: "#E5E7EB", mx: 2 }} />
 
                                 {/* Bottom Icons */}
                                 <Box
@@ -315,20 +315,34 @@ const EquipmentPage = () => {
 
                                     <Box sx={{ display: "flex", gap: 1 }}>
                                         <IconButton
-                                            onClick={() =>
-                                                navigate("/configuration/equipment/view", {
-                                                    state: { equipment: item },
-                                                })
-                                            }
-                                            sx={{
-                                                width: 32,
-                                                height: 32,
-                                                border: "1px solid #E5E7EB",
-                                                borderRadius: "8px",
-                                            }}
-                                        >
-                                            <img src={ViewIcon} alt="view" style={{ width: 18, height: 18 }} />
-                                        </IconButton>
+                                                    disabled={isInactive}
+                                                    onClick={() =>
+                                                        !isInactive &&
+                                                        navigate("/configuration/equipment/view", {
+                                                            state: { equipment: item },
+                                                        })
+                                                    }
+                                                    sx={{
+                                                        width: 32,
+                                                        height: 32,
+                                                        border: "1px solid #E5E7EB",
+                                                        borderRadius: "8px",
+                                                        cursor: isInactive ? "not-allowed" : "pointer",
+                                                        pointerEvents: isInactive ? "none" : "auto",
+                                                        opacity: isInactive ? 0.4 : 1,
+                                                    }}
+                                                >
+                                                    <img
+                                                        src={ViewIcon}
+                                                        alt="view"
+                                                        style={{
+                                                            width: 18,
+                                                            height: 18,
+                                                            filter: isInactive ? "grayscale(100%)" : "none",
+                                                        }}
+                                                    />
+                                                </IconButton>
+
 
                                         <IconButton
                                             onClick={(e) => {
