@@ -2,7 +2,7 @@
 export const DEPARTMENTS = [
   'Embryology',
   'Andrology',
-  'Cryopresevation',
+  'Cryopreservation',
   'Environmental',
   'Lab Equipment'
 ] as const;
