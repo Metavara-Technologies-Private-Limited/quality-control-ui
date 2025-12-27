@@ -13,18 +13,20 @@ import NotificationIcon from '@/assets/icons/notification.svg';
 import MessageQuestionIcon from '@/assets/icons/message-question.svg';
 import UserAvatarIcon from '@/assets/icons/ellipse_12.svg';
 import DropdownArrowIcon from '@/assets/icons/vector.svg';
-import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
+import { SIDEBAR_TABS } from '@/config/sidebar.config';
+import { useTab } from '@/utils/tabContext';
 
 const Header = () => {
   const location = useLocation();
-  const [clinicName, setClinicName] = useState<string>("");
+  const { activeTabIndex } = useTab();
 
-  useEffect(() => {
-    const clinic = localStorage.getItem("clinic");
-    if (clinic) {
-      setClinicName(JSON.parse(clinic).name);
-    }
-  }, []);
+  const activeTab = SIDEBAR_TABS.find(
+    (tab) => tab.iconIndex === activeTabIndex
+  );
+
+  const clinicName = useSelector((state: RootState) => state.clinic.data?.name);
 
   const handleMenuOpen = () => {
     // Menu handler implementation
@@ -46,7 +48,7 @@ const Header = () => {
 
   return (
     <AppBar
-      position="static"
+      position='static'
       elevation={0}
       sx={{
         backgroundColor: '#FAFAFA',
@@ -56,23 +58,37 @@ const Header = () => {
     >
       <Toolbar sx={{ justifyContent: 'space-between', px: 3, py: 1.5 }}>
         {/* Left: Logo and Breadcrumbs */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2, md: 3 }, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
-          <Typography
-            variant="h6"
-            component="div"
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: { xs: 1, sm: 2, md: 3 },
+            flexWrap: { xs: 'wrap', sm: 'nowrap' },
+          }}
+        >
+          {/* <Typography
+            variant='h6'
+            component='div'
             sx={{
               color: '#14b8a6',
               fontWeight: 600,
               fontSize: { xs: '1rem', sm: '1.25rem' },
               letterSpacing: '-0.025em',
             }}
-          >
-          
-          </Typography>
+          ></Typography> */}
 
           <Breadcrumbs
-            separator={<Typography sx={{ color: '#232323', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>›</Typography>}
-            aria-label="breadcrumb"
+            separator={
+              <Typography
+                sx={{
+                  color: '#232323',
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                }}
+              >
+                ›
+              </Typography>
+            }
+            aria-label='breadcrumb'
             sx={{
               '& .MuiBreadcrumbs-separator': {
                 mx: { xs: 0.5, sm: 1 },
@@ -82,7 +98,7 @@ const Header = () => {
           >
             <Link
               component={RouterLink}
-              to="/"
+              to='/'
               sx={{
                 textDecoration: 'none',
                 color: '#666666',
@@ -102,13 +118,12 @@ const Header = () => {
                 },
               }}
             >
-              Quality Control
+              {activeTab?.label}
             </Link>
             {pathnames.map((name, index) => {
               const routeTo = `/${pathnames.slice(0, index + 1).join('/')}`;
               const isLast = index === pathnames.length - 1;
               const displayText = breadcrumbMap[name] || name;
-              const isDashboard = displayText === 'Dashboard' || name === 'dashboard';
 
               return isLast ? (
                 <Typography
@@ -117,17 +132,17 @@ const Header = () => {
                     transform: 'none',
                     opacity: 1,
                     fontFamily: 'Montserrat, sans-serif',
-                    fontWeight: isDashboard ? 700 : 500,
+                    fontWeight: 700,
                     fontStyle: 'normal',
-                    fontSize: isDashboard ? '18px' : '0.875rem',
-                    lineHeight: isDashboard ? '100%' : '24px',
+                    fontSize: '18px',
+                    lineHeight: '100%',
                     letterSpacing: '0',
-                    width: isDashboard ? 104 : 'auto',
-                    height: isDashboard ? 22 : 'auto',
-                    color: isDashboard ? '#232323' : '#111827',
+                    width: 104,
+                    height: 22,
+                    color: '#232323',
                     textTransform: 'capitalize',
                     display: 'inline-block',
-                    px: isDashboard ? 1 : 0,
+                    px: 1,
                   }}
                 >
                   {displayText}
@@ -155,20 +170,26 @@ const Header = () => {
         </Box>
 
         {/* Right: Clinic, Icons, User */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5, md: 2 } }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: { xs: 1, sm: 1.5, md: 2 },
+          }}
+        >
           <Typography
-            variant="body2"
+            variant='body2'
             sx={{
               color: '#6b7280',
               fontSize: { xs: '0.75rem', sm: '0.875rem' },
               display: { xs: 'none', md: 'block' },
             }}
           >
-              Clinic: {clinicName || "—"}
+            Clinic: {clinicName || '—'}
           </Typography>
 
           <IconButton
-            size="small"
+            size='small'
             sx={{
               width: 48,
               height: 48,
@@ -181,9 +202,9 @@ const Header = () => {
             }}
           >
             <Box
-              component="img"
+              component='img'
               src={CalendarIcon}
-              alt="Calendar"
+              alt='Calendar'
               sx={{
                 width: 24,
                 height: 24,
@@ -193,7 +214,7 @@ const Header = () => {
           </IconButton>
 
           <IconButton
-            size="small"
+            size='small'
             sx={{
               width: 48,
               height: 48,
@@ -206,9 +227,9 @@ const Header = () => {
             }}
           >
             <Box
-              component="img"
+              component='img'
               src={NotificationIcon}
-              alt="Notifications"
+              alt='Notifications'
               sx={{
                 width: 24,
                 height: 24,
@@ -218,7 +239,7 @@ const Header = () => {
           </IconButton>
 
           <IconButton
-            size="small"
+            size='small'
             sx={{
               width: 48,
               height: 48,
@@ -231,9 +252,9 @@ const Header = () => {
             }}
           >
             <Box
-              component="img"
+              component='img'
               src={MessageQuestionIcon}
-              alt="Help"
+              alt='Help'
               sx={{
                 width: 24,
                 height: 24,
@@ -256,9 +277,9 @@ const Header = () => {
             onClick={handleMenuOpen}
           >
             <Box
-              component="img"
+              component='img'
               src={UserAvatarIcon}
-              alt="User Avatar"
+              alt='User Avatar'
               sx={{
                 width: { xs: 32, sm: 36 },
                 height: { xs: 32, sm: 36 },
@@ -267,23 +288,34 @@ const Header = () => {
               }}
             />
             <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-              <Typography variant="body2" sx={{ color:'#232323',fontWeight: 500, fontSize: '0.875rem', lineHeight: 1.2 }}>
+              <Typography
+                variant='body2'
+                sx={{
+                  color: '#232323',
+                  fontWeight: 500,
+                  fontSize: '0.875rem',
+                  lineHeight: 1.2,
+                }}
+              >
                 Kate Russell
               </Typography>
-              <Typography variant="caption" sx={{ color: '#6b7280', fontSize: '0.75rem', lineHeight: 1.2 }}>
+              <Typography
+                variant='caption'
+                sx={{ color: '#6b7280', fontSize: '0.75rem', lineHeight: 1.2 }}
+              >
                 Receptionist
               </Typography>
             </Box>
             <Box
-              component="img"
+              component='img'
               src={DropdownArrowIcon}
-              alt="Dropdown"
+              alt='Dropdown'
               sx={{
                 width: 12,
                 height: 6,
                 objectFit: 'contain',
                 display: { xs: 'none', sm: 'block' },
-                marginTop: '-20px',
+                alignSelf: 'center',
               }}
             />
           </Box>

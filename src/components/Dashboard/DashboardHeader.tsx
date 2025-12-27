@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Box,
   TextField,
@@ -30,8 +29,8 @@ const DashboardHeader = () => {
       }}
     >
       <TextField
-        placeholder="Search by Equipment name"
-        size="small"
+        placeholder='Search by Equipment name'
+        size='small'
         sx={{
           minWidth: 300,
           flex: 1,
@@ -52,17 +51,17 @@ const DashboardHeader = () => {
         }}
         InputProps={{
           startAdornment: (
-            <InputAdornment position="start">
-              <Search fontSize="small" sx={{ color: '#6b7280' }} />
+            <InputAdornment position='start'>
+              <Search fontSize='small' sx={{ color: '#6b7280' }} />
             </InputAdornment>
           ),
         }}
       />
 
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-        <FormControl size="small" sx={{ minWidth: 120 }}>
+        <FormControl size='small' sx={{ minWidth: 120 }}>
           <Select
-            defaultValue="Monthly"
+            defaultValue='Monthly'
             sx={{
               fontSize: '0.875rem',
               backgroundColor: '#ffffff',
@@ -79,15 +78,15 @@ const DashboardHeader = () => {
             }}
             IconComponent={KeyboardArrowDown}
           >
-            <MenuItem value="Monthly">Monthly</MenuItem>
-            <MenuItem value="Weekly">Weekly</MenuItem>
-            <MenuItem value="Daily">Daily</MenuItem>
+            <MenuItem value='Monthly'>Monthly</MenuItem>
+            <MenuItem value='Weekly'>Weekly</MenuItem>
+            <MenuItem value='Daily'>Daily</MenuItem>
           </Select>
         </FormControl>
-        
-        <IconButton 
-          size="small" 
-          sx={{ 
+
+        <IconButton
+          size='small'
+          sx={{
             border: '1px solid #e5e7eb',
             borderRadius: 2,
             backgroundColor: '#ffffff',
@@ -97,12 +96,12 @@ const DashboardHeader = () => {
             },
           }}
         >
-          <Sort fontSize="small" sx={{ color: '#6b7280' }} />
+          <Sort fontSize='small' sx={{ color: '#6b7280' }} />
         </IconButton>
-        
-        <IconButton 
-          size="small" 
-          sx={{ 
+
+        <IconButton
+          size='small'
+          sx={{
             border: '1px solid #e5e7eb',
             borderRadius: 2,
             backgroundColor: '#ffffff',
@@ -112,11 +111,11 @@ const DashboardHeader = () => {
             },
           }}
         >
-          <FilterList fontSize="small" sx={{ color: '#6b7280' }} />
+          <FilterList fontSize='small' sx={{ color: '#6b7280' }} />
         </IconButton>
-        
+
         <Button
-          variant="contained"
+          variant='contained'
           startIcon={<Add />}
           sx={{
             textTransform: 'none',
@@ -126,7 +125,8 @@ const DashboardHeader = () => {
             boxShadow: 'none',
             '&:hover': {
               backgroundColor: '#0b0c0cda',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+              boxShadow:
+                '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
             },
           }}
         >

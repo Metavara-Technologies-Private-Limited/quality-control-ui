@@ -1,5 +1,12 @@
 import React from 'react';
-import { Box, Card, CardContent, Typography, Badge, Skeleton } from '@mui/material';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Badge,
+  Skeleton,
+} from '@mui/material';
 import {
   MedicalServices,
   Air,
@@ -32,14 +39,13 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
   onSelect,
   loading = false,
 }) => {
-
   if (loading) {
     return (
       <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <Skeleton
             key={i}
-            variant="rectangular"
+            variant='rectangular'
             width={180}
             height={100}
             sx={{ borderRadius: 2 }}
@@ -58,7 +64,7 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
           <Badge
             key={equipment.id}
             badgeContent={0}
-            color="error"
+            color='error'
             sx={{
               '& .MuiBadge-badge': {
                 right: 8,
@@ -76,10 +82,9 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
                 borderRadius: 2,
                 border: isSelected ? '2px solid #ea580c' : '1px solid #e5e7eb',
                 backgroundColor: isSelected ? '#fff7ed' : '#ffffff',
-                boxShadow:
-                  isSelected
-                    ? '0 4px 6px rgba(0,0,0,0.15)'
-                    : '0 1px 3px rgba(0,0,0,0.1)',
+                boxShadow: isSelected
+                  ? '0 4px 6px rgba(0,0,0,0.15)'
+                  : '0 1px 3px rgba(0,0,0,0.1)',
                 transition: 'all 0.2s ease',
                 mt: 1,
 
@@ -89,22 +94,26 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
                 },
               }}
             >
-              <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <CardContent
+                sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}
+              >
                 <Box
                   sx={{
-                    color: isSelected ? '#ea580c' : '#ea580c',
+                    color: '#ea580c',
                     // mb: 1.5,
                     display: 'flex',
                     // justifyContent: 'center',
                     '& svg': { fontSize: 32 },
                   }}
                 >
-                  {equipmentIcons[equipment.equipment_name] || <MedicalServices />}
+                  {equipmentIcons[equipment.equipment_name] || (
+                    <MedicalServices />
+                  )}
                 </Box>
 
                 <Typography
-                  className="equipment-text"
-                  variant="body2"
+                  className='equipment-text'
+                  variant='body2'
                   sx={{
                     fontWeight: 500,
                     color: isSelected ? '#ea580c' : '#111827',

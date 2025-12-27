@@ -4,14 +4,27 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 
 const MainLayout = () => {
-
   return (
-    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: '#f9fafb' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        height: '100vh',
+        overflow: 'hidden',
+        backgroundColor: '#f9fafb',
+      }}
+    >
       <Sidebar />
-      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <Box
+        sx={{
+          flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
         <Header />
         <Box
-          component="main"
+          component='main'
           sx={{
             flexGrow: 1,
             overflow: 'auto',

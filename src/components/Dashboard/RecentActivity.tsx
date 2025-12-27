@@ -52,6 +52,13 @@ const buildDetailIdLabelMap = (clinic: any): Record<number, string> => {
 
   return map;
 };
+  const getParameterType = (name: string) => {
+    const n = name.toLowerCase().replace('₂', '2');
+    if (n.includes('co2')) return 'co2';
+    if (n.includes('humid')) return 'humidity';
+    if (n.includes('air')) return 'airflow';
+    return 'temperature';
+  };
 
 /* =========================
    Activity Deriver
@@ -82,8 +89,8 @@ export function deriveTrendActivities(
         new Date(b.recorded_at).getTime()
     );
 
-    const latest = values.at(-1);
-    const previous = values.at(-2);
+    const latest = values[values.length - 1];
+    const previous = values[values.length - 2];
     if (!latest || !previous) return [];
 
     const diff = Number(latest.value) - Number(previous.value);
@@ -109,10 +116,12 @@ export function deriveTrendActivities(
    Component
 ========================= */
 interface RecentActivityProps {
-  parameterType: ActivityType | "assignee";
+  parameterName: string;
 }
 
-const RecentActivity: React.FC<RecentActivityProps> = ({ parameterType }) => {
+const RecentActivity: React.FC<RecentActivityProps> = ({ parameterName }) => {
+  
+  const parameterType = getParameterType(parameterName);
   const [activities, setActivities] = useState<Activity[]>([]);
 
   useEffect(() => {

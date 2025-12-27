@@ -9,7 +9,9 @@ interface ViewContextType {
 
 const ViewContext = createContext<ViewContextType | undefined>(undefined);
 
-export const ViewProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const ViewProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [currentView, setCurrentView] = useState<ViewType>(() => {
     // Get from localStorage or default to 'technician'
     const saved = localStorage.getItem('qc_view_type');
@@ -22,7 +24,9 @@ export const ViewProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <ViewContext.Provider value={{ currentView, setCurrentView: handleSetView }}>
+    <ViewContext.Provider
+      value={{ currentView, setCurrentView: handleSetView }}
+    >
       {children}
     </ViewContext.Provider>
   );
@@ -35,4 +39,3 @@ export const useView = () => {
   }
   return context;
 };
-

@@ -227,6 +227,33 @@ const theme = createTheme({
         },
       },
     },
+    MuiTabs: {
+      styleOverrides: {
+        indicator: {
+          backgroundColor: '#ea580c',
+          height: 3,
+          borderRadius: '3px 3px 0 0',
+        },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 500,
+          fontSize: '0.875rem',
+          color: '#111827',
+          '&:hover': {
+            color: '#ea580c',
+          },
+          '&.Mui-selected': {
+            color: '#ea580c',
+            fontWeight: 600,
+          },
+        },
+      },
+    },
+    
   },
 });
 

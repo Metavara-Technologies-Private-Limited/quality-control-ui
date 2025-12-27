@@ -9,40 +9,45 @@ import Clinical from './pages/Clinical';
 import Lab from './pages/Lab';
 import AuditTrail from './pages/AuditTrail';
 import { useEffect } from 'react';
-import { initializeMockData } from "@/utils/mockData";
 import AddParameterPage from './components/Configuration/AddParameterPage';
 import ViewEquipment from './components/Configuration/ViewEquipment';
 import EquipmentPage from './components/Configuration/EquipmentPage';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from './store';
+import { fetchClinic } from './store/clinicSlice';
 
 function App() {
-  
+  const dispatch = useDispatch<AppDispatch>();
 
-useEffect(() => {
-  initializeMockData(1); // clinic_id = 1
-}, []);
-
+  useEffect(() => {
+    dispatch(fetchClinic(1));
+  }, [dispatch]);
 
   return (
     <Routes>
-      <Route path="/" element={<MainLayout />}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="admin-dashboard" element={<AdminDashboard />} />
-        <Route path="configuration" element={<Configuration />} />
-        <Route path="configuration/equipment" element={<EquipmentPage />} />
-        <Route path="configuration/equipment/view" element={<ViewEquipment />} />
-        <Route path="configuration/equipment/add-parameter" element={<AddParameterPage />} />
-        <Route path="user-configuration" element={<UserConfiguration />} />
-        <Route path="clinical" element={<Clinical />} />
-        <Route path="lab" element={<Lab />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="audit-trail" element={<AuditTrail />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-       
+      <Route path='/' element={<MainLayout />}>
+        <Route index element={<Navigate to='/dashboard' replace />} />
+        <Route path='dashboard' element={<Dashboard />} />
+        <Route path='admin-dashboard' element={<AdminDashboard />} />
+        <Route path='configuration' element={<Configuration />} />
+        <Route path='configuration/equipment' element={<EquipmentPage />} />
+        <Route
+          path='configuration/equipment/view'
+          element={<ViewEquipment />}
+        />
+        <Route
+          path='configuration/equipment/add-parameter'
+          element={<AddParameterPage />}
+        />
+        <Route path='user-configuration' element={<UserConfiguration />} />
+        <Route path='clinical' element={<Clinical />} />
+        <Route path='lab' element={<Lab />} />
+        <Route path='reports' element={<Reports />} />
+        <Route path='audit-trail' element={<AuditTrail />} />
+        <Route path='*' element={<Navigate to='/dashboard' replace />} />
       </Route>
     </Routes>
   );
 }
 
 export default App;
-

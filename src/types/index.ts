@@ -2,6 +2,7 @@
 export interface Clinic {
   id: number;
   name: string;
+  department: Department[];
 }
 
 export interface Department {
@@ -10,21 +11,20 @@ export interface Department {
   is_active: boolean;
   clinic_id: number;
   created_at: string;
+  equipments: Equipment[];
 }
+
+export type CreateEquipmentPayload = {
+  equipment_name: string;
+};
 
 export interface Equipment {
   id: number;
   equipment_name: string;
-  equipment_type?: string;
-  manufacturer?: string;
-  model?: string;
-  serial_number?: string;
-  last_calibrated?: string;
-  next_calibration_due?: string;
-  status?: 'active' | 'inactive' | 'maintenance' | 'calibration_due';
+  is_active: boolean;
   dep_id: number;
   created_at: string;
-  department?: Department;
+  equipment_details: EquipmentDetail[];
   parameters: Parameter[];
 }
 
@@ -39,9 +39,42 @@ export interface EquipmentDetail {
   equipment?: Equipment;
 }
 
-export interface ParameterReading {
-  value: number;
+export interface EquipmentCreatePayload {
+  equipment_name: string;
+  parameters: {
+    parameter_name: string;
+    is_active: boolean;
+    parameter_values: {
+      content: {
+        data_type: string;
+        min_value?: string;
+        max_value?: string;
+        integer_value?: number;
+        percentage?: number;
+        text?: string;
+        dropdown?: string[];
+      };
+    }[];
+  }[];
+  equipment_details: {
+    equipment_num: string;
+    make: string;
+    model: string;
+  }[];
+}
+
+
+export type CreateEquipmentDetailPayload = {
+  equipment: number;
+  equipment_num: string;
+  make: string;
+  model: string;
+};
+
+export interface Reading {
+  value: number | string;
   recorded_at: string;
+  equipment_detail_id: number;
 }
 
 export interface ParameterContent {
@@ -51,27 +84,48 @@ export interface ParameterContent {
   unit?: string;
   percentage?: string;
   dropdown?: string[];
-  readings?: {
-    value: number | string;
-    recorded_at: string;
-    equipment_detail_id: number;
-  }[];
-  control_limits: {
-    warning_min: number;
-    warning_max: number;
-    critical_min: number;
-    critical_max: number;
-  };
+  readings: Reading[];
+  control_limits?: {
+    warning_min?: number;
+    warning_max?: number;
+    critical_min?: number;
+    critical_max?: number;
+  };  
 }
+
+export type ParameterValue = {
+  content: {
+    unit?: string;
+    data_type?: string;
+    min_value?: string;
+    max_value?: string;
+    readings?: Reading[]; // ✅ optional
+  };
+};
+
+export type CreateParameterPayload = {
+  equipment: number;
+  parameter_name: string;
+  is_active: boolean;
+  parameter_values: {
+    content: {
+      data_type: string;
+      min_value?: string;
+      max_value?: string;
+      integer_value?: string;
+      percentage?: string;
+      text?: string;
+      dropdown?: string[] | string;
+    };
+  }[];
+};
 
 export interface Parameter {
   id: number;
   parameter_name: string;
-  equipment_id: number;
   is_active: boolean;
   Content: ParameterContent;
-  created_at: string;
-  equipment?: Equipment;
+  parameter_values: ParameterValue[];
 }
 
 export interface TestType {

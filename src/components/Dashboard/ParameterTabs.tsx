@@ -1,49 +1,41 @@
-import React from 'react';
 import { Box, Tabs, Tab, Typography } from '@mui/material';
 import type { Parameter } from '@/types';
 
 interface ParameterTabsProps {
   parameters: Parameter[];
-  selected: Parameter | null;
-  onSelect: (parameter: Parameter) => void;
+  selected: number | null;
+  onSelect: (parameterId: number) => void;
   loading?: boolean;
 }
 
-const ParameterTabs: React.FC<ParameterTabsProps> = ({
+const ParameterTabs = ({
   parameters,
   selected,
   onSelect,
   loading = false,
-}) => {
-  if (loading || parameters.length === 0) {
-    return null;
-  }
+}: ParameterTabsProps) => {
+  if (loading || parameters.length === 0) return null;
 
   return (
     <Box sx={{ mb: 3 }}>
-      {/* PARAMETERS ROW */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Typography
-          variant="body2"
+          variant='body2'
           sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}
         >
           Parameters :
         </Typography>
 
-        {/* GREEN BACKGROUND CARD */}
         <Box
           sx={{
-            backgroundColor: '#fafafa', 
-            borderRadius: 1, 
+            backgroundColor: '#fafafa',
+            borderRadius: 1,
             display: 'inline-block',
           }}
         >
           <Tabs
-            value={selected?.id || parameters[0]?.id}
-            onChange={(_, value) => {
-              const param = parameters.find((p) => p.id === value);
-              if (param) onSelect(param);
-            }}
+            value={selected}
+            onChange={(_, value: number) => onSelect(value)}
             sx={{
               minHeight: 40,
               '& .MuiTab-root': {
@@ -51,7 +43,7 @@ const ParameterTabs: React.FC<ParameterTabsProps> = ({
                 fontWeight: 500,
                 minHeight: 40,
                 fontSize: '0.875rem',
-                color: '#9e9e9e', 
+                color: '#9e9e9e',
                 px: 2,
                 '&:hover': {
                   color: '#000000',
@@ -59,9 +51,9 @@ const ParameterTabs: React.FC<ParameterTabsProps> = ({
               },
               '& .Mui-selected': {
                 backgroundColor: '#ffffff',
-                borderRadius:1,
+                borderRadius: 1,
                 boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.2)',
-                m:0.8,
+                m: 0.8,
                 color: '#E17E61 !important',
                 fontWeight: 600,
               },

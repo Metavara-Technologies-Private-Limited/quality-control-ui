@@ -1,55 +1,22 @@
-import React, { useEffect, useState } from 'react';
 import { Tabs, Tab, Box } from '@mui/material';
-
-interface Department {
-  id: number;
-  name: string;
-  is_active: boolean;
-}
+import type { Department } from '@/types';
 
 interface DepartmentTabsProps {
-  selected: string;
-  onChange: (department: string) => void;
+  departments: Department[];
+  selected: number | null;
+  onChange: (departmentId: number) => void;
 }
 
-const DepartmentTabs: React.FC<DepartmentTabsProps> = ({ selected, onChange }) => {
-  const [departments, setDepartments] = useState<Department[]>([]);
-
-  useEffect(() => {
-    const clinic = localStorage.getItem('clinic');
-    if (!clinic) return;
-
-    const parsed = JSON.parse(clinic);
-    setDepartments(parsed.department || []);
-  }, []);
-
+const DepartmentTabs = ({
+  departments,
+  selected,
+  onChange,
+}: DepartmentTabsProps) => {
   return (
     <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
       <Tabs
-        value={selected}
-        onChange={(_, newValue) => onChange(newValue)}
-        sx={{
-          '& .MuiTab-root': {
-            textTransform: 'none',
-            fontWeight: 500,
-            minHeight: 48,
-            fontSize: '0.875rem',
-            color: '#000000',
-            transition: 'color 0.2s ease',
-            '&:hover': {
-              color: '#ea580c',
-            },
-          },
-          '& .Mui-selected': {
-            color: '#ea580c !important',
-            fontWeight: 600,
-          },
-          '& .MuiTabs-indicator': {
-            backgroundColor: '#ea580c',
-            height: 3,
-            borderRadius: '3px 3px 0 0',
-          },
-        }}
+        value={selected ?? false}
+        onChange={(_, value) => onChange(value as number)}
       >
         {departments
           .filter((d) => d.is_active)
@@ -57,7 +24,7 @@ const DepartmentTabs: React.FC<DepartmentTabsProps> = ({ selected, onChange }) =
             <Tab
               key={dept.id}
               label={dept.name}
-              value={dept.name}
+              value={dept.id}
             />
           ))}
       </Tabs>
