@@ -1,9 +1,6 @@
-import { useNavigate, useLocation } from 'react-router-dom';
-import ClinicLogo from '../../assets/icons/Clinic-Logo.svg';
-import VidaiLogo from '../../assets/icons/Vidai-logo.svg';
-import UpdatedVersionIcon from '../../assets/icons/Updated_Version.svg';
-import DashboardCardBg from '../../assets/icons/dashboard_card_bg.svg';
-import SubtractBg from '../../assets/icons/Subtract.svg';
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+
 import {
   Drawer,
   List,
@@ -13,167 +10,244 @@ import {
   Box,
   Typography,
   IconButton,
-} from '@mui/material';
-import { useView } from '@/utils/viewContext';
-import { SIDEBAR_TABS } from '@/config/sidebar.config';
-import { useTab } from '@/utils/tabContext';
+} from "@mui/material";
 
-const NAV_ICON_SIZE = 18;
+import { useView } from "@/utils/viewContext";
 
-const ICON_POSITIONS = [-9, 45, 103, 154];
+/* ===== ORIGINAL ICONS ===== */
+import ShieldTickIcon from "../../assets/icons/shield-tick.svg";
+import BriefcaseIcon from "../../assets/icons/brifecase-tick.svg";
+import SecuritySafe from "../../assets/icons/security-safe.svg";
+import ReceiptSearch from "../../assets/icons/receipt-search.svg";
+
+/* ===== SELECTED ICONS (TOP ROW) ===== */
+import Quality_control from "../../assets/icons/Quality_control.svg";
+import Documentation_control from "../../assets/icons/Documentation_control.svg";
+import Riskmanagement from "../../assets/icons/Riskmanagement.svg";
+import Compliance from "../../assets/icons/Compliance.svg";
+
+/* ===== CARD HEADING ICONS ===== */
+import safe_home from "../../assets/icons/safe-home.svg";
+import clipboard_tick from "../../assets/icons/clipboard-tick.svg";
+import briefcase_tick_2 from "../../assets/icons/brifecase-tick_2.svg";
+import shield_tick_2 from "../../assets/icons/shield-tick_2.svg";
+
+/* ===== BACKGROUNDS ===== */
+import SubtractBg_1 from "../../assets/icons/Subtract_1.svg";
+import SubtractBg_2 from "../../assets/icons/Subtract_2.svg";
+import SubtractBg_3 from "../../assets/icons/Subtract_3.svg";
+import SubtractBg_4 from "../../assets/icons/Subtract_4.svg";
+
+/* ===== LOGOS ===== */
+import ClinicLogo from "../../assets/icons/Clinic-Logo.svg";
+import VidaiLogo from "../../assets/icons/Vidai-logo.svg";
+import DashboardCardBg from "../../assets/icons/dashboard_card_bg.svg";
+
+/* ================= ICON CONFIG ================= */
+
+const ICON_CONFIG = [
+  {
+    title: "Quality Control",
+    bg: SubtractBg_1,
+    activeIcon: Quality_control,
+    inactiveIcon: ShieldTickIcon,
+  },
+  {
+    title: "Document Control",
+    bg: SubtractBg_2,
+    activeIcon: Documentation_control,
+    inactiveIcon: BriefcaseIcon,
+  },
+  {
+    title: "Risk Management",
+    bg: SubtractBg_3,
+    activeIcon: Riskmanagement,
+    inactiveIcon: SecuritySafe,
+  },
+  {
+    title: "Compliance",
+    bg: SubtractBg_4,
+    activeIcon: Compliance,
+    inactiveIcon: ReceiptSearch,
+  },
+];
+
+const CARD_HEADING_ICON_MAP = [
+  shield_tick_2,
+  briefcase_tick_2,
+  safe_home,
+  clipboard_tick,
+];
+
+const SELECTED_ICON_STYLE = [
+  { mt: 1, ml: 0.8, btnSize: 50, iconSize: 35 },
+  { mt: 1, ml: 0, btnSize: 50, iconSize: 35 },
+  { mt: 1, ml: -0.8, btnSize: 50, iconSize: 35 },
+  { mt: 1, ml: -1.5, btnSize: 50, iconSize: 65 },
+];
+
+/* ================= MENU MAP ================= */
+
+const ICON_MENU_MAP = {
+  quality: [
+    {
+      key: "dashboard",
+      text: "Dashboard",
+      path: "/dashboard",
+    },
+
+    {
+      key: "clinical",
+      text: "Clinical",
+      path: "/clinical",
+    },
+
+    {
+      key: "lab",
+      text: "Lab",
+      path: "/qc-lab",
+      children: [
+        {
+          key: "embryology",
+          text: "Embryology",
+          path: "/qc-lab/embryology",
+        },
+        {
+          key: "andrology",
+          text: "Andrology",
+          path: "/qc-lab/andrology",
+        },
+        {
+          key: "cryo",
+          text: "Cryo Preservation",
+          path: "/qc-lab/cryopreservation",
+        },
+      ],
+    },
+
+    {
+      key: "reports",
+      text: "Reports",
+      path: "/reports",
+    },
+
+    {
+      key: "configuration",
+      text: "Configuration",
+      path: "/configuration",
+      children: [
+        {
+          key: "events",
+          text: "Events",
+          path: "/configuration/events",
+        },
+        {
+          key: "equipment",
+          text: "Equipment",
+          path: "/configuration/equipment",
+        },
+      ],
+    },
+  ],
+
+  documentation: [
+    {
+      key: "documents",
+      text: "Documents",
+      path: "/document-control/documents",
+    },
+    {
+      key: "workflows",
+      text: "Workflows",
+      path: "/document-control/workflows",
+    },
+    { key: "reports", text: "Reports", path: "/document-control/reports" },
+    {
+      key: "configuration",
+      text: "Configuration",
+      path: "/document-control/configuration",
+    },
+    {
+      key: "recycle",
+      text: "Recycle Bin",
+      path: "/document-control/recycle-bin",
+    },
+  ],
+
+  risk: [{ key: "risk_a", text: "Risk_A", path: "/risk-management" }],
+
+  compliance: [
+    { key: "clinical", text: "Clinical", path: "/compliance/clinical" },
+    { key: "lab", text: "Lab", path: "/compliance/lab" },
+  ],
+};
+
+const ICON_INDEX_MAP = [
+  "quality",
+  "documentation",
+  "risk",
+  "compliance",
+] as const;
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentView } = useView();
-  const { activeTabIndex, setActiveTabIndex } = useTab();
-  
 
-  const activeTab = SIDEBAR_TABS.find(
-    (tab) => tab.iconIndex === activeTabIndex && tab.views.includes(currentView)
-  );
+  const [selectedIcon, setSelectedIcon] = useState(0);
 
-  const menuItems =
-    activeTab?.menu.filter((item) => item.views.includes(currentView)) ?? [];
-  const visibleTabs = SIDEBAR_TABS.filter((tab) =>
-    tab.views.includes(currentView)
-  );
-
-  const handleIconClick = (iconIndex: number) => setActiveTabIndex(iconIndex);
+  const sectionKey = ICON_INDEX_MAP[selectedIcon];
+  const menuItems = ICON_MENU_MAP[sectionKey];
 
   return (
     <Drawer
-      variant='permanent'
+      variant="permanent"
       sx={{
-        width: { xs: 240, sm: 240, md: 240 },
-        flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: { xs: 240, sm: 240, md: 240 },
-          boxSizing: 'border-box',
-          backgroundColor: '#FAFAFA',
-          display: 'flex',
-          flexDirection: 'column',
-          borderRadius: 2,
-          boxShadow: 'none',
-          borderRight: 'none',
-          outline: 'none',
+        width: 240,
+        "& .MuiDrawer-paper": {
+          width: 240,
+          backgroundColor: "#FAFAFA",
+          borderRight: "none",
         },
       }}
     >
-      {/* Logo at Top */}
-      <Box
-        sx={{
-          p: { xs: 1.5, sm: 2 },
-          pb: 1.5,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <img
-          src={ClinicLogo}
-          alt='Clinic Logo'
-          style={{
-            width: '80%',
-            maxWidth: 134,
-            height: 'auto',
-            objectFit: 'contain',
-            display: 'block',
-          }}
-        />
+      <Box sx={{ p: 2 }}>
+        <img src={ClinicLogo} width={134} />
       </Box>
 
-      {/* Icon Row using Subtract SVG as the card */}
-      <Box
-        sx={{
-          position: 'relative',
-          width: 'calc(100% - 16px)',
-          maxWidth: { xs: 250, sm: 270, md: 282 },
-          height: 56,
-          ml: 1,
-          mr: 1,
-          mt: 1,
-          mb: 1,
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-        }}
-      >
+      {/* ICON ROW */}
+      <Box sx={{ position: "relative", height: 56, mx: 1 }}>
         <Box
-          component='img'
-          src={SubtractBg}
-          alt='card background'
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'fill',
-            pointerEvents: 'none',
-            userSelect: 'none',
-            left: `${ICON_POSITIONS[activeTabIndex]}px`,
-            transition: 'left 200ms ease',
-          }}
+          component="img"
+          src={ICON_CONFIG[selectedIcon].bg}
+          sx={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
         />
-
-        <Box
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-start',
-            pl: 1.5,
-            pr: 1,
-            gap: 1.5,
-          }}
-        >
-          {visibleTabs.map((tab) => {
-            const isActive = activeTabIndex === tab.iconIndex;
-
+        <Box sx={{ display: "flex", alignItems: "center", pl: 1.5, gap: 1.5 }}>
+          {ICON_CONFIG.map((item, index) => {
+            const isActive = selectedIcon === index;
+            const style = SELECTED_ICON_STYLE[index];
             return (
               <Box
-                key={tab.key}
+                key={item.title}
                 sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  mt: isActive ? -1.5 : 0,
-                  transition: 'margin-top 120ms ease',
+                  mt: isActive ? style.mt : 0,
+                  ml: isActive ? style.ml : 0,
                 }}
               >
                 <IconButton
-                  size='small'
-                  onClick={() => handleIconClick(tab.iconIndex)}
+                  onClick={() => setSelectedIcon(index)}
                   sx={{
-                    width: 44,
-                    height: 44,
-                    backgroundColor: 'transparent',
+                    width: isActive ? style.btnSize : 40,
+                    height: isActive ? style.btnSize : 40,
                   }}
                 >
-                  <Box
-                    sx={{
-                      width: NAV_ICON_SIZE,
-                      height: NAV_ICON_SIZE,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transform: isActive ? 'scale(1.25)' : 'scale(1)',
-                      transition: 'transform 120ms ease',
+                  <img
+                    src={isActive ? item.activeIcon : item.inactiveIcon}
+                    style={{
+                      width: isActive ? style.iconSize : 22,
+                      height: isActive ? style.iconSize : 22,
                     }}
-                  >
-                    <img
-                      src={tab.icon.src}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'contain',
-                        transform: `scale(${tab.icon.baseScale})`,
-                      }}
-                    />
-                  </Box>
+                  />
                 </IconButton>
               </Box>
             );
@@ -181,238 +255,227 @@ const Sidebar = () => {
         </Box>
       </Box>
 
-      {/* Quality Control Heading and Menu Container */}
-      <Box
-        sx={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          px: { xs: 1, sm: 1.5, md: 2 },
-          overflow: 'hidden',
-        }}
-      >
+      {/* MAIN CARD */}
+      <Box sx={{ flex: 1, px: 2, mt: 2, position: "relative" }}>
         <Box
           sx={{
-            width: '100%',
-            flex: 1,
-            minHeight: 0,
-            backgroundColor: '#FFFFFF',
-            position: 'relative',
-            mt: 1,
-            mb: 2,
-            borderRadius: '20px',
-            border: 'none',
-            boxShadow: '0px 0px 14px 0px #0000000F',
-            p: { xs: 1.5, sm: 2, md: 2.5 },
-            pt: { xs: 1.5, sm: 1.5, md: 2 },
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
+            backgroundColor: "#fff",
+            borderRadius: "20px",
+            boxShadow: "0px 0px 14px #0000000F",
+            p: 2,
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            position: "relative",
+            overflow: "hidden",
           }}
         >
-          <Box sx={{ px: 0, pt: 0, pb: { xs: 0.5, sm: 1 } }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: { xs: 0.5, sm: 1 },
-                justifyContent: 'flex-start',
-                pl: 0,
-                ml: { xs: -1, sm: -1.5 },
-              }}
-            >
-              {/* Logo Circle for Quality Control */}
-              <Box
-                sx={{
-                  width: { xs: 28, sm: 30, md: 32 },
-                  height: { xs: 28, sm: 30, md: 32 },
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  ml: 0,
-                  flexShrink: 0,
-                }}
-              >
-                {activeTab?.icon && (
-                  <img
-                    src={activeTab.icon.src}
-                    alt={`${activeTab.label} icon`}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain',
-                    }}
-                  />
-                )}
-              </Box>
-
-              {/* Quality Control Title */}
-              <Typography
-                sx={{
-                  fontFamily: 'Montserrat, sans-serif',
-                  fontWeight: 700,
-                  fontSize: { xs: '14px', sm: '15px', md: '16px', lg: '17px' },
-                  lineHeight: 1.4,
-                  color: '#E17E61',
-                  display: 'flex',
-                  alignItems: 'center',
-                  flex: 1,
-                  ml: 0,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {activeTab?.label}
-              </Typography>
-            </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+            <img src={CARD_HEADING_ICON_MAP[selectedIcon]} width={28} />
+            <Typography sx={{ fontWeight: 700, color: "#E17E61" }}>
+              {ICON_CONFIG[selectedIcon].title}
+            </Typography>
           </Box>
 
-          {/* Navigation Menu */}
+          {/* MENU LIST */}
           <List
             sx={{
-              pt: 0,
-              flex: 1,
-              px: { xs: 0.5, sm: 1, md: 1.5 },
-              overflowY: 'auto',
-              minHeight: 0,
-              '&::-webkit-scrollbar': {
-                width: '4px',
-              },
-              '&::-webkit-scrollbar-thumb': {
-                backgroundColor: '#E0E0E0',
-                borderRadius: '4px',
-              },
+              mb: "auto",
+              display: "flex",
+              flexDirection: "column",
+              z_index: 1,
             }}
           >
             {menuItems.map((item) => {
-              const isActive =
-                location.pathname === item.path ||
-                (location.pathname.startsWith(item.path.split('?')[0]) &&
-                  item.path.includes('?'));
+              // Robust matching for parent items
+              const isItemActive = location.pathname === item.path;
+
+              const isLab = item.key === "lab";
+              const isLabOpen = location.pathname.startsWith("/qc-lab");
+
+              const isConfiguration = item.key === "configuration";
+              const isConfigurationOpen =
+                location.pathname.startsWith("/configuration");
 
               return (
-                <ListItem
-                  key={item.label}
-                  disablePadding
-                  sx={{ mb: { xs: '6px', sm: '8px', md: '10px' } }}
-                >
-                  <ListItemButton
-                    onClick={() => navigate(item.path)}
-                    sx={{
-                      width: '100%',
-                      height: { xs: 32, sm: 34, md: 36 },
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'flex-start',
-                      px: { xs: 1, sm: 1.5, md: 2 },
-                      py: { xs: '6px', sm: '7px', md: '8px' },
-                      borderRadius: 1,
-                      backgroundColor: 'transparent',
-                      '&:hover': {
-                        backgroundColor: '#f9fafb',
-                      },
-                    }}
-                  >
-                    <ListItemText
-                      primary={item.label}
-                      primaryTypographyProps={{
-                        fontSize: {
-                          xs: '13px',
-                          sm: '14px',
-                          md: '15px',
-                          lg: '16px',
-                        },
-                        fontWeight: isActive ? 700 : 400,
-                        color: isActive ? '#111827' : '#9ca3af',
-                        letterSpacing: '-0.01em',
-                      }}
-                    />
-                  </ListItemButton>
-                </ListItem>
+                <Box key={item.key}>
+                  <ListItem disablePadding>
+                    <ListItemButton onClick={() => navigate(item.path)}>
+                      <ListItemText
+                        primary={item.text}
+                        primaryTypographyProps={{
+                          sx: {
+                            fontWeight: isItemActive ? 600 : 500,
+                            // Color logic strictly applied to the text
+                            color: isItemActive ? "#232323" : "#9e9e9e",
+                            transition: "color 0.2s ease",
+                          },
+                        }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                  {/*###########         SUB MENU for Lab and Configuration start here      #############*/}
+                  {item.children && (
+                    <>
+                      {isLab && isLabOpen && (
+                        <Box
+                          sx={{
+                            mt: 0.5,
+                            backgroundColor: "#F3F3F3",
+                            borderRadius: "12px 0 0 12px",
+                            mx: -2,
+                            py: 0.5,
+                          }}
+                        >
+                          {item.children.map((sub) => {
+                            const isSubActive = location.pathname.startsWith(
+                              sub.path
+                            );
+
+                            return (
+                              <ListItemButton
+                                key={sub.key}
+                                onClick={() => navigate(sub.path)}
+                                sx={{
+                                  pl: 4,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1.5,
+                                }}
+                              >
+                                {/* OUTER WHITE CIRCLE */}
+                                <Box
+                                  sx={{
+                                    width: 18,
+                                    height: 18,
+                                    borderRadius: "50%",
+                                    backgroundColor: "#FFFFFF",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                  }}
+                                >
+                                  {/* INNER DOT */}
+                                  <Box
+                                    sx={{
+                                      width: 8,
+                                      height: 8,
+                                      borderRadius: "50%",
+                                      backgroundColor: isSubActive
+                                        ? "#E17E61"
+                                        : "#CFD1D4",
+                                    }}
+                                  />
+                                </Box>
+
+                                {/* TEXT */}
+                                <Typography
+                                  sx={{
+                                    fontSize: "0.95rem",
+                                    fontWeight: 600,
+                                    color: isSubActive ? "#E17E61" : "#232323",
+                                  }}
+                                >
+                                  {sub.text}
+                                </Typography>
+                              </ListItemButton>
+                            );
+                          })}
+                        </Box>
+                      )}
+
+                      {isConfiguration && isConfigurationOpen && (
+                        <Box
+                          sx={{
+                            mt: 0.5,
+                            backgroundColor: "#F3F3F3",
+                            borderRadius: "12px 0 0 12px",
+                            mx: -2,
+                            py: 0.5,
+                          }}
+                        >
+                          {item.children.map((sub) => {
+                            const isSubActive = location.pathname === sub.path;
+
+                            return (
+                              <ListItemButton
+                                key={sub.key}
+                                onClick={() => navigate(sub.path)}
+                                sx={{
+                                  pl: 4,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1.5,
+                                }}
+                              >
+                                {/* OUTER WHITE CIRCLE */}
+                                <Box
+                                  sx={{
+                                    width: 18,
+                                    height: 18,
+                                    borderRadius: "50%",
+                                    backgroundColor: "#FFFFFF",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                  }}
+                                >
+                                  {/* INNER DOT */}
+                                  <Box
+                                    sx={{
+                                      width: 8,
+                                      height: 8,
+                                      borderRadius: "50%",
+                                      backgroundColor: isSubActive
+                                        ? "#E17E61"
+                                        : "#CFD1D4",
+                                    }}
+                                  />
+                                </Box>
+
+                                {/* TEXT */}
+                                <Typography
+                                  sx={{
+                                    fontSize: "0.95rem",
+                                    fontWeight: 600,
+                                    color: isSubActive ? "#E17E61" : "#232323",
+                                  }}
+                                >
+                                  {sub.text}
+                                </Typography>
+                              </ListItemButton>
+                            );
+                          })}
+                        </Box>
+                      )}
+                    </>
+                  )}
+                  {/*###########         SUB MENU for Lab and Configuration End here      #############*/}
+                </Box>
               );
             })}
           </List>
 
-          {/* Decorative background SVG placed above the VIDAI logo */}
+          {/* DECORATIVE BACKGROUND */}
           <Box
-            component='img'
+            component="img"
             src={DashboardCardBg}
-            alt='dashboard background'
             sx={{
-              position: 'absolute',
-              bottom: '0px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '200px',
-              height: 'auto',
-              opacity: 2,
-              pointerEvents: 'none',
+              position: "absolute",
+              bottom: 0,
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: 200,
+              pointerEvents: "none",
               zIndex: 0,
             }}
           />
 
-          {/* Bottom Section with VIDAI Logo */}
-          <Box
-            sx={{
-              p: { xs: 1, sm: 1.5, md: 2 },
-              mt: 'auto',
-              position: 'relative',
-              zIndex: 1,
-              flexShrink: 0,
-            }}
-          >
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: { xs: 0.25, sm: 0.375 },
-              }}
-            >
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '100%',
-                }}
-              >
-                <img
-                  src={VidaiLogo}
-                  alt='VIDAI Logo'
-                  style={{
-                    width: '70%',
-                    maxWidth: 163,
-                    height: 'auto',
-                    objectFit: 'contain',
-                    display: 'block',
-                  }}
-                />
-              </Box>
-              <Box
-                sx={{
-                  width: '100%',
-                  height: 'auto',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  px: { xs: 1, sm: 1.5, md: 2 },
-                }}
-              >
-                <img
-                  src={UpdatedVersionIcon}
-                  alt='Updated Version 2.0'
-                  style={{
-                    width: '60%',
-                    maxWidth: 124,
-                    height: 'auto',
-                    objectFit: 'contain',
-                    display: 'block',
-                  }}
-                />
-              </Box>
-            </Box>
+          <Box sx={{ textAlign: "center", mt: "auto", pb: 1, zIndex: 1 }}>
+            <img src={VidaiLogo} width="70%" />
+            <Typography sx={{ fontSize: 10, color: "#CFD1D4" }}>
+              Updated Version 2.0
+            </Typography>
           </Box>
         </Box>
       </Box>

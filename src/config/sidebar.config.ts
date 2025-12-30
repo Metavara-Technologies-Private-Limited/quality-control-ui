@@ -15,11 +15,22 @@ export const SIDEBAR_TABS = [
       baseScale: 1.2,
     },
     views: ['admin', 'technician', 'user'],
+
+    // ✅ default landing when QC icon is clicked
+    defaultPath: '/qc-lab/embryology/task',
+
     menu: [
       { label: 'Dashboard', path: '/dashboard', views: ['technician', 'user'] },
       { label: 'Admin Dashboard', path: '/admin-dashboard', views: ['admin'] },
       { label: 'Clinical', path: '/clinical', views: ['admin', 'technician'] },
-      { label: 'Lab', path: '/lab', views: ['admin', 'technician'] },
+
+      // ✅ Lab is KEPT, only path changed
+      {
+        label: 'Lab',
+        path: '/qc-lab/embryology/task',
+        views: ['admin', 'technician'],
+      },
+
       { label: 'Reports', path: '/reports', views: ['admin', 'technician'] },
       {
         label: 'Configuration',

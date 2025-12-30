@@ -1,17 +1,17 @@
 import { Container, Typography } from '@mui/material';
 
-const Lab = () => {
+const Events = () => {
   return (
     <Container maxWidth={false} sx={{ py: 2 }}>
       <Typography variant="h5" sx={{ fontWeight: 600 }}>
-        Lab
+        Events
       </Typography>
       <Typography variant="body1" sx={{ mt: 2, color: '#6b7280' }}>
-        Lab section - Coming soon
+       Quality Control / Configuration /Events section - Coming soon
       </Typography>
     </Container>
   );
 };
 
-export default Lab;
+export default Events;
 
