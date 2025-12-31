@@ -25,8 +25,8 @@ import Events from './pages/Quality_Control/Configuration/Events';
 import LabLayout from './pages/Quality_Control/QcLab/LabLayout';
 
 import EmbryologyLayout from './pages/Quality_Control/QcLab/Embryology/EmbryologyLayout';
-import Task from './pages/Quality_Control/QcLab/Embryology/Task';
 import Equipment from './pages/Quality_Control/QcLab/Embryology/Equipments';
+import Task from './pages/Quality_Control/QcLab/Embryology/Task';
 import Environment from './pages/Quality_Control/QcLab/Embryology/Environment';
 
 import AndrologyLayout from './pages/Quality_Control/QcLab/Andrology/AndrologyLayout';
@@ -76,7 +76,7 @@ function App() {
           <Route index element={<Navigate to="embryology" replace />} />
 
           <Route path="embryology" element={<EmbryologyLayout />}>
-            <Route index element={<Navigate to="task" replace />} />
+            <Route index element={<Navigate to="equipments" replace />} />
             <Route path="task" element={<Task />} />
             <Route path="equipments" element={<Equipment />} />
             <Route path="environment" element={<Environment />} />
