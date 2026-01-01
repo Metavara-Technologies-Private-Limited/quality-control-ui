@@ -86,6 +86,7 @@ const Header = () => {
     "recycle-bin": "Recycle Bin",
     lab: "Lab",
     reports: "Reports",
+    events: "Events", documents: "Documents", workflows: "Workflows",
   };
 
   return (
