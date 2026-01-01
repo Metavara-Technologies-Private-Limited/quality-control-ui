@@ -88,7 +88,7 @@ const SELECTED_ICON_STYLE = [
 
 /* ================= MENU MAP ================= */
 
-const ICON_MENU_MAP = {
+const ICON_MENU_MAP: Record<string, any[]> = {
   quality: [
     {
       key: "dashboard",
@@ -197,7 +197,7 @@ const Sidebar = () => {
   const [selectedIcon, setSelectedIcon] = useState(0);
 
   const sectionKey = ICON_INDEX_MAP[selectedIcon];
-  const menuItems = ICON_MENU_MAP[sectionKey];
+  const menuItems = ICON_MENU_MAP[sectionKey] || [];
 
   return (
     <Drawer
@@ -212,7 +212,7 @@ const Sidebar = () => {
       }}
     >
       <Box sx={{ p: 2 }}>
-        <img src={ClinicLogo} width={134} />
+        <img src={ClinicLogo} width={134} alt="Clinic Logo" />
       </Box>
 
       {/* ICON ROW */}
@@ -243,6 +243,7 @@ const Sidebar = () => {
                 >
                   <img
                     src={isActive ? item.activeIcon : item.inactiveIcon}
+                    alt={item.title}
                     style={{
                       width: isActive ? style.iconSize : 22,
                       height: isActive ? style.iconSize : 22,
@@ -271,7 +272,7 @@ const Sidebar = () => {
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-            <img src={CARD_HEADING_ICON_MAP[selectedIcon]} width={28} />
+            <img src={CARD_HEADING_ICON_MAP[selectedIcon]} width={28} alt="icon" />
             <Typography sx={{ fontWeight: 700, color: "#E17E61" }}>
               {ICON_CONFIG[selectedIcon].title}
             </Typography>
@@ -283,19 +284,15 @@ const Sidebar = () => {
               mb: "auto",
               display: "flex",
               flexDirection: "column",
-              z_index: 1,
+              zIndex: 1,
             }}
           >
-            {menuItems.map((item) => {
-              // Robust matching for parent items
+            {menuItems.map((item: any) => {
               const isItemActive = location.pathname === item.path;
-
               const isLab = item.key === "lab";
               const isLabOpen = location.pathname.startsWith("/qc-lab");
-
               const isConfiguration = item.key === "configuration";
-              const isConfigurationOpen =
-                location.pathname.startsWith("/configuration");
+              const isConfigurationOpen = location.pathname.startsWith("/configuration");
 
               return (
                 <Box key={item.key}>
@@ -306,7 +303,6 @@ const Sidebar = () => {
                         primaryTypographyProps={{
                           sx: {
                             fontWeight: isItemActive ? 600 : 500,
-                            // Color logic strictly applied to the text
                             color: isItemActive ? "#232323" : "#9e9e9e",
                             transition: "color 0.2s ease",
                           },
@@ -314,143 +310,124 @@ const Sidebar = () => {
                       />
                     </ListItemButton>
                   </ListItem>
-                  {/*###########         SUB MENU for Lab and Configuration start here      #############*/}
-                  {item.children && (
-                    <>
-                      {isLab && isLabOpen && (
-                        <Box
-                          sx={{
-                            mt: 0.5,
-                            backgroundColor: "#F3F3F3",
-                            borderRadius: "12px 0 0 12px",
-                            mx: -2,
-                            py: 0.5,
-                          }}
-                        >
-                          {item.children.map((sub) => {
-                            const isSubActive = location.pathname.startsWith(
-                              sub.path
-                            );
 
-                            return (
-                              <ListItemButton
-                                key={sub.key}
-                                onClick={() => navigate(sub.path)}
+                  {/* SUB MENU for Lab */}
+                  {isLab && isLabOpen && item.children && (
+                    <Box
+                      sx={{
+                        mt: 0.5,
+                        backgroundColor: "#F3F3F3",
+                        borderRadius: "12px 0 0 12px",
+                        mx: -2,
+                        py: 0.5,
+                      }}
+                    >
+                      {item.children.map((sub: any) => {
+                        const isSubActive = location.pathname.startsWith(sub.path);
+                        return (
+                          <ListItemButton
+                            key={sub.key}
+                            onClick={() => navigate(sub.path)}
+                            sx={{
+                              pl: 4,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1.5,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                width: 18,
+                                height: 18,
+                                borderRadius: "50%",
+                                backgroundColor: "#FFFFFF",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <Box
                                 sx={{
-                                  pl: 4,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1.5,
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: "50%",
+                                  backgroundColor: isSubActive ? "#E17E61" : "#CFD1D4",
                                 }}
-                              >
-                                {/* OUTER WHITE CIRCLE */}
-                                <Box
-                                  sx={{
-                                    width: 18,
-                                    height: 18,
-                                    borderRadius: "50%",
-                                    backgroundColor: "#FFFFFF",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                  }}
-                                >
-                                  {/* INNER DOT */}
-                                  <Box
-                                    sx={{
-                                      width: 8,
-                                      height: 8,
-                                      borderRadius: "50%",
-                                      backgroundColor: isSubActive
-                                        ? "#E17E61"
-                                        : "#CFD1D4",
-                                    }}
-                                  />
-                                </Box>
-
-                                {/* TEXT */}
-                                <Typography
-                                  sx={{
-                                    fontSize: "0.95rem",
-                                    fontWeight: 600,
-                                    color: isSubActive ? "#E17E61" : "#232323",
-                                  }}
-                                >
-                                  {sub.text}
-                                </Typography>
-                              </ListItemButton>
-                            );
-                          })}
-                        </Box>
-                      )}
-
-                      {isConfiguration && isConfigurationOpen && (
-                        <Box
-                          sx={{
-                            mt: 0.5,
-                            backgroundColor: "#F3F3F3",
-                            borderRadius: "12px 0 0 12px",
-                            mx: -2,
-                            py: 0.5,
-                          }}
-                        >
-                          {item.children.map((sub) => {
-                            const isSubActive = location.pathname === sub.path;
-
-                            return (
-                              <ListItemButton
-                                key={sub.key}
-                                onClick={() => navigate(sub.path)}
-                                sx={{
-                                  pl: 4,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1.5,
-                                }}
-                              >
-                                {/* OUTER WHITE CIRCLE */}
-                                <Box
-                                  sx={{
-                                    width: 18,
-                                    height: 18,
-                                    borderRadius: "50%",
-                                    backgroundColor: "#FFFFFF",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                  }}
-                                >
-                                  {/* INNER DOT */}
-                                  <Box
-                                    sx={{
-                                      width: 8,
-                                      height: 8,
-                                      borderRadius: "50%",
-                                      backgroundColor: isSubActive
-                                        ? "#E17E61"
-                                        : "#CFD1D4",
-                                    }}
-                                  />
-                                </Box>
-
-                                {/* TEXT */}
-                                <Typography
-                                  sx={{
-                                    fontSize: "0.95rem",
-                                    fontWeight: 600,
-                                    color: isSubActive ? "#E17E61" : "#232323",
-                                  }}
-                                >
-                                  {sub.text}
-                                </Typography>
-                              </ListItemButton>
-                            );
-                          })}
-                        </Box>
-                      )}
-                    </>
+                              />
+                            </Box>
+                            <Typography
+                              sx={{
+                                fontSize: "0.95rem",
+                                fontWeight: 600,
+                                color: isSubActive ? "#E17E61" : "#232323",
+                              }}
+                            >
+                              {sub.text}
+                            </Typography>
+                          </ListItemButton>
+                        );
+                      })}
+                    </Box>
                   )}
-                  {/*###########         SUB MENU for Lab and Configuration End here      #############*/}
+
+                  {/* SUB MENU for Configuration */}
+                  {isConfiguration && isConfigurationOpen && item.children && (
+                    <Box
+                      sx={{
+                        mt: 0.5,
+                        backgroundColor: "#F3F3F3",
+                        borderRadius: "12px 0 0 12px",
+                        mx: -2,
+                        py: 0.5,
+                      }}
+                    >
+                      {item.children.map((sub: any) => {
+                        const isSubActive = location.pathname === sub.path;
+                        return (
+                          <ListItemButton
+                            key={sub.key}
+                            onClick={() => navigate(sub.path)}
+                            sx={{
+                              pl: 4,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1.5,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                width: 18,
+                                height: 18,
+                                borderRadius: "50%",
+                                backgroundColor: "#FFFFFF",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: "50%",
+                                  backgroundColor: isSubActive ? "#E17E61" : "#CFD1D4",
+                                }}
+                              />
+                            </Box>
+                            <Typography
+                              sx={{
+                                fontSize: "0.95rem",
+                                fontWeight: 600,
+                                color: isSubActive ? "#E17E61" : "#232323",
+                              }}
+                            >
+                              {sub.text}
+                            </Typography>
+                          </ListItemButton>
+                        );
+                      })}
+                    </Box>
+                  )}
                 </Box>
               );
             })}
@@ -472,7 +449,7 @@ const Sidebar = () => {
           />
 
           <Box sx={{ textAlign: "center", mt: "auto", pb: 1, zIndex: 1 }}>
-            <img src={VidaiLogo} width="70%" />
+            <img src={VidaiLogo} width="70%" alt="Vidai Logo" />
             <Typography sx={{ fontSize: 10, color: "#CFD1D4" }}>
               Updated Version 2.0
             </Typography>

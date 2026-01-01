@@ -30,8 +30,14 @@ import Task from './pages/Quality_Control/QcLab/Embryology/Task';
 import Environment from './pages/Quality_Control/QcLab/Embryology/Environment';
 
 import AndrologyLayout from './pages/Quality_Control/QcLab/Andrology/AndrologyLayout';
-import CryopreservationLayout from './pages/Quality_Control/QcLab/Cryopreservation/CryopreservationLayout';
+import AndrologyEnvironment from './pages/Quality_Control/QcLab/Andrology/Environment';
+import AndrologyEquipments from './pages/Quality_Control/QcLab/Andrology/Equipments';
+import AndrologyTask from './pages/Quality_Control/QcLab/Andrology/Task';
 
+import CryopreservationLayout from './pages/Quality_Control/QcLab/Cryopreservation/CryopreservationLayout';
+import CryopreservationEnvironment from './pages/Quality_Control/QcLab/Cryopreservation/Environment';
+import CryopreservationEquipments from './pages/Quality_Control/QcLab/Cryopreservation/Equipments';
+import CryopreservationTask from './pages/Quality_Control/QcLab/Cryopreservation/Task';
 /* ================= CONFIGURATION COMPONENTS ================= */
 import EquipmentPage from './components/Configuration/EquipmentPage';
 import ViewEquipment from './components/Configuration/ViewEquipment';
@@ -73,18 +79,29 @@ function App() {
 
         {/* ================= QC LAB ================= */}
         <Route path="qc-lab" element={<LabLayout />}>
-          <Route index element={<Navigate to="embryology" replace />} />
+  <Route index element={<Navigate to="embryology" replace />} />
 
-          <Route path="embryology" element={<EmbryologyLayout />}>
-            <Route index element={<Navigate to="equipments" replace />} />
-            <Route path="task" element={<Task />} />
-            <Route path="equipments" element={<Equipment />} />
-            <Route path="environment" element={<Environment />} />
-          </Route>
+  <Route path="embryology" element={<EmbryologyLayout />}>
+    <Route index element={<Navigate to="equipments" replace />} />
+    <Route path="task" element={<Task />} />
+    <Route path="equipments" element={<Equipment />} />
+    <Route path="environment" element={<Environment />} />
+  </Route>
 
-          <Route path="andrology" element={<AndrologyLayout />} />
-          <Route path="cryopreservation" element={<CryopreservationLayout />} />
-        </Route>
+  <Route path="andrology" element={<AndrologyLayout />}>
+    <Route index element={<Navigate to="equipments" replace />} />
+    <Route path="environment" element={<AndrologyEnvironment />} />
+    <Route path="equipments" element={<AndrologyEquipments />} />
+    <Route path="task" element={<AndrologyTask />} />
+  </Route>
+
+  <Route path="cryopreservation" element={<CryopreservationLayout />}>
+    <Route index element={<Navigate to="equipments" replace />} />
+    <Route path="environment" element={<CryopreservationEnvironment />} />
+    <Route path="equipments" element={<CryopreservationEquipments />} />
+    <Route path="task" element={<CryopreservationTask />} />
+  </Route>
+</Route>
 
         {/* ================= QUALITY CONTROL CONFIGURATION ================= */}
 <Route path="configuration" element={<ConfigurationLayout />}>
