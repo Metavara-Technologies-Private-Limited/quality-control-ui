@@ -288,7 +288,9 @@ const Sidebar = () => {
             }}
           >
             {menuItems.map((item: any) => {
-              const isItemActive = location.pathname === item.path;
+const isItemActive =
+  location.pathname === item.path ||
+  (item.children && location.pathname.startsWith(item.path));
               const isLab = item.key === "lab";
               const isLabOpen = location.pathname.startsWith("/qc-lab");
               const isConfiguration = item.key === "configuration";
