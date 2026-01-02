@@ -14,12 +14,13 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    Divider,
 } from "@mui/material";
 
 import AddIcon from "@mui/icons-material/Add";
+import { useLocation } from "react-router-dom";
 import { MoreHoriz } from "@mui/icons-material";
 import ViewIcon from "@/assets/icons/eye.jpg";
+import { useSearchParams } from "react-router-dom";
 
 import { useNavigate } from "react-router-dom";
 import AddEquipmentPopup from "./AddEquipmentPopup";
@@ -31,6 +32,10 @@ interface InternalParameter extends Parameter {
 
 const EquipmentPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const [searchParams] = useSearchParams();
+const refresh = searchParams.get("refresh");
+
 
     const [equipmentData, setEquipmentData] = useState<Equipment[]>([]);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -83,13 +88,15 @@ const EquipmentPage = () => {
                 data.department.forEach((dep: any, depIndex: number) => {
                     dep.equipments.forEach((eq: any) => {
                         const newEquipment: Equipment = {
-                            id: eq.id, 
+                            id: eq.id,
                             equipment_name: eq.equipment_name,
                             dep_id: dep.id,
                             created_at: new Date().toISOString(),
                             department: departmentList[depIndex],
                             parameters: [],
                             status: "active",
+                            is_active: false,
+                            equipment_details: []
                         };
 
                         equipmentList.push(newEquipment);
@@ -125,7 +132,9 @@ const EquipmentPage = () => {
         };
 
         fetchData();
-    }, []);
+    }, [location.key]);
+
+
 
     const filteredEquipments = equipmentData.filter((item) =>
         item.equipment_name.toLowerCase().includes(searchQuery.toLowerCase())

@@ -5,6 +5,11 @@ import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import { useNavigate, useLocation } from "react-router-dom";
 import AddParameterPopup from "./AddParameterPopup";
 import { MoreHoriz } from "@mui/icons-material";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "@/store";
+
+import { fetchClinic } from "@/store/clinicSlice";
+
 
 // Define the key for storing parameter drafts
 const PARAM_DRAFT_STORAGE_KEY = "equipment_parameters_draft";
@@ -28,6 +33,8 @@ const normalizeDropdownValue = (data: any): string[] => {
 const AddParameterPage = () => {
     const navigate = useNavigate();
     const location = useLocation(); 
+const dispatch = useDispatch<AppDispatch>();
+
 
     const [equipmentName, setEquipmentName] = useState("");
     const [department, setDepartment] = useState("");
@@ -135,11 +142,14 @@ const AddParameterPage = () => {
             localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
             
         } else {
-            setIsEditMode(false);
-            setEquipmentName(localStorage.getItem("equipmentName") || "");
-            setDepartment(localStorage.getItem("department") || "");
-            setParameters(loadParametersFromLocalStorage());
-        }
+  setIsEditMode(false);
+
+  setEquipmentName(location.state?.equipmentName || "");
+  setDepartment(location.state?.departmentName || "");
+
+  setParameters(loadParametersFromLocalStorage());
+}
+
     }, [location]);
 
     useEffect(() => {
@@ -463,7 +473,11 @@ const AddParameterPage = () => {
 
             alert("Equipment saved successfully ✅");
             localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
-            navigate("/configuration");
+// 🔥 REFRESH REDUX CLINIC DATA
+dispatch(fetchClinic(1));
+
+navigate("/configuration/equipment", { replace: true });
+
 
         } catch (error) {
             console.error("Save failed:", error);
