@@ -36,12 +36,13 @@ const AddEquipmentPopup: React.FC<Props> = ({ open, onClose }) => {
     }
     onClose();
     navigate('/configuration/equipment/add-parameter', {
-      state: {
-        tempEquipmentId,
-        equipmentName,
-        departmentId,
-      },
-    });
+  state: {
+    tempEquipmentId,
+    equipmentName,
+    departmentName: departments.find(d => d.id === departmentId)?.name || "",
+  },
+});
+
   };
 
   return (

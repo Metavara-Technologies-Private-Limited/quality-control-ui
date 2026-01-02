@@ -19,6 +19,8 @@ export type CreateEquipmentPayload = {
 };
 
 export interface Equipment {
+  status: string;
+  department: any;
   id: number;
   equipment_name: string;
   is_active: boolean;
