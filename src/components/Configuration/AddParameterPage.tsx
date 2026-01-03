@@ -501,21 +501,21 @@ navigate("/configuration/equipment", { replace: true });
             case "Integer":
                 return (
                     <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>
-                        Integer Value: {p.integerValue || p.integer_value}
+                          {p.integerValue || p.integer_value}
                     </Typography>
                 );
             
             case "Percentage":
                 return (
                     <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>
-                        Parameter Value: {p.percentageValue || p.percentage}
+                       {p.percentageValue || p.percentage}
                     </Typography>
                 );
             
             case "Text":
                 return (
                     <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>
-                        Text Value: {p.textValue || p.text}
+                         {p.textValue || p.text}
                     </Typography>
                 );
             

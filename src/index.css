@@ -71,3 +71,25 @@ code {
   background-color: #14b8a6;
   color: #ffffff;
 }
+
+
+.add-box {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 2px solid #e5e7eb; /* light outer border */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+}
+
+.add-circle {
+  width: 14px;
+  height: 14px;
+  border-radius:50%;
+  border: 3px solid #111111; /* dark circle */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
