@@ -50,7 +50,7 @@ interface EquipmentDetail {
     PARAMETER RENDER LOGIC
 ======================= */
 
- const renderParameterDetails = (p: any) => {
+const renderParameterDetails = (p: any) => {
     const content = p.parameter_values?.[0]?.content;
     if (!content) return "-";
 
@@ -154,6 +154,7 @@ const ViewEquipment = () => {
                 const departmentName = passedEquipment.department?.name;
                 
                 console.log("Looking for equipment:", equipmentName, "in department:", departmentName);
+                console.log("Passed Equipment Full:", passedEquipment);
                 
                 // Search through departments to find matching equipment
                 for (const dept of clinicData.department || []) {
@@ -167,21 +168,37 @@ const ViewEquipment = () => {
                             // Attach department info
                             setEquipment({
                                 ...foundEquipment,
-                                department: { name: dept.name }
+                                department: { 
+                                    name: dept.name,
+                                    id: dept.id,
+                                    is_active: dept.is_active 
+                                },
+                                status: passedEquipment.status || "active"
                             });
                             setLoading(false);
                             return;
                         }
                     }
                 }
+                
+                console.log("Equipment not found in API, using passed data");
+                // If not found, keep the passed equipment with department
+                setEquipment({
+                    ...passedEquipment,
+                    department: passedEquipment.department || { name: "Unknown" }
+                });
             }
-            
-            console.log("Equipment not found in API, using passed data");
-            // If not found, keep the passed equipment
             
         } catch (err: any) {
             console.error("Error fetching equipment:", err);
             setError(err.message || "Failed to load equipment data");
+            // Keep using passed equipment even if API fails
+            if (location.state?.equipment) {
+                setEquipment({
+                    ...location.state.equipment,
+                    department: location.state.equipment.department || { name: "Unknown" }
+                });
+            }
         } finally {
             setLoading(false);
         }
@@ -191,8 +208,16 @@ const ViewEquipment = () => {
         if (location.state?.equipment) {
             const passedEquipment = location.state.equipment;
             
-            // Set initial equipment data
-            // setEquipment(passedEquipment);
+            console.log("=== DEBUG: Initial Equipment Data ===");
+            console.log("Passed Equipment:", passedEquipment);
+            console.log("Department:", passedEquipment.department);
+            console.log("Department Name:", passedEquipment.department?.name);
+            
+            // Set initial equipment data with proper department structure
+            setEquipment({
+                ...passedEquipment,
+                department: passedEquipment.department || { name: "Unknown" }
+            });
             
             // Always fetch fresh data from API to ensure make/model are loaded
             fetchEquipmentData(1);
@@ -235,6 +260,11 @@ const ViewEquipment = () => {
     const equipmentDetails: EquipmentDetail[] = equipment.equipment_details || [];
     const parameters: Parameter[] = equipment.parameters || [];
     const equipmentName = equipment.equipment_name || equipment.name;
+    const departmentName = equipment.department?.name || "Unknown Department";
+
+    console.log("=== RENDER DEBUG ===");
+    console.log("Equipment:", equipment);
+    console.log("Department Name to Display:", departmentName);
 
     return (
         <Box
@@ -259,7 +289,7 @@ const ViewEquipment = () => {
                     }}
                 />
                 <Typography sx={{ fontWeight: 700, fontSize: 20 }}>
-                    Equipment's
+                    Equipments
                 </Typography>
             </Box>
 
@@ -269,7 +299,7 @@ const ViewEquipment = () => {
                     {equipmentName}
                 </Typography>
                 <Chip
-                    label={equipment.department?.name || "Unknown"}
+                    label={departmentName}
                     size="small"
                     sx={{
                         background: "#E0F1E6",
@@ -308,8 +338,6 @@ const ViewEquipment = () => {
                           <Typography sx={{ fontSize: 14, color: "#374151", fontWeight: 400 }}>
                             Range: {renderParameterDetails(p)}
                            </Typography>
-
-                           
                         </Box>
                     ))}
                 </Box>
@@ -356,13 +384,13 @@ const ViewEquipment = () => {
 
                                 return (
                                     <TableRow key={row.equipment_num}>
-                                    <TableCell>{idx + 1}</TableCell>
-                                    <TableCell>{equipmentName} {equipmentNum}</TableCell>
-                                    <TableCell>{row.make || "-"}</TableCell>
-                                    <TableCell>{row.model || "-"}</TableCell>
+                                        <TableCell>{idx + 1}</TableCell>
+                                        <TableCell>{equipmentName} {equipmentNum}</TableCell>
+                                        <TableCell>{row.make || "-"}</TableCell>
+                                        <TableCell>{row.model || "-"}</TableCell>
                                     </TableRow>
                                 );
-                                })}
+                            })}
                         </TableBody>
                     </Table>
                 </Box>
@@ -374,7 +402,6 @@ const ViewEquipment = () => {
 
             {/* Actions */}
             <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 4, gap: 2 }}>
-                
                 <Button
                     variant="contained"
                     onClick={() =>

@@ -65,76 +65,84 @@ const refresh = searchParams.get("refresh");
         localStorage.setItem("equipmentStatus", JSON.stringify(statusObj));
     };
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await fetch(`http://127.0.0.1:8000/api/get_clinic/1/`);
-                const data = await response.json();
+   useEffect(() => {
+    const fetchData = async () => {
+        try {
+            const response = await fetch(`http://127.0.0.1:8000/api/get_clinic/1/`);
+            const data = await response.json();
 
-                let departmentList: Department[] = [];
-                let equipmentList: Equipment[] = [];
+            let departmentList: Department[] = [];
+            let equipmentList: Equipment[] = [];
 
-                departmentList = data.department.map((d: any, depIndex: number) => ({
-                    id: depIndex + 1,
-                    name: d.name,
-                    is_active: d.is_active,
-                    clinic_id: 1,
-                    created_at: new Date().toISOString(),
-                }));
+            // First, create the department list with their actual IDs from backend
+            departmentList = data.department.map((d: any) => ({
+                id: d.id, // Use actual ID from backend
+                name: d.name,
+                is_active: d.is_active,
+                clinic_id: 1,
+                created_at: new Date().toISOString(),
+            }));
 
-                let equipmentCounter = 1;
-                let parameterCounter = 1;
+            let parameterCounter = 1;
 
-                data.department.forEach((dep: any, depIndex: number) => {
-                    dep.equipments.forEach((eq: any) => {
-                        const newEquipment: Equipment = {
-                            id: eq.id,
-                            equipment_name: eq.equipment_name,
-                            dep_id: dep.id,
+            // Now map equipments and link them to departments by ID
+            data.department.forEach((dep: any) => {
+                // Find the matching department object by ID
+                const matchingDepartment = departmentList.find(d => d.id === dep.id);
+                
+                if (!matchingDepartment) {
+                    console.error(`Department not found for ID: ${dep.id}`);
+                    return;
+                }
+
+                dep.equipments.forEach((eq: any) => {
+                    const newEquipment: Equipment = {
+                        id: eq.id,
+                        equipment_name: eq.equipment_name,
+                        dep_id: dep.id,
+                        created_at: new Date().toISOString(),
+                        department: matchingDepartment, // Use the found department object
+                        parameters: [],
+                        status: "active",
+                        is_active: false,
+                        equipment_details: eq.equipment_details || [] // Include equipment_details
+                    };
+
+                    equipmentList.push(newEquipment);
+
+                    eq.parameters.forEach((param: any) => {
+                        const contentFromApi = param.content || {}; 
+                        
+                        const newParam: InternalParameter = {
+                            id: parameterCounter,
+                            parameter_name: param.parameter_name,
+                            equipment_id: eq.id,
+                            is_active: param.is_active,
+                            content: {                 
+                                ...contentFromApi, 
+                            },
                             created_at: new Date().toISOString(),
-                            department: departmentList[depIndex],
-                            parameters: [],
-                            status: "active",
-                            is_active: false,
-                            equipment_details: []
+                            equipment: newEquipment,
                         };
 
-                        equipmentList.push(newEquipment);
-
-                        eq.parameters.forEach((param: any) => {
-                            const contentFromApi = param.content || {}; 
-                            
-                            const newParam: InternalParameter = {
-                                id: parameterCounter,
-                                parameter_name: param.parameter_name,
-                                equipment_id: equipmentCounter,
-                                is_active: param.is_active,
-                                content: {                 
-                                    ...contentFromApi, 
-                                },
-                                created_at: new Date().toISOString(),
-                                equipment: newEquipment,
-                            };
-
-                            newEquipment.parameters.push(newParam as any);
-                            parameterCounter++;
-                        });
-
-                        equipmentCounter++;
+                        newEquipment.parameters.push(newParam as any);
+                        parameterCounter++;
                     });
                 });
+            });
 
-                const finalList = loadStatus(equipmentList);
-                setEquipmentData(finalList);
-            } catch (error) {
-                console.error("Error loading equipments:", error);
-            }
-        };
+            console.log("Department List:", departmentList);
+            console.log("Equipment List with Departments:", equipmentList);
 
-        fetchData();
-    }, [location.key]);
+            const finalList = loadStatus(equipmentList);
+            setEquipmentData(finalList);
+        } catch (error) {
+            console.error("Error loading equipments:", error);
+        }
+    };
 
-
+    fetchData();
+}, []);
 
     const filteredEquipments = equipmentData.filter((item) =>
         item.equipment_name.toLowerCase().includes(searchQuery.toLowerCase())
