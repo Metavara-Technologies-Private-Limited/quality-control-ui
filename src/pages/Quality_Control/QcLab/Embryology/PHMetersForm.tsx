@@ -10,61 +10,85 @@ import {
 } from 'recharts';
 
 
-const CryopreservationForm = ({ selectedRadio, setSelectedRadio }) => {
+
+
+const PHMetersForm = ({ selectedRadio, setSelectedRadio }) => {
   const [formData, setFormData] = useState({
-    liquidNitrogenLevels: "",
-    temperature: "",
-    backSystemFunctionality: "Functional",
-    alarmStatus: "Functional",
+    calibrationChecks: "Accurate",
+    electrodeCondition: "Clean",
+    temperatureCompensation: "Functional",
     status: "Pass",
     comments: "",
   });
 
   const handleClearForm = () => {
     setFormData({
-      liquidNitrogenLevels: "",
-      temperature: "",
-      backSystemFunctionality: "Functional",
-      alarmStatus: "Functional",
+      calibrationChecks: "Accurate",
+      electrodeCondition: "Clean",
+      temperatureCompensation: "Functional",
       status: "Pass",
       comments: "",
     });
   };
 
   const activityData = [
-    { day: "Monday", compliant: 34, nonCompliant: -33 },
-    { day: "Tuesday", compliant: 28, nonCompliant: -0 },
+    { day: "Monday", compliant: 24, nonCompliant: -33 },
+    { day: "Tuesday", compliant: 28, nonCompliant: -23 },
     { day: "Wednesday", compliant: 22, nonCompliant: -38 },
     { day: "Thursday", compliant: 34, nonCompliant: -12 },
-    { day: "Friday", compliant: 29, nonCompliant: -33 },
-    { day: "Saturday", compliant: 15, nonCompliant: -33 },
+    { day: "Friday", compliant: 28, nonCompliant: -33 },
+    { day: "Saturday", compliant: 15, nonCompliant: -10 },
     { day: "Sunday", compliant: 25, nonCompliant: -33 },
   ];
 
-  // Common card style for separate borders
+  // Card style for consistent separate sections
   const sectionStyle = {
     backgroundColor: "#fff",
     borderRadius: "12px",
     border: "1px solid #e5e7eb",
     padding: "24px",
-    marginBottom: "16px", // Gap between form card and graph card
+    marginBottom: "16px", // Gap between form and chart boxes
   };
 
   return (
     <div style={{ maxWidth: "1200px" }}>
       
-      {/* SECTION 1: Radio Selection, Form Fields, and Action Buttons */}
+      {/* SECTION 1: Radio Buttons, Form Fields, and Submission */}
       <div style={sectionStyle}>
-        {/* Radio Buttons Row */}
-        <div style={{ display: "flex", gap: "24px", paddingBottom: "24px", borderBottom: "1px solid #f1f5f9", marginBottom: "24px", flexWrap: "wrap" }}>
-          {["Cryo Tank A", "Cryo Tank B", "Cryo Tank C", "Cryo Tank D", "Cryo Tank E"].map((name) => (
-            <label key={name} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: "500", cursor: "pointer", color: "#0f172a" }}>
-              <input 
-                type="radio" 
-                name="equipment" 
-                checked={selectedRadio === name} 
-                onChange={() => setSelectedRadio(name)} 
-                style={{ accentColor: "#f97316", width: "16px", height: "16px" }} 
+        {/* Radio Buttons */}
+        <div
+          style={{
+            display: "flex",
+            gap: "24px",
+            paddingBottom: "24px",
+            borderBottom: "1px solid #f1f5f9",
+            marginBottom: "24px",
+            flexWrap: "wrap",
+          }}
+        >
+          {["pH Meters A", "pH Meters B", "pH Meters C", "pH Meters D", "pH Meters E"].map((name) => (
+            <label
+              key={name}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                fontSize: "13px",
+                fontWeight: "500",
+                cursor: "pointer",
+                color: "#0f172a",
+              }}
+            >
+              <input
+                type="radio"
+                name="equipment"
+                checked={selectedRadio === name}
+                onChange={() => setSelectedRadio(name)}
+                style={{
+                  accentColor: "#f97316",
+                  width: "16px",
+                  height: "16px",
+                }}
               />
               {name}
             </label>
@@ -72,64 +96,57 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio }) => {
         </div>
 
         {/* Form Fields Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", marginBottom: "32px" }}>
-          {/* Liquid Nitrogen Levels */}
-          <div style={{ position: "relative" }}>
-            <input
-              type="text"
-              placeholder="Type Here"
-              value={formData.liquidNitrogenLevels}
-              onChange={(e) => setFormData({ ...formData, liquidNitrogenLevels: e.target.value })}
-              style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", outline: "none", color: "#0f172a", backgroundColor: "#fff" }}
-            />
-            <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", fontWeight: "500", color: "#64748b" }}>
-              Liquid Nitrogen Levels (mm)
-            </label>
-            <p style={{ fontSize: "11px", color: "#64748b", margin: "4px 0 0 0" }}>Range: &gt;100</p>
-          </div>
-
-          {/* Temperature */}
-          <div style={{ position: "relative" }}>
-            <input
-              type="text"
-              placeholder="Type Here"
-              value={formData.temperature}
-              onChange={(e) => setFormData({ ...formData, temperature: e.target.value })}
-              style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", outline: "none", color: "#0f172a", backgroundColor: "#fff" }}
-            />
-            <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", fontWeight: "500", color: "#64748b" }}>
-              Temperature (°C)
-            </label>
-            <p style={{ fontSize: "11px", color: "#64748b", margin: "4px 0 0 0" }}>Range: -196 [-243]</p>
-          </div>
-
-          {/* Back System Functionality */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: "24px",
+            marginBottom: "32px",
+          }}
+        >
+          {/* Calibration Checks */}
           <div style={{ position: "relative" }}>
             <select
-              value={formData.backSystemFunctionality}
-              onChange={(e) => setFormData({ ...formData, backSystemFunctionality: e.target.value })}
+              value={formData.calibrationChecks}
+              onChange={(e) => setFormData({ ...formData, calibrationChecks: e.target.value })}
+              style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", outline: "none", cursor: "pointer", backgroundColor: "#fff", color: "#0f172a" }}
+            >
+              <option>Accurate</option>
+              <option>Needs Calibration</option>
+            </select>
+            <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", fontWeight: "500", color: "#64748b" }}>
+              Calibration Checks
+            </label>
+          </div>
+
+          {/* Electrode Condition */}
+          <div style={{ position: "relative" }}>
+            <select
+              value={formData.electrodeCondition}
+              onChange={(e) => setFormData({ ...formData, electrodeCondition: e.target.value })}
+              style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", outline: "none", cursor: "pointer", backgroundColor: "#fff", color: "#0f172a" }}
+            >
+              <option>Clean</option>
+              <option>Dirty</option>
+              <option>Needs Replacement</option>
+            </select>
+            <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", fontWeight: "500", color: "#64748b" }}>
+              Electrode Condition
+            </label>
+          </div>
+
+          {/* Temperature Compensation Verification */}
+          <div style={{ position: "relative" }}>
+            <select
+              value={formData.temperatureCompensation}
+              onChange={(e) => setFormData({ ...formData, temperatureCompensation: e.target.value })}
               style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", outline: "none", cursor: "pointer", backgroundColor: "#fff", color: "#0f172a" }}
             >
               <option>Functional</option>
               <option>Non-Functional</option>
             </select>
             <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", fontWeight: "500", color: "#64748b" }}>
-              Back System Functionality
-            </label>
-          </div>
-
-          {/* Alarm Status */}
-          <div style={{ position: "relative" }}>
-            <select
-              value={formData.alarmStatus}
-              onChange={(e) => setFormData({ ...formData, alarmStatus: e.target.value })}
-              style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", outline: "none", cursor: "pointer", backgroundColor: "#fff", color: "#0f172a" }}
-            >
-              <option>Functional</option>
-              <option>Non-Functional</option>
-            </select>
-            <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", fontWeight: "500", color: "#64748b" }}>
-              Alarm Status
+              Temperature Compensation Verification
             </label>
           </div>
 
@@ -163,14 +180,23 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio }) => {
           </div>
         </div>
 
-        {/* Action Buttons with Top Divider */}
+        {/* Action Buttons Section */}
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "24px" }}>
-          <button onClick={handleClearForm} style={{ padding: "10px 24px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", fontWeight: "500", cursor: "pointer", color: "#0f172a" }}>Clear</button>
-          <button style={{ padding: "10px 24px", backgroundColor: "#1e293b", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: "500", cursor: "pointer" }}>Save</button>
+          <button
+            onClick={handleClearForm}
+            style={{ padding: "10px 24px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", fontWeight: "500", cursor: "pointer", color: "#0f172a" }}
+          >
+            Clear
+          </button>
+          <button
+            style={{ padding: "10px 24px", backgroundColor: "#1e293b", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: "500", cursor: "pointer" }}
+          >
+            Save
+          </button>
         </div>
       </div>
 
-      {/* SECTION 2: Activity Chart Card */}
+      {/* SECTION 2: Activity Chart */}
       <div style={sectionStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -194,19 +220,53 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio }) => {
 
         <div style={{ width: '100%', height: 300, backgroundColor: '#fff' }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={activityData} stackOffset="sign" margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
-              <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#9e9e9e' }} axisLine={{ stroke: '#E0E0E0' }} tickLine={false} />
-              <YAxis domain={[-40, 40]} ticks={[-40, -20, 0, 20, 40]} tick={{ fontSize: 12, fill: '#9e9e9e' }} axisLine={false} tickLine={false} />
-              <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px' }} />
+            <BarChart 
+              data={activityData} 
+              stackOffset="sign" 
+              margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
+            >
+              <XAxis
+                dataKey="day"
+                tick={{ fontSize: 12, fill: '#9e9e9e' }}
+                axisLine={{ stroke: '#E0E0E0' }}
+                tickLine={false}
+              />
+              <YAxis
+                domain={[-40, 40]}
+                ticks={[-40, -20, 0, 20, 40]}
+                tick={{ fontSize: 12, fill: '#9e9e9e' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip 
+                cursor={{ fill: 'transparent' }} 
+                contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px' }} 
+              />
+              
               <ReferenceLine y={0} stroke="#E0E0E0" />
               <ReferenceLine y={20} stroke="#F1F1F1" />
               <ReferenceLine y={40} stroke="#F1F1F1" />
               <ReferenceLine y={-20} stroke="#F1F1F1" />
               <ReferenceLine y={-40} stroke="#F1F1F1" />
-              <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={15} label={{ position: 'top', fill: '#9e9e9e', fontSize: 10 }} />
-              <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={15} label={({ x, y, value, width }) => (
-                <text x={x + width / 2} y={y + 14} fill="#EF9685" fontSize={10} textAnchor="middle">{value}</text>
-              )} />
+
+              <Bar 
+                dataKey="compliant" 
+                fill="#6c6c6c" 
+                radius={[4, 4, 0, 0]} 
+                barSize={15} 
+                label={{ position: 'top', fill: '#9e9e9e', fontSize: 10 }} 
+              />
+              <Bar 
+                dataKey="nonCompliant" 
+                fill="#EF9685" 
+                radius={[0, 0, 4, 4]} 
+                barSize={15} 
+                label={({ x, y, value, width }) => (
+                  <text x={x + width / 2} y={y + 14} fill="#EF9685" fontSize={10} textAnchor="middle">
+                    {value}
+                  </text>
+                )} 
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -214,6 +274,5 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio }) => {
       </div>
     </div>
   );
-}; 
-
-export default CryopreservationForm;
+};
+export default PHMetersForm;
