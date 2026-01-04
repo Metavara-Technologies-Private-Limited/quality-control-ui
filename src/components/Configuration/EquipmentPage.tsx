@@ -14,6 +14,7 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    Divider,
 } from "@mui/material";
 
 import AddIcon from "@mui/icons-material/Add";
@@ -312,7 +313,7 @@ const refresh = searchParams.get("refresh");
                                     </Box>
                                 </CardContent>
 
-                                <Box sx={{ height: 1, background: "#E5E7EB", mx: 2 }} />
+                                <Divider />
 
                                 {/* Bottom Icons */}
                                 <Box
