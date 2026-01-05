@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+// 1. IMPORT TOAST
+import { toast } from "react-toastify";
 import { Dialog, DialogTitle, DialogContent, TextField, MenuItem, Box, Button, IconButton, Checkbox, FormControlLabel } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
@@ -24,7 +26,6 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
   useEffect(() => {
     if (open) {
       if (initialData) {
-        // Pre-fill with existing data for editing
         setName(initialData.name || "");
         setDataType(initialData.dataType || "");
         setMinValue(initialData.minValue || "");
@@ -35,7 +36,6 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
         setPercentage(initialData.percentageValue || initialData.percentage || "");
         setIntegerValue(initialData.integerValue || "");
       } else {
-        // Reset for new parameter
         setName("");
         setDataType("");
         setMinValue("");
@@ -60,20 +60,19 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
   };
 
   const handleAdd = () => {
-    // Validate required fields with alert popup
+    // 2. REPLACED ALERTS WITH TOASTS (Logic remains identical)
     if (!name.trim()) {
-      alert("Please enter Parameter Name");
+      toast.error("Please enter Parameter Name");
       return;
     }
     
     if (!dataType) {
-      alert("Please select Data Type");
+      toast.error("Please select Data Type");
       return;
     }
     
-    // Validate data type specific fields
     if (dataType === "Integer" && !integerValue.trim()) {
-      alert("Please enter Integer Value");
+      toast.error("Please enter Integer Value");
       return;
     }
 
@@ -138,7 +137,6 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
       </DialogTitle>
 
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
-        {/* Name */}
         <TextField
           label="Name"
           fullWidth
@@ -148,30 +146,19 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
           InputLabelProps={{ shrink: true }}
           sx={{
             width: "380px", 
-            "& .MuiInputLabel-root.Mui-focused": {
-              color: "#232323 !important", 
-            },
-            "& .MuiInputLabel-root": {
-              color: "#5F646F !important",
-            },
+            "& .MuiInputLabel-root.Mui-focused": { color: "#232323 !important" },
+            "& .MuiInputLabel-root": { color: "#5F646F !important" },
             "& .MuiOutlinedInput-root": { 
               height: "50px", 
               paddingTop: "0", 
               paddingBottom: "0",
-              "& fieldset": {
-                borderColor: "#CFD1D4", 
-              },
-              "&:hover fieldset": {
-                borderColor: "#CFD1D4",
-              },
-              "&.Mui-focused fieldset": {
-                borderColor: "#CFD1D4 !important",
-              },
+              "& fieldset": { borderColor: "#CFD1D4" },
+              "&:hover fieldset": { borderColor: "#CFD1D4" },
+              "&.Mui-focused fieldset": { borderColor: "#CFD1D4 !important" },
             },
           }}
         />
 
-        {/* Data Type */}
         <TextField
           label="Data Type"
           select
@@ -185,25 +172,15 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
           InputLabelProps={{ shrink: true }}
           sx={{
             width: "380px", 
-            "& .MuiInputLabel-root.Mui-focused": {
-              color: "#232323 !important", 
-            },
-            "& .MuiInputLabel-root": {
-              color: "#5F646F !important",
-            },
+            "& .MuiInputLabel-root.Mui-focused": { color: "#232323 !important" },
+            "& .MuiInputLabel-root": { color: "#5F646F !important" },
             "& .MuiOutlinedInput-root": {
               height: "50px", 
               paddingTop: "0", 
               paddingBottom: "0",
-              "& fieldset": {
-                borderColor: "#CFD1D4", 
-              },
-              "&:hover fieldset": {
-                borderColor: "#CFD1D4", 
-              },
-              "&.Mui-focused fieldset": {
-                borderColor: "#CFD1D4 !important", 
-              },
+              "& fieldset": { borderColor: "#CFD1D4" },
+              "&:hover fieldset": { borderColor: "#CFD1D4" },
+              "&.Mui-focused fieldset": { borderColor: "#CFD1D4 !important" },
             },
           }}
         >
@@ -215,8 +192,6 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
           <MenuItem value="Integer">Integer</MenuItem>
         </TextField>
 
-        {/* CONDITIONAL FIELDS */}
-        {/* Decimal → show Min & Max */}
         {dataType === "Decimal" && (
           <Box sx={{ display: "flex", gap: "16px" }}>
             <TextField
@@ -229,23 +204,9 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
                 width: "182px",
                 "& .MuiInputLabel-root": { color: "#5F646F !important" },
                 "& .MuiInputLabel-root.Mui-focused": { color: "#5F646F !important" },
-                "& .MuiOutlinedInput-root": {
-                  height: "50px", 
-                  borderRadius: "10px",
-                  "& fieldset": { 
-                    borderColor: "#CFD1D4",
-                    borderWidth: "1px",
-                  },
-                  "&:hover fieldset": { borderColor: "#CFD1D4" },
-                  "&.Mui-focused fieldset": { borderColor: "#CFD1D4" },
-                },
-                "& .MuiInputBase-input": { 
-                  color: "#5F646F", 
-                  padding: "10px 10px",
-                },
+                "& .MuiOutlinedInput-root": { height: "50px", borderRadius: "10px", "& fieldset": { borderColor: "#CFD1D4" } },
               }}
             />
-
             <TextField
               label="Max °C"
               size="small"
@@ -256,26 +217,12 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
                 width: "182px",
                 "& .MuiInputLabel-root": { color: "#5F646F !important" },
                 "& .MuiInputLabel-root.Mui-focused": { color: "#5F646F !important" },
-                "& .MuiOutlinedInput-root": {
-                  height: "50px", 
-                  borderRadius: "10px", 
-                  "& fieldset": { 
-                    borderColor: "#CFD1D4", 
-                    borderWidth: "1px", 
-                  },
-                  "&:hover fieldset": { borderColor: "#CFD1D4" },
-                  "&.Mui-focused fieldset": { borderColor: "#CFD1D4" },
-                },
-                "& .MuiInputBase-input": { 
-                  color: "#5F646F", 
-                  padding: "10px 16px",
-                },
+                "& .MuiOutlinedInput-root": { height: "50px", borderRadius: "10px", "& fieldset": { borderColor: "#CFD1D4" } },
               }}
             />
           </Box>
         )}
 
-        {/* Select (Multiple Selection) → Checkboxes */}
         {dataType === "Select" && (
           <Box sx={{ display: "flex", flexDirection: "row", gap: 3, ml: 1 }}>
             {["Option 1", "Option 2", "Option 3"].map((opt) => (
@@ -283,7 +230,7 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
                 key={opt}
                 control={
                   <Checkbox
-                    color="default"   
+                    color="default" 
                     checked={selectedOptions.includes(opt)}
                     onChange={(e) => {
                       if (e.target.checked) {
@@ -291,27 +238,6 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
                       } else {
                         setSelectedOptions(selectedOptions.filter((o) => o !== opt));
                       }
-                    }}
-                    sx={{
-                      "& .MuiInputLabel-root.Mui-focused": {
-                        color: "#222222ff !important", 
-                      },
-                      "& .MuiInputLabel-root": {
-                        color: "#5F646F !important",
-                      },
-                      "& .MuiOutlinedInput-root": {
-                        paddingTop: "0", 
-                        paddingBottom: "0",
-                        "& fieldset": {
-                          borderColor: "#CFD1D4", 
-                        },
-                        "&:hover fieldset": {
-                          borderColor: "#CFD1D4", 
-                        },
-                        "&.Mui-focused fieldset": {
-                          borderColor: "#CFD1D4 !important",
-                        },
-                      },
                     }}
                   />
                 }
@@ -322,7 +248,6 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
           </Box>
         )}
 
-        {/* Dropdown → show another dropdown */}
         {dataType === "Dropdown" && (
           <TextField
             label="Select Option"
@@ -333,26 +258,7 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
             InputLabelProps={{ shrink: true }}
             sx={{
               width: "380px", 
-              "& .MuiInputLabel-root.Mui-focused": {
-                color: "#232323 !important", 
-              },
-              "& .MuiInputLabel-root": {
-                color: "#5F646F !important",
-              },
-              "& .MuiOutlinedInput-root": {
-                height: "50px", 
-                paddingTop: "0", 
-                paddingBottom: "0",
-                "& fieldset": {
-                  borderColor: "#CFD1D4",
-                },
-                "&:hover fieldset": {
-                  borderColor: "#CFD1D4", 
-                },
-                "&.Mui-focused fieldset": {
-                  borderColor: "#CFD1D4 !important", 
-                },
-              },
+              "& .MuiOutlinedInput-root": { height: "50px", "& fieldset": { borderColor: "#CFD1D4" } },
             }}
           >
             <MenuItem value="Lasted">Lasted</MenuItem>
@@ -361,118 +267,42 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
           </TextField>
         )}
 
-        {/* Text → Text Area */}
         {dataType === "Text" && (
-          <Box sx={{ display: "flex", flexDirection: "row", gap: "10px" }}>
-            <TextField
-              label="Add Text Here"
-              value={textValue}
-              onChange={(e) => setTextValue(e.target.value)}
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              sx={{
-                width: "380px",
-                "& .MuiInputLabel-root.Mui-focused": {
-                  color: "#232323 !important", 
-                },
-                "& .MuiInputLabel-root": {
-                  color: "#5F646F !important",
-                },
-                "& .MuiOutlinedInput-root": {
-                  height: "50px", 
-                  borderRadius: "10px",
-                  "& fieldset": {
-                    borderColor: "#CFD1D4", 
-                    borderWidth: "1px",
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "#CFD1D4",
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#CFD1D4 !important", 
-                  },
-                },
-                "& textarea": {
-                  padding: "5px 16px !important", 
-                },
-              }}
-            />
-          </Box>
+          <TextField
+            label="Add Text Here"
+            value={textValue}
+            onChange={(e) => setTextValue(e.target.value)}
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            sx={{
+              width: "380px",
+              "& .MuiOutlinedInput-root": { height: "50px", borderRadius: "10px", "& fieldset": { borderColor: "#CFD1D4" } },
+            }}
+          />
         )}
 
-        {/* Percentage */}
         {dataType === "Percentage" && (
-          <Box sx={{ display: "flex", flexDirection: "row", gap: "10px" }}>
-            <TextField 
-              label="Percentage" 
-              fullWidth
-              value={percentage}
-              onChange={(e) => setPercentage(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              sx={{
-                width: "380px", 
-                "& .MuiInputLabel-root.Mui-focused": {
-                  color: "#232323 !important", 
-                },
-                "& .MuiInputLabel-root": {
-                  color: "#5F646F !important",
-                },
-                "& .MuiOutlinedInput-root": {
-                  height: "50px", 
-                  paddingTop: "0", 
-                  paddingBottom: "0",
-                  "& fieldset": {
-                    borderColor: "#CFD1D4", 
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "#CFD1D4", 
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#CFD1D4 !important", 
-                  },
-                },
-              }}
-            />
-          </Box>
+          <TextField 
+            label="Percentage" 
+            fullWidth
+            value={percentage}
+            onChange={(e) => setPercentage(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            sx={{ width: "380px", "& .MuiOutlinedInput-root": { height: "50px", "& fieldset": { borderColor: "#CFD1D4" } } }}
+          />
         )}
 
-        {/* Integer */}
         {dataType === "Integer" && (
-          <Box sx={{ display: "flex", flexDirection: "row", gap: "10px" }}>
-            <TextField
-              label="Integer Value"
-              fullWidth
-              value={integerValue}
-              onChange={(e) => setIntegerValue(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              sx={{
-                width: "380px",
-                "& .MuiInputLabel-root.Mui-focused": {
-                  color: "#232323 !important",
-                },
-                "& .MuiInputLabel-root": {
-                  color: "#5F646F !important",
-                },
-                "& .MuiOutlinedInput-root": {
-                  height: "50px",
-                  paddingTop: "0",
-                  paddingBottom: "0",
-                  "& fieldset": {
-                    borderColor: "#CFD1D4",
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "#CFD1D4",
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#CFD1D4 !important",
-                  },
-                },
-              }}
-            />
-          </Box>
+          <TextField
+            label="Integer Value"
+            fullWidth
+            value={integerValue}
+            onChange={(e) => setIntegerValue(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            sx={{ width: "380px", "& .MuiOutlinedInput-root": { height: "50px", "& fieldset": { borderColor: "#CFD1D4" } } }}
+          />
         )}
 
-        {/* Buttons */}
         <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mr: 2 }}>
           <Button
             variant="outlined"
@@ -481,7 +311,6 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
               width: "120px",
               borderRadius: "10px",
               borderColor: "#505050",
-              alignItems: "left",
               "&:hover": { borderColor: "#505050", backgroundColor: "white" },
               color: "#505050",
               textTransform: "none",
@@ -498,7 +327,6 @@ const AddParameterPopup: React.FC<Props> = ({ open, onClose, onAdd, initialData 
               borderRadius: "10px",
               background: "#383838",
               textTransform: "none",
-              alignItems: "left",
               "&:hover": { background: "#2f2f2f" },
             }}
           >

@@ -15,6 +15,17 @@ const Andrology = () => {
   const [equipmentType, setEquipmentType] = useState("sperm");
   const [selectedRadio, setSelectedRadio] = useState("Sperm Analyzer B");
 
+  // YOUR SPECIFIED BOLD STYLE
+  const boldTextStyle = {
+    fontFamily: "Montserrat",
+    fontWeight: 700,
+    fontStyle: "normal", // "Bold" is typically defined via fontWeight 700
+    fontSize: "14px",
+    lineHeight: "145%",
+    letterSpacing: "0%",
+    textTransform: "capitalize",
+  };
+
   const assignees = [
     "https://i.pravatar.cc/150?img=1",
     "https://i.pravatar.cc/150?img=2",
@@ -22,31 +33,11 @@ const Andrology = () => {
   ];
 
   const andrologyList = [
-    {
-      name: "Sperm Analyzers",
-      params: "05/08",
-      progress: "100%",
-      type: "sperm",
-    },
-    {
-      name: "Centrifuges",
-      params: "05/08",
-      progress: "24%",
-      type: "centrifuge",
-    },
-    {
-      name: "Autoclaves",
-      params: "05/08",
-      progress: "100%",
-      type: "autoclave",
-    },
+    { name: "Sperm Analyzers", params: "05/08", progress: "100%", type: "sperm" },
+    { name: "Centrifuges", params: "05/08", progress: "24%", type: "centrifuge" },
+    { name: "Autoclaves", params: "05/08", progress: "100%", type: "autoclave" },
     { name: "Gas Analyzers", params: "05/08", progress: "100%", type: "gas" },
-    {
-      name: "Refrigerators / Freezers",
-      params: "05/08",
-      progress: "56%",
-      type: "fridge",
-    },
+    { name: "Refrigerators / Freezers", params: "05/08", progress: "56%", type: "fridge" },
   ];
 
   return (
@@ -80,9 +71,9 @@ const Andrology = () => {
             alignItems: "center",
           }}
         >
-             <div style={{fontSize:"18px", fontStyle:"Bold", fontWeight:700, fontFamily:"Montserrat"}}>
-            <p>Equipments</p>
-           </div>
+          <div style={{ ...boldTextStyle, fontSize: "18px" }}>
+            <p style={{ margin: 0 }}>Equipments</p>
+          </div>
           <Filter size={18} color="#94a3b8" style={{ cursor: "pointer" }} />
         </div>
 
@@ -96,7 +87,7 @@ const Andrology = () => {
             overflowY: "auto",
           }}
         >
-          {/* Tab Switcher with Active Orange Styling */}
+          {/* Tab Switcher */}
           <div
             style={{
               display: "flex",
@@ -109,19 +100,17 @@ const Andrology = () => {
             <button
               onClick={() => setActiveTab("To-Do")}
               style={{
+                ...boldTextStyle, // Applying bold style here
                 flex: 1,
-                padding: "10px",
+                width: "166px",
+                height: "36px",
                 borderRadius: "8px",
                 border: "none",
                 cursor: "pointer",
-                fontSize: "13px",
                 transition: "all 0.2s ease",
-                backgroundColor:
-                  activeTab === "To-Do" ? "#FFFFFF" : "transparent",
-                color: activeTab === "To-Do" ? "#E17E61" : "#94a3b8", // Orange if active
-                fontWeight: activeTab === "To-Do" ? "600" : "500", // Bold if active
-                boxShadow:
-                  activeTab === "To-Do" ? "0 2px 4px rgba(0,0,0,0.05)" : "none",
+                backgroundColor: activeTab === "To-Do" ? "#FFFFFF" : "transparent",
+                color: activeTab === "To-Do" ? "#E17E61" : "#94a3b8",
+                boxShadow: activeTab === "To-Do" ? "0 2px 4px rgba(0,0,0,0.05)" : "none",
               }}
             >
               To-Do
@@ -129,19 +118,17 @@ const Andrology = () => {
             <button
               onClick={() => setActiveTab("Plan")}
               style={{
+                ...boldTextStyle, // Applying bold style here
                 flex: 1,
-                padding: "10px",
+                width: "166px",
+                height: "36px",
                 borderRadius: "8px",
                 border: "none",
                 cursor: "pointer",
-                fontSize: "13px",
                 transition: "all 0.2s ease",
-                backgroundColor:
-                  activeTab === "Plan" ? "#FFFFFF" : "transparent",
-                color: activeTab === "Plan" ? "#E17E61" : "#94a3b8", // Orange if active
-                fontWeight: activeTab === "Plan" ? "600" : "500", // Bold if active
-                boxShadow:
-                  activeTab === "Plan" ? "0 2px 4px rgba(0,0,0,0.05)" : "none",
+                backgroundColor: activeTab === "Plan" ? "#FFFFFF" : "transparent",
+                color: activeTab === "Plan" ? "#E17E61" : "#94a3b8",
+                boxShadow: activeTab === "Plan" ? "0 2px 4px rgba(0,0,0,0.05)" : "none",
               }}
             >
               Plan
@@ -162,12 +149,8 @@ const Andrology = () => {
                   borderRadius: "12px",
                   cursor: "pointer",
                   transition: "all 0.2s",
-                  backgroundColor:
-                    selectedEquipment === item.name ? "#fef3f2" : "#fff",
-                  border:
-                    selectedEquipment === item.name
-                      ? "2px solid #f97316"
-                      : "1px solid #f1f5f9",
+                  backgroundColor: selectedEquipment === item.name ? "#fef3f2" : "#fff",
+                  border: selectedEquipment === item.name ? "2px solid #f97316" : "1px solid #f1f5f9",
                 }}
               >
                 <div
@@ -177,13 +160,7 @@ const Andrology = () => {
                     marginBottom: "8px",
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#0f172a",
-                    }}
-                  >
+                  <span style={{ ...boldTextStyle, color: "#0f172a" }}>
                     {item.name}
                   </span>
                   <div
@@ -233,14 +210,14 @@ const Andrology = () => {
                 >
                   <span
                     style={{
+                      ...boldTextStyle,
                       fontSize: "12px",
                       color: item.progress === "100%" ? "#22c55e" : "#f97316",
-                      fontWeight: "600",
                     }}
                   >
                     {item.progress}
                   </span>
-                  <span style={{ fontSize: "12px", color: "#64748b" }}>
+                  <span style={{ fontSize: "12px", color: "#64748b", fontFamily: "Montserrat" }}>
                     Parameters : {item.params}
                   </span>
                 </div>
@@ -253,6 +230,7 @@ const Andrology = () => {
                 marginTop: "40px",
                 color: "#94a3b8",
                 fontSize: "14px",
+                fontFamily: "Montserrat",
               }}
             >
               No plans added yet
@@ -296,7 +274,6 @@ const Andrology = () => {
               />
             )}
 
-            {/* Initial State if no sidebar item clicked */}
             {!equipmentType && (
               <div
                 style={{
@@ -308,6 +285,7 @@ const Andrology = () => {
                   borderRadius: "12px",
                   border: "1px solid #e5e7eb",
                   color: "#94a3b8",
+                  fontFamily: "Montserrat",
                 }}
               >
                 Select an equipment from the sidebar to record parameters
@@ -315,7 +293,6 @@ const Andrology = () => {
             )}
           </>
         ) : (
-          /* EMPTY STATE FOR PLAN TAB */
           <div
             style={{
               display: "flex",
@@ -327,6 +304,7 @@ const Andrology = () => {
               border: "1px solid #e5e7eb",
               color: "#94a3b8",
               fontSize: "16px",
+              fontFamily: "Montserrat",
             }}
           >
             No plans added yet
