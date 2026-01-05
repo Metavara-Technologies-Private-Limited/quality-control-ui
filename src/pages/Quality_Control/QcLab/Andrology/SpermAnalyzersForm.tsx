@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+// 1. Import toast utilities
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine 
 } from 'recharts';
@@ -16,16 +19,44 @@ const SpermAnalyzersForm = ({ selectedRadio, setSelectedRadio }) => {
     comments: "",
   });
 
-  // Mock data for the Logs table
-  const logsData = [
-    { id: 1, dateTime: "31/12/2025 11:24:00 AM", version: "V3.2.1", calibration: "Accurate", qc: "Passed", status: "Pass", comments: "Calibration and QC completed successfully." },
-    { id: 2, dateTime: "31/12/2025 11:24:00 AM", version: "V3.2.1", calibration: "Accurate", qc: "Passed", status: "Pass", comments: "Routine daily quality check performed." },
-    { id: 3, dateTime: "31/12/2025 11:24:00 AM", version: "V3.2.1", calibration: "Accurate", qc: "Passed", status: "Pass", comments: "Minor calibration adjustment applied before testing." },
-  ];
+  const [logsData, setLogsData] = useState([]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = () => {
+    if (!formData.softwareVersion) {
+      toast.error("Please enter Software Version");
+      return;
+    }
+
+    const newLogEntry = {
+      id: Date.now(),
+      dateTime: `${formData.date} ${formData.time}`,
+      version: formData.softwareVersion,
+      calibration: formData.calibrationChecks,
+      qc: formData.qualityControl,
+      status: formData.status,
+      comments: formData.comments || "N/A",
+    };
+
+    setLogsData([newLogEntry, ...logsData]);
+    
+    // 2. Trigger Success Toast Popup
+    toast.success("Successfully Saved!", {
+      position: "top-right",
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      theme: "colored",
+    });
+
+    setActiveSubTab("Logs");
+    setFormData(prev => ({ ...prev, softwareVersion: "", comments: "" }));
   };
 
   const activityData = [
@@ -48,6 +79,9 @@ const SpermAnalyzersForm = ({ selectedRadio, setSelectedRadio }) => {
 
   return (
     <div style={{ maxWidth: "1200px" }}>
+      {/* 3. Render the ToastContainer once in the component */}
+      <ToastContainer />
+
       <div style={sectionStyle}>
         {/* Radio Selection */}
         <div style={{ display: "flex", gap: "24px", paddingBottom: "24px", borderBottom: "1px solid #f1f5f9", marginBottom: "24px", flexWrap: "wrap" }}>
@@ -81,7 +115,6 @@ const SpermAnalyzersForm = ({ selectedRadio, setSelectedRadio }) => {
           ))}
         </div>
 
-        {/* Tab Content Logic */}
         {activeSubTab === "Details" ? (
           <>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", marginBottom: "32px" }}>
@@ -131,12 +164,11 @@ const SpermAnalyzersForm = ({ selectedRadio, setSelectedRadio }) => {
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "24px" }}>
-              <button type="button" onClick={() => setFormData({ date: "", time: "", softwareVersion: "", calibrationChecks: "Accurate", qualityControl: "Passed", status: "Pass", comments: "" })} style={{ padding: "10px 24px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", cursor: "pointer" }}>Clear</button>
-              <button type="button" style={{ padding: "10px 24px", backgroundColor: "#1e293b", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer" }}>Save</button>
+              <button type="button" onClick={() => setFormData({ date: "2025-12-31", time: "11:24", softwareVersion: "", calibrationChecks: "Accurate", qualityControl: "Passed", status: "Pass", comments: "" })} style={{ padding: "10px 24px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", cursor: "pointer" }}>Clear</button>
+              <button type="button" onClick={handleSave} style={{ padding: "10px 24px", backgroundColor: "#1e293b", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer" }}>Save</button>
             </div>
           </>
         ) : (
-          /* LOGS TABLE VIEW */
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
               <thead>
@@ -150,122 +182,75 @@ const SpermAnalyzersForm = ({ selectedRadio, setSelectedRadio }) => {
                 </tr>
               </thead>
               <tbody>
-                {logsData.map((log) => (
-                  <tr key={log.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={{ padding: "16px 8px", color: "#0f172a", fontWeight: "500" }}>{log.dateTime}</td>
-                    <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.version}</td>
-                    <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.calibration}</td>
-                    <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.qc}</td>
-                    <td style={{ padding: "16px 8px" }}>
-                      <span style={{ 
-                        padding: "4px 12px", 
-                        borderRadius: "16px", 
-                        backgroundColor: "#DCFCE7", 
-                        color: "#15803D", 
-                        fontSize: "11px", 
-                        fontWeight: "600",
-                        border: "1px solid #BBF7D0"
-                      }}>
-                        {log.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.comments}</td>
+                {logsData.length > 0 ? (
+                  logsData.map((log) => (
+                    <tr key={log.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "16px 8px", color: "#0f172a", fontWeight: "500" }}>{log.dateTime}</td>
+                      <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.version}</td>
+                      <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.calibration}</td>
+                      <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.qc}</td>
+                      <td style={{ padding: "16px 8px" }}>
+                        <span style={{ 
+                          padding: "4px 12px", borderRadius: "16px", 
+                          backgroundColor: log.status === "Pass" ? "#DCFCE7" : "#FEE2E2", 
+                          color: log.status === "Pass" ? "#15803D" : "#B91C1C", 
+                          fontSize: "11px", fontWeight: "600",
+                          border: log.status === "Pass" ? "1px solid #BBF7D0" : "1px solid #FECACA"
+                        }}>{log.status}</span>
+                      </td>
+                      <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.comments}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: "center", padding: "30px", color: "#94a3b8" }}>No records found. Please add details and save.</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* Activity Card (Always Visible) */}
       <div style={sectionStyle}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ 
-                  width: '24px', height: '24px', borderRadius: '6px', 
-                  border: '1px solid #E0E0E0', display: 'flex', 
-                  alignItems: 'center', justifyContent: 'center' 
-                }}>
-                   <span style={{ fontSize: '14px' }}>📈</span>
-                </div>
-                <h3 style={{ fontSize: "16px", fontWeight: "600", margin: 0, color: "#0f172a" }}>Activity</h3>
-              </div>
-              
-              <div style={{ display: "flex", gap: "16px", fontSize: "12px" }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <div style={{ width: '8px', height: '8px', backgroundColor: '#6c6c6c', borderRadius: '50%' }} />
-                  <span style={{ color: '#9e9e9e' }}>Compliant</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <div style={{ width: '8px', height: '8px', backgroundColor: '#EF9685', borderRadius: '50%' }} />
-                  <span style={{ color: '#9e9e9e' }}>Non - Compliant</span>
-                </div>
-              </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <span style={{ fontSize: '14px' }}>📈</span>
             </div>
-    
-         {/* Graphs and charts*/}
-            <div style={{ width: '100%', height: 300 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart 
-                  data={activityData} 
-                  stackOffset="sign" 
-                  margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
-                >
-                  {/* Faint horizontal grid lines */}
-                  <ReferenceLine y={0} stroke="#E0E0E0" />
-                  <ReferenceLine y={20} stroke="#F1F1F1" />
-                  <ReferenceLine y={40} stroke="#F1F1F1" />
-                  <ReferenceLine y={-20} stroke="#F1F1F1" />
-                  <ReferenceLine y={-40} stroke="#F1F1F1" />
-    
-                  <XAxis 
-                    dataKey="day" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 12, fill: '#9e9e9e' }}
-                    dy={10}
-                  />
-                  <YAxis 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: '#9e9e9e' }}
-                    domain={[-40, 40]}
-                    ticks={[-40, -20, 0, 20, 40]}
-                    label={{ 
-                      value: 'No of Parameters', 
-                      angle: -90, 
-                      position: 'insideLeft', 
-                      style: { fill: '#9e9e9e', fontSize: 12 } 
-                    }}
-                  />
-                  <Tooltip 
-                    cursor={{ fill: 'transparent' }}
-                    contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
-                  />
-    
-                  {/* Compliant (Grey) */}
-                  <Bar 
-                    dataKey="compliant" 
-                    fill="#6c6c6c" 
-                    radius={[4, 4, 0, 0]} 
-                    barSize={12}
-                    label={{ position: 'top', fill: '#6c6c6c', fontSize: 10, dy: -5 }}
-                  />
-    
-                  {/* Non-Compliant (Coral) */}
-                  <Bar 
-                    dataKey="nonCompliant" 
-                    fill="#EF9685" 
-                    radius={[0, 0, 4, 4]} 
-                    barSize={12}
-                    label={{ position: 'bottom', fill: '#EF9685', fontSize: 10, dy: 5 }}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <p style={{ textAlign: 'center', marginTop: '16px', color: '#B1B1B1', fontSize: '12px' }}>Month</p>
+            <h3 style={{ fontSize: "16px", fontWeight: "600", margin: 0, color: "#0f172a" }}>Activity</h3>
           </div>
+          <div style={{ display: "flex", gap: "16px", fontSize: "12px" }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '8px', height: '8px', backgroundColor: '#6c6c6c', borderRadius: '50%' }} />
+              <span style={{ color: '#9e9e9e' }}>Compliant</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '8px', height: '8px', backgroundColor: '#EF9685', borderRadius: '50%' }} />
+              <span style={{ color: '#9e9e9e' }}>Non - Compliant</span>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ width: '100%', height: 300 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={activityData} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 0 }}>
+              <ReferenceLine y={0} stroke="#E0E0E0" />
+              <ReferenceLine y={20} stroke="#F1F1F1" />
+              <ReferenceLine y={40} stroke="#F1F1F1" />
+              <ReferenceLine y={-20} stroke="#F1F1F1" />
+              <ReferenceLine y={-40} stroke="#F1F1F1" />
+              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9e9e9e' }} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9e9e9e' }} domain={[-40, 40]} ticks={[-40, -20, 0, 20, 40]}
+                label={{ value: 'No of Parameters', angle: -90, position: 'insideLeft', offset: -30, style: { fill: '#9e9e9e', fontSize: 12 } }} />
+              <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+              <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={12} label={{ position: 'top', fill: '#6c6c6c', fontSize: 10, dy: -5 }} />
+              <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={12} label={{ position: 'bottom', fill: '#EF9685', fontSize: 10, dy: 5 }} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <p style={{ textAlign: 'center', marginTop: '16px', color: '#B1B1B1', fontSize: '12px' }}>Month</p>
+      </div>
     </div>
   );
 };

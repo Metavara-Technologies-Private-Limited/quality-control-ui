@@ -27,22 +27,36 @@ const AddEquipmentPopup: React.FC<Props> = ({ open, onClose }) => {
 
   const [equipmentName, setEquipmentName] = useState('');
   const [departmentId, setDepartmentId] = useState<number | null>(null);
-  const tempEquipmentId = crypto.randomUUID();
+
+  /**
+   * ALPHABET VALIDATION LOGIC
+   * Blocks numbers and special characters from being entered
+   */
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Regex: only allow a-z, A-Z, and whitespace
+    if (/^[a-zA-Z\s]*$/.test(value)) {
+      setEquipmentName(value);
+    }
+  };
 
   const handleAdd = () => {
-    if (!equipmentName || !departmentId) {
+    // Ensure the name isn't just whitespace
+    if (!equipmentName.trim() || !departmentId) {
       alert('Please enter all fields');
       return;
     }
+
+    const tempEquipmentId = crypto.randomUUID();
+
     onClose();
     navigate('/configuration/equipment/add-parameter', {
-  state: {
-    tempEquipmentId,
-    equipmentName,
-    departmentName: departments.find(d => d.id === departmentId)?.name || "",
-  },
-});
-
+      state: {
+        tempEquipmentId,
+        equipmentName: equipmentName.trim(),
+        departmentName: departments.find((d) => d.id === departmentId)?.name || "",
+      },
+    });
   };
 
   return (
@@ -80,7 +94,8 @@ const AddEquipmentPopup: React.FC<Props> = ({ open, onClose }) => {
           variant='outlined'
           size='small'
           value={equipmentName}
-          onChange={(e) => setEquipmentName(e.target.value)}
+          onChange={handleNameChange} // Applied validation handler
+          placeholder="Only alphabets allowed"
           InputLabelProps={{ shrink: true }}
           sx={{
             '& .MuiInputLabel-root': { color: '#5F646F !important' },
@@ -102,7 +117,7 @@ const AddEquipmentPopup: React.FC<Props> = ({ open, onClose }) => {
           fullWidth
           size='small'
           variant='outlined'
-          value={departmentId}
+          value={departmentId || ''} // Handle null state correctly for Select
           onChange={(e) => {
             setDepartmentId(Number(e.target.value));
           }}
@@ -152,7 +167,8 @@ const AddEquipmentPopup: React.FC<Props> = ({ open, onClose }) => {
               textTransform: 'none',
               '&:hover': { background: '#2f2f2f' },
             }}
-            disabled={!equipmentName || !departmentId}
+            // Button remains disabled if validation or selection is incomplete
+            disabled={!equipmentName.trim() || !departmentId}
           >
             Add
           </Button>
