@@ -218,58 +218,26 @@ const PHMetersForm = ({ selectedRadio, setSelectedRadio }) => {
           </div>
         </div>
 
-        <div style={{ width: '100%', height: 300, backgroundColor: '#fff' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart 
-              data={activityData} 
-              stackOffset="sign" 
-              margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
-            >
-              <XAxis
-                dataKey="day"
-                tick={{ fontSize: 12, fill: '#9e9e9e' }}
-                axisLine={{ stroke: '#E0E0E0' }}
-                tickLine={false}
-              />
-              <YAxis
-                domain={[-40, 40]}
-                ticks={[-40, -20, 0, 20, 40]}
-                tick={{ fontSize: 12, fill: '#9e9e9e' }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip 
-                cursor={{ fill: 'transparent' }} 
-                contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px' }} 
-              />
-              
-              <ReferenceLine y={0} stroke="#E0E0E0" />
-              <ReferenceLine y={20} stroke="#F1F1F1" />
-              <ReferenceLine y={40} stroke="#F1F1F1" />
-              <ReferenceLine y={-20} stroke="#F1F1F1" />
-              <ReferenceLine y={-40} stroke="#F1F1F1" />
-
-              <Bar 
-                dataKey="compliant" 
-                fill="#6c6c6c" 
-                radius={[4, 4, 0, 0]} 
-                barSize={15} 
-                label={{ position: 'top', fill: '#9e9e9e', fontSize: 10 }} 
-              />
-              <Bar 
-                dataKey="nonCompliant" 
-                fill="#EF9685" 
-                radius={[0, 0, 4, 4]} 
-                barSize={15} 
-                label={({ x, y, value, width }) => (
-                  <text x={x + width / 2} y={y + 14} fill="#EF9685" fontSize={10} textAnchor="middle">
-                    {value}
-                  </text>
-                )} 
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+       <div style={{ width: '100%', height: 300 }}>
+                 <ResponsiveContainer width="100%" height="100%">
+                   <BarChart data={activityData} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 20 }}>
+                     <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#9e9e9e' }} axisLine={{ stroke: '#E0E0E0' }} tickLine={false} />
+                     <YAxis domain={[-40, 40]} ticks={[-40, -20, 0, 20, 40]} tick={{ fontSize: 12, fill: '#9e9e9e' }} axisLine={false} tickLine={false} 
+                       label={{ value: 'No of parameters', angle: -90, position: 'insideLeft', offset: -35, style: { fill: '#9e9e9e', fontSize: 12, fontWeight: 500 } }} 
+                     />
+                     <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '4px' }} />
+                     <ReferenceLine y={0} stroke="#E0E0E0" />
+                     <ReferenceLine y={20} stroke="#F1F1F1" />
+                     <ReferenceLine y={40} stroke="#F1F1F1" />
+                     <ReferenceLine y={-20} stroke="#F1F1F1" />
+                     <ReferenceLine y={-40} stroke="#F1F1F1" />
+                     <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={15} label={{ position: 'top', fill: '#9e9e9e', fontSize: 10 }} />
+                     <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={15} 
+                       label={({ x, y, value, width }: any) => (<text x={x + width / 2} y={y + 14} fill="#EF9685" fontSize={10} textAnchor="middle">{Math.abs(value)}</text>)} 
+                     />
+                   </BarChart>
+                 </ResponsiveContainer>
+               </div>
         <p style={{ textAlign: 'center', marginTop: '8px', color: '#B1B1B1', fontSize: '12px' }}>Month</p>
       </div>
     </div>
