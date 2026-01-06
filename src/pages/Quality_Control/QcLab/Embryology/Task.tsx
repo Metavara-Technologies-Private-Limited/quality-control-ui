@@ -14,7 +14,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  InputAdornment
+  InputAdornment,
+  Tabs,
+  Tab
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
@@ -51,7 +53,7 @@ const COLORS = {
   activeBorder: "#FCA5A5"
 };
 
-/* ================= EVENTS (DO NOT TOUCH CONTENT) ================= */
+/* ================= EVENTS ================= */
 const EVENTS = [
   { name: "Daily Maintenance", count: 11, assigned: 50, unassigned: 4 },
   { name: "Weekly Maintenance", count: 21, assigned: 50, unassigned: 4 },
@@ -129,6 +131,44 @@ export default function Task() {
 
   const ASSIGNEES = ["Joe Smith", "Jane Doe", "John Doe"];
 
+  // New state for task popup
+  const [openTaskDetails, setOpenTaskDetails] = useState(false);
+  const [selectedTaskDetails, setSelectedTaskDetails] = useState<any>(null);
+  const [detailsTab, setDetailsTab] = useState(0);
+
+  // States for rich text formatting and file upload
+  const [activeFormats, setActiveFormats] = useState<string[]>([]);
+  const [selectedColor, setSelectedColor] = useState("inherit");
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  
+  const toggleFormat = (format: string) => {
+    setActiveFormats(prev => 
+      prev.includes(format) ? prev.filter(f => f !== format) : [...prev, format]
+    );
+  };
+  const [taskDetails, setTaskDetails] = useState("");
+  
+  const handleReset = () => {
+    setTaskDetails("");
+    setActiveFormats([]);
+    setSelectedColor("inherit");
+    console.log("Details reset");
+  };
+
+  const handleSaveDetails = () => {
+    console.log("Saving details:", taskDetails, "Formats:", activeFormats);
+    setOpenTaskDetails(false);
+  };
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      console.log("File uploaded:", file.name);
+      // Here you would normally handle the file upload to a server
+    }
+  };
+
   const showStatus = activeFilter === "All";
   const filteredTasks = useMemo(() => {
     const tasks = tasksByEvent[selectedEvent] || [];
@@ -139,7 +179,7 @@ export default function Task() {
     return tasks;
   }, [activeFilter, selectedEvent, tasksByEvent]);
 
-  const statusPill = (status) => {
+  const statusPill = (status: string) => {
     const bg =
       status === "Completed"
         ? COLORS.complete
@@ -167,7 +207,7 @@ export default function Task() {
     );
   };
 
-  const trackIcons = (status) => {
+  const trackIcons = (status: string) => {
     if (status === "In Progress" || status === "In - Progress") {
       return (
         <>
@@ -225,19 +265,11 @@ export default function Task() {
                   {!isActive && stepNum}
                   {isActive && <Box sx={{ position: "absolute", width: 24, height: 24, bgcolor: "#4CAF50", borderRadius: "50%", zIndex: -1 }} />}
                 </Box>
-                {/* Override the Check icon logic above to match the image precisely - Image 1 shows Check for completed, Number for active/pending */}
-                
-                 {/* Re-implementing based on Image 1/2/3 specific look */}
               </Stack>
             </React.Fragment>
           );
         })}
       </Stack>
-      {/* 
-        The Step Indicator in the images is actually quite specific:
-        - Image 1: Step 1 Checked (Green), Step 2 Active (Red/Orange Num), Step 3 Inactive (Grey Num).
-        Let's rewrite the renderStepIndicator to match the image structure exactly.
-      */}
     </Box>
   );
   
@@ -390,7 +422,22 @@ export default function Task() {
           <Stack spacing="2px" mt={1}>
             {filteredTasks.map((t, i) => (
               <Stack key={i} direction="row" alignItems="center" sx={{ py: 1.2, px: 1, bgcolor: COLORS.rowBg, borderRadius: "8px" }}>
-                <Typography width="42%" sx={{ whiteSpace: "normal", wordBreak: "break-word", lineHeight: 1.4 }}>{t.name}</Typography>
+                <Typography 
+                  width="42%" 
+                  sx={{ 
+                    whiteSpace: "normal", 
+                    wordBreak: "break-word", 
+                    lineHeight: 1.4,
+                    cursor: "pointer",
+                    "&:hover": { textDecoration: "underline" }
+                  }}
+                  onClick={() => {
+                    setSelectedTaskDetails(t);
+                    setOpenTaskDetails(true);
+                  }}
+                >
+                  {t.name}
+                </Typography>
                 <Stack direction="row" spacing={1.2} width="20%" alignItems="center">
                   {trackIcons(t.status)}
                   <Typography fontSize={13}>{t.time}</Typography>
@@ -752,6 +799,308 @@ export default function Task() {
             </Stack>
 
           </DialogContent>
+        </Dialog>
+
+        {/* ========================================================= */}
+        {/* NEW POPUP: Task Details Popup on Name Click */}
+        {/* ========================================================= */}
+        <Dialog 
+          open={openTaskDetails} 
+          onClose={() => setOpenTaskDetails(false)} 
+          maxWidth="md" 
+          fullWidth
+          PaperProps={{ sx: { borderRadius: "16px", p: 1 } }}
+        >
+          {selectedTaskDetails && (
+            <DialogContent>
+               {/* Header */}
+              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                 <Typography fontSize={20} fontWeight={700}>
+                   {selectedTaskDetails.name}
+                 </Typography>
+                 <IconButton onClick={() => setOpenTaskDetails(false)} sx={{ bgcolor: "#E0E0E0", color: "#FFF", width: 30, height: 30 }}>
+                   <CloseIcon fontSize="small" />
+                 </IconButton>
+              </Stack>
+              <Divider sx={{ mb: 3 }} />
+
+              {/* Info Rows */}
+              <Stack spacing={2} mb={3}>
+                <Stack direction="row" spacing={4} alignItems="center">
+                  <Stack direction="row" alignItems="center" spacing={1} width="50%">
+                     <Typography color="#9CA3AF" sx={{ minWidth: 80 }}>Assignee :</Typography>
+                     <Avatar sx={{ width: 24, height: 24 }} src="/broken.jpg" />
+                     <Typography fontWeight={500}>Joe Smith</Typography>
+                  </Stack>
+                  <Stack direction="row" alignItems="center" spacing={1} width="50%">
+                     <Typography color="#9CA3AF" sx={{ minWidth: 80 }}>Status :</Typography>
+                     {/* Using the pill style but slightly different as per image popup */}
+                     <Box sx={{ bgcolor: COLORS.progress, color: "#FFF", borderRadius: "16px", pl: 2, pr: 0.5, py: 0.5, display: "flex", alignItems: "center", fontSize: 13, fontWeight: 500 }}>
+                       In - Progress
+                       <Box sx={{ borderLeft: "1px solid rgba(255,255,255,0.4)", ml: 1, pl: 0.5 }}>
+                          <PlayArrowRoundedIcon sx={{ fontSize: 14 }} />
+                       </Box>
+                     </Box>
+                  </Stack>
+                </Stack>
+
+                <Stack direction="row" spacing={4} alignItems="center">
+                  <Stack direction="row" alignItems="center" spacing={1} width="50%">
+                     <Typography color="#9CA3AF" sx={{ minWidth: 80 }}>Due Date :</Typography>
+                     <CalendarTodayIcon sx={{ fontSize: 18, color: "#111" }} />
+                     <Typography fontWeight={500}>{selectedTaskDetails.due}</Typography>
+                  </Stack>
+                  <Stack direction="row" alignItems="center" spacing={1} width="50%">
+                     <Typography color="#9CA3AF" sx={{ minWidth: 80 }}>Track Time :</Typography>
+                     <Stack direction="row" spacing={1} alignItems="center">
+                       <PauseCircleFilledRoundedIcon sx={{ color: "#5B8DEF" }} />
+                       <StopCircleRoundedIcon sx={{ color: "#D14343" }} />
+                       <Typography fontWeight={500}>{selectedTaskDetails.time}</Typography>
+                     </Stack>
+                  </Stack>
+                </Stack>
+              </Stack>
+
+              {/* Tabs */}
+              <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+                <Tabs value={detailsTab} onChange={(_, v) => setDetailsTab(v)}>
+                  <Tab label="Description" sx={{ textTransform: "none", fontWeight: 600, color: detailsTab === 0 ? "#FF8A65" : "inherit" }} />
+                  <Tab label="Sub Tasks" sx={{ textTransform: "none", fontWeight: 600 }} />
+                </Tabs>
+              </Box>
+
+              {/* Tab Content: Description */}
+              {detailsTab === 0 && (
+                <Stack spacing={3}>
+                  <Box>
+                    <Typography sx={{ mb: 1, fontSize: 13, color: "#666" }}>Details</Typography>
+                    <Box sx={{ border: "1px solid #E0E0E0", borderRadius: "12px", overflow: "hidden" }}>
+                       <Box p={2}>
+                         <TextField
+                           fullWidth
+                           multiline
+                           variant="standard"
+                           placeholder="Type details here..."
+                           value={taskDetails}
+                           onChange={(e) => setTaskDetails(e.target.value)}
+                           InputProps={{ 
+                             disableUnderline: true,
+                             sx: { 
+                               fontSize: 14, 
+                               lineHeight: 1.6,
+                               fontWeight: activeFormats.includes('bold') ? 700 : 400,
+                               fontStyle: activeFormats.includes('italic') ? 'italic' : 'normal',
+                               textDecoration: activeFormats.includes('underline') ? 'underline' : 'none',
+                               color: selectedColor === 'inherit' ? (activeFormats.includes('color') ? '#E57373' : 'inherit') : selectedColor,
+                               textAlign: activeFormats.includes('justify') ? 'justify' : (activeFormats.includes('align-left') ? 'left' : 'inherit')
+                             } 
+                           }}
+                         />
+                       </Box>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" p={1} bgcolor="#FAFAFA" borderTop="1px solid #E0E0E0">
+                          <Stack direction="row" spacing={1}>
+                             <IconButton 
+                               size="small" 
+                               onClick={() => toggleFormat('bold')}
+                               sx={{ color: activeFormats.includes('bold') ? '#2196F3' : 'inherit' }}
+                             >
+                               <FormatBoldIcon fontSize="small" />
+                             </IconButton>
+                             <IconButton 
+                               size="small"
+                               onClick={() => toggleFormat('italic')}
+                               sx={{ color: activeFormats.includes('italic') ? '#2196F3' : 'inherit' }}
+                             >
+                               <FormatItalicIcon fontSize="small" />
+                             </IconButton>
+                             <IconButton 
+                               size="small"
+                               onClick={() => toggleFormat('underline')}
+                               sx={{ color: activeFormats.includes('underline') ? '#2196F3' : 'inherit' }}
+                             >
+                               <FormatUnderlinedIcon fontSize="small" />
+                             </IconButton>
+                             <IconButton 
+                               size="small"
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 setShowColorPicker(!showColorPicker);
+                               }}
+                               sx={{ color: selectedColor !== 'inherit' ? selectedColor : (activeFormats.includes('color') ? '#E57373' : 'inherit') }}
+                             >
+                               <FormatColorTextIcon fontSize="small" />
+                             </IconButton>
+                             {showColorPicker && (
+                               <Box 
+                                 onClick={(e) => e.stopPropagation()}
+                                 sx={{ 
+                                   position: 'absolute', 
+                                   bottom: '40px', 
+                                   left: '0px', 
+                                   bgcolor: 'white', 
+                                   p: 1, 
+                                   borderRadius: '8px', 
+                                   boxShadow: '0px 4px 12px rgba(0,0,0,0.15)', 
+                                   display: 'flex', 
+                                   gap: 1, 
+                                   zIndex: 9999, 
+                                   mb: 1,
+                                   border: '1px solid #E0E0E0'
+                                 }}
+                               >
+                                 {['#000000', '#FF0000', '#0000FF', '#008000', '#FFA500', '#800080', '#E57373'].map(color => (
+                                   <Box 
+                                     key={color} 
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       setSelectedColor(color);
+                                       setShowColorPicker(false);
+                                     }}
+                                     sx={{ 
+                                       width: 24, 
+                                       height: 24, 
+                                       bgcolor: color, 
+                                       cursor: 'pointer', 
+                                       borderRadius: '4px', 
+                                       border: '1px solid #ddd',
+                                       '&:hover': { transform: 'scale(1.1)' }
+                                     }} 
+                                   />
+                                 ))}
+                                 <Box 
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     setSelectedColor('inherit');
+                                     setShowColorPicker(false);
+                                   }}
+                                   sx={{ 
+                                     width: 24, 
+                                     height: 24, 
+                                     bgcolor: '#F3F4F6', 
+                                     cursor: 'pointer', 
+                                     borderRadius: '4px', 
+                                     border: '1px solid #ddd', 
+                                     display: 'flex', 
+                                     alignItems: 'center', 
+                                     justifyContent: 'center', 
+                                     fontSize: 12,
+                                     fontWeight: 'bold',
+                                     color: '#666'
+                                   }}
+                                 >X</Box>
+                               </Box>
+                             )}
+                             <IconButton 
+                               size="small"
+                               onClick={() => toggleFormat('align-left')}
+                               sx={{ color: activeFormats.includes('align-left') ? '#2196F3' : 'inherit' }}
+                             >
+                               <FormatAlignLeftIcon fontSize="small" />
+                             </IconButton>
+                             <IconButton 
+                               size="small"
+                               onClick={() => toggleFormat('justify')}
+                               sx={{ color: activeFormats.includes('justify') ? '#2196F3' : 'inherit' }}
+                             >
+                               <FormatAlignJustifyIcon fontSize="small" />
+                             </IconButton>
+                          </Stack>
+                          <Stack direction="row" spacing={1}>
+                             <IconButton 
+                               size="small"
+                               onClick={() => {
+                                 toggleFormat('link');
+                                 fileInputRef.current?.click();
+                               }}
+                               sx={{ color: activeFormats.includes('link') ? '#2196F3' : 'inherit' }}
+                             >
+                               <InsertLinkIcon fontSize="small" />
+                             </IconButton>
+                             <IconButton 
+                               size="small"
+                               onClick={() => {
+                                 toggleFormat('image-tool');
+                                 fileInputRef.current?.click();
+                               }}
+                               sx={{ color: activeFormats.includes('image-tool') ? '#2196F3' : 'inherit' }}
+                             >
+                               <ImageIcon fontSize="small" />
+                             </IconButton>
+                             <IconButton 
+                               size="small"
+                               onClick={() => toggleFormat('info')}
+                               sx={{ color: activeFormats.includes('info') ? '#2196F3' : 'inherit' }}
+                             >
+                               <InfoOutlinedIcon fontSize="small" />
+                             </IconButton>
+                             <IconButton 
+                               size="small"
+                               onClick={() => toggleFormat('more')}
+                               sx={{ color: activeFormats.includes('more') ? '#2196F3' : 'inherit' }}
+                             >
+                               <MoreHorizIcon fontSize="small" />
+                             </IconButton>
+                          </Stack>
+                       </Stack>
+                    </Box>
+                  </Box>
+
+                  {/* Upload Box */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    style={{ display: 'none' }}
+                    onChange={handleFileUpload}
+                  />
+                  <Box 
+                    onClick={() => fileInputRef.current?.click()}
+                    sx={{ 
+                      border: "2px dashed #E0E0E0", 
+                      borderRadius: "12px", 
+                      height: 120, 
+                      display: "flex", 
+                      flexDirection: "column",
+                      alignItems: "center", 
+                      justifyContent: "center",
+                      bgcolor: "#FFF",
+                      cursor: "pointer",
+                      "&:hover": { bgcolor: "#F5F5F5" }
+                    }}
+                  >
+                    <CloudUploadOutlinedIcon sx={{ fontSize: 36, color: "#444", mb: 1 }} />
+                    <Typography fontSize={14} color="#666">
+                      Drag & Drop or <span style={{ color: "#2196F3", fontWeight: 600 }}>Choose to Upload</span>
+                    </Typography>
+                    <Typography fontSize={12} color="#999">File format png, jpeg, pdf, etc.</Typography>
+                  </Box>
+                </Stack>
+              )}
+
+              {/* Tab Content: Sub Tasks (Empty placeholder based on image showing Description tab) */}
+              {detailsTab === 1 && (
+                 <Box p={2}>
+                   <Typography color="#666">No sub tasks available.</Typography>
+                 </Box>
+              )}
+
+              {/* Footer Actions */}
+              <Stack direction="row" justifyContent="flex-end" spacing={2} mt={4}>
+                 <Button 
+                   sx={{ bgcolor: "#F3F4F6", color: "#111", borderRadius: "8px", px: 4, textTransform: "none", fontWeight: 600 }} 
+                   onClick={handleReset}
+                 >
+                   Reset
+                 </Button>
+                 <Button 
+                   sx={{ bgcolor: "#4B4B4B", color: "#FFF", borderRadius: "8px", px: 4, textTransform: "none", fontWeight: 600, '&:hover': { bgcolor: "#333" } }} 
+                   onClick={handleSaveDetails}
+                 >
+                   Save
+                 </Button>
+              </Stack>
+
+            </DialogContent>
+          )}
         </Dialog>
 
       </Box>
