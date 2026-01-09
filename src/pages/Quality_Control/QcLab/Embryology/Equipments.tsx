@@ -29,6 +29,7 @@ const Equipment = () => {
     if (n.includes("incubator")) return "incubator";
     if (n.includes("lfh") || n.includes("hood")) return "lfh";
     if (n.includes("ovens") || n.includes("water bath")) return "ovens";
+    if (n.includes("waterbath") || n.includes("water bath")) return "waterbath";
     if (n.includes("microscope")) return "microscopes";
     if (n.includes("phmeters")) return "phmeters";
     if (n.includes("cryo") || n.includes("ln2")) return "cryopreservation";
@@ -202,6 +203,7 @@ const Equipment = () => {
             {equipmentType === "incubator" && <IncubatorForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} parameters={currentParameters} />}
             {equipmentType === "lfh" && <LFHForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
             {equipmentType === "ovens" && <OvensWaterBathForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
+            {equipmentType === "waterbath" && <OvensWaterBathForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
             {equipmentType === "microscopes" && <MicroscopesForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
             {equipmentType === "phmeters" && <PHMetersForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
             {equipmentType === "cryopreservation" && <CryopreservationForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
