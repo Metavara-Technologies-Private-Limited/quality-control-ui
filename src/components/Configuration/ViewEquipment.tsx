@@ -51,7 +51,7 @@ interface EquipmentDetail {
 ======================= */
 
 const renderParameterDetails = (p: any) => {
-    const content = p.parameter_values?.[0]?.content;
+    const content = p.config || p.parameter_values?.[0]?.content;
     if (!content) return "-";
 
     switch (content.data_type) {
@@ -87,34 +87,35 @@ const renderParameterDetails = (p: any) => {
                 </Typography>
             );
 
-        case "Dropdown":
-        case "Select": 
-            let optionsSource: string[] = [];
-
-            if (Array.isArray(content.dropdown) && content.dropdown.length > 0) {
-                optionsSource = content.dropdown;
-            } else if (Array.isArray(content.selectedOptions) && content.selectedOptions.length > 0) {
-                optionsSource = content.selectedOptions;
-            } else if (typeof content.dropdown === 'string' && content.dropdown) {
-                optionsSource = content.dropdown.split(',').map(s => s.trim());
-            }
-
-            const finalOptions = optionsSource.filter(Boolean);
-            if (finalOptions.length === 0) return "-";
-
-            return (
-                <Box component="span" sx={{ display: "inline", flexWrap: "wrap" }}>
-                    {finalOptions.map((val, i) => (
-                        <Chip
-                            key={i}
-                            label={val}
-                            size="small"
-                            sx={{ background: "transparent", fontSize: "14px", fontWeight:400}}
-                        />
-                    ))}
-                </Box>
-            );
-
+            case "Dropdown":
+                case "Select": {
+                    const raw = content.dropdown ?? [];
+                
+                    const options = Array.isArray(raw)
+                        ? raw
+                        : typeof raw === "string"
+                            ? raw.split(",").map(s => s.trim())
+                            : [];
+                
+                    if (options.length === 0) return "-";
+                
+                    return (
+                        <Box component="span" sx={{ display: "inline", flexWrap: "wrap" }}>
+                            {options.map((val, i) => (
+                                <Chip
+                                    key={i}
+                                    label={val}
+                                    size="small"
+                                    sx={{
+                                        background: "transparent",
+                                        fontSize: "14px",
+                                        fontWeight: 400,
+                                    }}
+                                />
+                            ))}
+                        </Box>
+                    );
+                }                
         default:
             return "-";
     }

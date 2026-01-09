@@ -85,6 +85,7 @@ const AddParameterPage = () => {
                 const numMatch = detail.equipment_num?.match(/-(\d+)$/);
                 const srNo = numMatch ? parseInt(numMatch[1]) : index + 1;
                 return {
+                    id: detail.id,
                     sr: srNo,
                     equipmentNum: srNo,
                     make: detail.make || "",
@@ -101,19 +102,34 @@ const AddParameterPage = () => {
                 setNextSrNo(maxSrNo + 1);
             }
             
+            // const loadedParams = passedEquipment.parameters.map((p: any) => {
+            //     const content = p.content || p.parameter_values?.[0]?.content || {};
+            //     return {
+            //         name: p.parameter_name,
+            //         dataType: content.data_type,
+            //         minValue: content.min_value,
+            //         maxValue: content.max_value,
+            //         integerValue: content.integer_value,
+            //         percentageValue: content.percentage,
+            //         textValue: content.text,
+            //         dropdownValue: normalizeDropdownValue(content.dropdown || content.selectedOptions),
+            //     };
+            // });                    
             const loadedParams = passedEquipment.parameters.map((p: any) => {
-                const content = p.content || p.parameter_values?.[0]?.content || {};
+                const cfg = p.config || {};
                 return {
-                    name: p.parameter_name,
-                    dataType: content.data_type,
-                    minValue: content.min_value,
-                    maxValue: content.max_value,
-                    integerValue: content.integer_value,
-                    percentageValue: content.percentage,
-                    textValue: content.text,
-                    dropdownValue: normalizeDropdownValue(content.dropdown || content.selectedOptions),
+                id: p.id,
+                  name: p.parameter_name,
+                  dataType: cfg.data_type,
+                  minValue: cfg.min_value,
+                  maxValue: cfg.max_value,
+                  integerValue: cfg.integer_value,
+                  percentageValue: cfg.percentage,
+                  textValue: cfg.text,
+                  dropdownValue: normalizeDropdownValue(cfg.dropdown),
                 };
-            });                    
+              });
+              
             setParameters(loadedParams);
             localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
         } else {
@@ -176,7 +192,7 @@ const AddParameterPage = () => {
     const handleEditParameter = () => {
         if (menuParamIndex !== null) {
             const param = parameters[menuParamIndex];
-            setParamToEdit(param);
+            setParamToEdit({ ...param });
             setEditingParamIndex(menuParamIndex);
             setOpenParamPopup(true);
         }
@@ -273,7 +289,11 @@ const AddParameterPage = () => {
 
     const handleAddParameter = (data: any) => {
         if (editingParamIndex !== null) {
-            setParameters((prev) => prev.map((p, i) => i === editingParamIndex ? data : p));
+            setParameters((prev) =>
+                prev.map((p, i) =>
+                  i === editingParamIndex ? { ...p, ...data } : p
+                )
+              );              
             setEditingParamIndex(null);
             setParamToEdit(null);
             toast.success("Parameter updated!");
@@ -299,29 +319,30 @@ const AddParameterPage = () => {
             const clinicId = 1; 
 
             const newEquipmentEntry = {
+                id: isEditMode ? originalEquipment.id : undefined,
                 equipment_name: equipmentName,
                 is_active: true,
                 equipment_details: equipmentTable.map((row) => ({
+                    id: row.id ?? undefined,
                     equipment_num: `${equipmentName}-${row.equipmentNum}`,
                     make: row.make || "",
                     model: row.model || "",
                     is_active: true,
                  })),
-                parameters: parameters.map((p) => ({
+                 parameters: parameters.map((p) => ({
+                    id: p.id ?? undefined,
                     parameter_name: p.name,
                     is_active: true,
-                    parameter_values: [{   
-                        content: {
-                            data_type: p.dataType,
-                            min_value: p.minValue,
-                            max_value: p.maxValue,
-                            integer_value: p.integerValue,
-                            percentage: p.percentageValue,
-                            text: p.textValue,
-                            dropdown: p.dropdownValue || [],
-                        },
-                    }],
-                })),
+                    config: {
+                      data_type: p.dataType,
+                      min_value: p.minValue ?? null,
+                      max_value: p.maxValue ?? null,
+                      integer_value: p.integerValue ?? null,
+                      percentage: p.percentageValue ?? null,
+                      text: p.textValue ?? null,
+                      dropdown: p.dropdownValue ?? [],
+                    },
+                  })),                  
             };
 
             const getRes = await fetch(`http://127.0.0.1:8000/api/get_clinic/${clinicId}/`);
