@@ -5,11 +5,44 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine 
 } from 'recharts';
 
+// MUI Imports
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import dayjs, { Dayjs } from 'dayjs';
+
+// Custom MUI Theme to match your dashboard colors
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#f97316', // Orange matching your accentColor
+    },
+  },
+  components: {
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          borderRadius: '8px',
+          height: '50px',
+          backgroundColor: '#fff',
+          '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#e5e7eb',
+          },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#d1d5db',
+          },
+        },
+      },
+    },
+  },
+});
+
 const AutoclavesForm = ({ selectedRadio, setSelectedRadio }: any) => {
   const [activeSubTab, setActiveSubTab] = useState("Details");
 
   const [formData, setFormData] = useState({
-    date: "2025-12-31",
+    date: dayjs('2025-12-31'), // Changed to Dayjs object
     time: "11:24",
     temperature: "",
     pressure: "",
@@ -19,7 +52,6 @@ const AutoclavesForm = ({ selectedRadio, setSelectedRadio }: any) => {
     comments: "",
   });
 
-  // 1. LOGIC: Turn logsData into state and initialize with an empty array or your mock data
   const [logsData, setLogsData] = useState<any[]>([]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -27,7 +59,13 @@ const AutoclavesForm = ({ selectedRadio, setSelectedRadio }: any) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // 2. LOGIC: Handle the Save button click
+  // Specific handler for MUI DatePicker
+  const handleDateChange = (newValue: Dayjs | null) => {
+    if (newValue) {
+      setFormData((prev) => ({ ...prev, date: newValue }));
+    }
+  };
+
   const handleSave = () => {
     if (!formData.temperature || !formData.pressure) {
       toast.error("Please fill in Temperature and Pressure!");
@@ -36,7 +74,8 @@ const AutoclavesForm = ({ selectedRadio, setSelectedRadio }: any) => {
 
     const newEntry = {
       id: Date.now(),
-      dateTime: `${formData.date} ${formData.time}`,
+      // Formatting Dayjs for the table
+      dateTime: `${formData.date.format('YYYY-MM-DD')} ${formData.time}`,
       temp: `${formData.temperature}°C`,
       pressure: `${formData.pressure}kPa`,
       cycle: formData.sterilizationCycle,
@@ -46,16 +85,8 @@ const AutoclavesForm = ({ selectedRadio, setSelectedRadio }: any) => {
       comments: formData.comments,
     };
 
-    // Update state to include new entry at the top
     setLogsData([newEntry, ...logsData]);
-
-    toast.success("Successfully Saved!", {
-      position: "top-right",
-      autoClose: 2000,
-      theme: "colored",
-    });
-
-    // Optional: Switch to Logs tab to show the result
+    toast.success("Successfully Saved!", { theme: "colored" });
     setActiveSubTab("Logs");
   };
 
@@ -78,179 +109,154 @@ const AutoclavesForm = ({ selectedRadio, setSelectedRadio }: any) => {
   };
 
   return (
-    <div style={{ maxWidth: "1200px" }}>
-      <ToastContainer />
-      {/* SECTION 1: Details and Input Logic */}
-      <div style={sectionStyle}>
-        {/* Radio Selection for Autoclaves */}
-        <div style={{ display: "flex", gap: "24px", paddingBottom: "24px", borderBottom: "1px solid #f1f5f9", marginBottom: "24px", flexWrap: "wrap" }}>
-          {["Autoclaves A", "Autoclaves B", "Autoclaves C", "Autoclaves D", "Autoclaves E"].map((name) => (
-            <label key={name} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: "500", cursor: "pointer", color: "#0f172a" }}>
-              <input type="radio" checked={selectedRadio === name} onChange={() => setSelectedRadio(name)} style={{ accentColor: "#f97316", width: "16px", height: "16px" }} />
-              {name}
-            </label>
-          ))}
-        </div>
-
-        {/* Details/Logs Toggle */}
-        <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
-          {["Details", "Logs"].map(tab => (
-            <button key={tab} type="button" onClick={() => setActiveSubTab(tab)} style={{
-                padding: "6px 24px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "13px", cursor: "pointer",
-                backgroundColor: activeSubTab === tab ? "#FFFFFF" : "transparent",
-                color: activeSubTab === tab ? "#E17E61" : "#94a3b8",
-                fontWeight: activeSubTab === tab ? "600" : "400",
-                boxShadow: activeSubTab === tab ? "0 2px 4px rgba(0,0,0,0.05)" : "none"
-              }}>{tab}</button>
-          ))}
-        </div>
-
-        {activeSubTab === "Details" ? (
-          <>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", marginBottom: "32px" }}>
-              <div style={{ position: "relative" }}>
-                <input type="date" name="date" value={formData.date} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px" }} />
-                <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Date</label>
-              </div>
-
-              <div style={{ position: "relative" }}>
-                <input type="time" name="time" value={formData.time} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px" }} />
-                <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Time</label>
-              </div>
-
-              <div style={{ position: "relative" }}>
-                <input type="text" name="temperature" placeholder="Type Here" value={formData.temperature} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px" }} />
-                <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Temperature (°C)</label>
-                <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>Range: 121 °C - 134 °C</p>
-              </div>
-
-              <div style={{ position: "relative" }}>
-                <input type="text" name="pressure" placeholder="Type Here" value={formData.pressure} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px" }} />
-                <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Pressure (kPa)</label>
-                <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>Range: 121 °C - 134 °C</p>
-              </div>
-
-              <div style={{ position: "relative" }}>
-                <select name="sterilizationCycle" value={formData.sterilizationCycle} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
-                  <option value="Valid">Valid</option>
-                  <option value="Invalid">Invalid</option>
-                </select>
-                <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Sterilization Cycle Validation</label>
-              </div>
-
-              <div style={{ position: "relative" }}>
-                <input type="text" name="maintenanceLogs" placeholder="Type Here" value={formData.maintenanceLogs} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px" }} />
-                <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Maintenance Logs</label>
-              </div>
-
-              <div style={{ position: "relative", display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ flex: 1, height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#F8FAFC' }}>
-                  <span style={{ fontSize: '13px', color: '#64748b' }}>Sample ID.doc</span>
-                  <button style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '16px' }}>×</button>
-                </div>
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444' }}></div>
-                </div>
-                <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Uploads</label>
-              </div>
-
-              <div style={{ position: "relative" }}>
-                <select name="status" value={formData.status} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
-                  <option value="Pass">Pass</option>
-                  <option value="Fail">Fail</option>
-                </select>
-                <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Status</label>
-              </div>
-
-              <div style={{ position: "relative" }}>
-                <input type="text" name="comments" placeholder="Type Here" value={formData.comments} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px" }} />
-                <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Comments</label>
-              </div>
+    <ThemeProvider theme={theme}>
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <div style={{ maxWidth: "1200px", fontFamily: "'Montserrat', sans-serif" }}>
+          <ToastContainer />
+          
+          <div style={sectionStyle}>
+            {/* Radio Selection */}
+            <div style={{ display: "flex", gap: "24px", paddingBottom: "24px", borderBottom: "1px solid #f1f5f9", marginBottom: "24px", flexWrap: "wrap" }}>
+              {["Autoclaves A", "Autoclaves B", "Autoclaves C", "Autoclaves D", "Autoclaves E"].map((name) => (
+                <label key={name} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: "500", cursor: "pointer", color: "#0f172a" }}>
+                  <input type="radio" checked={selectedRadio === name} onChange={() => setSelectedRadio(name)} style={{ accentColor: "#f97316", width: "16px", height: "16px" }} />
+                  {name}
+                </label>
+              ))}
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "24px" }}>
-              <button type="button" onClick={() => setFormData({ date: "2025-12-31", time: "11:24", temperature: "", pressure: "", sterilizationCycle: "Valid", maintenanceLogs: "", status: "Pass", comments: "" })} style={{ padding: "10px 24px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", cursor: "pointer", fontSize: "14px" }}>Clear</button>
-              <button type="button" onClick={handleSave} style={{ padding: "10px 24px", backgroundColor: "#1e293b", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "14px" }}>Save</button>
+            {/* Sub Tabs */}
+            <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
+              {["Details", "Logs"].map(tab => (
+                <button key={tab} type="button" onClick={() => setActiveSubTab(tab)} style={{
+                    padding: "6px 24px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "13px", cursor: "pointer",
+                    backgroundColor: activeSubTab === tab ? "#FFFFFF" : "transparent",
+                    color: activeSubTab === tab ? "#E17E61" : "#94a3b8",
+                    fontWeight: activeSubTab === tab ? "600" : "400",
+                  }}>{tab}</button>
+              ))}
             </div>
-          </>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
-              <thead>
-                <tr style={{ color: "#64748b", borderBottom: "1px solid #f1f5f9" }}>
-                  <th style={{ padding: "12px 8px", fontWeight: "500" }}>Date & Time</th>
-                  <th style={{ padding: "12px 8px", fontWeight: "500" }}>Temp.</th>
-                  <th style={{ padding: "12px 8px", fontWeight: "500" }}>Pressure</th>
-                  <th style={{ padding: "12px 8px", fontWeight: "500" }}>Sterilization Cycle Validation</th>
-                  <th style={{ padding: "12px 8px", fontWeight: "500" }}>Maintenance Logs</th>
-                  <th style={{ padding: "12px 8px", fontWeight: "500" }}>Uploads</th>
-                  <th style={{ padding: "12px 8px", fontWeight: "500" }}>Status</th>
-                  <th style={{ padding: "12px 8px", fontWeight: "500" }}>Comments</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logsData.length > 0 ? logsData.map((log) => (
-                  <tr key={log.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={{ padding: "16px 8px", color: "#0f172a", fontWeight: "600" }}>{log.dateTime}</td>
-                    <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.temp}</td>
-                    <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.pressure}</td>
-                    <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.cycle}</td>
-                    <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.maintenance}</td>
-                    <td style={{ padding: "16px 8px", color: "#3b82f6" }}>{log.uploads}</td>
-                    <td style={{ padding: "16px 8px" }}>
-                      <span style={{ 
-                        padding: "4px 12px", borderRadius: "16px", backgroundColor: log.status === "Pass" ? "#DCFCE7" : "#FEE2E2", 
-                        color: log.status === "Pass" ? "#15803D" : "#B91C1C", fontSize: "11px", fontWeight: "600", border: "1px solid #BBF7D0"
-                      }}>{log.status}</span>
-                    </td>
-                    <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.comments}</td>
-                  </tr>
-                )) : (
-                  <tr><td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>No logs recorded yet. Fill details and click save.</td></tr>
-                )}
-              </tbody>
-            </table>
+
+            {activeSubTab === "Details" ? (
+              <>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", marginBottom: "32px" }}>
+                  
+                  {/* MUI DatePicker Section */}
+                  <div style={{ position: "relative" }}>
+                    <DatePicker
+                      value={formData.date}
+                      onChange={handleDateChange}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          variant: 'outlined',
+                        },
+                      }}
+                    />
+                    <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b", zIndex: 1 }}>Date</label>
+                  </div>
+
+                  <div style={{ position: "relative" }}>
+                    <input type="time" name="time" value={formData.time} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px" }} />
+                    <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Time</label>
+                  </div>
+
+                  {/* Rest of inputs stay as your custom styled components */}
+                  <div style={{ position: "relative" }}>
+                    <input type="text" name="temperature" placeholder="Type Here" value={formData.temperature} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px" }} />
+                    <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Temperature (°C)</label>
+                    <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>Range: 121 °C - 134 °C</p>
+                  </div>
+
+                  <div style={{ position: "relative" }}>
+                    <input type="text" name="pressure" placeholder="Type Here" value={formData.pressure} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px" }} />
+                    <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Pressure (kPa)</label>
+                  </div>
+
+                  <div style={{ position: "relative" }}>
+                    <select name="sterilizationCycle" value={formData.sterilizationCycle} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
+                      <option value="Valid">Valid</option>
+                      <option value="Invalid">Invalid</option>
+                    </select>
+                    <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Sterilization Cycle Validation</label>
+                  </div>
+
+                  <div style={{ position: "relative" }}>
+                    <input type="text" name="maintenanceLogs" placeholder="Type Here" value={formData.maintenanceLogs} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px" }} />
+                    <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Maintenance Logs</label>
+                  </div>
+
+                  <div style={{ position: "relative" }}>
+                    <select name="status" value={formData.status} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                    </select>
+                    <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Status</label>
+                  </div>
+
+                  <div style={{ position: "relative" }}>
+                    <input type="text" name="comments" placeholder="Type Here" value={formData.comments} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px" }} />
+                    <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Comments</label>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "24px" }}>
+                  <button type="button" onClick={() => setFormData({ date: dayjs(), time: "11:24", temperature: "", pressure: "", sterilizationCycle: "Valid", maintenanceLogs: "", status: "Pass", comments: "" })} style={{ padding: "10px 24px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", cursor: "pointer", fontSize: "14px" }}>Clear</button>
+                  <button type="button" onClick={handleSave} style={{ padding: "10px 24px", backgroundColor: "#1e293b", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "14px" }}>Save</button>
+                </div>
+              </>
+            ) : (
+              /* Logs Table remains same */
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
+                  <thead>
+                    <tr style={{ color: "#64748b", borderBottom: "1px solid #f1f5f9" }}>
+                      <th style={{ padding: "12px 8px", fontWeight: "500" }}>Date & Time</th>
+                      <th style={{ padding: "12px 8px", fontWeight: "500" }}>Temp.</th>
+                      <th style={{ padding: "12px 8px", fontWeight: "500" }}>Pressure</th>
+                      <th style={{ padding: "12px 8px", fontWeight: "500" }}>Status</th>
+                      <th style={{ padding: "12px 8px", fontWeight: "500" }}>Comments</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {logsData.map((log) => (
+                      <tr key={log.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <td style={{ padding: "16px 8px", color: "#0f172a", fontWeight: "600" }}>{log.dateTime}</td>
+                        <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.temp}</td>
+                        <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.pressure}</td>
+                        <td style={{ padding: "16px 8px" }}>
+                          <span style={{ 
+                            padding: "4px 12px", borderRadius: "16px", backgroundColor: log.status === "Pass" ? "#DCFCE7" : "#FEE2E2", 
+                            color: log.status === "Pass" ? "#15803D" : "#B91C1C", fontSize: "11px", fontWeight: "600"
+                          }}>{log.status}</span>
+                        </td>
+                        <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.comments}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* SECTION 2: Activity Card */}
-       <div style={sectionStyle}>
-             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                 <div style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ fontSize: '14px' }}>📈</span>
-                 </div>
-                 <h3 style={{ fontSize: "16px", fontWeight: "600", margin: 0, color: "#0f172a" }}>Activity</h3>
-               </div>
-               
-               <div style={{ display: "flex", gap: "16px", fontSize: "12px" }}>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                   <div style={{ width: '8px', height: '8px', backgroundColor: '#6c6c6c', borderRadius: '50%' }} />
-                   <span style={{ color: '#9e9e9e' }}>Compliant</span>
-                 </div>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                   <div style={{ width: '8px', height: '8px', backgroundColor: '#EF9685', borderRadius: '50%' }} />
-                   <span style={{ color: '#9e9e9e' }}>Non - Compliant</span>
-                 </div>
-               </div>
-             </div>
-     
-             <div style={{ width: '100%', height: 300 }}>
-               <ResponsiveContainer width="100%" height="100%">
-                 <BarChart data={activityData} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 0 }}>
-                   <ReferenceLine y={0} stroke="#E0E0E0" />
-                   <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9e9e9e' }} dy={10} />
-                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9e9e9e' }} domain={[-40, 40]} ticks={[-40, -20, 0, 20, 40]} label={{ value: 'No of Parameters', angle: -90, position: 'insideLeft', offset: -30, style: { fill: '#9e9e9e', fontSize: 12 } }} />
-                   <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }} />
-                   <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={12} label={{ position: 'top', fill: '#6c6c6c', fontSize: 10, dy: -5 }} />
-                   <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={12} label={{ position: 'bottom', fill: '#EF9685', fontSize: 10, dy: 5 }} />
-                 </BarChart>
-               </ResponsiveContainer>
-             </div>
-             <p style={{ textAlign: 'center', marginTop: '16px', color: '#B1B1B1', fontSize: '12px' }}>Month</p>
-           </div>
-    </div>
+          {/* Activity Chart Section */}
+          <div style={sectionStyle}>
+            <div style={{ width: '100%', height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={activityData} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 0 }}>
+                  <ReferenceLine y={0} stroke="#E0E0E0" />
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9e9e9e' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9e9e9e' }} domain={[-40, 40]} ticks={[-40, -20, 0, 20, 40]} />
+                  <Tooltip cursor={{ fill: 'transparent' }} />
+                  <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={12} />
+                  <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={12} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      </LocalizationProvider>
+    </ThemeProvider>
   );
 };
 

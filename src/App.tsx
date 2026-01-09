@@ -26,11 +26,16 @@ import CreateEvent from "./pages/Quality_Control/Configuration/CreateEvent";
 import LabLayout from "./pages/Quality_Control/QcLab/LabLayout";
 
 import EmbryologyLayout from "./pages/Quality_Control/QcLab/Embryology/EmbryologyLayout";
-import Task from "./pages/Quality_Control/QcLab/Embryology/Task";
 import Equipment from "./pages/Quality_Control/QcLab/Embryology/Equipments";
 import Environment from "./pages/Quality_Control/QcLab/Embryology/Environment";
+import Task from "./pages/Quality_Control/QcLab/Embryology/Task";
 
 import AndrologyLayout from "./pages/Quality_Control/QcLab/Andrology/AndrologyLayout";
+import AndrologyEquipment from "./pages/Quality_Control/QcLab/Andrology/Equipments";
+import AndrologyEnvironment from "./pages/Quality_Control/QcLab/Andrology/Environment";
+import AndrologyTask from "./pages/Quality_Control/QcLab/Andrology/Task";
+
+
 import CryopreservationLayout from "./pages/Quality_Control/QcLab/Cryopreservation/CryopreservationLayout";
 
 /* ================= CONFIGURATION COMPONENTS ================= */
@@ -77,13 +82,18 @@ function App() {
           <Route index element={<Navigate to="embryology" replace />} />
 
           <Route path="embryology" element={<EmbryologyLayout />}>
-            <Route index element={<Navigate to="task" replace />} />
-            <Route path="task" element={<Task />} />
+            <Route index element={<Navigate to="equipments" replace />} />
             <Route path="equipments" element={<Equipment />} />
             <Route path="environment" element={<Environment />} />
+            <Route path="task" element={<Task />} />
           </Route>
 
-          <Route path="andrology" element={<AndrologyLayout />} />
+         <Route path="andrology" element={<AndrologyLayout />}>
+            <Route index element={<Navigate to="equipments" replace />} />
+            <Route path="equipments" element={<AndrologyEquipment />} />
+            <Route path="environment" element={<AndrologyEnvironment />} />
+            <Route path="task" element={<AndrologyTask />} />
+         </Route>
           <Route
             path="cryopreservation"
             element={<CryopreservationLayout />}
