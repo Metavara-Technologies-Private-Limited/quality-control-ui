@@ -281,3 +281,63 @@ export const mockAssignees: Assignee[] = [
   { id: 5, name: "Neeraj", avatar: "https://i.pravatar.cc/150?img=13", equipment_id: null },
   { id: 6, name: "Shradha", avatar: "https://i.pravatar.cc/150?img=44", equipment_id: null },
 ];
+
+// src/mock/eventsData.js
+export const eventsData = [
+  {
+    id: 1,
+    name: "Equipment Maintenance and Calibration",
+    createdBy: "Sarah Willer",
+    createdDate: "16/08/2013",
+    schedule: "Weekly (Sun, Mon)",
+    equipmentCount: 6,
+    parameterCount: 5,
+  },
+  {
+    id: 2,
+    name: "Temperature Monitoring",
+    createdBy: "Sarah Willer",
+    createdDate: "16/08/2013",
+    schedule: "Weekly (Sun, Mon)",
+    equipmentCount: 4,
+    parameterCount: 4,
+  },
+  {
+    id: 3,
+    name: "Cry storage Tank Monitoring",
+    createdBy: "Sarah Willer",
+    createdDate: "16/08/2013",
+    schedule: "Weekly (Sun, Mon)",
+    equipmentCount: 6,
+    parameterCount: 2,
+  },
+
+  {
+    id: 4,
+    name: "Equipment Maintenance and Calibration",
+    createdBy: "Sarah Willer",
+    createdDate: "16/08/2013",
+    schedule: "Weekly (Sun, Mon)",
+    equipmentCount: 6,
+    parameterCount: 5,
+  },
+  {
+    id: 5,
+    name: "Temperature Monitoring",
+    createdBy: "Sarah Willer",
+    createdDate: "16/08/2013",
+    schedule: "Weekly (Sun, Mon)",
+    equipmentCount: 4,
+    parameterCount: 4,
+  },
+  {
+    id: 6,
+    name: "Cry storage Tank Monitoring",
+    createdBy: "Sarah Willer",
+    createdDate: "16/08/2013",
+    schedule: "Weekly (Sun, Mon)",
+    equipmentCount: 6,
+    parameterCount: 2,
+  },
+
+];

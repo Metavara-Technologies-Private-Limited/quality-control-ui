@@ -1,61 +1,56 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import { AppDispatch } from './store';
-import { fetchClinic } from './store/clinicSlice';
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "./store";
+import { fetchClinic } from "./store/clinicSlice";
 
-import MainLayout from './components/Layout/MainLayout';
+import MainLayout from "./components/Layout/MainLayout";
 
 /* ================= GLOBAL PAGES ================= */
-import Dashboard from './pages/Dashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import Configuration from './pages/Configuration';
-import UserConfiguration from './pages/UserConfiguration';
-import AuditTrail from './pages/AuditTrail';
+import Dashboard from "./pages/Dashboard";
+import AdminDashboard from "./pages/AdminDashboard";
+import Configuration from "./pages/Configuration";
+import UserConfiguration from "./pages/UserConfiguration";
+import AuditTrail from "./pages/AuditTrail";
 
 /* ================= QUALITY CONTROL ================= */
-import Clinical from './pages/Quality_Control/Clinical';
-import Reports from './pages/Quality_Control/Reports';
-/* ================= QC CONFIGURATION ================= */
-import ConfigurationLayout from './pages/Quality_Control/Configuration/ConfigurationLayout';
-import Events from './pages/Quality_Control/Configuration/Events';
+import Clinical from "./pages/Quality_Control/Clinical";
+import Reports from "./pages/Quality_Control/Reports";
 
+/* ================= QC CONFIGURATION ================= */
+import ConfigurationLayout from "./pages/Quality_Control/Configuration/ConfigurationLayout";
+import Events from "./pages/Quality_Control/Configuration/Events";
+import CreateEvent from "./pages/Quality_Control/Configuration/CreateEvent";
 
 /* ================= QC LAB ================= */
-import LabLayout from './pages/Quality_Control/QcLab/LabLayout';
+import LabLayout from "./pages/Quality_Control/QcLab/LabLayout";
 
-import EmbryologyLayout from './pages/Quality_Control/QcLab/Embryology/EmbryologyLayout';
-import Equipment from './pages/Quality_Control/QcLab/Embryology/Equipments';
-import Task from './pages/Quality_Control/QcLab/Embryology/Task';
-import Environment from './pages/Quality_Control/QcLab/Embryology/Environment';
+import EmbryologyLayout from "./pages/Quality_Control/QcLab/Embryology/EmbryologyLayout";
+import Task from "./pages/Quality_Control/QcLab/Embryology/Task";
+import Equipment from "./pages/Quality_Control/QcLab/Embryology/Equipments";
+import Environment from "./pages/Quality_Control/QcLab/Embryology/Environment";
 
-import AndrologyLayout from './pages/Quality_Control/QcLab/Andrology/AndrologyLayout';
-import AndrologyEnvironment from './pages/Quality_Control/QcLab/Andrology/Environment';
-import AndrologyEquipments from './pages/Quality_Control/QcLab/Andrology/Equipments';
-import AndrologyTask from './pages/Quality_Control/QcLab/Andrology/Task';
+import AndrologyLayout from "./pages/Quality_Control/QcLab/Andrology/AndrologyLayout";
+import CryopreservationLayout from "./pages/Quality_Control/QcLab/Cryopreservation/CryopreservationLayout";
 
-import CryopreservationLayout from './pages/Quality_Control/QcLab/Cryopreservation/CryopreservationLayout';
-import CryopreservationEnvironment from './pages/Quality_Control/QcLab/Cryopreservation/Environment';
-import CryopreservationEquipments from './pages/Quality_Control/QcLab/Cryopreservation/Equipments';
-import CryopreservationTask from './pages/Quality_Control/QcLab/Cryopreservation/Task';
 /* ================= CONFIGURATION COMPONENTS ================= */
-import EquipmentPage from './components/Configuration/EquipmentPage';
-import ViewEquipment from './components/Configuration/ViewEquipment';
-import AddParameterPage from './components/Configuration/AddParameterPage';
+import EquipmentPage from "./components/Configuration/EquipmentPage";
+import ViewEquipment from "./components/Configuration/ViewEquipment";
+import AddParameterPage from "./components/Configuration/AddParameterPage";
 
 /* ================= COMPLIANCE ================= */
-import ComplianceClinical from './pages/Compliance/Clinical';
-import ComplianceLab from './pages/Compliance/Lab';
+import ComplianceClinical from "./pages/Compliance/Clinical";
+import ComplianceLab from "./pages/Compliance/Lab";
 
 /* ================= DOCUMENT CONTROL ================= */
-import DocConfiguration from './pages/Document_Control/Configuration';
-import Documents from './pages/Document_Control/Documents';
-import RecycleBin from './pages/Document_Control/RecycleBin';
-import DocReports from './pages/Document_Control/Reports';
-import WorkFlows from './pages/Document_Control/WorkFlows';
+import DocConfiguration from "./pages/Document_Control/Configuration";
+import Documents from "./pages/Document_Control/Documents";
+import RecycleBin from "./pages/Document_Control/RecycleBin";
+import DocReports from "./pages/Document_Control/Reports";
+import WorkFlows from "./pages/Document_Control/WorkFlows";
 
 /* ================= RISK MANAGEMENT ================= */
-import RiskA from './pages/Risk_Management/Risk_A';
+import RiskA from "./pages/Risk_Management/Risk_A";
 
 function App() {
   const dispatch = useDispatch<AppDispatch>();
@@ -79,42 +74,36 @@ function App() {
 
         {/* ================= QC LAB ================= */}
         <Route path="qc-lab" element={<LabLayout />}>
-  <Route index element={<Navigate to="embryology" replace />} />
+          <Route index element={<Navigate to="embryology" replace />} />
 
-  <Route path="embryology" element={<EmbryologyLayout />}>
-    <Route index element={<Navigate to="equipments" replace />} />
-    <Route path="task" element={<Task />} />
-    <Route path="equipments" element={<Equipment />} />
-    <Route path="environment" element={<Environment />} />
-  </Route>
+          <Route path="embryology" element={<EmbryologyLayout />}>
+            <Route index element={<Navigate to="task" replace />} />
+            <Route path="task" element={<Task />} />
+            <Route path="equipments" element={<Equipment />} />
+            <Route path="environment" element={<Environment />} />
+          </Route>
 
-  <Route path="andrology" element={<AndrologyLayout />}>
-    <Route index element={<Navigate to="equipments" replace />} />
-    <Route path="environment" element={<AndrologyEnvironment />} />
-    <Route path="equipments" element={<AndrologyEquipments />} />
-    <Route path="task" element={<AndrologyTask />} />
-  </Route>
-
-  <Route path="cryopreservation" element={<CryopreservationLayout />}>
-    <Route index element={<Navigate to="equipments" replace />} />
-    <Route path="environment" element={<CryopreservationEnvironment />} />
-    <Route path="equipments" element={<CryopreservationEquipments />} />
-    <Route path="task" element={<CryopreservationTask />} />
-  </Route>
-</Route>
+          <Route path="andrology" element={<AndrologyLayout />} />
+          <Route
+            path="cryopreservation"
+            element={<CryopreservationLayout />}
+          />
+        </Route>
 
         {/* ================= QUALITY CONTROL CONFIGURATION ================= */}
-<Route path="configuration" element={<ConfigurationLayout />}>
-  <Route index element={<Navigate to="equipment" replace />} />
+        <Route path="configuration" element={<ConfigurationLayout />}>
+          <Route index element={<Navigate to="equipment" replace />} />
 
-  <Route path="equipment" element={<EquipmentPage />} />
-  <Route path="equipment/view" element={<ViewEquipment />} />
-  <Route path="equipment/add-parameter" element={<AddParameterPage />} />
+          <Route path="equipment" element={<EquipmentPage />} />
+          <Route path="equipment/view" element={<ViewEquipment />} />
+          <Route path="equipment/add-parameter" element={<AddParameterPage />} />
 
-  <Route path="events" element={<Events />} />
-</Route>
+          {/* EVENTS */}
+          <Route path="events" element={<Events />} />
+          <Route path="events/create" element={<CreateEvent />} />
+        </Route>
 
-
+        {/* ================= USER CONFIGURATION ================= */}
         <Route path="user-configuration" element={<UserConfiguration />} />
 
         {/* ================= COMPLIANCE ================= */}
@@ -122,7 +111,10 @@ function App() {
         <Route path="compliance/lab" element={<ComplianceLab />} />
 
         {/* ================= DOCUMENT CONTROL ================= */}
-        <Route path="document-control/configuration" element={<DocConfiguration />} />
+        <Route
+          path="document-control/configuration"
+          element={<DocConfiguration />}
+        />
         <Route path="document-control/documents" element={<Documents />} />
         <Route path="document-control/recycle-bin" element={<RecycleBin />} />
         <Route path="document-control/reports" element={<DocReports />} />
