@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { 
   BarChart, 
   Bar, 
@@ -23,7 +25,6 @@ const Environment = () => {
   });
 
 const [logs, setLogs] = useState<any[]>([]);
-const [showSuccess, setShowSuccess] = useState(false);
 
   // Data for the chart: Non-compliant values are negative to go down
   const activityData = [
@@ -36,64 +37,108 @@ const [showSuccess, setShowSuccess] = useState(false);
     { day: 'Sun', compliant: 25, nonCompliant: -25 },
   ];
 
-const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
 
-  const handleSave = () => {
-    if (!formData.temperature && !formData.humidity && !formData.airQuality && !formData.gasMeasure && !formData.lightCondition && !formData.noiseLevel) {
-      alert('Please fill in at least one field');
+
+
+const isValidDecimal = (value: string) => {
+  return /^\d{0,3}(\.\d{0,3})?$/.test(value);
+};
+
+const handleChange = (
+  e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+) => {
+  const { name, value } = e.target;
+
+  // COMMENTS & STATUS → no restriction
+  if (name === 'comments' || name === 'status') {
+    setFormData(prev => ({ ...prev, [name]: value }));
+    return;
+  }
+
+  // GAS MIXTURE → allows comma
+  if (name === 'gasMeasure') {
+    const parts = value.split(',');
+
+    if (parts.length > 2) {
+      toast.error('Enter Digits and Decimals only');
       return;
     }
-// Parse Gas Mixture input (expected format: "25, 32")
-const [o2Value, co2Value] = formData.gasMeasure
-  ? formData.gasMeasure.split(',').map(v => v.trim())
-  : ['', ''];
 
-    const newLog = {
-      dateTime: new Date().toLocaleString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true
-      }),
-      temperature: formData.temperature,
-      humidity: formData.humidity,
-      airQuality: formData.airQuality,
-      gasMeasure: {o2: o2Value, co2: co2Value},
-      lightCondition: formData.lightCondition,
-      noiseLevel: formData.noiseLevel,
-      status: formData.status,
-      comments: formData.comments
-    };
+    for (let part of parts) {
+      if (part.trim() && !isValidDecimal(part.trim())) {
+        toast.error('Enter Digits and Decimals only');
+        return;
+      }
+    }
 
-    setLogs(prev => [newLog, ...prev]);
+    setFormData(prev => ({ ...prev, gasMeasure: value }));
+    return;
+  }
 
-    // Clear form
-    setFormData({
-      temperature: '',
-      humidity: '',
-      airQuality: '',
-      gasMeasure: '',
-      lightCondition: '',
-      noiseLevel: '',
-      comments: '',
-      status: 'Within Range'
-    });
+  // ALL OTHER NUMERIC FIELDS
+  if (!isValidDecimal(value)) {
+    toast.error('Enter Digits and Decimals only');
+    return;
+  }
 
-setShowSuccess(true);
+  setFormData(prev => ({ ...prev, [name]: value }));
+};
 
-setTimeout(() => {
-  setShowSuccess(false);
-}, 2000);
+
+  const handleSave = () => {
+  const hasValue =
+    formData.temperature ||
+    formData.humidity ||
+    formData.airQuality ||
+    formData.gasMeasure ||
+    formData.lightCondition ||
+    formData.noiseLevel;
+
+  if (!hasValue) {
+    toast.error('Please fill atleast 1 field');
+    return;
+  }
+
+  const [o2Value, co2Value] = formData.gasMeasure
+    ? formData.gasMeasure.split(',').map(v => v.trim())
+    : ['', ''];
+
+  const newLog = {
+    dateTime: new Date().toLocaleString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    }),
+    temperature: formData.temperature,
+    humidity: formData.humidity,
+    airQuality: formData.airQuality,
+    gasMeasure: { o2: o2Value, co2: co2Value },
+    lightCondition: formData.lightCondition,
+    noiseLevel: formData.noiseLevel,
+    status: formData.status,
+    comments: formData.comments
   };
+
+  setLogs(prev => [newLog, ...prev]);
+
+  setFormData({
+    temperature: '',
+    humidity: '',
+    airQuality: '',
+    gasMeasure: '',
+    lightCondition: '',
+    noiseLevel: '',
+    comments: '',
+    status: 'Within Range'
+  });
+
+  toast.success('Environmental data Saved Successfully');
+};
+
 
   const handleClear = () => {
     setFormData({
@@ -108,16 +153,19 @@ setTimeout(() => {
     });
   };
 
-const getStatusColor = (status?: string) => {
-  if (status === 'Within Range') return '#47B35F';   // green
-  if (status === 'Out of Range') return '#F25B5B';  // red
-  if (status === 'Critical') return '#7A0C0C';      // deep red
-  return '#6b7280';
-};
-
 
   return (
     <div style={{ padding: '1px', backgroundColor: '#ffffff', minHeight: '100vh' }}>
+       {/* TOAST CONTAINER */}
+    <ToastContainer
+      position="top-right"
+      autoClose={2000}
+      hideProgressBar={false}
+      closeOnClick
+      pauseOnHover
+      draggable
+      theme="colored"
+    />
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
         
         {/* Left Section - Parameters with Tabs */}
@@ -525,49 +573,7 @@ textAlign: 'center',
           <p style={{ textAlign: 'center', marginTop: '16px', color: '#B1B1B1', fontSize: '14px' }}>Month</p>
         </div>
       </div>
-      {showSuccess && (
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.25)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999
-        }}
-      >
-        <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            padding: '32px 44px',
-            borderRadius: '14px',
-            boxShadow: '0 12px 35px rgba(0,0,0,0.18)',
-            textAlign: 'center',
-            minWidth: '340px'
-          }}
-        >
-          <div
-            style={{
-              fontSize: '22px',
-              fontWeight: 600,
-              color: '#16A34A',
-              marginBottom: '6px'
-            }}
-          >
-            ✔ Saved Successfully
-          </div>
-          <div
-            style={{
-              fontSize: '14px',
-              color: '#6B7280'
-            }}
-          >
-            Environmental data has been recorded
-          </div>
-        </div>
-      </div>
-    )}
+     
     </div>
     
   );
