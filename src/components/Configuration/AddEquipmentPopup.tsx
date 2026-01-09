@@ -33,12 +33,11 @@ const AddEquipmentPopup: React.FC<Props> = ({ open, onClose }) => {
    * Blocks numbers and special characters from being entered
    */
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Regex: only allow a-z, A-Z, and whitespace
-    if (/^[a-zA-Z\s]*$/.test(value)) {
-      setEquipmentName(value);
-    }
-  };
+  const value = e.target.value;
+    if (/^[a-zA-Z0-9\s]*$/.test(value)) {
+    setEquipmentName(value);
+  }
+};
 
   const handleAdd = () => {
     // Ensure the name isn't just whitespace
