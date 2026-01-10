@@ -1,20 +1,53 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  ResponsiveContainer, 
-  ReferenceLine 
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine 
 } from 'recharts';
 
 interface IncubatorFormProps {
   selectedRadio: string;
   setSelectedRadio: (name: string) => void;
+  // make and model are now handled internally via mapping logic
 }
 
 const IncubatorForm = ({ selectedRadio, setSelectedRadio }: IncubatorFormProps) => {
+  
+  // 1. DATA LOGIC: Mapping Sidebar Names to Specific Unit Specs
+  // This matches the data you saved in your AddParameterPage table
+  const equipmentSpecs: Record<string, { make: string; model: string }> = {
+    "Incubator A": { make: "Thermo Fisher", model: "Heracell VIOS 160i" },
+    "Incubator B": { make: "Panasonic", model: "MCO-170AICUV" },
+    "Incubator C": { make: "Esco", model: "CCL-170B-8" },
+    "Incubator D": { make: "Binder", model: "CB 170" },
+    "Incubator E": { make: "Memmert", model: "ICO150" },
+  };
+
+  // 2. TRANSLATOR LOGIC: Map incoming sidebar name (e.g. "Incubator 01") to Form Radio (e.g. "Incubator A")
+  const getMappedName = (input: string) => {
+    const val = input ? input.toString().toUpperCase() : "";
+    
+    if (val.includes("INCUBATOR 1") || val.includes("INCUBATOR 01") || val.endsWith(" A")) return "Incubator A";
+    if (val.includes("INCUBATOR 2") || val.includes("INCUBATOR 02") || val.endsWith(" B")) return "Incubator B";
+    if (val.includes("INCUBATOR 3") || val.includes("INCUBATOR 03") || val.endsWith(" C")) return "Incubator C";
+    if (val.includes("INCUBATOR 4") || val.includes("INCUBATOR 04") || val.endsWith(" D")) return "Incubator D";
+    if (val.includes("INCUBATOR 5") || val.includes("INCUBATOR 05") || val.endsWith(" E")) return "Incubator E";
+    
+    return input; 
+  };
+
+  const currentSelection = getMappedName(selectedRadio);
+
+  // 3. STATE LOGIC: State to hold the Make/Model for the current selection
+  const [currentSpecs, setCurrentSpecs] = useState({ make: "N/A", model: "N/A" });
+
+  useEffect(() => {
+    // Whenever currentSelection changes, update the Make/Model display
+    if (equipmentSpecs[currentSelection]) {
+      setCurrentSpecs(equipmentSpecs[currentSelection]);
+    } else {
+      setCurrentSpecs({ make: "N/A", model: "N/A" });
+    }
+  }, [currentSelection]);
+
   const activityData = [
     { day: "Monday", compliant: 34, nonCompliant: -23 },
     { day: "Tuesday", compliant: 28, nonCompliant: -22 },
@@ -39,10 +72,19 @@ const IncubatorForm = ({ selectedRadio, setSelectedRadio }: IncubatorFormProps) 
         {/* Unit Selector Radios */}
         <div style={{ display: "flex", gap: "24px", marginBottom: "24px", borderBottom: "1px solid #f1f5f9", paddingBottom: "20px" }}>
           {["Incubator A", "Incubator B", "Incubator C", "Incubator D", "Incubator E"].map((name) => (
-            <label key={name} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: "500", cursor: "pointer" }}>
+            <label key={name} style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "8px", 
+              fontSize: "13px", 
+              fontWeight: currentSelection === name ? "700" : "500", 
+              color: currentSelection === name ? "#f97316" : "#64748b", 
+              cursor: "pointer" 
+            }}>
               <input 
                 type="radio" 
-                checked={selectedRadio === name} 
+                name="incubator-unit-choice"
+                checked={currentSelection === name} 
                 onChange={() => setSelectedRadio(name)} 
                 style={{ accentColor: "#f97316", width: "16px", height: "16px" }} 
               />
@@ -95,16 +137,16 @@ const IncubatorForm = ({ selectedRadio, setSelectedRadio }: IncubatorFormProps) 
           </div>
         </div>
 
-        {/* --- ADDED MAKE AND MODEL SECTION --- */}
+        {/* MAKE AND MODEL SECTION - DYNAMIC */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginTop: '20px', fontSize: '14px' }}>
           <div style={{ display: 'flex', gap: '8px' }}>
             <span style={{ color: '#94a3b8' }}>Make :</span>
-            <span style={{ fontWeight: '600', color: '#0f172a' }}>Lorem ipsum</span>
+            <span style={{ fontWeight: '600', color: '#0f172a' }}>{currentSpecs.make}</span>
           </div>
           <div style={{ width: '1px', height: '14px', backgroundColor: '#e5e7eb' }}></div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <span style={{ color: '#94a3b8' }}>Model :</span>
-            <span style={{ fontWeight: '600', color: '#0f172a' }}>Lorem ipsum</span>
+            <span style={{ fontWeight: '600', color: '#0f172a' }}>{currentSpecs.model}</span>
           </div>
           
           <div style={{ marginLeft: 'auto', display: "flex", gap: "12px" }}>
@@ -140,42 +182,16 @@ const IncubatorForm = ({ selectedRadio, setSelectedRadio }: IncubatorFormProps) 
 
         <div style={{ width: '100%', height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart 
-              data={activityData} 
-              stackOffset="sign" 
-              margin={{ top: 20, right: 30, left: 45, bottom: 20 }}
-            >
+            <BarChart data={activityData} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 20 }}>
               <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#9e9e9e' }} axisLine={{ stroke: '#E0E0E0' }} tickLine={false} />
-              <YAxis 
-                domain={[-40, 40]} 
-                ticks={[-40, -20, 0, 20, 40]} 
-                tick={{ fontSize: 12, fill: '#9e9e9e' }} 
-                axisLine={false} 
-                tickLine={false}
-                label={{ 
-                  value: 'No of parameters', 
-                  angle: -90, 
-                  position: 'insideLeft', 
-                  offset: -35,
-                  style: { textAnchor: 'middle', fill: '#9e9e9e', fontSize: 12, fontWeight: 500 } 
-                }}
+              <YAxis domain={[-40, 40]} ticks={[-40, -20, 0, 20, 40]} tick={{ fontSize: 12, fill: '#9e9e9e' }} axisLine={false} tickLine={false} 
+                label={{ value: 'No of parameters', angle: -90, position: 'insideLeft', offset: -35, style: { fill: '#9e9e9e', fontSize: 12, fontWeight: 500 } }} 
               />
               <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '4px' }} />
               <ReferenceLine y={0} stroke="#E0E0E0" />
-              <ReferenceLine y={20} stroke="#F1F1F1" />
-              <ReferenceLine y={40} stroke="#F1F1F1" />
-              <ReferenceLine y={-20} stroke="#F1F1F1" />
-              <ReferenceLine y={-40} stroke="#F1F1F1" />
-
               <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={15} label={{ position: 'top', fill: '#9e9e9e', fontSize: 10 }} />
-              <Bar 
-                dataKey="nonCompliant" 
-                fill="#EF9685" 
-                radius={[0, 0, 4, 4]} 
-                barSize={15} 
-                label={({ x, y, value, width }: any) => (
-                  <text x={x + width / 2} y={y + 14} fill="#EF9685" fontSize={10} textAnchor="middle">{value}</text>
-                )} 
+              <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={15} 
+                label={({ x, y, value, width }: any) => (<text x={x + width / 2} y={y + 14} fill="#EF9685" fontSize={10} textAnchor="middle">{Math.abs(value)}</text>)} 
               />
             </BarChart>
           </ResponsiveContainer>

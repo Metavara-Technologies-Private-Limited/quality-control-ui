@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine 
 } from 'recharts';
@@ -15,6 +15,17 @@ const OvensWaterBathForm = ({ selectedRadio, setSelectedRadio }: any) => {
     status: "Pass",
     comments: "",
   });
+
+  // LOGIC: Automatically switch the Active Tab based on the prop from sidebar
+  useEffect(() => {
+    if (selectedRadio) {
+      if (selectedRadio.toLowerCase().includes("water bath")) {
+        setActiveCategory("Water Bath");
+      } else if (selectedRadio.toLowerCase().includes("oven")) {
+        setActiveCategory("Ovens");
+      }
+    }
+  }, [selectedRadio]);
 
   const activityData = [
     { day: "Monday", compliant: 34, nonCompliant: -23 },
@@ -47,6 +58,7 @@ const OvensWaterBathForm = ({ selectedRadio, setSelectedRadio }: any) => {
           {["Ovens", "Water Bath"].map((cat) => (
             <button
               key={cat}
+              type="button"
               onClick={() => setActiveCategory(cat)}
               style={{
                 padding: "8px 24px",
@@ -54,8 +66,9 @@ const OvensWaterBathForm = ({ selectedRadio, setSelectedRadio }: any) => {
                 border: activeCategory === cat ? "1px solid #E17E61" : "1px solid #e5e7eb",
                 backgroundColor: activeCategory === cat ? "#FFF5F2" : "#fff",
                 color: activeCategory === cat ? "#E17E61" : "#94a3b8",
-                fontWeight: "600",
-                cursor: "pointer"
+                fontWeight: "700",
+                cursor: "pointer",
+                transition: "all 0.2s ease"
               }}
             >{cat}</button>
           ))}
@@ -64,7 +77,15 @@ const OvensWaterBathForm = ({ selectedRadio, setSelectedRadio }: any) => {
         {/* Dynamic Unit Selector Radios */}
         <div style={{ display: "flex", gap: "24px", marginBottom: "24px", borderBottom: "1px solid #f1f5f9", paddingBottom: "20px" }}>
           {radioOptions.map((name) => (
-            <label key={name} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: "500", cursor: "pointer" }}>
+            <label key={name} style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "8px", 
+              fontSize: "13px", 
+              fontWeight: selectedRadio === name ? "700" : "500", 
+              color: selectedRadio === name ? "#f97316" : "#0f172a",
+              cursor: "pointer" 
+            }}>
               <input 
                 type="radio" 
                 name="unit-selection"
@@ -122,11 +143,11 @@ const OvensWaterBathForm = ({ selectedRadio, setSelectedRadio }: any) => {
           </div>
         </div>
 
-        {/* Actions and Make/Model info */}
+        {/* Actions */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '24px', marginTop: '10px' }}>
           <div style={{ display: "flex", gap: "12px" }}>
-            <button style={{ padding: "10px 24px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", cursor: "pointer", fontSize: "14px" }}>Clear</button>
-            <button style={{ padding: "10px 24px", backgroundColor: "#1e293b", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "14px" }}>Save</button>
+            <button style={{ padding: "10px 24px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", cursor: "pointer", fontSize: "14px", fontWeight: "600" }}>Clear</button>
+            <button style={{ padding: "10px 24px", backgroundColor: "#1e293b", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "14px", fontWeight: "600" }}>Save</button>
           </div>
         </div>
       </div>
@@ -164,13 +185,9 @@ const OvensWaterBathForm = ({ selectedRadio, setSelectedRadio }: any) => {
               />
               <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '4px' }} />
               <ReferenceLine y={0} stroke="#E0E0E0" />
-              <ReferenceLine y={20} stroke="#F1F1F1" />
-              <ReferenceLine y={40} stroke="#F1F1F1" />
-              <ReferenceLine y={-20} stroke="#F1F1F1" />
-              <ReferenceLine y={-40} stroke="#F1F1F1" />
               <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={15} label={{ position: 'top', fill: '#9e9e9e', fontSize: 10 }} />
               <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={15} 
-                label={({ x, y, value, width }: any) => (<text x={x + width / 2} y={y + 14} fill="#EF9685" fontSize={10} textAnchor="middle">{value}</text>)} 
+                label={({ x, y, value, width }: any) => (<text x={x + width / 2} y={y + 14} fill="#EF9685" fontSize={10} textAnchor="middle">{Math.abs(value)}</text>)} 
               />
             </BarChart>
           </ResponsiveContainer>

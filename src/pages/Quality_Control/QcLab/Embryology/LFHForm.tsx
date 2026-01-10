@@ -4,6 +4,24 @@ import {
 } from 'recharts';
 
 const LFHForm = ({ selectedRadio, setSelectedRadio }: any) => {
+  
+  // LOGIC: Map numeric input (LFH 01) to alphabetic display (Laminar Air Flow A)
+  const getMappedName = (input: string) => {
+    const val = input ? input.toString().toUpperCase() : "";
+    
+    // Mapping rules to sync sidebar names with form radio labels
+    if (val.includes("01") || val.endsWith(" A")) return "Laminar Air Flow A";
+    if (val.includes("02") || val.endsWith(" B")) return "Laminar Air Flow B";
+    if (val.includes("03") || val.endsWith(" C")) return "Laminar Air Flow C";
+    if (val.includes("04") || val.endsWith(" D")) return "Laminar Air Flow D";
+    if (val.includes("05") || val.endsWith(" E")) return "Laminar Air Flow E";
+    
+    return input; // Fallback to original
+  };
+
+  // This variable handles the "checked" state and the visual highlighting
+  const currentSelection = getMappedName(selectedRadio);
+
   const activityData = [
     { day: "Monday", compliant: 34, nonCompliant: -23 },
     { day: "Tuesday", compliant: 28, nonCompliant: -22 },
@@ -24,13 +42,27 @@ const LFHForm = ({ selectedRadio, setSelectedRadio }: any) => {
       {/* SECTION 1: Technical Details Card */}
       <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "24px" }}>
         
-        {/* Unit Selector Radios (Laminar Air Flow A - E) */}
+        {/* Unit Selector Radios */}
         <div style={{ display: "flex", gap: "24px", marginBottom: "24px", borderBottom: "1px solid #f1f5f9", paddingBottom: "20px" }}>
           {["Laminar Air Flow A", "Laminar Air Flow B", "Laminar Air Flow C", "Laminar Air Flow D", "Laminar Air Flow E"].map((name) => (
-            <label key={name} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: "500", cursor: "pointer" }}>
+            <label 
+              key={name} 
+              style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                gap: "8px", 
+                fontSize: "13px", 
+                // UI LOGIC: Highlight text orange and bold if it matches current selection
+                fontWeight: currentSelection === name ? "700" : "500", 
+                color: currentSelection === name ? "#f97316" : "#0f172a",
+                cursor: "pointer" 
+              }}
+            >
               <input 
                 type="radio" 
-                checked={selectedRadio === name} 
+                name="lfh-selector"
+                // CHECK LOGIC: Set radio dot based on mapped name
+                checked={currentSelection === name} 
                 onChange={() => setSelectedRadio(name)} 
                 style={{ accentColor: "#f97316", width: '16px', height: '16px' }} 
               />
@@ -107,51 +139,53 @@ const LFHForm = ({ selectedRadio, setSelectedRadio }: any) => {
       </div>
 
       {/* SECTION 2: Activity Graph */}
-      <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "24px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#505050" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+     <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "24px" }}>
+            {/* Header and Legend */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#505050" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                </div>
+                <h3 style={{ fontSize: "16px", fontWeight: "600", margin: 0, color: "#0f172a" }}>Activity</h3>
+              </div>
+              
+              <div style={{ display: "flex", gap: "16px", fontSize: "12px" }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ width: '10px', height: '10px', backgroundColor: '#6c6c6c', borderRadius: '50%' }} />
+                  <span style={{ color: '#9e9e9e' }}>Compliant</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ width: '10px', height: '10px', backgroundColor: '#EF9685', borderRadius: '50%' }} />
+                  <span style={{ color: '#9e9e9e' }}>Non - Compliant</span>
+                </div>
+              </div>
             </div>
-            <h3 style={{ fontSize: "16px", fontWeight: "600", margin: 0, color: "#0f172a" }}>Activity</h3>
+    
+            <div style={{ borderBottom: '1px solid #f1f5f9', marginBottom: '24px' }}></div>
+    
+            {/* Chart Area */}
+            <div style={{ width: '100%', height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={activityData} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 20 }}>
+                  <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#9e9e9e' }} axisLine={{ stroke: '#E0E0E0' }} tickLine={false} />
+                  <YAxis domain={[-40, 40]} ticks={[-40, -20, 0, 20, 40]} tick={{ fontSize: 12, fill: '#9e9e9e' }} axisLine={false} tickLine={false} 
+                    label={{ value: 'No of parameters', angle: -90, position: 'insideLeft', offset: -35, style: { fill: '#9e9e9e', fontSize: 12, fontWeight: 500 } }} 
+                  />
+                  <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '4px' }} />
+                  <ReferenceLine y={0} stroke="#E0E0E0" />
+                  <ReferenceLine y={20} stroke="#F1F1F1" />
+                  <ReferenceLine y={40} stroke="#F1F1F1" />
+                  <ReferenceLine y={-20} stroke="#F1F1F1" />
+                  <ReferenceLine y={-40} stroke="#F1F1F1" />
+                  <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={15} label={{ position: 'top', fill: '#9e9e9e', fontSize: 10 }} />
+                  <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={15} 
+                    label={({ x, y, value, width }: any) => (<text x={x + width / 2} y={y + 14} fill="#EF9685" fontSize={10} textAnchor="middle">{Math.abs(value)}</text>)} 
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <p style={{ textAlign: 'center', marginTop: '12px', color: '#B1B1B1', fontSize: '12px' }}>Month</p>
           </div>
-          
-          <div style={{ display: "flex", gap: "16px", fontSize: "12px" }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '10px', height: '10px', backgroundColor: '#6c6c6c', borderRadius: '50%' }} />
-              <span style={{ color: '#9e9e9e' }}>Compliant</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '10px', height: '10px', backgroundColor: '#EF9685', borderRadius: '50%' }} />
-              <span style={{ color: '#9e9e9e' }}>Non - Compliant</span>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ borderBottom: '1px solid #f1f5f9', marginBottom: '24px' }}></div>
-
-        <div style={{ width: '100%', height: 300 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={activityData} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 20 }}>
-              <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#9e9e9e' }} axisLine={{ stroke: '#E0E0E0' }} tickLine={false} />
-              <YAxis domain={[-40, 40]} ticks={[-40, -20, 0, 20, 40]} tick={{ fontSize: 12, fill: '#9e9e9e' }} axisLine={false} tickLine={false} 
-                label={{ value: 'No of parameters', angle: -90, position: 'insideLeft', offset: -35, style: { fill: '#9e9e9e', fontSize: 12, fontWeight: 500 } }} 
-              />
-              <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '4px' }} />
-              <ReferenceLine y={0} stroke="#E0E0E0" />
-              <ReferenceLine y={20} stroke="#F1F1F1" />
-              <ReferenceLine y={40} stroke="#F1F1F1" />
-              <ReferenceLine y={-20} stroke="#F1F1F1" />
-              <ReferenceLine y={-40} stroke="#F1F1F1" />
-              <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={15} label={{ position: 'top', fill: '#9e9e9e', fontSize: 10 }} />
-              <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={15} 
-                label={({ x, y, value, width }: any) => (<text x={x + width / 2} y={y + 14} fill="#EF9685" fontSize={10} textAnchor="middle">{value}</text>)} 
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <p style={{ textAlign: 'center', marginTop: '12px', color: '#B1B1B1', fontSize: '12px' }}>Month</p>
-      </div>
     </div>
   );
 };
