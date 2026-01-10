@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Filter, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import LFHForm from "./LFHForm";
 import MicroscopesForm from "./MicroscopesForm";
 import CryopreservationForm from "./CryopreservationForm";
@@ -14,9 +14,14 @@ const Equipment = () => {
   const [equipmentData, setEquipmentData] = useState<any[]>([]);
   const [selectedEquipment, setSelectedEquipment] = useState("");
   const [selectedRadio, setSelectedRadio] = useState("");
-  const [equipmentType, setEquipmentType] = useState("incubator");
+  const [equipmentType, setEquipmentType] = useState(""); 
+  const [activeEquipmentGroup, setActiveEquipmentGroup] = useState(""); 
   const [currentParameters, setCurrentParameters] = useState<any[]>([]); 
   const [loading, setLoading] = useState(true);
+
+  // Added state to track specific details for the active selection
+  const [activeMake, setActiveMake] = useState("");
+  const [activeModel, setActiveModel] = useState("");
 
   const assignees = [
     "https://i.pravatar.cc/150?img=1",
@@ -24,15 +29,14 @@ const Equipment = () => {
     "https://i.pravatar.cc/150?img=3",
   ];
 
-  const determineEquipmentType = (name: string) => {
-    const n = name.toLowerCase();
-    if (n.includes("incubator")) return "incubator";
-    if (n.includes("lfh") || n.includes("hood")) return "lfh";
-    if (n.includes("ovens") || n.includes("water bath")) return "ovens";
-    if (n.includes("waterbath") || n.includes("water bath")) return "waterbath";
-    if (n.includes("microscope")) return "microscopes";
-    if (n.includes("phmeters")) return "phmeters";
-    if (n.includes("cryo") || n.includes("ln2")) return "cryopreservation";
+  const determineEquipmentType = (paramName: string) => {
+    const p = paramName.toLowerCase();
+    if (p.includes("co2") || p.includes("tri-gas") || p.includes("o2") || p.includes("incubator")) return "incubator";
+    if (p.includes("airflow") || p.includes("velocity") || p.includes("lfh") || p.includes("hood")) return "lfh01";
+    if (p.includes("water bath") || p.includes("oven") || p.includes("bath temp")) return "ovens";
+    if (p.includes("lens") || p.includes("microscope") || p.includes("stage") || p.includes("optics")) return "microscopes";
+    if (p.includes("ph") || p.includes("electrode") || p.includes("buffer")) return "phmeters";
+    if (p.includes("cryo") || p.includes("ln2") || p.includes("tank level")) return "cryopreservation";
     return "other";
   };
 
@@ -45,15 +49,29 @@ const Equipment = () => {
         let equipmentList: any[] = [];
         data.department.forEach((dep: any) => {
           dep.equipments.forEach((eq: any) => {
-            const params = eq.parameters || []; 
-            equipmentList.push({
-              id: eq.id,
-              name: eq.equipment_name,
-              departmentName: dep.name,
-              parameters: params,
-              paramsCount: `${String(params.length).padStart(2, '0')}/${String(params.length).padStart(2, '0')}`,
-              progress: "100%",
-              type: determineEquipmentType(eq.equipment_name)
+            const params = eq.parameters || [];
+            
+            // Logic: Get the Make/Model map for this equipment group
+            // eq.equipment_details is where the table from AddParameterPage is stored
+            const detailsMap: Record<string, { make: string, model: string }> = {};
+            eq.equipment_details?.forEach((detail: any) => {
+               detailsMap[detail.equipment_num] = { make: detail.make, model: detail.model };
+            });
+
+            params.forEach((param: any) => {
+              equipmentList.push({
+                id: `${eq.id}-${param.id}`,
+                parameterName: param.parameter_name,
+                equipmentName: eq.equipment_name, // e.g. "LFH 01"
+                departmentName: dep.name,
+                allParameters: params,
+                paramsCount: params.length,
+                progress: "100%",
+                type: determineEquipmentType(param.parameter_name),
+                // Attach the specs directly to the parameter object
+                make: detailsMap[eq.equipment_name]?.make || "N/A",
+                model: detailsMap[eq.equipment_name]?.model || "N/A"
+              });
             });
           });
         });
@@ -61,10 +79,13 @@ const Equipment = () => {
         setEquipmentData(equipmentList);
         if (equipmentList.length > 0) {
           const firstEq = equipmentList[0];
-          setSelectedEquipment(firstEq.name);
-          setSelectedRadio(firstEq.name);
+          setSelectedEquipment(firstEq.parameterName);
+          setSelectedRadio(firstEq.parameterName);
           setEquipmentType(firstEq.type);
-          setCurrentParameters(firstEq.parameters);
+          setActiveEquipmentGroup(firstEq.equipmentName);
+          setCurrentParameters(firstEq.allParameters);
+          setActiveMake(firstEq.make);
+          setActiveModel(firstEq.model);
         }
       } catch (error) {
         console.error("Error loading equipments:", error);
@@ -76,17 +97,23 @@ const Equipment = () => {
   }, []);
 
   const handleSelectEquipment = (item: any) => {
-    setSelectedEquipment(item.name);
+    setSelectedEquipment(item.parameterName);
     setEquipmentType(item.type);
-    setSelectedRadio(item.name);
-    setCurrentParameters(item.parameters);
+    setActiveEquipmentGroup(item.equipmentName); 
+    setSelectedRadio(item.parameterName);
+    setCurrentParameters(item.allParameters);
+    // Logic: Update Make and Model when user clicks card or sidebar item
+    setActiveMake(item.make);
+    setActiveModel(item.model);
   };
 
-  const groupedEquipments = equipmentData.reduce((acc, curr) => {
-    if (!acc[curr.departmentName]) acc[curr.departmentName] = [];
-    acc[curr.departmentName].push(curr);
+  const groupedEquipments = equipmentData.reduce((acc: any, curr) => {
+    if (!acc[curr.equipmentName]) acc[curr.equipmentName] = [];
+    acc[curr.equipmentName].push(curr);
     return acc;
   }, {});
+
+  const sidebarData = equipmentData.filter(item => item.equipmentName === activeEquipmentGroup);
 
   const CustomPlusIcon = () => (
     <div style={{ width: "24px", height: "24px", borderRadius: "6px", border: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fff" }}>
@@ -95,6 +122,8 @@ const Equipment = () => {
       </div>
     </div>
   );
+
+  if (loading) return <div style={{ padding: "20px" }}>Loading...</div>;
 
   if (view === "list") {
     return (
@@ -109,15 +138,20 @@ const Equipment = () => {
         </div>
 
         {activeTab === "To-Do" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            {Object.keys(groupedEquipments).map((dept) => (
-              <div key={dept} style={{ borderRadius: "12px", backgroundColor: "#F8F8F8", padding: "15px" }}>
-                <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", color: "#0f172a", marginTop: 0 }}>{dept}</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
+            {Object.keys(groupedEquipments).map((equipmentName) => (
+              <div key={equipmentName} style={{ borderRadius: "12px", backgroundColor: "#F8F8F8", padding: "15px" }}>
+                <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", color: "#0f172a", marginTop: 0 }}>{equipmentName}</h2>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: "12px" }}>
-                  {groupedEquipments[dept].map((item: any) => (
+                  {groupedEquipments[equipmentName].map((item: any) => (
                     <div key={item.id} onClick={() => { handleSelectEquipment(item); setView("detail"); }} style={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "12px", padding: "16px", cursor: "pointer" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                        <span style={{ fontSize: "14px", fontWeight: "700" }}>{item.name} <span style={{ color: "#64748b", fontWeight: "400" }}>: Parameters : {item.paramsCount}</span></span>
+                        <div>
+                          <span style={{ fontSize: "14px", fontWeight: "700" }}>{item.parameterName}</span>
+                          <span style={{ color: "#64748b", fontWeight: "400", fontSize: "14px", marginLeft: "8px" }}>
+                            : Parameters : {String(item.paramsCount).padStart(2, '0')}/{String(item.paramsCount).padStart(2, '0')}
+                          </span>
+                        </div>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                           <span style={{ fontSize: "12px", fontWeight: "700", color: "#0f172a" }}>Assignee :</span>
                           <div style={{ display: "flex" }}>
@@ -128,9 +162,7 @@ const Equipment = () => {
                           <CustomPlusIcon />
                         </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: "13px", color: "#22c55e", fontWeight: "700" }}>{item.progress}</span>
-                      </div>
+                      <span style={{ fontSize: "13px", color: "#22c55e", fontWeight: "700" }}>{item.progress}</span>
                     </div>
                   ))}
                 </div>
@@ -148,36 +180,19 @@ const Equipment = () => {
       <div style={{ width: "512px", height: "840px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "20px", borderBottom: "1px solid #e5e7eb" }}>
           <button onClick={() => setView("list")} style={{ background: "none", border: "none", fontSize: "14px", fontWeight: "700", cursor: "pointer", color: "#0f172a", marginBottom: '16px' }}>Equipments</button>
-          
           <div style={{ display: "inline-flex", backgroundColor: "#F2F2F2", padding: "4px", borderRadius: "12px", gap: "4px", width: '100%' }}>
             {["To-Do", "Plan"].map(tab => (
-              <button 
-                key={tab} 
-                onClick={() => setActiveTab(tab)} 
-                style={{ 
-                  flex: 1,
-                  height: "36px", 
-                  borderRadius: "10px", 
-                  border: "none", 
-                  cursor: "pointer", 
-                  fontSize: "14px", 
-                  fontWeight: "700", 
-                  backgroundColor: activeTab === tab ? "#FFFFFF" : "transparent", 
-                  color: activeTab === tab ? "#E17E61" : "#94a3b8" 
-                }}
-              >
-                {tab}
-              </button>
+              <button key={tab} onClick={() => setActiveTab(tab)} style={{ flex: 1, height: "36px", borderRadius: "10px", border: "none", cursor: "pointer", fontSize: "14px", fontWeight: "700", backgroundColor: activeTab === tab ? "#FFFFFF" : "transparent", color: activeTab === tab ? "#E17E61" : "#94a3b8" }}>{tab}</button>
             ))}
           </div>
         </div>
 
         <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "10px", overflowY: "auto", flex: 1 }}>
           {activeTab === "To-Do" ? (
-            equipmentData.map((item) => (
-              <div key={item.id} onClick={() => handleSelectEquipment(item)} style={{ padding: "16px", borderRadius: "12px", cursor: "pointer", backgroundColor: selectedEquipment === item.name ? "#fef3f2" : "#fff", border: selectedEquipment === item.name ? "2px solid #f97316" : "1px solid #f1f5f9" }}>
+            sidebarData.map((item) => (
+              <div key={item.id} onClick={() => handleSelectEquipment(item)} style={{ padding: "16px", borderRadius: "12px", cursor: "pointer", backgroundColor: selectedEquipment === item.parameterName ? "#fef3f2" : "#fff", border: selectedEquipment === item.parameterName ? "2px solid #f97316" : "1px solid #f1f5f9" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "700" }}>{item.name} : <span style={{ color: "#64748b", fontWeight: "400" }}>Parameters : {item.paramsCount}</span></span>
+                  <span style={{ fontSize: "13px", fontWeight: "700" }}>{item.parameterName} : <span style={{ color: "#64748b", fontWeight: "400" }}>Parameters : {String(item.paramsCount).padStart(2, '0')}/{String(item.paramsCount).padStart(2, '0')}</span></span>
                   <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                     <div style={{ display: "flex" }}>
                       {assignees.map((img, i) => (
@@ -195,33 +210,28 @@ const Equipment = () => {
         </div>
       </div>
 
-      {/* Main Content Area */}
       <div style={{ width: "994px" }}>
-        {/* LOGIC: Only show forms if tab is To-Do, else show empty plan state */}
         {activeTab === "To-Do" ? (
           <>
-            {equipmentType === "incubator" && <IncubatorForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} parameters={currentParameters} />}
-            {equipmentType === "lfh" && <LFHForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
+            {/* Logic: Renders Make and Model for all forms */}
+            {equipmentType === "incubator" && (
+              <IncubatorForm 
+                selectedRadio={selectedRadio} 
+                setSelectedRadio={setSelectedRadio} 
+                parameters={currentParameters} 
+                make={activeMake}
+                model={activeModel}
+              />
+            )}
+            {equipmentType === "lfh01" && <LFHForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
             {equipmentType === "ovens" && <OvensWaterBathForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
-            {equipmentType === "waterbath" && <OvensWaterBathForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
             {equipmentType === "microscopes" && <MicroscopesForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
             {equipmentType === "phmeters" && <PHMetersForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
             {equipmentType === "cryopreservation" && <CryopreservationForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
           </>
         ) : (
-          <div style={{ 
-            height: "840px", 
-            backgroundColor: "#fff", 
-            borderRadius: "14px", 
-            border: "1px solid #e5e7eb", 
-            display: "flex", 
-            alignItems: "center", 
-            justifyContent: "center",
-            color: "#94a3b8",
-            fontSize: "16px",
-            fontWeight: "500"
-          }}>
-            No plans added for this equipment yet.
+          <div style={{ height: "840px", backgroundColor: "#fff", borderRadius: "14px", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: "16px", fontWeight: "500" }}>
+            No plans added for this group.
           </div>
         )}
       </div>

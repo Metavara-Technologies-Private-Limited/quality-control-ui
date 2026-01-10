@@ -29,14 +29,14 @@ import { Department, Equipment, Parameter } from "@/types";
 
 interface InternalParameter extends Parameter {
     content: any;
+    parameter_values?: Array<{ content: any }>;
 }
 
 const EquipmentPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [searchParams] = useSearchParams();
-const refresh = searchParams.get("refresh");
-
+    const refresh = searchParams.get("refresh");
 
     const [equipmentData, setEquipmentData] = useState<Equipment[]>([]);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -66,84 +66,99 @@ const refresh = searchParams.get("refresh");
         localStorage.setItem("equipmentStatus", JSON.stringify(statusObj));
     };
 
-   useEffect(() => {
-    const fetchData = async () => {
-        try {
-            const response = await fetch(`http://127.0.0.1:8000/api/get_clinic/1/`);
-            const data = await response.json();
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/api/get_clinic/1/`);
+                const data = await response.json();
 
-            let departmentList: Department[] = [];
-            let equipmentList: Equipment[] = [];
+                console.log("=== API Response ===", data);
 
-            // First, create the department list with their actual IDs from backend
-            departmentList = data.department.map((d: any) => ({
-                id: d.id, // Use actual ID from backend
-                name: d.name,
-                is_active: d.is_active,
-                clinic_id: 1,
-                created_at: new Date().toISOString(),
-            }));
+                let departmentList: Department[] = [];
+                let equipmentList: Equipment[] = [];
 
-            let parameterCounter = 1;
+                // First, create the department list with their actual IDs from backend
+                departmentList = data.department.map((d: any) => ({
+                    id: d.id,
+                    name: d.name,
+                    is_active: d.is_active,
+                    clinic_id: 1,
+                    created_at: new Date().toISOString(),
+                }));
 
-            // Now map equipments and link them to departments by ID
-            data.department.forEach((dep: any) => {
-                // Find the matching department object by ID
-                const matchingDepartment = departmentList.find(d => d.id === dep.id);
-                
-                if (!matchingDepartment) {
-                    console.error(`Department not found for ID: ${dep.id}`);
-                    return;
-                }
+                let parameterCounter = 1;
 
-                dep.equipments.forEach((eq: any) => {
-                    const newEquipment: Equipment = {
-                        id: eq.id,
-                        equipment_name: eq.equipment_name,
-                        dep_id: dep.id,
-                        created_at: new Date().toISOString(),
-                        department: matchingDepartment, // Use the found department object
-                        parameters: [],
-                        status: "active",
-                        is_active: false,
-                        equipment_details: eq.equipment_details || [] // Include equipment_details
-                    };
+                // Now map equipments and link them to departments by ID
+                data.department.forEach((dep: any) => {
+                    const matchingDepartment = departmentList.find(d => d.id === dep.id);
+                    
+                    if (!matchingDepartment) {
+                        console.error(`Department not found for ID: ${dep.id}`);
+                        return;
+                    }
 
-                    equipmentList.push(newEquipment);
+                    dep.equipments.forEach((eq: any) => {
+                        console.log("=== Processing Equipment ===", eq.equipment_name);
+                        console.log("Parameters from API:", eq.parameters);
 
-                    eq.parameters.forEach((param: any) => {
-                        const contentFromApi = param.content || {}; 
-                        
-                        const newParam: InternalParameter = {
-                            id: parameterCounter,
-                            parameter_name: param.parameter_name,
-                            equipment_id: eq.id,
-                            is_active: param.is_active,
-                            content: {                 
-                                ...contentFromApi, 
-                            },
+                        const newEquipment: Equipment = {
+                            id: eq.id,
+                            equipment_name: eq.equipment_name,
+                            dep_id: dep.id,
                             created_at: new Date().toISOString(),
-                            equipment: newEquipment,
+                            department: matchingDepartment,
+                            parameters: [],
+                            status: "active",
+                            is_active: false,
+                            equipment_details: eq.equipment_details || []
                         };
 
-                        newEquipment.parameters.push(newParam as any);
-                        parameterCounter++;
+                        equipmentList.push(newEquipment);
+
+                        // FIXED: Properly map parameter content
+                        eq.parameters.forEach((param: any) => {
+                            console.log("=== Processing Parameter ===", param.parameter_name);
+                            console.log("Raw parameter data:", param);
+                            
+                            // Get content from the API response
+                            const apiContent = param.content || {};
+                            
+                            console.log("Parameter content:", apiContent);
+                            
+                            const newParam: InternalParameter = {
+                                id: parameterCounter,
+                                parameter_name: param.parameter_name,
+                                equipment_id: eq.id,
+                                is_active: param.is_active,
+                                // Store content in both places for compatibility
+                                content: apiContent,
+                                parameter_values: [{
+                                    content: apiContent
+                                }],
+                                created_at: new Date().toISOString(),
+                                equipment: newEquipment,
+                            };
+
+                            console.log("Created parameter object:", newParam);
+                            newEquipment.parameters.push(newParam as any);
+                            parameterCounter++;
+                        });
+
+                        console.log("Final equipment with parameters:", newEquipment);
                     });
                 });
-            });
 
-            console.log("Department List:", departmentList);
-            console.log("Equipment List with Departments:", equipmentList);
+                console.log("=== Final Equipment List ===", equipmentList);
 
-            const finalList = loadStatus(equipmentList);
-            setEquipmentData(finalList);
-        } catch (error) {
-            console.error("Error loading equipments:", error);
-        }
-    };
+                const finalList = loadStatus(equipmentList);
+                setEquipmentData(finalList);
+            } catch (error) {
+                console.error("Error loading equipments:", error);
+            }
+        };
 
-    fetchData();
-}, []);
+        fetchData();
+    }, [refresh]);
 
     const filteredEquipments = equipmentData.filter((item) =>
         item.equipment_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -164,26 +179,26 @@ const refresh = searchParams.get("refresh");
         if (!selectedEquipmentId) return;
       
         try {
-          const equipment = equipmentData.find(e => e.id === selectedEquipmentId);
-          if (!equipment) return;
+            const equipment = equipmentData.find(e => e.id === selectedEquipmentId);
+            if (!equipment) return;
       
-          await fetch(
-            `http://127.0.0.1:8000/api/departments/${equipment.dep_id}/equipments/${equipment.id}/delete/`,
-            { method: "DELETE" }
-          );
+            await fetch(
+                `http://127.0.0.1:8000/api/departments/${equipment.dep_id}/equipments/${equipment.id}/delete/`,
+                { method: "DELETE" }
+            );
       
-          // Update UI after success
-          const newData = equipmentData.filter(item => item.id !== selectedEquipmentId);
-          setEquipmentData(newData);
-          saveStatus(newData);
+            // Update UI after success
+            const newData = equipmentData.filter(item => item.id !== selectedEquipmentId);
+            setEquipmentData(newData);
+            saveStatus(newData);
       
         } catch (err) {
-          console.error("Delete failed", err);
+            console.error("Delete failed", err);
         } finally {
-          setShowDeleteDialog(false);
-          setSelectedEquipmentId(null);
+            setShowDeleteDialog(false);
+            setSelectedEquipmentId(null);
         }
-      };      
+    };
 
     const handleInactiveEquipment = (equipmentId: number) => {
         setSelectedEquipmentId(equipmentId);
@@ -215,6 +230,16 @@ const refresh = searchParams.get("refresh");
         saveStatus(newData);
         setShowActivateDialog(false);
         setSelectedEquipmentId(null);
+    };
+
+    const handleViewEquipment = (equipment: Equipment) => {
+        console.log("=== Navigating to View ===");
+        console.log("Equipment being passed:", equipment);
+        console.log("Parameters:", equipment.parameters);
+        
+        navigate("/configuration/equipment/view", {
+            state: { equipment },
+        });
     };
 
     return (
@@ -307,7 +332,7 @@ const refresh = searchParams.get("refresh");
                                                 Parameters:
                                             </Typography>
                                             <Typography sx={{ fontSize: 16 }}>
-                                              {item.parameters.length}
+                                                {item.parameters.length}
                                             </Typography>
                                         </Box>
                                     </Box>
@@ -325,42 +350,35 @@ const refresh = searchParams.get("refresh");
                                         pt: 1,
                                     }}
                                 >
-                                  
                                     <Typography sx={{ fontSize: 16, fontWeight:500, color: "#4B5563",  gap: 1,mr : 1}}>
                                         <span style={{ color: "#9CA3AF", fontSize: 14 }}>Created Date:</span>{" "}
-                                       {getCreatedDate(item.created_at)}
+                                        {getCreatedDate(item.created_at)}
                                     </Typography>
 
                                     <Box sx={{ display: "flex", gap: 1 }}>
                                         <IconButton
-                                                    disabled={isInactive}
-                                                    onClick={() =>
-                                                        !isInactive &&
-                                                        navigate("/configuration/equipment/view", {
-                                                            state: { equipment: item },
-                                                        })
-                                                    }
-                                                    sx={{
-                                                        width: 32,
-                                                        height: 32,
-                                                        border: "1px solid #E5E7EB",
-                                                        borderRadius: "8px",
-                                                        cursor: isInactive ? "not-allowed" : "pointer",
-                                                        pointerEvents: isInactive ? "none" : "auto",
-                                                        opacity: isInactive ? 0.4 : 1,
-                                                    }}
-                                                >
-                                                    <img
-                                                        src={ViewIcon}
-                                                        alt="view"
-                                                        style={{
-                                                            width: 18,
-                                                            height: 18,
-                                                            filter: isInactive ? "grayscale(100%)" : "none",
-                                                        }}
-                                                    />
-                                                </IconButton>
-
+                                            disabled={isInactive}
+                                            onClick={() => !isInactive && handleViewEquipment(item)}
+                                            sx={{
+                                                width: 32,
+                                                height: 32,
+                                                border: "1px solid #E5E7EB",
+                                                borderRadius: "8px",
+                                                cursor: isInactive ? "not-allowed" : "pointer",
+                                                pointerEvents: isInactive ? "none" : "auto",
+                                                opacity: isInactive ? 0.4 : 1,
+                                            }}
+                                        >
+                                            <img
+                                                src={ViewIcon}
+                                                alt="view"
+                                                style={{
+                                                    width: 18,
+                                                    height: 18,
+                                                    filter: isInactive ? "grayscale(100%)" : "none",
+                                                }}
+                                            />
+                                        </IconButton>
 
                                         <IconButton
                                             onClick={(e) => {

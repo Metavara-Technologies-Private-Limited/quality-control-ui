@@ -9,9 +9,6 @@ import {
   ReferenceLine 
 } from 'recharts';
 
-
-
-
 const PHMetersForm = ({ selectedRadio, setSelectedRadio }) => {
   const [formData, setFormData] = useState({
     calibrationChecks: "Accurate",
@@ -20,6 +17,16 @@ const PHMetersForm = ({ selectedRadio, setSelectedRadio }) => {
     status: "Pass",
     comments: "",
   });
+
+  // LOGIC: Helper to match parent selection (e.g., "pH Meters A") 
+  // with local radio values (e.g., "pH Meters A")
+  const isMeterSelected = (meterName) => {
+    if (!selectedRadio) return false;
+    
+    // Extracts the suffix (A, B, 1, 2 etc) to ensure matching even if prefixes differ slightly
+    const getSuffix = (str) => str.split(" ").pop().toUpperCase();
+    return getSuffix(meterName) === getSuffix(selectedRadio);
+  };
 
   const handleClearForm = () => {
     setFormData({
@@ -41,13 +48,12 @@ const PHMetersForm = ({ selectedRadio, setSelectedRadio }) => {
     { day: "Sunday", compliant: 25, nonCompliant: -33 },
   ];
 
-  // Card style for consistent separate sections
   const sectionStyle = {
     backgroundColor: "#fff",
     borderRadius: "12px",
     border: "1px solid #e5e7eb",
     padding: "24px",
-    marginBottom: "16px", // Gap between form and chart boxes
+    marginBottom: "16px",
   };
 
   return (
@@ -55,7 +61,7 @@ const PHMetersForm = ({ selectedRadio, setSelectedRadio }) => {
       
       {/* SECTION 1: Radio Buttons, Form Fields, and Submission */}
       <div style={sectionStyle}>
-        {/* Radio Buttons */}
+        {/* Radio Buttons with sync logic */}
         <div
           style={{
             display: "flex",
@@ -74,15 +80,17 @@ const PHMetersForm = ({ selectedRadio, setSelectedRadio }) => {
                 alignItems: "center",
                 gap: "8px",
                 fontSize: "13px",
-                fontWeight: "500",
+                // Highlight label if selected
+                fontWeight: isMeterSelected(name) ? "700" : "500",
                 cursor: "pointer",
-                color: "#0f172a",
+                color: isMeterSelected(name) ? "#f97316" : "#0f172a",
               }}
             >
               <input
                 type="radio"
                 name="equipment"
-                checked={selectedRadio === name}
+                // Checks if the meter matches the selected prop
+                checked={isMeterSelected(name)}
                 onChange={() => setSelectedRadio(name)}
                 style={{
                   accentColor: "#f97316",
@@ -218,26 +226,26 @@ const PHMetersForm = ({ selectedRadio, setSelectedRadio }) => {
           </div>
         </div>
 
-       <div style={{ width: '100%', height: 300 }}>
-                 <ResponsiveContainer width="100%" height="100%">
-                   <BarChart data={activityData} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 20 }}>
-                     <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#9e9e9e' }} axisLine={{ stroke: '#E0E0E0' }} tickLine={false} />
-                     <YAxis domain={[-40, 40]} ticks={[-40, -20, 0, 20, 40]} tick={{ fontSize: 12, fill: '#9e9e9e' }} axisLine={false} tickLine={false} 
-                       label={{ value: 'No of parameters', angle: -90, position: 'insideLeft', offset: -35, style: { fill: '#9e9e9e', fontSize: 12, fontWeight: 500 } }} 
-                     />
-                     <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '4px' }} />
-                     <ReferenceLine y={0} stroke="#E0E0E0" />
-                     <ReferenceLine y={20} stroke="#F1F1F1" />
-                     <ReferenceLine y={40} stroke="#F1F1F1" />
-                     <ReferenceLine y={-20} stroke="#F1F1F1" />
-                     <ReferenceLine y={-40} stroke="#F1F1F1" />
-                     <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={15} label={{ position: 'top', fill: '#9e9e9e', fontSize: 10 }} />
-                     <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={15} 
-                       label={({ x, y, value, width }: any) => (<text x={x + width / 2} y={y + 14} fill="#EF9685" fontSize={10} textAnchor="middle">{Math.abs(value)}</text>)} 
-                     />
-                   </BarChart>
-                 </ResponsiveContainer>
-               </div>
+        <div style={{ width: '100%', height: 300 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={activityData} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 20 }}>
+              <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#9e9e9e' }} axisLine={{ stroke: '#E0E0E0' }} tickLine={false} />
+              <YAxis domain={[-40, 40]} ticks={[-40, -20, 0, 20, 40]} tick={{ fontSize: 12, fill: '#9e9e9e' }} axisLine={false} tickLine={false} 
+                label={{ value: 'No of parameters', angle: -90, position: 'insideLeft', offset: -35, style: { fill: '#9e9e9e', fontSize: 12, fontWeight: 500 } }} 
+              />
+              <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '4px' }} />
+              <ReferenceLine y={0} stroke="#E0E0E0" />
+              <ReferenceLine y={20} stroke="#F1F1F1" />
+              <ReferenceLine y={40} stroke="#F1F1F1" />
+              <ReferenceLine y={-20} stroke="#F1F1F1" />
+              <ReferenceLine y={-40} stroke="#F1F1F1" />
+              <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={15} label={{ position: 'top', fill: '#9e9e9e', fontSize: 10 }} />
+              <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={15} 
+                label={({ x, y, value, width }: any) => (<text x={x + width / 2} y={y + 14} fill="#EF9685" fontSize={10} textAnchor="middle">{Math.abs(value)}</text>)} 
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
         <p style={{ textAlign: 'center', marginTop: '8px', color: '#B1B1B1', fontSize: '12px' }}>Month</p>
       </div>
     </div>

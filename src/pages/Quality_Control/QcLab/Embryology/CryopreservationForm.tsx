@@ -19,6 +19,16 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio }) => {
     comments: "",
   });
 
+  // LOGIC: Helper to match parent selection (e.g., "Cryopreservation A") 
+  // with local radio values (e.g., "Cryo Tank A")
+  const isTankSelected = (tankName) => {
+    if (!selectedRadio) return false;
+    
+    // Extracts the suffix (A, B, C, etc) or number from both strings to compare
+    const getSuffix = (str) => str.split(" ").pop().toUpperCase();
+    return getSuffix(tankName) === getSuffix(selectedRadio);
+  };
+
   const handleClearForm = () => {
     setFormData({
       liquidNitrogenLevels: "",
@@ -40,7 +50,6 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio }) => {
     { day: "Sunday", compliant: 25, nonCompliant: -33 },
   ];
 
-  // Updated form field style based on your requirements
   const inputStyle = {
     width: "304.6666564941406px",
     height: "50px",
@@ -55,8 +64,8 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio }) => {
     color: "#0f172a",
     backgroundColor: "#fff",
     display: "flex",
-    justifyContent: "space-between", // As per your styles
-    opacity: 1, // As per your styles
+    justifyContent: "space-between",
+    opacity: 1,
     boxSizing: "border-box"
   };
 
@@ -87,11 +96,20 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio }) => {
         {/* Radio Buttons Row */}
         <div style={{ display: "flex", gap: "24px", paddingBottom: "24px", borderBottom: "1px solid #f1f5f9", marginBottom: "24px", flexWrap: "wrap" }}>
           {["Cryo Tank A", "Cryo Tank B", "Cryo Tank C", "Cryo Tank D", "Cryo Tank E"].map((name) => (
-            <label key={name} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: "500", cursor: "pointer", color: "#0f172a" }}>
+            <label key={name} style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "8px", 
+              fontSize: "13px", 
+              fontWeight: isTankSelected(name) ? "700" : "500", // Highlight label if selected
+              cursor: "pointer", 
+              color: isTankSelected(name) ? "#f97316" : "#0f172a" 
+            }}>
               <input 
                 type="radio" 
                 name="equipment" 
-                checked={selectedRadio === name} 
+                // Checks if the tank matches the selected prop
+                checked={isTankSelected(name)} 
                 onChange={() => setSelectedRadio(name)} 
                 style={{ accentColor: "#f97316", width: "16px", height: "16px" }} 
               />
@@ -103,7 +121,7 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio }) => {
         {/* Form Fields Grid */}
         <div style={{ 
           display: "grid", 
-          gridTemplateColumns: "repeat(auto-fill, 304.66px)", // Matches exact input width
+          gridTemplateColumns: "repeat(auto-fill, 304.66px)", 
           gap: "24px", 
           marginBottom: "32px",
           justifyContent: "start" 
@@ -138,7 +156,7 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio }) => {
           <div style={{ position: "relative", width: "304.66px" }}>
             <select
               value={formData.backSystemFunctionality}
-              onChange={(e) => setFormData({ ...formData, backSystemFunctionality: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, backSystemSystemFunctionality: e.target.value })}
               style={{ ...inputStyle, cursor: "pointer" }}
             >
               <option>Functional</option>
@@ -234,5 +252,4 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio }) => {
     </div>
   );
 }; 
-
 export default CryopreservationForm;
