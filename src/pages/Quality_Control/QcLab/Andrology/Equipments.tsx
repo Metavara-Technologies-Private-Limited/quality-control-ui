@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Filter, Plus } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Plus } from "lucide-react";
 import SpermAnalyzersForm from "./SpermAnalyzersForm";
 import CentrifugesForm from "./CentrifugesForm";
 import AutoclavesForm from "./AutoclavesForm";
@@ -7,24 +7,19 @@ import GasAnalyzersForm from "./GasAnalyzersForm";
 import RefrigeratorFreezerForm from "./RefrigeratorFreezerForm";
 
 const Andrology = () => {
-  // Main Tab State
+  const [view, setView] = useState("list");
   const [activeTab, setActiveTab] = useState("To-Do");
+  
+  const [equipmentData, setEquipmentData] = useState<any[]>([]);
+  const [selectedEquipment, setSelectedEquipment] = useState("");
+  const [selectedRadio, setSelectedRadio] = useState("");
+  const [equipmentType, setEquipmentType] = useState(""); 
+  const [activeEquipmentGroup, setActiveEquipmentGroup] = useState(""); 
+  const [currentParameters, setCurrentParameters] = useState<any[]>([]); 
+  const [loading, setLoading] = useState(true);
 
-  // Equipment Selection State
-  const [selectedEquipment, setSelectedEquipment] = useState("Sperm Analyzers");
-  const [equipmentType, setEquipmentType] = useState("sperm");
-  const [selectedRadio, setSelectedRadio] = useState("Sperm Analyzer B");
-
-  // YOUR SPECIFIED BOLD STYLE
-  const boldTextStyle = {
-    fontFamily: "Montserrat",
-    fontWeight: 700,
-    fontStyle: "normal", // "Bold" is typically defined via fontWeight 700
-    fontSize: "14px",
-    lineHeight: "145%",
-    letterSpacing: "0%",
-    textTransform: "capitalize",
-  };
+  const [activeMake, setActiveMake] = useState("");
+  const [activeModel, setActiveModel] = useState("");
 
   const assignees = [
     "https://i.pravatar.cc/150?img=1",
@@ -32,282 +27,253 @@ const Andrology = () => {
     "https://i.pravatar.cc/150?img=3",
   ];
 
-  const andrologyList = [
-    { name: "Sperm Analyzers", params: "05/08", progress: "100%", type: "sperm" },
-    { name: "Centrifuges", params: "05/08", progress: "24%", type: "centrifuge" },
-    { name: "Autoclaves", params: "05/08", progress: "100%", type: "autoclave" },
-    { name: "Gas Analyzers", params: "05/08", progress: "100%", type: "gas" },
-    { name: "Refrigerators / Freezers", params: "05/08", progress: "56%", type: "fridge" },
-  ];
+  const determineEquipmentType = (paramName: string) => {
+    const p = paramName.toLowerCase();
+    if (p.includes("sperm") || p.includes("analyzer")) return "sperm";
+    if (p.includes("centrifuge")) return "centrifuge";
+    if (p.includes("autoclave")) return "autoclave";
+    if (p.includes("gas")) return "gas";
+    if (p.includes("refrigerator") || p.includes("freezer") || p.includes("fridge")) return "fridge";
+    return "other";
+  };
 
-  return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        backgroundColor: "#f9fafb",
-        padding: "20px",
-        gap: "20px",
-      }}
-    >
-      {/* LEFT SIDEBAR SECTION */}
-      <div
-        style={{
-          width: "512px",
-          height: "840px",
-          backgroundColor: "#fff",
-          border: "1px solid #e5e7eb",
-          borderRadius: "14px",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <div
-          style={{
-            padding: "20px",
-            borderBottom: "1px solid #e5e7eb",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <div style={{ ...boldTextStyle, fontSize: "18px" }}>
-            <p style={{ margin: 0 }}>Equipments</p>
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(`http://127.0.0.1:8000/api/get_clinic/1/`);
+        const data = await response.json();
+
+        let equipmentList: any[] = [];
+        data.department.forEach((dep: any) => {
+          // FILTER: Only process Andrology department
+          if (dep.name.toLowerCase().trim() !== "andrology") {
+            return; // Skip non-Andrology departments
+          }
+
+          dep.equipments.forEach((eq: any) => {
+            const params = eq.parameters || [];
+            
+            const detailsMap: Record<string, { make: string, model: string }> = {};
+            eq.equipment_details?.forEach((detail: any) => {
+               detailsMap[detail.equipment_num] = { make: detail.make, model: detail.model };
+            });
+
+            params.forEach((param: any) => {
+              equipmentList.push({
+                id: `${eq.id}-${param.id}`,
+                parameterName: param.parameter_name,
+                equipmentName: eq.equipment_name,
+                departmentName: dep.name,
+                allParameters: params,
+                paramsCount: params.length,
+                progress: "100%",
+                type: determineEquipmentType(param.parameter_name),
+                make: detailsMap[eq.equipment_name]?.make || "N/A",
+                model: detailsMap[eq.equipment_name]?.model || "N/A"
+              });
+            });
+          });
+        });
+
+        setEquipmentData(equipmentList);
+        if (equipmentList.length > 0) {
+          const firstEq = equipmentList[0];
+          setSelectedEquipment(firstEq.parameterName);
+          setSelectedRadio(firstEq.parameterName);
+          setEquipmentType(firstEq.type);
+          setActiveEquipmentGroup(firstEq.equipmentName);
+          setCurrentParameters(firstEq.allParameters);
+          setActiveMake(firstEq.make);
+          setActiveModel(firstEq.model);
+        }
+      } catch (error) {
+        console.error("Error loading equipments:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleSelectEquipment = (item: any) => {
+    setSelectedEquipment(item.parameterName);
+    setEquipmentType(item.type);
+    setActiveEquipmentGroup(item.equipmentName); 
+    setSelectedRadio(item.parameterName);
+    setCurrentParameters(item.allParameters);
+    setActiveMake(item.make);
+    setActiveModel(item.model);
+  };
+
+  const groupedEquipments = equipmentData.reduce((acc: any, curr) => {
+    if (!acc[curr.equipmentName]) acc[curr.equipmentName] = [];
+    acc[curr.equipmentName].push(curr);
+    return acc;
+  }, {});
+
+  const sidebarData = equipmentData.filter(item => item.equipmentName === activeEquipmentGroup);
+
+  const CustomPlusIcon = () => (
+    <div style={{ width: "24px", height: "24px", borderRadius: "6px", border: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fff" }}>
+      <div style={{ width: "18px", height: "18px", borderRadius: "50%", backgroundColor: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Plus size={14} color="#fff" strokeWidth={3} />
+      </div>
+    </div>
+  );
+
+  if (loading) return <div style={{ padding: "20px", fontFamily: "'Montserrat', sans-serif" }}>Loading...</div>;
+
+  // Show message if no Andrology equipment found
+  if (equipmentData.length === 0) {
+    return (
+      <div style={{ minHeight: "100vh", backgroundColor: "#fff", padding: "12px", fontFamily: "'Montserrat', sans-serif" }}>
+        <h1 style={{ fontSize: "20px", fontWeight: "700", margin: 0, color: "#0f172a", marginBottom: "32px" }}>
+          Equipments
+        </h1>
+        <div style={{ textAlign: "center", marginTop: "100px", color: "#94a3b8", fontSize: "16px" }}>
+          No equipment found in Andrology department
+        </div>
+      </div>
+    );
+  }
+
+  if (view === "list") {
+    return (
+      <div style={{ minHeight: "100vh", backgroundColor: "#fff", padding: "12px", fontFamily: "'Montserrat', sans-serif" }}>
+        <div style={{ display: "flex", alignItems: "center", marginBottom: "32px", gap: "24px" }}>
+          <h1 style={{ fontSize: "20px", fontWeight: "700", margin: 0, color: "#0f172a" }}>Equipments</h1>
+          <div style={{ display: "inline-flex", backgroundColor: "#F2F2F2", padding: "4px", borderRadius: "12px", gap: "4px" }}>
+            {["To-Do", "Plan"].map(tab => (
+              <button key={tab} onClick={() => setActiveTab(tab)} style={{ width: "166px", height: "36px", borderRadius: "10px", border: "none", cursor: "pointer", fontSize: "14px", fontWeight: "700", backgroundColor: activeTab === tab ? "#FFFFFF" : "transparent", color: activeTab === tab ? "#E17E61" : "#94a3b8" }}>{tab}</button>
+            ))}
           </div>
-          <Filter size={18} color="#94a3b8" style={{ cursor: "pointer" }} />
         </div>
 
-        <div
-          style={{
-            padding: "16px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "20px",
-            flex: 1,
-            overflowY: "auto",
-          }}
-        >
-          {/* Tab Switcher */}
-          <div
-            style={{
-              display: "flex",
-              padding: "4px",
-              backgroundColor: "#FAFAFA",
-              borderRadius: "10px",
-              gap: "6px",
-            }}
-          >
-            <button
-              onClick={() => setActiveTab("To-Do")}
-              style={{
-                ...boldTextStyle, // Applying bold style here
-                flex: 1,
-                width: "166px",
-                height: "36px",
-                borderRadius: "8px",
-                border: "none",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                backgroundColor: activeTab === "To-Do" ? "#FFFFFF" : "transparent",
-                color: activeTab === "To-Do" ? "#E17E61" : "#94a3b8",
-                boxShadow: activeTab === "To-Do" ? "0 2px 4px rgba(0,0,0,0.05)" : "none",
-              }}
-            >
-              To-Do
-            </button>
-            <button
-              onClick={() => setActiveTab("Plan")}
-              style={{
-                ...boldTextStyle, // Applying bold style here
-                flex: 1,
-                width: "166px",
-                height: "36px",
-                borderRadius: "8px",
-                border: "none",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                backgroundColor: activeTab === "Plan" ? "#FFFFFF" : "transparent",
-                color: activeTab === "Plan" ? "#E17E61" : "#94a3b8",
-                boxShadow: activeTab === "Plan" ? "0 2px 4px rgba(0,0,0,0.05)" : "none",
-              }}
-            >
-              Plan
-            </button>
+        {activeTab === "To-Do" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
+            {Object.keys(groupedEquipments).map((equipmentName) => (
+              <div key={equipmentName} style={{ borderRadius: "12px", backgroundColor: "#F8F8F8", padding: "15px" }}>
+                <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", color: "#0f172a", marginTop: 0 }}>{equipmentName}</h2>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: "12px" }}>
+                  {groupedEquipments[equipmentName].map((item: any) => (
+                    <div key={item.id} onClick={() => { handleSelectEquipment(item); setView("detail"); }} style={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "12px", padding: "16px", cursor: "pointer" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                        <div>
+                          <span style={{ fontSize: "14px", fontWeight: "700" }}>{item.parameterName}</span>
+                          <span style={{ color: "#64748b", fontWeight: "400", fontSize: "14px", marginLeft: "8px" }}>
+                            : Parameters : {String(item.paramsCount).padStart(2, '0')}/{String(item.paramsCount).padStart(2, '0')}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span style={{ fontSize: "12px", fontWeight: "700", color: "#0f172a" }}>Assignee :</span>
+                          <div style={{ display: "flex" }}>
+                            {assignees.map((img, i) => (
+                              <img key={i} src={img} alt="assignee" style={{ width: "24px", height: "24px", borderRadius: "50%", border: "2px solid white", marginLeft: i > 0 ? "-8px" : 0 }} />
+                            ))}
+                          </div>
+                          <CustomPlusIcon />
+                        </div>
+                      </div>
+                      <span style={{ fontSize: "13px", color: "#22c55e", fontWeight: "700" }}>{item.progress}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
+        ) : <div style={{ textAlign: "center", marginTop: "100px", color: "#94a3b8" }}>No plans added yet</div>}
+      </div>
+    );
+  }
 
-          {/* Conditional Sidebar Content */}
+  return (
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#f9fafb", padding: "20px", gap: "20px", fontFamily: "'Montserrat', sans-serif" }}>
+      {/* Sidebar */}
+      <div style={{ width: "512px", height: "840px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "20px", borderBottom: "1px solid #e5e7eb" }}>
+          <button onClick={() => setView("list")} style={{ background: "none", border: "none", fontSize: "14px", fontWeight: "700", cursor: "pointer", color: "#0f172a", marginBottom: '16px' }}>Equipments</button>
+          <div style={{ display: "inline-flex", backgroundColor: "#F2F2F2", padding: "4px", borderRadius: "12px", gap: "4px", width: '100%' }}>
+            {["To-Do", "Plan"].map(tab => (
+              <button key={tab} onClick={() => setActiveTab(tab)} style={{ flex: 1, height: "36px", borderRadius: "10px", border: "none", cursor: "pointer", fontSize: "14px", fontWeight: "700", backgroundColor: activeTab === tab ? "#FFFFFF" : "transparent", color: activeTab === tab ? "#E17E61" : "#94a3b8" }}>{tab}</button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "10px", overflowY: "auto", flex: 1 }}>
           {activeTab === "To-Do" ? (
-            andrologyList.map((item) => (
-              <div
-                key={item.name}
-                onClick={() => {
-                  setSelectedEquipment(item.name);
-                  setEquipmentType(item.type);
-                }}
-                style={{
-                  padding: "16px",
-                  borderRadius: "12px",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                  backgroundColor: selectedEquipment === item.name ? "#fef3f2" : "#fff",
-                  border: selectedEquipment === item.name ? "2px solid #f97316" : "1px solid #f1f5f9",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: "8px",
-                  }}
-                >
-                  <span style={{ ...boldTextStyle, color: "#0f172a" }}>
-                    {item.name}
-                  </span>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                    }}
-                  >
+            sidebarData.map((item) => (
+              <div key={item.id} onClick={() => handleSelectEquipment(item)} style={{ padding: "16px", borderRadius: "12px", cursor: "pointer", backgroundColor: selectedEquipment === item.parameterName ? "#fef3f2" : "#fff", border: selectedEquipment === item.parameterName ? "2px solid #f97316" : "1px solid #f1f5f9" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "13px", fontWeight: "700" }}>{item.parameterName} : <span style={{ color: "#64748b", fontWeight: "400" }}>Parameters : {String(item.paramsCount).padStart(2, '0')}/{String(item.paramsCount).padStart(2, '0')}</span></span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                     <div style={{ display: "flex" }}>
                       {assignees.map((img, i) => (
-                        <img
-                          key={i}
-                          src={img}
-                          alt="assignee"
-                          style={{
-                            width: "20px",
-                            height: "20px",
-                            borderRadius: "50%",
-                            border: "2px solid white",
-                            marginLeft: i > 0 ? "-6px" : 0,
-                          }}
-                        />
+                        <img key={i} src={img} alt="user" style={{ width: "20px", height: "20px", borderRadius: "50%", border: "1px solid white", marginLeft: i > 0 ? "-8px" : 0 }} />
                       ))}
                     </div>
-                    <div
-                      style={{
-                        width: "20px",
-                        height: "20px",
-                        borderRadius: "50%",
-                        backgroundColor: "#F1F5F9",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Plus size={12} color="#94a3b8" />
-                    </div>
+                    <CustomPlusIcon />
                   </div>
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <span
-                    style={{
-                      ...boldTextStyle,
-                      fontSize: "12px",
-                      color: item.progress === "100%" ? "#22c55e" : "#f97316",
-                    }}
-                  >
-                    {item.progress}
-                  </span>
-                  <span style={{ fontSize: "12px", color: "#64748b", fontFamily: "Montserrat" }}>
-                    Parameters : {item.params}
-                  </span>
                 </div>
               </div>
             ))
           ) : (
-            <div
-              style={{
-                textAlign: "center",
-                marginTop: "40px",
-                color: "#94a3b8",
-                fontSize: "14px",
-                fontFamily: "Montserrat",
-              }}
-            >
-              No plans added yet
-            </div>
+            <div style={{ textAlign: "center", marginTop: "20px", color: "#94a3b8", fontSize: '14px' }}>No plans available</div>
           )}
         </div>
       </div>
 
-      {/* RIGHT MAIN CONTENT AREA */}
-      <div style={{ width: "994px", height: "879px" }}>
+      <div style={{ width: "994px" }}>
         {activeTab === "To-Do" ? (
           <>
             {equipmentType === "sperm" && (
               <SpermAnalyzersForm
                 selectedRadio={selectedRadio}
                 setSelectedRadio={setSelectedRadio}
+                parameters={currentParameters}
+                make={activeMake}
+                model={activeModel}
               />
             )}
             {equipmentType === "centrifuge" && (
               <CentrifugesForm
                 selectedRadio={selectedRadio}
                 setSelectedRadio={setSelectedRadio}
+                parameters={currentParameters}
+                make={activeMake}
+                model={activeModel}
               />
             )}
             {equipmentType === "autoclave" && (
               <AutoclavesForm
                 selectedRadio={selectedRadio}
                 setSelectedRadio={setSelectedRadio}
+                parameters={currentParameters}
+                make={activeMake}
+                model={activeModel}
               />
             )}
             {equipmentType === "gas" && (
               <GasAnalyzersForm
                 selectedRadio={selectedRadio}
                 setSelectedRadio={setSelectedRadio}
+                parameters={currentParameters}
+                make={activeMake}
+                model={activeModel}
               />
             )}
             {equipmentType === "fridge" && (
               <RefrigeratorFreezerForm
                 selectedRadio={selectedRadio}
                 setSelectedRadio={setSelectedRadio}
+                parameters={currentParameters}
+                make={activeMake}
+                model={activeModel}
               />
-            )}
-
-            {!equipmentType && (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: "419px",
-                  backgroundColor: "#fff",
-                  borderRadius: "12px",
-                  border: "1px solid #e5e7eb",
-                  color: "#94a3b8",
-                  fontFamily: "Montserrat",
-                }}
-              >
-                Select an equipment from the sidebar to record parameters
-              </div>
             )}
           </>
         ) : (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "419px",
-              backgroundColor: "#fff",
-              borderRadius: "12px",
-              border: "1px solid #e5e7eb",
-              color: "#94a3b8",
-              fontSize: "16px",
-              fontFamily: "Montserrat",
-            }}
-          >
-            No plans added yet
+          <div style={{ height: "840px", backgroundColor: "#fff", borderRadius: "14px", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: "16px", fontWeight: "500" }}>
+            No plans added for this group.
           </div>
         )}
       </div>

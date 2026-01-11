@@ -48,6 +48,11 @@ const Equipment = () => {
 
         let equipmentList: any[] = [];
         data.department.forEach((dep: any) => {
+          // FILTER: Only process Embryology department
+          if (dep.name.toLowerCase().trim() !== "embryology") {
+            return; // Skip non-Embryology departments
+          }
+
           dep.equipments.forEach((eq: any) => {
             const params = eq.parameters || [];
             
@@ -123,7 +128,21 @@ const Equipment = () => {
     </div>
   );
 
-  if (loading) return <div style={{ padding: "20px" }}>Loading...</div>;
+  if (loading) return <div style={{ padding: "20px", fontFamily: "'Montserrat', sans-serif" }}>Loading...</div>;
+
+  // Show message if no Embryology equipment found
+  if (equipmentData.length === 0) {
+    return (
+      <div style={{ minHeight: "100vh", backgroundColor: "#fff", padding: "12px", fontFamily: "'Montserrat', sans-serif" }}>
+        <h1 style={{ fontSize: "20px", fontWeight: "700", margin: 0, color: "#0f172a", marginBottom: "32px" }}>
+          Equipments  
+        </h1>
+        <div style={{ textAlign: "center", marginTop: "100px", color: "#94a3b8", fontSize: "16px" }}>
+          No equipment found in Embryology department
+        </div>
+      </div>
+    );
+  }
 
   if (view === "list") {
     return (
@@ -223,11 +242,51 @@ const Equipment = () => {
                 model={activeModel}
               />
             )}
-            {equipmentType === "lfh01" && <LFHForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
-            {equipmentType === "ovens" && <OvensWaterBathForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
-            {equipmentType === "microscopes" && <MicroscopesForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
-            {equipmentType === "phmeters" && <PHMetersForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
-            {equipmentType === "cryopreservation" && <CryopreservationForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
+            {equipmentType === "lfh01" && (
+              <LFHForm 
+                selectedRadio={selectedRadio} 
+                setSelectedRadio={setSelectedRadio}
+                parameters={currentParameters}
+                make={activeMake}
+                model={activeModel}
+              />
+            )}
+            {equipmentType === "ovens" && (
+              <OvensWaterBathForm 
+                selectedRadio={selectedRadio} 
+                setSelectedRadio={setSelectedRadio}
+                parameters={currentParameters}
+                make={activeMake}
+                model={activeModel}
+              />
+            )}
+            {equipmentType === "microscopes" && (
+              <MicroscopesForm 
+                selectedRadio={selectedRadio} 
+                setSelectedRadio={setSelectedRadio}
+                parameters={currentParameters}
+                make={activeMake}
+                model={activeModel}
+              />
+            )}
+            {equipmentType === "phmeters" && (
+              <PHMetersForm 
+                selectedRadio={selectedRadio} 
+                setSelectedRadio={setSelectedRadio}
+                parameters={currentParameters}
+                make={activeMake}
+                model={activeModel}
+              />
+            )}
+            {equipmentType === "cryopreservation" && (
+              <CryopreservationForm 
+                selectedRadio={selectedRadio} 
+                setSelectedRadio={setSelectedRadio}
+                parameters={currentParameters}
+                make={activeMake}
+                model={activeModel}
+              />
+            )}
           </>
         ) : (
           <div style={{ height: "840px", backgroundColor: "#fff", borderRadius: "14px", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: "16px", fontWeight: "500" }}>
