@@ -282,6 +282,18 @@ export const mockAssignees: Assignee[] = [
   { id: 6, name: "Shradha", avatar: "https://i.pravatar.cc/150?img=44", equipment_id: null },
 ];
 
+// utils/avatarMockData.ts
+export const AVATAR_POOL = [
+  "https://i.pravatar.cc/150?img=12",
+  "https://i.pravatar.cc/150?img=32",
+  "https://i.pravatar.cc/150?img=47",
+  "https://i.pravatar.cc/150?img=56",
+  "https://i.pravatar.cc/150?img=13",
+  "https://i.pravatar.cc/150?img=44",
+];
+export const getAvatarForId = (id: number) =>
+  AVATAR_POOL[id % AVATAR_POOL.length];
+
 // src/mock/eventsData.js
 export const eventsData = [
   {

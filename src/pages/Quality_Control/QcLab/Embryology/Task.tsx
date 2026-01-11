@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -30,7 +30,7 @@ import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import FormatColorTextIcon from '@mui/icons-material/FormatColorText';
 import FormatAlignLeftIcon from '@mui/icons-material/FormatAlignLeft';
-import FormatSizeIcon from '@mui/icons-material/FormatSize';
+// import FormatSizeIcon from '@mui/icons-material/FormatSize';
 import FormatAlignJustifyIcon from '@mui/icons-material/FormatAlignJustify';
 import InsertLinkIcon from '@mui/icons-material/InsertLink';
 import ImageIcon from '@mui/icons-material/Image';
@@ -40,6 +40,9 @@ import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
+import { RootState } from "@/store";
+import { useSelector } from "react-redux";
+import { taskApi } from "@/services/api";
 
 const COLORS = {
   border: "#E5E7EB",
@@ -106,6 +109,9 @@ const TASKS_BY_EVENT: Record<string, any[]> = {
 };
 
 export default function Task() {
+  const assigneesFromStore = useSelector(
+      (state: RootState) => state.assignees.data
+    );
   const [selectedEvent, setSelectedEvent] = useState("Daily Maintenance");
   const [activeFilter, setActiveFilter] = useState("All");
   const [openAddEvent, setOpenAddEvent] = useState(false);
@@ -127,7 +133,8 @@ export default function Task() {
   // Sub-tasks state - this is temporary for the current add task flow
   const [subTasks, setSubTasks] = useState([]);
   const [newSubTask, setNewSubTask] = useState({ name: "", status: "In - Progress", due: "", assignee: "" });
-  const ASSIGNEES = ["Joe Smith", "Jane Doe", "John Doe"];
+  // const ASSIGNEES = ["Joe Smith", "Jane Doe", "John Doe"];
+  const ASSIGNEES = assigneesFromStore.map(i=>i.emp_name);
 
   // Task Details popup states
   const [openTaskDetails, setOpenTaskDetails] = useState(false);
@@ -137,7 +144,7 @@ export default function Task() {
 
   // Rich text states
   const [activeFormats, setActiveFormats] = useState<string[]>([]);
-  const [selectedColor, setSelectedColor] = useState("inherit");
+  const [selectedColor, _setSelectedColor] = useState("inherit");
   const [showColorPicker, setShowColorPicker] = useState(false);
 
   const [statusAnchorEl, setStatusAnchorEl] = useState<null | HTMLElement>(null);
@@ -197,19 +204,41 @@ export default function Task() {
     reader.readAsDataURL(file);
   };
 
-  const handleReset = () => {
-    setTaskDetails("");
-    setActiveFormats([]);
-    setSelectedColor("inherit");
-    setTaskDetailsErrors({ description: "" });
-    console.log("Details reset");
-  };
+  // const handleReset = () => {
+  //   setTaskDetails("");
+  //   setActiveFormats([]);
+  //   setSelectedColor("inherit");
+  //   setTaskDetailsErrors({ description: "" });
+  //   console.log("Details reset");
+  // };
 
-  const handleSaveDetails = () => {
-    if (!validateTaskDetails()) return;
-    console.log("Saving details:", taskDetails, "Formats:", activeFormats);
-    setOpenTaskDetails(false);
-  };
+  const handleReset = async () => {
+    const response = await taskApi.getById(selectedTaskDetails.id);
+    const fresh = response.data;
+    setSelectedTaskDetails(fresh);
+    setTaskDetails(fresh.description || "");
+  };  
+
+  const handleSaveDetails = async () => {
+    if (!taskDetails.trim()) {
+      setTaskDetailsErrors({ description: "Description is required" });
+      return;
+    }
+  
+    try {
+      await taskApi.update(selectedTaskDetails.id, {
+        description: taskDetails,
+      });
+  
+      const fresh = await taskApi.getById(selectedTaskDetails.id);
+      setSelectedTaskDetails(fresh);
+  
+      setShowSuccess(true);
+      setOpenTaskDetails(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };  
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -292,14 +321,14 @@ export default function Task() {
     return !errors.name && !errors.status && !errors.due && !errors.assignee;
   };
 
-  const validateTaskDetails = () => {
-    const desc = taskDetails.replace(/<[^>]*>/g, '').trim();
-    const errors = {
-      description: desc === "" ? "Description is required" : ""
-    };
-    setTaskDetailsErrors(errors);
-    return !errors.description;
-  };
+  // const validateTaskDetails = () => {
+  //   const desc = taskDetails.replace(/<[^>]*>/g, '').trim();
+  //   const errors = {
+  //     description: desc === "" ? "Description is required" : ""
+  //   };
+  //   setTaskDetailsErrors(errors);
+  //   return !errors.description;
+  // };
 
   const statusPill = (status: string, onIconClick?: (event: React.MouseEvent<HTMLElement>) => void) => {
     const bg =
@@ -381,6 +410,14 @@ export default function Task() {
     setStatusAnchorEl(null);
     setStatusTaskIndex(null);
   };
+
+  const openTask = async (id: number) => {
+    const res = await taskApi.getById(id);
+    const full = res.data;
+    setSelectedTaskDetails(full);
+    setTaskDetails(full.description || "");
+    setOpenTaskDetails(true);
+  };  
 
   const CustomStepIndicator = () => (
     <Box
@@ -546,14 +583,15 @@ export default function Task() {
                   cursor: "pointer",
                   "&:hover": {
                     backgroundColor: "#F3F4F6"
-                  }
+                  },
                 }}
-                onClick={() => {
-                  setSelectedTaskDetails(t);
-                  setTaskDetails(t.description || ""); // Load saved description here
-                  setOpenTaskDetails(true);
-                  setTaskDetailsErrors({ description: "" });
-                }}
+                // onClick={() => {
+                //   setSelectedTaskDetails(t);
+                //   setTaskDetails(t.description || ""); // Load saved description here
+                //   setOpenTaskDetails(true);
+                //   setTaskDetailsErrors({ description: "" });
+                // }}
+                onClick={openTask}
               >
                 <Typography
                   width="42%"
@@ -1044,17 +1082,22 @@ export default function Task() {
               </Button>
               <Button
                 fullWidth
-                onClick={() => {
+                onClick={async () => {
+                  // Step 1 validation
                   if (addTaskStep === 1) {
                     if (!validateStep1()) return;
                     setAddTaskStep(p => p + 1);
                     return;
                   }
+
+                  // Step 2 validation
                   if (addTaskStep === 2) {
                     if (!validateStep2()) return;
                     setAddTaskStep(p => p + 1);
                     return;
                   }
+
+                  // Step 3: Save task
                   if (addTaskStep === 3) {
                     if (newTaskName.trim() && selectedMaintenance) {
                       const newTask = {
@@ -1062,19 +1105,49 @@ export default function Task() {
                         time: "00:00 min.",
                         status: "To Do",
                         due: dueDate || "Tomorrow",
-                        description: newTaskDescription,   // Saved from Step 2
-                        subTasks: [...subTasks]            // Saved from Step 3
+                        description: newTaskDescription,
+                        subTasks: [...subTasks],
                       };
-                      setTasksByEvent(prev => ({
-                        ...prev,
-                        [selectedMaintenance]: [...(prev[selectedMaintenance] || []), newTask]
-                      }));
-                      setEvents(prev => prev.map(e =>
-                        e.name === selectedMaintenance
-                          ? { ...e, count: e.count + 1, assigned: selectedAssignee ? e.assigned + 1 : e.assigned, unassigned: selectedAssignee ? e.unassigned : e.unassigned + 1 }
-                          : e
-                      ));
+
+                      try {
+                        // Call backend API to save the task
+                        const savedTask = await taskApi.create({
+                          name: newTask.name,
+                          due: newTask.due,
+                          status: newTask.status,
+                          description: newTask.description,
+                          subTasks: newTask.subTasks,
+                          maintenanceEvent: selectedMaintenance,
+                          assignee: selectedAssignee || null,
+                        });
+
+                        // Update local state after successful save
+                        setTasksByEvent(prev => ({
+                          ...prev,
+                          [selectedMaintenance]: [...(prev[selectedMaintenance] || []), savedTask],
+                        }));
+
+                        setEvents(prev => prev.map(e =>
+                          e.name === selectedMaintenance
+                            ? {
+                                ...e,
+                                count: e.count + 1,
+                                assigned: selectedAssignee ? e.assigned + 1 : e.assigned,
+                                unassigned: selectedAssignee ? e.unassigned : e.unassigned + 1,
+                              }
+                            : e
+                        ));
+
+                        setShowSuccess(true);
+
+                      } catch (error) {
+                        console.error("Failed to save task:", error);
+                        // Optionally, show an error message to user
+                        return;
+                      }
                     }
+
+                    // Reset form after save
                     setNewTaskName("");
                     setSelectedMaintenance(selectedEvent);
                     setSelectedAssignee("");
@@ -1084,7 +1157,6 @@ export default function Task() {
                     setAddTaskStep(1);
                     setMainErrors({ name: "", maintenance: "", assignee: "", dueDate: "", description: "" });
                     setSubTaskErrors({ name: "", status: "", due: "", assignee: "" });
-                    setShowSuccess(true);
                     setOpenAddTask(false);
                   }
                 }}
@@ -1101,6 +1173,7 @@ export default function Task() {
               >
                 {addTaskStep < 3 ? "Next" : "Save"}
               </Button>
+
             </Stack>
           </DialogContent>
         </Dialog>

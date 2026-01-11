@@ -70,6 +70,7 @@ const Header = () => {
     "user-management": "User Management",
     "audit-trail": "Audit Trail",
     "quality-control": "Quality Control",
+    "add-parameter": "Add Equipment",
     "qc-lab": "QC-Lab",
     embryology: "Embryology",
     andrology: "Andrology",
@@ -86,7 +87,9 @@ const Header = () => {
     "recycle-bin": "Recycle Bin",
     lab: "Lab",
     reports: "Reports",
-    events: "Events", documents: "Documents", workflows: "Workflows",
+    events: "Events",
+    documents: "Documents",
+    workflows: "Workflows",
   };
 
   return (
@@ -111,9 +114,20 @@ const Header = () => {
         >
           <Breadcrumbs
             separator={
-              <Typography sx={{ color: "#232323", fontSize: "0.875rem" }}>
-                ›
-              </Typography>
+              // <Typography sx={{ color: "#232323", fontSize: "0.875rem" }}>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M10.9993 8.01098C10.9998 8.24415 10.9184 8.47013 10.7693 8.64967L6.7693 13.6395C6.59956 13.8433 6.35565 13.9714 6.09122 13.9958C5.8268 14.0201 5.56352 13.9386 5.3593 13.7692C5.15508 13.5998 5.02666 13.3564 5.00228 13.0925C4.9779 12.8286 5.05956 12.5659 5.2293 12.3621L8.7093 8.01098L5.3893 3.65986C5.30623 3.55778 5.2442 3.44033 5.20677 3.31424C5.16934 3.18816 5.15724 3.05594 5.17118 2.92518C5.18512 2.79442 5.22482 2.6677 5.28799 2.55229C5.35117 2.43689 5.43657 2.33509 5.5393 2.25273C5.64212 2.16134 5.76275 2.09212 5.89362 2.04942C6.02449 2.00671 6.16279 1.99144 6.29986 2.00456C6.43692 2.01767 6.56979 2.0589 6.69015 2.12564C6.81051 2.19239 6.91575 2.28322 6.9993 2.39245L10.8293 7.38226C10.9548 7.56697 11.0147 7.78833 10.9993 8.01098Z"
+                  fill="#1B1918"
+                />
+              </svg>
+              // </Typography>
             }
             aria-label="breadcrumb"
             sx={{ display: { xs: "none", sm: "flex" } }}
@@ -122,9 +136,9 @@ const Header = () => {
               component={RouterLink}
               to="/"
               sx={{
+                fontFamily: "Montserrat, sans-serif",
                 textDecoration: "none",
                 color: "#666666",
-                fontFamily: "Montserrat, sans-serif",
                 fontWeight: 500,
                 fontSize: "16px",
               }}
@@ -141,9 +155,9 @@ const Header = () => {
                   key={name}
                   sx={{
                     fontFamily: "Montserrat, sans-serif",
+                    color: "#232323",
                     fontWeight: 700,
                     fontSize: "18px",
-                    color: "#232323",
                   }}
                 >
                   {displayText}
@@ -154,9 +168,11 @@ const Header = () => {
                   component={RouterLink}
                   to={`/${pathnames.slice(0, index + 1).join("/")}`}
                   sx={{
+                    fontFamily: "Montserrat, sans-serif",
                     textDecoration: "none",
-                    color: "#6b7280",
-                    fontSize: "0.875rem",
+                    color: "#666666",
+                    fontWeight: 500,
+                    fontSize: "16px",
                   }}
                 >
                   {displayText}

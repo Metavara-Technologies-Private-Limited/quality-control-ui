@@ -3,15 +3,15 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { Box, Container, Grid } from "@mui/material";
 
-import DepartmentTabs from '@/components/Dashboard/DepartmentTabs';
-import EquipmentCards from '@/components/Dashboard/EquipmentCards';
-import ParameterTabs from '@/components/Dashboard/ParameterTabs';
-import ParameterChart from '@/components/Dashboard/ParameterChart';
-import RecentActivity from '@/components/Dashboard/RecentActivity';
-import IncidentsChart from '@/components/Dashboard/IncidentsChart';
-import AverageParameterCards from '@/components/Dashboard/AverageParameterCards';
-import AssigneePanel from '@/components/Dashboard/AssigneePanel';
-import DashboardHeader from '@/components/Dashboard/DashboardHeader';
+import DepartmentTabs from "@/components/Dashboard/DepartmentTabs";
+import EquipmentCards from "@/components/Dashboard/EquipmentCards";
+import ParameterTabs from "@/components/Dashboard/ParameterTabs";
+import ParameterChart from "@/components/Dashboard/ParameterChart";
+import RecentActivity from "@/components/Dashboard/RecentActivity";
+import IncidentsChart from "@/components/Dashboard/IncidentsChart";
+import AverageParameterCards from "@/components/Dashboard/AverageParameterCards";
+import AssigneePanel from "@/components/Dashboard/AssigneePanel";
+import DashboardHeader from "@/components/Dashboard/DashboardHeader";
 
 import type { Equipment, Parameter } from "@/types";
 
@@ -20,7 +20,7 @@ const Dashboard = () => {
   const { data: clinic, loading } = useSelector(
     (state: RootState) => state.clinic
   ) as RootState["clinic"];
-  console.info("data:", clinic)
+  console.info("data:", clinic);
 
   const [departmentId, setDepartmentId] = useState<number | null>(null);
   const [equipmentId, setEquipmentId] = useState<number | null>(null);
@@ -73,7 +73,7 @@ const Dashboard = () => {
   );
 
   const equipmentDetails = equipment?.equipment_details ?? [];
-  const activeValue = parameter?.parameter_values?.[0];
+  const activeValue = parameter?.config;
 
   return (
     <Container maxWidth={false} sx={{ py: 2 }}>
@@ -118,7 +118,7 @@ const Dashboard = () => {
                   equipmentId={equipment.id}
                   parameterId={parameter.id}
                   parameterName={parameter.parameter_name}
-                  unit={activeValue?.content.unit || ""}
+                  unit={activeValue?.unit || ""}
                 />
               </Grid>
 
@@ -140,7 +140,10 @@ const Dashboard = () => {
               </Grid>
 
               <Grid item xs={12} md={4}>
-                <AssigneePanel equipmentId={equipment.id} />
+                <AssigneePanel
+                  equipmentId={equipment.id}
+                  equipmentName={equipment.equipment_name}
+                />
               </Grid>
             </Grid>
           </Box>

@@ -14,13 +14,7 @@ export interface Department {
   equipments: Equipment[];
 }
 
-export type CreateEquipmentPayload = {
-  equipment_name: string;
-};
-
 export interface Equipment {
-  status: string;
-  department: any;
   id: number;
   equipment_name: string;
   is_active: boolean;
@@ -31,40 +25,41 @@ export interface Equipment {
 }
 
 export interface EquipmentDetail {
-  id: number;
+  id?: number;
   equipment_num: string;
   make: string;
   model: string;
   is_active: boolean;
-  created_at: string;
-  equipment_id: number;
+  created_at?: string;
+  equipment_id?: number;
   equipment?: Equipment;
 }
 
 export interface EquipmentCreatePayload {
   equipment_name: string;
-  parameters: {
-    parameter_name: string;
-    is_active: boolean;
-    parameter_values: {
-      content: {
-        data_type: string;
-        min_value?: string;
-        max_value?: string;
-        integer_value?: number;
-        percentage?: number;
-        text?: string;
-        dropdown?: string[];
-      };
-    }[];
-  }[];
+  is_active: boolean;
   equipment_details: {
+    id?: number;
     equipment_num: string;
     make: string;
     model: string;
+    is_active: boolean;
+  }[];
+  parameters: {
+    id?: number;
+    parameter_name: string;
+    is_active: boolean;
+    config: {
+      data_type: string;
+      min_value?: number | string | null;
+      max_value?: number | string | null;
+      integer_value?: number | string | null;
+      percentage?: number | string | null;
+      text?: string | null;
+      dropdown?: string[];
+    };
   }[];
 }
-
 
 export type CreateEquipmentDetailPayload = {
   equipment: number;
@@ -79,31 +74,45 @@ export interface Reading {
   equipment_detail_id: number;
 }
 
+// ✅ This is what we store in frontend state (matches backend snake_case)
 export interface ParameterContent {
+  id?: number;
+  name?: string;
+  parameter_name?: string;
   data_type?: string;
+  integer_value?: number | string;
   min_value?: number | string;
   max_value?: number | string;
   unit?: string;
-  percentage?: string;
+  text?: string;
+  percentage?: number | string;
   dropdown?: string[];
-  readings: Reading[];
+  readings?: Reading[];
+  // ✅ Add history support
+  history?: Array<{
+    data_type?: string;
+    integer_value?: number | string;
+    min_value?: number | string;
+    max_value?: number | string;
+    text?: string;
+    percentage?: number | string;
+    dropdown?: string[];
+    updated_at?: string;
+  }>;
   control_limits?: {
     warning_min?: number;
     warning_max?: number;
     critical_min?: number;
     critical_max?: number;
-  };  
+  };
 }
 
-export type ParameterValue = {
-  content: {
-    unit?: string;
-    data_type?: string;
-    min_value?: string;
-    max_value?: string;
-    readings?: Reading[]; // ✅ optional
-  };
-};
+export interface ParameterValue {
+  id: number;
+  content: string;
+  created_at: string;
+  is_deleted: boolean;
+}
 
 export type CreateParameterPayload = {
   equipment: number;
@@ -126,15 +135,14 @@ export interface Parameter {
   id: number;
   parameter_name: string;
   is_active: boolean;
-  Content: ParameterContent;
-  parameter_values: ParameterValue[];
+  config?: ParameterContent | null;
 }
 
 export interface TestType {
   id: number;
   test_type_name: string;
   description: string;
-  parameters: number[]; // Parameter IDs
+  parameters: number[];
   created_at: string;
 }
 
@@ -148,22 +156,22 @@ export interface DashboardData {
   averages: AverageData[];
   assignees: Assignee[];
 }
+
 export interface Activity {
   id: number;
-  type: 'temperature' | 'humidity' | 'co2' | 'airflow' | 'assignee' | 'other';
+  type: "temperature" | "humidity" | "co2" | "airflow" | "assignee" | "other";
   message: string;
   timestamp: string;
   equipment_id: number;
   equipment_name?: string;
-  severity?: 'high' | 'normal' | 'low';
+  severity?: "high" | "normal" | "low";
 }
-
 
 export interface Incident {
   id: number;
   equipment_id: number;
   parameter_id: number;
-  severity: 'high' | 'normal' | 'low';
+  severity: "high" | "normal" | "low";
   value: number;
   timestamp: string;
   equipment_name?: string;
@@ -177,13 +185,17 @@ export interface AverageData {
   average_value: number;
   unit: string;
   change_percentage: number;
-  trend: 'up' | 'down';
+  trend: "up" | "down";
 }
 
 export interface Assignee {
   id: number;
-  name: string;
   email: string;
+  emp_name: string;
+  emp_type: string;
+  department_name: string | null;
+
+  name: string;
   equipment_id: number | null;
   equipment_name?: string;
   profile_picture?: string;
@@ -211,4 +223,31 @@ export interface ParameterChartData {
   unit: string;
   data: ChartDataPoint[];
   equipment_names: string[];
+}
+
+export interface Task {
+  id: number;
+  name: string;
+  description: string; // HTML
+  status: "TODO" | "IN_PROGRESS" | "COMPLETED";
+  due_date: string; // ISO
+  time?: string;
+  assignee_id?: number | null;
+  event_id: number;
+  sub_tasks: SubTask[];
+  attachments?: Attachment[];
+}
+
+export interface SubTask {
+  id?: number; // optional for create
+  name: string;
+  status: "TODO" | "IN_PROGRESS" | "COMPLETED";
+  due_date: string;
+  assignee_id?: number | null;
+}
+
+export interface Attachment {
+  id: number;
+  file: string;
+  file_name: string;
 }
