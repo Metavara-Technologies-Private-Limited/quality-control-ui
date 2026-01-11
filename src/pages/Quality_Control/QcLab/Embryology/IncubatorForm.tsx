@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine 
 } from 'recharts';
@@ -6,47 +6,25 @@ import {
 interface IncubatorFormProps {
   selectedRadio: string;
   setSelectedRadio: (name: string) => void;
-  // make and model are now handled internally via mapping logic
+  // Dynamic props passed from the parent component
+  make: string;
+  model: string;
 }
 
-const IncubatorForm = ({ selectedRadio, setSelectedRadio }: IncubatorFormProps) => {
+const IncubatorForm = ({ selectedRadio, setSelectedRadio, make, model }: IncubatorFormProps) => {
   
-  // 1. DATA LOGIC: Mapping Sidebar Names to Specific Unit Specs
-  // This matches the data you saved in your AddParameterPage table
-  const equipmentSpecs: Record<string, { make: string; model: string }> = {
-    "Incubator A": { make: "Thermo Fisher", model: "Heracell VIOS 160i" },
-    "Incubator B": { make: "Panasonic", model: "MCO-170AICUV" },
-    "Incubator C": { make: "Esco", model: "CCL-170B-8" },
-    "Incubator D": { make: "Binder", model: "CB 170" },
-    "Incubator E": { make: "Memmert", model: "ICO150" },
-  };
-
-  // 2. TRANSLATOR LOGIC: Map incoming sidebar name (e.g. "Incubator 01") to Form Radio (e.g. "Incubator A")
+  // 1. TRANSLATOR LOGIC: Map incoming sidebar name (e.g. "Incubator 01") to Radio label
   const getMappedName = (input: string) => {
     const val = input ? input.toString().toUpperCase() : "";
-    
-    if (val.includes("INCUBATOR 1") || val.includes("INCUBATOR 01") || val.endsWith(" A")) return "Incubator A";
-    if (val.includes("INCUBATOR 2") || val.includes("INCUBATOR 02") || val.endsWith(" B")) return "Incubator B";
-    if (val.includes("INCUBATOR 3") || val.includes("INCUBATOR 03") || val.endsWith(" C")) return "Incubator C";
-    if (val.includes("INCUBATOR 4") || val.includes("INCUBATOR 04") || val.endsWith(" D")) return "Incubator D";
-    if (val.includes("INCUBATOR 5") || val.includes("INCUBATOR 05") || val.endsWith(" E")) return "Incubator E";
-    
+    if (val.includes("01") || val.includes(" 1") || val.endsWith(" A")) return "Incubator A";
+    if (val.includes("02") || val.includes(" 2") || val.endsWith(" B")) return "Incubator B";
+    if (val.includes("03") || val.includes(" 3") || val.endsWith(" C")) return "Incubator C";
+    if (val.includes("04") || val.includes(" 4") || val.endsWith(" D")) return "Incubator D";
+    if (val.includes("05") || val.includes(" 5") || val.endsWith(" E")) return "Incubator E";
     return input; 
   };
 
   const currentSelection = getMappedName(selectedRadio);
-
-  // 3. STATE LOGIC: State to hold the Make/Model for the current selection
-  const [currentSpecs, setCurrentSpecs] = useState({ make: "N/A", model: "N/A" });
-
-  useEffect(() => {
-    // Whenever currentSelection changes, update the Make/Model display
-    if (equipmentSpecs[currentSelection]) {
-      setCurrentSpecs(equipmentSpecs[currentSelection]);
-    } else {
-      setCurrentSpecs({ make: "N/A", model: "N/A" });
-    }
-  }, [currentSelection]);
 
   const activityData = [
     { day: "Monday", compliant: 34, nonCompliant: -23 },
@@ -58,7 +36,8 @@ const IncubatorForm = ({ selectedRadio, setSelectedRadio }: IncubatorFormProps) 
     { day: "Sunday", compliant: 25, nonCompliant: -25 },
   ];
 
-  const inputContainerStyle = { position: "relative" as const, marginBottom: "20px" };
+  // Styling Helpers
+  const inputContainerStyle = { position: "relative" as const, marginBottom: "24px" };
   const inputStyle = { width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", outline: "none" };
   const labelStyle = { position: "absolute" as const, left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" };
   const rangeTextStyle = { fontSize: "11px", marginTop: "4px" };
@@ -73,17 +52,13 @@ const IncubatorForm = ({ selectedRadio, setSelectedRadio }: IncubatorFormProps) 
         <div style={{ display: "flex", gap: "24px", marginBottom: "24px", borderBottom: "1px solid #f1f5f9", paddingBottom: "20px" }}>
           {["Incubator A", "Incubator B", "Incubator C", "Incubator D", "Incubator E"].map((name) => (
             <label key={name} style={{ 
-              display: "flex", 
-              alignItems: "center", 
-              gap: "8px", 
-              fontSize: "13px", 
+              display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", 
               fontWeight: currentSelection === name ? "700" : "500", 
               color: currentSelection === name ? "#f97316" : "#64748b", 
               cursor: "pointer" 
             }}>
               <input 
                 type="radio" 
-                name="incubator-unit-choice"
                 checked={currentSelection === name} 
                 onChange={() => setSelectedRadio(name)} 
                 style={{ accentColor: "#f97316", width: "16px", height: "16px" }} 
@@ -93,8 +68,10 @@ const IncubatorForm = ({ selectedRadio, setSelectedRadio }: IncubatorFormProps) 
           ))}
         </div>
 
-        {/* Form Grid */}
+        {/* Form Grid - Matches your field requirements */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
+          
+          {/* Temperature */}
           <div style={inputContainerStyle}>
             <input style={inputStyle} defaultValue="38.5 °C" />
             <label style={labelStyle}>Temperature (°C)</label>
@@ -104,24 +81,28 @@ const IncubatorForm = ({ selectedRadio, setSelectedRadio }: IncubatorFormProps) 
             </div>
           </div>
 
+          {/* CO2 */}
           <div style={inputContainerStyle}>
             <input style={inputStyle} placeholder="Type Here" />
             <label style={labelStyle}>CO2 Concentration (%)</label>
             <div style={{...rangeTextStyle, color: '#94a3b8'}}>Range : 5% - 6%</div>
           </div>
 
+          {/* Humidity */}
           <div style={inputContainerStyle}>
             <input style={inputStyle} defaultValue="20%" />
             <label style={labelStyle}>Humidity Levels (%)</label>
             <div style={{...rangeTextStyle, color: '#eab308'}}>Range : 30% - 60%</div>
           </div>
 
+          {/* Gas Mixture */}
           <div style={inputContainerStyle}>
             <input style={inputStyle} placeholder="Type Here" />
             <label style={labelStyle}>Gas Mixture (% O2, CO2)</label>
             <div style={{...rangeTextStyle, color: '#94a3b8'}}>Range : O2 - 20, CO2 - 5</div>
           </div>
 
+          {/* Alarm Status */}
           <div style={inputContainerStyle}>
             <select style={inputStyle} defaultValue="Functional">
               <option value="Functional">Functional</option>
@@ -130,23 +111,39 @@ const IncubatorForm = ({ selectedRadio, setSelectedRadio }: IncubatorFormProps) 
             <label style={labelStyle}>Alarm Status</label>
           </div>
 
+          {/* Alarm Response Time */}
           <div style={inputContainerStyle}>
             <input style={inputStyle} placeholder="Type Here" />
             <label style={labelStyle}>Alarm Response Time (Mins)</label>
             <div style={{...rangeTextStyle, color: '#94a3b8'}}>Range : &lt; 5</div>
           </div>
+
+          {/* Comments */}
+          <div style={{...inputContainerStyle, gridColumn: 'span 2'}}>
+            <input style={inputStyle} placeholder="Type Here" />
+            <label style={labelStyle}>Comments</label>
+          </div>
+
+          {/* Status */}
+          <div style={inputContainerStyle}>
+            <select style={inputStyle} defaultValue="Pass">
+              <option value="Pass">Pass</option>
+              <option value="Fail">Fail</option>
+            </select>
+            <label style={labelStyle}>Status</label>
+          </div>
         </div>
 
-        {/* MAKE AND MODEL SECTION - DYNAMIC */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginTop: '20px', fontSize: '14px' }}>
+        {/* Dynamic Make and Model Footer */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginTop: '10px', fontSize: '14px' }}>
           <div style={{ display: 'flex', gap: '8px' }}>
             <span style={{ color: '#94a3b8' }}>Make :</span>
-            <span style={{ fontWeight: '600', color: '#0f172a' }}>{currentSpecs.make}</span>
+            <span style={{ fontWeight: '600', color: '#0f172a' }}>{make || "N/A"}</span>
           </div>
           <div style={{ width: '1px', height: '14px', backgroundColor: '#e5e7eb' }}></div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <span style={{ color: '#94a3b8' }}>Model :</span>
-            <span style={{ fontWeight: '600', color: '#0f172a' }}>{currentSpecs.model}</span>
+            <span style={{ fontWeight: '600', color: '#0f172a' }}>{model || "N/A"}</span>
           </div>
           
           <div style={{ marginLeft: 'auto', display: "flex", gap: "12px" }}>
@@ -165,7 +162,6 @@ const IncubatorForm = ({ selectedRadio, setSelectedRadio }: IncubatorFormProps) 
             </div>
             <h3 style={{ fontSize: "16px", fontWeight: "600", margin: 0, color: "#0f172a" }}>Activity</h3>
           </div>
-          
           <div style={{ display: "flex", gap: "16px", fontSize: "12px" }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <div style={{ width: '10px', height: '10px', backgroundColor: '#6c6c6c', borderRadius: '50%' }} />
@@ -178,8 +174,6 @@ const IncubatorForm = ({ selectedRadio, setSelectedRadio }: IncubatorFormProps) 
           </div>
         </div>
 
-        <div style={{ borderBottom: '1px solid #f1f5f9', marginBottom: '24px' }}></div>
-
         <div style={{ width: '100%', height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={activityData} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 20 }}>
@@ -189,7 +183,7 @@ const IncubatorForm = ({ selectedRadio, setSelectedRadio }: IncubatorFormProps) 
               />
               <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '4px' }} />
               <ReferenceLine y={0} stroke="#E0E0E0" />
-              <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={15} label={{ position: 'top', fill: '#9e9e9e', fontSize: 10 }} />
+              <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={15} />
               <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={15} 
                 label={({ x, y, value, width }: any) => (<text x={x + width / 2} y={y + 14} fill="#EF9685" fontSize={10} textAnchor="middle">{Math.abs(value)}</text>)} 
               />

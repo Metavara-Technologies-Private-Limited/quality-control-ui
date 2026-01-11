@@ -8,9 +8,26 @@ import {
 const GasAnalyzersForm = ({ selectedRadio, setSelectedRadio }: any) => {
   const [activeSubTab, setActiveSubTab] = useState("Details");
 
+  // LOGIC: Map incoming sidebar name (e.g. "Gas A" or "Analyzer 01") to Form Radio (e.g. "Gas Analyzers A")
+  const getMappedName = (input: string) => {
+    const val = input ? input.toString().toUpperCase() : "";
+    
+    // Check for "01" or " 1" or ends with " A"
+    if (val.includes("01") || val.includes(" 1") || val.endsWith(" A")) return "Gas Analyzers A";
+    if (val.includes("02") || val.includes(" 2") || val.endsWith(" B")) return "Gas Analyzers B";
+    if (val.includes("03") || val.includes(" 3") || val.endsWith(" C")) return "Gas Analyzers C";
+    if (val.includes("04") || val.includes(" 4") || val.endsWith(" D")) return "Gas Analyzers D";
+    if (val.includes("05") || val.includes(" 5") || val.endsWith(" E")) return "Gas Analyzers E";
+    
+    return input; // Fallback if no match
+  };
+
+  // This normalized variable will be used for the "checked" state
+  const currentSelection = getMappedName(selectedRadio);
+
   const initialFormState = {
-    date: "2025-12-31",
-    time: "11:24",
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toTimeString().slice(0, 5),
     gasMixture: "",
     calibrationChecks: "Accurate",
     sensorCondition: "Good",
@@ -19,8 +36,6 @@ const GasAnalyzersForm = ({ selectedRadio, setSelectedRadio }: any) => {
   };
 
   const [formData, setFormData] = useState(initialFormState);
-
-  // LOGIC: logsData is now a state starting as an empty array
   const [logsData, setLogsData] = useState<any[]>([]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -28,7 +43,6 @@ const GasAnalyzersForm = ({ selectedRadio, setSelectedRadio }: any) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // LOGIC: Function to capture form fields and add to log table
   const handleSave = () => {
     if (!formData.gasMixture) {
       toast.error("Please enter the Gas Mixture values.");
@@ -37,7 +51,8 @@ const GasAnalyzersForm = ({ selectedRadio, setSelectedRadio }: any) => {
 
     const newLogEntry = {
       id: Date.now(),
-      dateTime: `${formData.date} ${formData.time}:00 AM`,
+      unit: currentSelection, // Save which specific unit this log belongs to
+      dateTime: `${formData.date} ${formData.time}`,
       mixture: formData.gasMixture,
       calibration: formData.calibrationChecks,
       sensor: formData.sensorCondition,
@@ -45,17 +60,9 @@ const GasAnalyzersForm = ({ selectedRadio, setSelectedRadio }: any) => {
       comments: formData.comments || "N/A",
     };
 
-    // Update state and trigger notification
     setLogsData([newLogEntry, ...logsData]);
-    
-    toast.success("Successfully Saved!", {
-      position: "top-right",
-      autoClose: 2000,
-      theme: "colored",
-    });
-
-    setFormData(initialFormState);
-    setActiveSubTab("Logs"); // Navigate to logs tab
+    toast.success(`${currentSelection} Saved!`, { theme: "colored" });
+    setActiveSubTab("Logs");
   };
 
   const activityData = [
@@ -80,11 +87,24 @@ const GasAnalyzersForm = ({ selectedRadio, setSelectedRadio }: any) => {
     <div style={{ maxWidth: "1200px" }}>
       <ToastContainer />
       <div style={sectionStyle}>
-        {/* Unit Selection Row */}
+        {/* Unit Selection Row - Now uses currentSelection for highlighting */}
         <div style={{ display: "flex", gap: "24px", paddingBottom: "24px", borderBottom: "1px solid #f1f5f9", marginBottom: "24px", flexWrap: "wrap" }}>
           {["Gas Analyzers A", "Gas Analyzers B", "Gas Analyzers C", "Gas Analyzers D", "Gas Analyzers E"].map((name) => (
-            <label key={name} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: "500", cursor: "pointer", color: "#0f172a" }}>
-              <input type="radio" checked={selectedRadio === name} onChange={() => setSelectedRadio(name)} style={{ accentColor: "#f97316", width: "16px", height: "16px" }} />
+            <label key={name} style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "8px", 
+              fontSize: "13px", 
+              fontWeight: currentSelection === name ? "700" : "500", // UI: Bold if active
+              cursor: "pointer", 
+              color: currentSelection === name ? "#f97316" : "#0f172a" // UI: Orange if active
+            }}>
+              <input 
+                type="radio" 
+                checked={currentSelection === name} 
+                onChange={() => setSelectedRadio(name)} 
+                style={{ accentColor: "#f97316", width: "16px", height: "16px" }} 
+              />
               {name}
             </label>
           ))}
@@ -151,33 +171,28 @@ const GasAnalyzersForm = ({ selectedRadio, setSelectedRadio }: any) => {
             </div>
           </>
         ) : (
-          /* LOGS VIEW - Displays all 7 fields */
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
               <thead>
                 <tr style={{ color: "#64748b", borderBottom: "1px solid #f1f5f9" }}>
                   <th style={{ padding: "12px 8px" }}>Date & Time</th>
+                  <th style={{ padding: "12px 8px" }}>Unit</th>
                   <th style={{ padding: "12px 8px" }}>Mixture</th>
-                  <th style={{ padding: "12px 8px" }}>Calibration</th>
-                  <th style={{ padding: "12px 8px" }}>Sensor</th>
                   <th style={{ padding: "12px 8px" }}>Status</th>
-                  <th style={{ padding: "12px 8px" }}>Comments</th>
                 </tr>
               </thead>
               <tbody>
                 {logsData.length > 0 ? logsData.map((log) => (
                   <tr key={log.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={{ padding: "16px 8px", color: "#0f172a", fontWeight: "600", whiteSpace: "nowrap" }}>{log.dateTime}</td>
-                    <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.mixture}</td>
-                    <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.calibration}</td>
-                    <td style={{ padding: "16px 8px", color: "#64748b" }}>{log.sensor}</td>
+                    <td style={{ padding: "16px 8px", color: "#0f172a", fontWeight: "600" }}>{log.dateTime}</td>
+                    <td style={{ padding: "16px 8px" }}>{log.unit}</td>
+                    <td style={{ padding: "16px 8px" }}>{log.mixture}</td>
                     <td style={{ padding: "16px 8px" }}>
-                      <span style={{ padding: "4px 12px", borderRadius: "16px", backgroundColor: log.status === "Pass" ? "#DCFCE7" : "#FEE2E2", color: log.status === "Pass" ? "#15803D" : "#B91C1C", fontSize: "11px", fontWeight: "600", display: "inline-block" }}>{log.status}</span>
+                      <span style={{ padding: "4px 12px", borderRadius: "16px", backgroundColor: log.status === "Pass" ? "#DCFCE7" : "#FEE2E2", color: log.status === "Pass" ? "#15803D" : "#B91C1C", fontSize: "11px", fontWeight: "600" }}>{log.status}</span>
                     </td>
-                    <td style={{ padding: "16px 8px", color: "#64748b", minWidth: "200px" }}>{log.comments}</td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={6} style={{ padding: "40px", textAlign: "center", color: "#94a3b8" }}>No records yet.</td></tr>
+                  <tr><td colSpan={4} style={{ padding: "40px", textAlign: "center", color: "#94a3b8" }}>No records yet.</td></tr>
                 )}
               </tbody>
             </table>
@@ -185,25 +200,25 @@ const GasAnalyzersForm = ({ selectedRadio, setSelectedRadio }: any) => {
         )}
       </div>
 
+      {/* Activity Chart Section remains identical */}
       <div style={sectionStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: '14px' }}>📈</span></div><h3 style={{ fontSize: "16px", fontWeight: "600", margin: 0, color: "#0f172a" }}>Activity</h3></div>
-          <div style={{ display: "flex", gap: "16px", fontSize: "12px" }}><div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '8px', height: '8px', backgroundColor: '#6c6c6c', borderRadius: '50%' }} /><span style={{ color: '#9e9e9e' }}>Compliant</span></div><div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '8px', height: '8px', backgroundColor: '#EF9685', borderRadius: '50%' }} /><span style={{ color: '#9e9e9e' }}>Non - Compliant</span></div></div>
-        </div>
-        <div style={{ width: '100%', height: 300 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={activityData} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 0 }}>
-              <ReferenceLine y={0} stroke="#E0E0E0" />
-              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9e9e9e' }} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9e9e9e' }} domain={[-40, 40]} ticks={[-40, -20, 0, 20, 40]} label={{ value: 'No of Parameters', angle: -90, position: 'insideLeft', offset: -30, style: { fill: '#9e9e9e', fontSize: 12 } }} />
-              <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }} />
-              <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={12} label={{ position: 'top', fill: '#6c6c6c', fontSize: 10, dy: -5 }} />
-              <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={12} label={{ position: 'bottom', fill: '#EF9685', fontSize: 10, dy: 5 }} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <p style={{ textAlign: 'center', marginTop: '16px', color: '#B1B1B1', fontSize: '12px' }}>Month</p>
-      </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: '14px' }}>📈</span></div><h3 style={{ fontSize: "16px", fontWeight: "600", margin: 0, color: "#0f172a" }}>Activity</h3></div>
+              </div>
+              <div style={{ width: '100%', height: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={activityData} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 0 }}>
+                    <ReferenceLine y={0} stroke="#E0E0E0" />
+                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9e9e9e' }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9e9e9e' }} domain={[-40, 40]} label={{ value: 'No of Parameters', angle: -90, position: 'insideLeft', offset: -30, style: { fill: '#9e9e9e', fontSize: 12 } }} />
+                    <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+                    <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={12} />
+                    <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={12} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <p style={{ textAlign: 'center', marginTop: '16px', color: '#B1B1B1', fontSize: '12px' }}>Month</p>
+            </div>
     </div>
   );
 };

@@ -27,7 +27,7 @@ const MicroscopesForm = ({ selectedRadio, setSelectedRadio }: any) => {
         
         {/* Unit Selector Radios (Microscope A - E) */}
         <div style={{ display: "flex", gap: "24px", marginBottom: "24px", borderBottom: "1px solid #f1f5f9", paddingBottom: "20px" }}>
-          {["Microscope A", "Microscope B", "Microscope C", "Microscope D", "Microscope E"].map((name) => (
+          {["Microscopes A", "Microscopes B", "Microscopes C", "Microscopes D", "Microscopes E"].map((name) => (
             <label key={name} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: "500", cursor: "pointer" }}>
               <input 
                 type="radio" 
