@@ -1,4 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect  } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
+import Tooltip from '@mui/material/Tooltip';
+
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Box, Tabs, Tab, TextField, InputAdornment, 
@@ -7,25 +11,45 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 
+const avatarColors = [
+  '#F44336', '#E91E63', '#9C27B0', '#673AB7',
+  '#3F51B5', '#2196F3', '#03A9F4', '#00BCD4',
+  '#009688', '#4CAF50', '#8BC34A', '#FFC107',
+  '#FF9800', '#FF5722', '#795548', '#607D8B',
+];
+
+// Stable color based on name (same person → same color)
+const getAvatarColor = (name: string) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return avatarColors[Math.abs(hash) % avatarColors.length];
+};
+
+
 const EmbryologyLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // --- NEW STATE FOR INTERACTION ---
-  const [maxAvatars, setMaxAvatars] = useState(5); // Default to 5
-  const [showMiniSearch, setShowMiniSearch] = useState(false); // Toggle for small search
+  const allAssignees = useSelector(
+  (state: RootState) => state.assignees.data
+);
+const [searchText, setSearchText] = useState('');
+const [showMiniSearch, setShowMiniSearch] = useState(false); // Toggle for small search
+const [assigneeSearch, setAssigneeSearch] = useState('');
+const [maxAvatars, setMaxAvatars] = useState(4); // Default to 5
+const [selectedAssigneeId, setSelectedAssigneeId] = useState<number | null>(null);
 
-  // Mock data for the avatars
-  const assignees = [
-    { name: 'U1', src: 'https://i.pravatar.cc/150?u=1' },
-    { name: 'U2', src: 'https://i.pravatar.cc/150?u=2' },
-    { name: 'U3', src: 'https://i.pravatar.cc/150?u=3' },
-    { name: 'U4', src: 'https://i.pravatar.cc/150?u=4' },
-    { name: 'U5', src: 'https://i.pravatar.cc/150?u=5' },
-    { name: 'U6', src: 'https://i.pravatar.cc/150?u=6' },
-    { name: 'U7', src: 'https://i.pravatar.cc/150?u=7' },
-    { name: 'U8', src: 'https://i.pravatar.cc/150?u=8' },
-  ];
+const filteredAssignees = allAssignees;
+const miniFilteredAssignees = allAssignees.filter(a =>
+  a.emp_name
+    .toLowerCase()
+    .startsWith(assigneeSearch.toLowerCase())
+);
+
+
+  // --- NEW STATE FOR INTERACTION ---
 
   const getActiveTab = () => {
     if (location.pathname.includes('/equipments')) return 'equipments';
@@ -87,21 +111,29 @@ const EmbryologyLayout = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
           
           {/* SEARCH BAR (YOUR EXISTING COMPONENT) */}
-          <TextField
-            size="small"
-            placeholder="Search"
-            sx={{
-              width: '300px', // Adjusted slightly to fit avatars
-              '& .MuiOutlinedInput-root': { borderRadius: '10px' }
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: '#9E9E9E', fontSize: 20 }} />
-                </InputAdornment>
-              ),
-            }}
-          />
+          <Box sx={{ position: 'relative' }}>
+  <TextField
+    size="small"
+    placeholder="Search for equipments"
+    value={searchText}
+    onChange={(e) => setSearchText(e.target.value)}
+    sx={{
+      width: '300px',
+      '& .MuiOutlinedInput-root': { borderRadius: '10px' }
+    }}
+    InputProps={{
+      startAdornment: (
+        <InputAdornment position="start">
+          <SearchIcon sx={{ color: '#9E9E9E', fontSize: 20 }} />
+        </InputAdornment>
+      ),
+    }}
+  />
+
+  {/* 🔽 ASSIGNEE DROPDOWN */}
+</Box>
+
+
 
           {/* NEW: ASSIGNEES SECTION */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -126,33 +158,97 @@ const EmbryologyLayout = () => {
                 } 
               }}
             >
-              {assignees.map((person, index) => (
-                <Avatar key={index} src={person.src} />
-              ))}
+              {filteredAssignees.map((person) => (
+<Tooltip key={person.id} title={person.emp_name} arrow>
+  <Avatar sx={{ backgroundColor: getAvatarColor(person.emp_name), color: '#fff' }}>
+    {person.emp_name.charAt(0).toUpperCase()}
+  </Avatar>
+</Tooltip>
+
+))}
+
             </AvatarGroup>
 
             {/* NEW: MINI SEARCH TOGGLE */}
             {showMiniSearch ? (
-              <Box 
-                sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  border: '1px solid #E5E7EB', 
-                  borderRadius: '8px', 
-                  px: 1, 
-                  height: 32 
-                }}
-              >
-                <InputBase 
-                  placeholder="Find..." 
-                  sx={{ fontSize: 12, width: 80 }} 
-                  autoFocus 
-                />
-                <IconButton size="small" onClick={() => setShowMiniSearch(false)}>
-                  <CloseIcon sx={{ fontSize: 14 }} />
-                </IconButton>
-              </Box>
-            ) : (
+  <Box sx={{ position: 'relative' }}>
+    {/* MINI INPUT */}
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        border: '1px solid #E5E7EB',
+        borderRadius: '8px',
+        px: 1,
+        height: 32,
+        backgroundColor: '#fff'
+      }}
+    >
+      <InputBase
+        placeholder="Find assignee..."
+        value={assigneeSearch}
+        onChange={(e) => setAssigneeSearch(e.target.value)}
+        sx={{ fontSize: 12, width: 100 }}
+        autoFocus
+      />
+      <IconButton
+        size="small"
+        onClick={() => {
+          setShowMiniSearch(false);
+          setAssigneeSearch('');
+        }}
+      >
+        <CloseIcon sx={{ fontSize: 14 }} />
+      </IconButton>
+    </Box>
+
+    {/* 🔽 ASSIGNEE DROPDOWN */}
+    <Box
+      sx={{
+        position: 'absolute',
+        top: '36px',
+        right: 0,
+        width: '180px',
+        maxHeight: '120px',   // 3 items
+        overflowY: 'auto',
+        backgroundColor: '#fff',
+        border: '1px solid #E5E7EB',
+        borderRadius: '8px',
+        zIndex: 30,
+        boxShadow: '0px 4px 12px rgba(0,0,0,0.1)'
+      }}
+    >
+      {(assigneeSearch ? miniFilteredAssignees : allAssignees).map(person => (
+        <Box
+          key={person.id}
+          onClick={() => {
+  setSelectedAssigneeId(person.id);
+  setShowMiniSearch(false);
+  setAssigneeSearch('');
+}}
+
+          sx={{
+            px: 1.5,
+            py: 0.8,
+            cursor: 'pointer',
+            '&:hover': { backgroundColor: '#F8F8F8' }
+          }}
+        >
+          <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+            {person.emp_name}
+          </Typography>
+        </Box>
+      ))}
+
+      {(assigneeSearch ? miniFilteredAssignees : allAssignees).length === 0 && (
+        <Typography sx={{ px: 1.5, py: 1, fontSize: 11, color: '#9E9E9E' }}>
+          No assignees found
+        </Typography>
+      )}
+    </Box>
+  </Box>
+) : (
+
               <IconButton 
                 size="small" 
                 onClick={() => setShowMiniSearch(true)}
@@ -172,7 +268,8 @@ const EmbryologyLayout = () => {
 
       {/* ===== CONTENT (UNCHANGED) ===== */}
       <Box mt={3}>
-        <Outlet />
+        <Outlet context={{ selectedAssigneeId }} />
+
       </Box>
     </Box>
   );

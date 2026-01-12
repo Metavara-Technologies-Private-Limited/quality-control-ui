@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { Plus, X } from "lucide-react";
+import { useOutletContext } from "react-router-dom";
 
 import { RootState } from "@/store";
 import { Assignee } from "@/types";
@@ -24,6 +25,7 @@ const determineEquipmentType = (name: string) => {
   if (n.includes("phmeters")) return "phmeters";
   if (n.includes("cryo") || n.includes("ln2")) return "cryopreservation";
   return "other";
+
 };
 
 const CustomPlusIcon = () => (
@@ -430,7 +432,12 @@ const EquipmentCard = ({
   );
 };
 
+
 const Equipment = () => {
+const { selectedAssigneeId } = useOutletContext<{
+  selectedAssigneeId: number | null;
+}>();
+
   const { data: clinic } = useSelector((state: RootState) => state.clinic);
   const assigneeOptions = useSelector(
     (state: RootState) => state.assignees.data
@@ -635,7 +642,20 @@ const Equipment = () => {
                     gap: "12px",
                   }}
                 >
-                  {groupedEquipments[eqName].map((item) => {
+                  {groupedEquipments[eqName]
+  .filter((item) => {
+    // ✅ If no assignee selected, show all equipments
+    if (!selectedAssigneeId) return true;
+
+    const equipmentKey = `${item.name}-${item.detailName}`;
+    const assignees = equipmentAssignees[equipmentKey] || [];
+
+    // ✅ Show equipment only if selected assignee exists
+    return assignees.some(
+      (assignee) => assignee.id === selectedAssigneeId
+    );
+  })
+  .map((item) => {
                     const equipmentKey = `${item.name}-${item.detailName}`;
                     return (
                       <EquipmentCard

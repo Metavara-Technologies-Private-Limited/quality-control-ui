@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import { Plus, X } from "lucide-react";
 import { RootState } from "@/store";
 import { Assignee } from "@/types";
+import { useOutletContext } from "react-router-dom";
 
 import SpermAnalyzersForm from "./SpermAnalyzersForm";
 import CentrifugesForm from "./CentrifugesForm";
@@ -267,7 +268,6 @@ const EquipmentCard = ({
   return (
     <div
       style={{
-        backgroundColor: "#fff",
         border: selected ? "2px solid #f97316" : "1px solid #e5e7eb",
         borderRadius: "12px",
         padding: "16px",
@@ -395,6 +395,10 @@ const EquipmentCard = ({
 };
 
 const Andrology = () => {
+  const { selectedAssigneeId } = useOutletContext<{
+  selectedAssigneeId: number | null;
+}>();
+
   const assigneeOptions = useSelector(
     (state: RootState) => state.assignees.data
   );
@@ -683,24 +687,38 @@ const Andrology = () => {
                     gap: "12px",
                   }}
                 >
-                  {groupedEquipments[equipmentName].map((item: any) => {
-                    const equipmentKey = item.id;
-                    return (
-                      <EquipmentCard
-                        key={item.id}
-                        item={item}
-                        onClick={() => {
-                          handleSelectEquipment(item);
-                          setView("detail");
-                        }}
-                        assignees={equipmentAssignees[equipmentKey] || []}
-                        onAddAssignee={() => handleAddAssignee(equipmentKey)}
-                        onRemoveAssignee={(assigneeId) =>
-                          handleRemoveAssignee(equipmentKey, assigneeId)
-                        }
-                      />
-                    );
-                  })}
+                  {groupedEquipments[equipmentName]
+  .filter((item: any) => {
+    // 👉 if no assignee selected, show all
+    if (!selectedAssigneeId) return true;
+
+    const equipmentKey = item.id;
+    const assignees = equipmentAssignees[equipmentKey] || [];
+
+    // 👉 show only if selected assignee is assigned
+    return assignees.some(
+      (assignee) => assignee.id === selectedAssigneeId
+    );
+  })
+  .map((item: any) => {
+    const equipmentKey = item.id;
+    return (
+      <EquipmentCard
+        key={item.id}
+        item={item}
+        onClick={() => {
+          handleSelectEquipment(item);
+          setView("detail");
+        }}
+        assignees={equipmentAssignees[equipmentKey] || []}
+        onAddAssignee={() => handleAddAssignee(equipmentKey)}
+        onRemoveAssignee={(assigneeId) =>
+          handleRemoveAssignee(equipmentKey, assigneeId)
+        }
+      />
+    );
+  })}
+
                 </div>
               </div>
             ))}
@@ -811,22 +829,34 @@ const Andrology = () => {
           }}
         >
           {activeTab === "To-Do" ? (
-            sidebarData.map((item) => {
-              const equipmentKey = item.id;
-              return (
-                <EquipmentCard
-                  key={item.id}
-                  item={item}
-                  selected={selectedEquipment === item.parameterName}
-                  onClick={() => handleSelectEquipment(item)}
-                  assignees={equipmentAssignees[equipmentKey] || []}
-                  onAddAssignee={() => handleAddAssignee(equipmentKey)}
-                  onRemoveAssignee={(assigneeId) =>
-                    handleRemoveAssignee(equipmentKey, assigneeId)
-                  }
-                />
-              );
-            })
+            sidebarData
+  .filter((item) => {
+    if (!selectedAssigneeId) return true;
+
+    const equipmentKey = item.id;
+    const assignees = equipmentAssignees[equipmentKey] || [];
+
+    return assignees.some(
+      (assignee) => assignee.id === selectedAssigneeId
+    );
+  })
+  .map((item) => {
+    const equipmentKey = item.id;
+    return (
+      <EquipmentCard
+        key={item.id}
+        item={item}
+        selected={selectedEquipment === item.parameterName}
+        onClick={() => handleSelectEquipment(item)}
+        assignees={equipmentAssignees[equipmentKey] || []}
+        onAddAssignee={() => handleAddAssignee(equipmentKey)}
+        onRemoveAssignee={(assigneeId) =>
+          handleRemoveAssignee(equipmentKey, assigneeId)
+        }
+      />
+    );
+  })
+
           ) : (
             <div
               style={{
