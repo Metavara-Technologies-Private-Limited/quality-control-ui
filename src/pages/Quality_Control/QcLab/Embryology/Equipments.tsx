@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 
 import { RootState } from "@/store";
+import { Assignee } from "@/types";
 
 import IncubatorForm from "./IncubatorForm";
 import LFHForm from "./LFHForm";
@@ -12,13 +13,6 @@ import OvensWaterBathForm from "./OvensWaterBathForm";
 import PHMetersForm from "./PHMetersForm";
 
 const formatCount = (value: number) => String(value).padStart(2, "0");
-
-// To-do
-const assignees = [
-  "https://i.pravatar.cc/150?img=1",
-  "https://i.pravatar.cc/150?img=2",
-  "https://i.pravatar.cc/150?img=3",
-];
 
 const determineEquipmentType = (name: string) => {
   const n = name.toLowerCase();
@@ -43,6 +37,7 @@ const CustomPlusIcon = () => (
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: "#fff",
+      cursor: "pointer",
     }}
   >
     <div
@@ -61,19 +56,229 @@ const CustomPlusIcon = () => (
   </div>
 );
 
+// --- Assignee Dialog Component ---
+type AssigneeDialogProps = {
+  open: boolean;
+  onClose: () => void;
+  availableAssignees: Assignee[];
+  currentAssignees: Assignee[];
+  onAdd: (assignees: Assignee[]) => void;
+};
+
+const AssigneeDialog = ({
+  open,
+  onClose,
+  availableAssignees,
+  currentAssignees,
+  onAdd,
+}: AssigneeDialogProps) => {
+  const [selected, setSelected] = useState<Assignee[]>([]);
+
+  if (!open) return null;
+
+  const handleToggle = (assignee: Assignee) => {
+    setSelected((prev) => {
+      const exists = prev.find((a) => a.id === assignee.id);
+      if (exists) {
+        return prev.filter((a) => a.id !== assignee.id);
+      }
+      return [...prev, assignee];
+    });
+  };
+
+  const handleAdd = () => {
+    onAdd(selected);
+    setSelected([]);
+    onClose();
+  };
+
+  // Filter out already assigned
+  const available = availableAssignees.filter(
+    (a) => !currentAssignees.find((curr) => curr.id === a.id)
+  );
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 9999,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          backgroundColor: "#fff",
+          borderRadius: "16px",
+          width: "520px",
+          maxHeight: "80vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "20px 24px",
+            borderBottom: "1px solid #E5E7EB",
+          }}
+        >
+          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 600 }}>
+            Select Assignees
+          </h3>
+          <button
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "4px",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <X size={20} color="#6B7280" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div
+          style={{
+            padding: "24px",
+            overflowY: "auto",
+            flex: 1,
+          }}
+        >
+          {available.length === 0 ? (
+            <p style={{ textAlign: "center", color: "#6B7280" }}>
+              No available assignees
+            </p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {available.map((assignee) => {
+                const isSelected = selected.find((a) => a.id === assignee.id);
+                return (
+                  <div
+                    key={assignee.id}
+                    onClick={() => handleToggle(assignee)}
+                    style={{
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      border: isSelected
+                        ? "2px solid #2563EB"
+                        : "1px solid #E5E7EB",
+                      backgroundColor: isSelected ? "#EFF6FF" : "#fff",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "40px",
+                        height: "40px",
+                        borderRadius: "50%",
+                        backgroundColor: "#E5E7EB",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                        color: "#374151",
+                      }}
+                    >
+                      {assignee.emp_name.charAt(0).toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: "14px" }}>
+                        {assignee.emp_name}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#6B7280" }}>
+                        {assignee.department_name}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div
+          style={{
+            padding: "16px 24px",
+            borderTop: "1px solid #E5E7EB",
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: "12px",
+          }}
+        >
+          <button
+            onClick={onClose}
+            style={{
+              padding: "10px 24px",
+              borderRadius: "10px",
+              border: "1px solid #D1D5DB",
+              backgroundColor: "#fff",
+              cursor: "pointer",
+              fontWeight: 500,
+              fontSize: "14px",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleAdd}
+            disabled={selected.length === 0}
+            style={{
+              padding: "10px 24px",
+              borderRadius: "10px",
+              border: "none",
+              backgroundColor: selected.length === 0 ? "#D1D5DB" : "#4B4B4B",
+              color: "#fff",
+              cursor: selected.length === 0 ? "not-allowed" : "pointer",
+              fontWeight: 500,
+              fontSize: "14px",
+            }}
+          >
+            Add ({selected.length})
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Equipment Card Component ---
 type EquipmentCardProps = {
   item: any;
   selected?: boolean;
   onClick: () => void;
-  assignees?: string[];
+  assignees: Assignee[];
+  onAddAssignee: () => void;
+  onRemoveAssignee: (assigneeId: number) => void;
 };
 
 const EquipmentCard = ({
   item,
   selected = false,
   onClick,
-  assignees = [],
+  assignees,
+  onAddAssignee,
+  onRemoveAssignee,
 }: EquipmentCardProps) => {
   // Calculate active parameters percentage
   const totalParams = item.parameters.length || 0;
@@ -86,7 +291,6 @@ const EquipmentCard = ({
 
   return (
     <div
-      onClick={onClick}
       style={{
         padding: "16px",
         borderRadius: "12px",
@@ -105,6 +309,7 @@ const EquipmentCard = ({
           justifyContent: "space-between",
           alignItems: "center",
         }}
+        onClick={onClick}
       >
         <span style={{ fontSize: "13px", fontWeight: "700" }}>
           {item.detailName} :{" "}
@@ -113,24 +318,89 @@ const EquipmentCard = ({
           </span>
         </span>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          <div style={{ display: "flex" }}>
-            {assignees.map((img, i) => (
-              <img
-                key={i}
-                src={img}
-                alt="user"
+        <div
+          style={{ display: "flex", alignItems: "center", gap: "4px" }}
+          onClick={(e) => e.stopPropagation()}
+        >
+           <span style={{ fontSize: "12px", fontWeight: "700", color: "#0f172a" }}>
+            Assignee :
+          </span>
+          <div style={{ display: "flex", position: "relative" }}>
+            {assignees.slice(0, 3).map((assignee, i) => (
+              <div
+                key={assignee.id}
                 style={{
-                  width: "20px",
-                  height: "20px",
-                  borderRadius: "50%",
-                  border: "1px solid white",
+                  position: "relative",
                   marginLeft: i > 0 ? "-8px" : 0,
                 }}
-              />
+                title={assignee.emp_name}
+              >
+                <div
+                  style={{
+                    width: "24px",
+                    height: "24px",
+                    borderRadius: "50%",
+                    border: "2px solid white",
+                    backgroundColor: "#E5E7EB",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "10px",
+                    fontWeight: 600,
+                    color: "#374151",
+                  }}
+                >
+                  {assignee.emp_name.charAt(0).toUpperCase()}
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveAssignee(assignee.id);
+                  }}
+                  style={{
+                    position: "absolute",
+                    top: "-4px",
+                    right: "-4px",
+                    width: "14px",
+                    height: "14px",
+                    borderRadius: "50%",
+                    border: "1px solid white",
+                    backgroundColor: "#EF4444",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    padding: 0,
+                  }}
+                >
+                  <X size={10} color="white" />
+                </button>
+              </div>
             ))}
+            {assignees.length > 3 && (
+              <div
+                style={{
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  border: "2px solid white",
+                  backgroundColor: "#6B7280",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "10px",
+                  fontWeight: 600,
+                  color: "white",
+                  marginLeft: "-8px",
+                }}
+              >
+                +{assignees.length - 3}
+              </div>
+            )}
           </div>
-          <CustomPlusIcon />
+          <div onClick={onAddAssignee}>
+            <CustomPlusIcon />
+          </div>
         </div>
       </div>
 
@@ -142,6 +412,7 @@ const EquipmentCard = ({
           alignItems: "center",
           marginTop: "12px",
         }}
+        onClick={onClick}
       >
         {/* Active percent */}
         <span
@@ -150,9 +421,9 @@ const EquipmentCard = ({
           {activePercent}%
         </span>
 
-        {/* Placeholder for future content (bottom right) */}
-        <div style={{ fontSize: "12px", color: "#94a3b8" }}>
-          {/* Future temp tags here */}
+        {/* Assignee count */}
+        <div style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 500 }}>
+          {assignees.length > 0 && `${assignees.length} assignee${assignees.length > 1 ? 's' : ''}`}
         </div>
       </div>
     </div>
@@ -161,6 +432,9 @@ const EquipmentCard = ({
 
 const Equipment = () => {
   const { data: clinic } = useSelector((state: RootState) => state.clinic);
+  const assigneeOptions = useSelector(
+    (state: RootState) => state.assignees.data
+  );
   const departments = clinic?.department ?? [];
 
   const [view, setView] = useState<"list" | "detail">("list");
@@ -168,9 +442,20 @@ const Equipment = () => {
   const [selectedEquipment, setSelectedEquipment] = useState("");
   const [selectedRadio, setSelectedRadio] = useState("");
   const [equipmentType, setEquipmentType] = useState("incubator");
-  const [_currentParameters, setCurrentParameters] = useState<any[]>([]);
+
+  // Assignee management
+  const [equipmentAssignees, setEquipmentAssignees] = useState<
+    Record<string, Assignee[]>
+  >({});
+  const [assigneeDialogOpen, setAssigneeDialogOpen] = useState(false);
+  const [currentEquipmentId, setCurrentEquipmentId] = useState<string>("");
 
   const embryologyDept = departments.find((dep) => dep.name === "Embryology");
+
+  // Get assignees for Embryology department
+  const embryologyAssignees = assigneeOptions.filter(
+    (a) => a.department_name === "Embryology"
+  );
 
   // Flatten equipment details per equipment
   const equipmentData =
@@ -202,17 +487,39 @@ const Equipment = () => {
       make: e.make,
       model: e.model,
     }));
-  console.log("cc:equipmentData", equipmentData);
 
   const selectEquipment = (eq: (typeof equipmentData)[number]) => {
     setSelectedEquipment(eq.name);
     setSelectedRadio(eq.detailName);
     setEquipmentType(eq.type);
-    setCurrentParameters(eq.parameters);
   };
 
   const handleSelectEquipment = (item: (typeof equipmentData)[number]) => {
     selectEquipment(item);
+  };
+
+  const handleAddAssignee = (equipmentKey: string) => {
+    setCurrentEquipmentId(equipmentKey);
+    setAssigneeDialogOpen(true);
+  };
+
+  const handleAssigneesAdded = (newAssignees: Assignee[]) => {
+    setEquipmentAssignees((prev) => ({
+      ...prev,
+      [currentEquipmentId]: [
+        ...(prev[currentEquipmentId] || []),
+        ...newAssignees,
+      ],
+    }));
+  };
+
+  const handleRemoveAssignee = (equipmentKey: string, assigneeId: number) => {
+    setEquipmentAssignees((prev) => ({
+      ...prev,
+      [equipmentKey]: (prev[equipmentKey] || []).filter(
+        (a) => a.id !== assigneeId
+      ),
+    }));
   };
 
   // Group by equipment name
@@ -328,17 +635,24 @@ const Equipment = () => {
                     gap: "12px",
                   }}
                 >
-                  {groupedEquipments[eqName].map((item) => (
-                    <EquipmentCard
-                      key={item.id}
-                      item={item}
-                      onClick={() => {
-                        handleSelectEquipment(item);
-                        setView("detail");
-                      }}
-                      assignees={assignees}
-                    />
-                  ))}
+                  {groupedEquipments[eqName].map((item) => {
+                    const equipmentKey = `${item.name}-${item.detailName}`;
+                    return (
+                      <EquipmentCard
+                        key={item.id}
+                        item={item}
+                        onClick={() => {
+                          handleSelectEquipment(item);
+                          setView("detail");
+                        }}
+                        assignees={equipmentAssignees[equipmentKey] || []}
+                        onAddAssignee={() => handleAddAssignee(equipmentKey)}
+                        onRemoveAssignee={(assigneeId) =>
+                          handleRemoveAssignee(equipmentKey, assigneeId)
+                        }
+                      />
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -354,6 +668,15 @@ const Equipment = () => {
             No plans added yet
           </div>
         )}
+
+        {/* Assignee Dialog */}
+        <AssigneeDialog
+          open={assigneeDialogOpen}
+          onClose={() => setAssigneeDialogOpen(false)}
+          availableAssignees={embryologyAssignees}
+          currentAssignees={equipmentAssignees[currentEquipmentId] || []}
+          onAdd={handleAssigneesAdded}
+        />
       </div>
     );
   }
@@ -397,7 +720,7 @@ const Equipment = () => {
               marginBottom: "16px",
             }}
           >
-            Equipments
+            ← Equipments
           </button>
           <div
             style={{
@@ -450,15 +773,22 @@ const Equipment = () => {
                   ? eqItems.filter((item) => item.detailName === selectedRadio)
                   : [eqItems[0]];
 
-              return itemsToShow.map((item) => (
-                <EquipmentCard
-                  key={item.id}
-                  item={item}
-                  selected={selectedRadio === item.detailName}
-                  onClick={() => handleSelectEquipment(item)}
-                  assignees={assignees}
-                />
-              ));
+              return itemsToShow.map((item) => {
+                const equipmentKey = `${item.name}-${item.detailName}`;
+                return (
+                  <EquipmentCard
+                    key={item.id}
+                    item={item}
+                    selected={selectedRadio === item.detailName}
+                    onClick={() => handleSelectEquipment(item)}
+                    assignees={equipmentAssignees[equipmentKey] || []}
+                    onAddAssignee={() => handleAddAssignee(equipmentKey)}
+                    onRemoveAssignee={(assigneeId) =>
+                      handleRemoveAssignee(equipmentKey, assigneeId)
+                    }
+                  />
+                );
+              });
             })
           ) : (
             <div
@@ -485,6 +815,15 @@ const Equipment = () => {
           />
         )}
       </div>
+
+      {/* Assignee Dialog in detail view */}
+      <AssigneeDialog
+        open={assigneeDialogOpen}
+        onClose={() => setAssigneeDialogOpen(false)}
+        availableAssignees={embryologyAssignees}
+        currentAssignees={equipmentAssignees[currentEquipmentId] || []}
+        onAdd={handleAssigneesAdded}
+      />
     </div>
   );
 };
