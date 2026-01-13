@@ -255,13 +255,23 @@ const AddParameterPage = () => {
     handleClose();
   };
 
-  const confirmDeleteParameter = () => {
-    if (paramIndexToDelete !== null) {
+  const confirmDeleteParameter = async () => {
+    if (paramIndexToDelete === null) return;
+
+    const param = parameters[paramIndexToDelete];
+
+    try {
+      if (param.id) await equipmentApi.softDeleteParameter(param.id);
+
       setParameters((prev) => prev.filter((_, i) => i !== paramIndexToDelete));
+      toast.info("Parameter deleted");
+    } catch (err) {
+      toast.error("Failed to delete parameter");
+      console.error(err);
+    } finally {
       setParamIndexToDelete(null);
-      toast.info("Parameter removed");
+      setDeleteParamDialogOpen(false);
     }
-    setDeleteParamDialogOpen(false);
   };
 
   const handleSaveEquipmentDetails = () => {
@@ -891,7 +901,9 @@ const AddParameterPage = () => {
       >
         <DialogTitle>Delete Parameter</DialogTitle>
         <DialogContent>
-          <Typography>Are you sure?</Typography>
+          <Typography>
+            Are you sure you want to delete this parameter?
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteParamDialogOpen(false)}>
