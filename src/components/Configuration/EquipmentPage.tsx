@@ -77,15 +77,14 @@ const EquipmentPage = () => {
 
   const confirmDelete = async () => {
     if (!selectedEquipment) return;
-
-    await fetch(
-      `/api/departments/${selectedEquipment.department.id}/equipments/${selectedEquipment.id}/delete/`,
-      { method: "DELETE" }
-    );
-
+  
+    const { id, department } = selectedEquipment;
+  
+    await equipmentApi.delete(department.id, id);
+  
     dispatch(fetchClinic(1));
     setDialogs({ delete: false, inactive: false, active: false });
-  };
+  };  
 
   const toggleEquipment = async (active: boolean) => {
     if (!selectedEquipment) return;

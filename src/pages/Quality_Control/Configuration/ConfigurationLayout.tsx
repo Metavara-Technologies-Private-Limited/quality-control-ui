@@ -3,7 +3,7 @@ import { Box } from "@mui/material";
 
 const ConfigurationLayout = () => {
   return (
-    <Box sx={{ p: 2 }}>
+    <Box sx={{ p: 1 }}>
       <Outlet />
     </Box>
   );
