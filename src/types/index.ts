@@ -79,6 +79,7 @@ export interface ParameterContent {
   id?: number;
   name?: string;
   parameter_name?: string;
+  is_deleted?: boolean;
   data_type?: string;
   integer_value?: number | string;
   min_value?: number | string;
@@ -136,6 +137,7 @@ export interface Parameter {
   parameter_name: string;
   is_active: boolean;
   config?: ParameterContent | null;
+  is_deleted: boolean;
 }
 
 export interface TestType {
