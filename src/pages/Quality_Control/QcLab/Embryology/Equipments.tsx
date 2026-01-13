@@ -18,14 +18,13 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
 const determineEquipmentType = (name: string) => {
   const n = name.toLowerCase();
   if (n.includes("incubator")) return "incubator";
-  if (n.includes("lfh") || n.includes("hood")) return "lfh";
-  if (n.includes("ovens") || n.includes("water bath")) return "ovens";
+  if (n.includes("lfh") || n.includes("hood") || n.includes("laminar")) return "lfh";
+  if (n.includes("ovens") || n.includes("water bath") || n.includes("oven")) return "ovens";
   if (n.includes("waterbath") || n.includes("water bath")) return "waterbath";
   if (n.includes("microscope")) return "microscopes";
-  if (n.includes("phmeters")) return "phmeters";
+  if (n.includes("ph meter") || n.includes("phMeter") || n.includes("ph-meter")) return "phmeters"; // ✅ FIXED
   if (n.includes("cryo") || n.includes("ln2")) return "cryopreservation";
   return "other";
-
 };
 
 const CustomPlusIcon = () => (
