@@ -15,7 +15,7 @@ interface IncubatorFormProps {
   setSelectedRadio: (name: string) => void;
   equipmentDetails: {
     equipment_num: string;
-    equipment_id: number;
+    equipment_id: number; // This should be the PK of restapi_equipmentdetails
     parameters: any[];
     make: string;
     model: string;
@@ -38,6 +38,7 @@ const IncubatorForm = ({
   equipmentDetails,
 }: IncubatorFormProps) => {
   const [logValues, setLogValues] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
 
   const setValue = (key: string, value: string) => {
     setLogValues((prev) => ({ ...prev, [key]: value }));
@@ -47,43 +48,127 @@ const IncubatorForm = ({
     (ed: any) => ed.equipment_num === selectedRadio
   );
 
+  const currentEquipment = equipmentDetails.find(
+    (ed) => ed.equipment_num === selectedRadio
+  );
+
   const handleSaveLogs = async () => {
-    if (!currentEquipment || !currentEquipmentDetail) return;
+    console.log("=== SAVE LOGS CLICKED ===");
+    console.log("1. currentEquipment:", currentEquipment);
+    console.log("2. currentEquipmentDetail:", currentEquipmentDetail);
+    console.log("3. logValues:", logValues);
 
+    if (!currentEquipment || !currentEquipmentDetail) {
+      alert("Please select an equipment first");
+      return;
+    }
+
+    // Use equipment_id since 'id' field is not provided
+    if (!currentEquipmentDetail.equipment_id) {
+      console.error("ERROR: currentEquipmentDetail.equipment_id is missing!");
+      alert("Equipment detail ID is missing. Please check your data structure.");
+      return;
+    }
+
+    // Check if at least one field is filled
+    const hasData = Object.values(logValues).some(val => val && val.trim() !== '');
+    console.log("4. hasData:", hasData);
+    
+    if (!hasData) {
+      alert("Please fill at least one field before saving");
+      return;
+    }
+
+    setIsSaving(true);
+    
     try {
-      const requests = currentEquipment.parameters
-        .map((param: any) => {
-          const key = param.parameter_name.toLowerCase();
-          const value = logValues[key];
+      const requests: Promise<any>[] = [];
 
-          if (!value) return null;
+      console.log("5. Total parameters available:", currentEquipment.parameters?.length || 0);
+      console.log("6. Parameters:", currentEquipment.parameters);
 
-          return parameterValueApi.create({
-            parameter: param.id,
-            equipment_details: currentEquipmentDetail.equipment_id, // ✅ REQUIRED
-            content: value, // ✅ CORRECT FIELD
-          });
-        })
-        .filter(Boolean);
+      if (!currentEquipment.parameters || currentEquipment.parameters.length === 0) {
+        alert("No parameters found for this equipment");
+        setIsSaving(false);
+        return;
+      }
 
-      await Promise.all(requests);
+      // Collect all filled form values
+      const formValuesList = [
+        { key: "temperature", value: logValues["temperature"] },
+        { key: "co2", value: logValues["co2"] },
+        { key: "humidity", value: logValues["humidity"] },
+        { key: "gas", value: logValues["gas"] },
+        { key: "alarmStatus", value: logValues["alarmStatus"] },
+        { key: "alarmResponse", value: logValues["alarmResponse"] },
+      ].filter((item) => item.value && item.value.trim() !== "");
 
-      alert("Parameter logs saved successfully");
+      console.log("Filled form values:", formValuesList);
+
+      // Map each filled value to a parameter
+      formValuesList.forEach((formItem, index) => {
+        if (index >= currentEquipment.parameters.length) {
+          console.log(`⚠️ More form values (${formValuesList.length}) than parameters (${currentEquipment.parameters.length}). Skipping: ${formItem.key}`);
+          return;
+        }
+
+        const param = currentEquipment.parameters[index];
+        const value = formItem.value;
+
+        console.log(`7.${index} Mapping:`, {
+          formField: formItem.key,
+          formValue: value,
+          toParameter: param.parameter_name,
+          parameterId: param.id,
+        });
+
+        const payload = {
+          parameter: param.id,
+          equipment_details: currentEquipmentDetail.equipment_id,
+          content: value,
+        };
+        console.log(`   ✓ Adding API request:`, payload);
+
+        requests.push(parameterValueApi.create(payload));
+      });
+
+      console.log("8. Total API requests to make:", requests.length);
+
+      if (requests.length === 0) {
+        alert("No matching parameters found to save. Please check parameter names in database.");
+        setIsSaving(false);
+        return;
+      }
+
+      console.log("9. Making API calls...");
+      const results = await Promise.all(requests);
+      console.log("10. ✓ API calls successful:", results);
+      
+      alert("Parameter logs saved successfully!");
+      
+      // Clear form after successful save
+      setLogValues({});
+      
     } catch (err) {
-      console.error("Failed to save parameter logs", err);
+      console.error("11. ✗ Failed to save parameter logs:", err);
+      console.error("Error details:", JSON.stringify(err, null, 2));
+      alert("Failed to save parameter logs. Check console for details.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
+  const handleClear = () => {
+    setLogValues({});
+  };
+
   console.log("cc:selectedRadio", currentEquipmentDetail);
+  
   useEffect(() => {
     if (!selectedRadio && equipmentDetails.length > 0) {
       setSelectedRadio(equipmentDetails[0].equipment_num);
     }
   }, [equipmentDetails, selectedRadio, setSelectedRadio]);
-
-  const currentEquipment = equipmentDetails.find(
-    (ed) => ed.equipment_num === selectedRadio
-  );
 
   const renderRangeText = (param: any) => {
     console.log("cc:param", param);
@@ -91,7 +176,6 @@ const IncubatorForm = ({
 
     switch (param.data_type) {
       case "Decimal":
-        // Use min_value and max_value
         if (param.min_value != null && param.max_value != null) {
           return (
             <span style={{ color: "#94a3b8" }}>
@@ -151,8 +235,9 @@ const IncubatorForm = ({
       (p) => p.parameter_name.toLowerCase() === paramName.toLowerCase()
     );
     if (!param || !param.config?.history?.length) return null;
-    return param.config.history[param.config.history.length - 1]; // latest
+    return param.config.history[param.config.history.length - 1];
   };
+  
   const latestTemp = getLatestParam("Temperature");
   const latestCO2 = getLatestParam("CO2");
   const latestHumidity = getLatestParam("Humidity");
@@ -162,6 +247,7 @@ const IncubatorForm = ({
     position: "relative" as const,
     marginBottom: "20px",
   };
+  
   const inputStyle = {
     width: "100%",
     height: "50px",
@@ -171,6 +257,7 @@ const IncubatorForm = ({
     fontSize: "14px",
     outline: "none",
   };
+  
   const labelStyle = {
     position: "absolute" as const,
     left: "12px",
@@ -180,13 +267,8 @@ const IncubatorForm = ({
     fontSize: "12px",
     color: "#64748b",
   };
+  
   const rangeTextStyle = { fontSize: "11px", marginTop: "4px" };
-
-  // Map parameter names to input enabling
-  const isParamAvailable = (paramName: string) =>
-    currentEquipment?.parameters.some((p: any) =>
-      p.parameter_name.toLowerCase().includes(paramName.toLowerCase())
-    );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -199,7 +281,7 @@ const IncubatorForm = ({
           padding: "24px",
         }}
       >
-        {/* Equipment Detail Radios */}
+        {/* Equipment Detail Radios - FIXED: Using equipment_id as key */}
         <div
           style={{
             display: "flex",
@@ -211,7 +293,7 @@ const IncubatorForm = ({
         >
           {equipmentDetails.map((ed) => (
             <label
-              key={ed.equipment_num}
+              key={ed.equipment_id}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -244,35 +326,27 @@ const IncubatorForm = ({
             gap: "20px",
           }}
         >
+          {/* Temperature - ENABLED */}
           <div style={inputContainerStyle}>
             <input
               style={inputStyle}
-              // defaultValue={}
-              disabled={!isParamAvailable("Temperature")}
+              value={logValues['temperature'] || ''}
               onChange={(e) => setValue("temperature", e.target.value)}
               placeholder="Type Here"
             />
             <label style={labelStyle}>Temperature (°C)</label>
             {latestTemp && (
               <div style={rangeTextStyle}>
-                <span style={{ color: "#94a3b8" }}>
-                  {renderRangeText(latestTemp)}
-                </span>
+                {renderRangeText(latestTemp)}
               </div>
             )}
           </div>
-          {/* CO2 Concentration */}
+
+          {/* CO2 Concentration - ENABLED */}
           <div style={inputContainerStyle}>
             <input
               style={inputStyle}
-              defaultValue={
-                latestCO2
-                  ? latestCO2.data_type === "Percentage"
-                    ? `${latestCO2.percentage}%`
-                    : latestCO2.text || ""
-                  : ""
-              }
-              disabled={!isParamAvailable("CO2")}
+              value={logValues['co2'] || ''}
               onChange={(e) => setValue("co2", e.target.value)}
               placeholder="Type Here"
             />
@@ -284,13 +358,13 @@ const IncubatorForm = ({
             )}
           </div>
 
-          {/* Humidity Levels */}
+          {/* Humidity Levels - ENABLED */}
           <div style={inputContainerStyle}>
             {latestHumidity?.data_type === "Select" ? (
               <select
                 style={inputStyle}
-                disabled={!isParamAvailable("Humidity")}
-                defaultValue={latestHumidity.dropdown[0]}
+                value={logValues['humidity'] || (latestHumidity.dropdown[0] || '')}
+                onChange={(e) => setValue("humidity", e.target.value)}
               >
                 {latestHumidity.dropdown.map((opt: string, idx: number) => (
                   <option key={idx} value={opt}>
@@ -301,12 +375,7 @@ const IncubatorForm = ({
             ) : (
               <input
                 style={inputStyle}
-                defaultValue={
-                  latestHumidity?.percentage
-                    ? `${latestHumidity.percentage}%`
-                    : ""
-                }
-                disabled={!isParamAvailable("Humidity")}
+                value={logValues['humidity'] || ''}
                 onChange={(e) => setValue("humidity", e.target.value)}
                 placeholder="Type Here"
               />
@@ -318,14 +387,12 @@ const IncubatorForm = ({
               </div>
             )}
           </div>
-          {/* Gas Mixture */}
+
+          {/* Gas Mixture - ENABLED */}
           <div style={inputContainerStyle}>
             <input
               style={inputStyle}
-              defaultValue={
-                latestGas?.text || latestGas?.dropdown?.join(", ") || ""
-              }
-              disabled={!isParamAvailable("Gas")}
+              value={logValues['gas'] || ''}
               onChange={(e) => setValue("gas", e.target.value)}
               placeholder="Type Here"
             />
@@ -337,11 +404,11 @@ const IncubatorForm = ({
             )}
           </div>
 
+          {/* Alarm Status - ENABLED */}
           <div style={inputContainerStyle}>
             <select
               style={inputStyle}
-              defaultValue="Functional"
-              disabled={!isParamAvailable("alarm status")}
+              value={logValues['alarmStatus'] || 'Functional'}
               onChange={(e) => setValue("alarmStatus", e.target.value)}
             >
               <option value="Functional">Functional</option>
@@ -350,12 +417,13 @@ const IncubatorForm = ({
             <label style={labelStyle}>Alarm Status</label>
           </div>
 
+          {/* Alarm Response Time - ENABLED */}
           <div style={inputContainerStyle}>
             <input
               style={inputStyle}
+              value={logValues['alarmResponse'] || ''}
               placeholder="Type Here"
               onChange={(e) => setValue("alarmResponse", e.target.value)}
-              disabled={!isParamAvailable("alarm response")}
             />
             <label style={labelStyle}>Alarm Response Time (Mins)</label>
             <div style={{ ...rangeTextStyle, color: "#94a3b8" }}>
@@ -364,7 +432,7 @@ const IncubatorForm = ({
           </div>
         </div>
 
-        {/* --- ADDED MAKE AND MODEL SECTION --- */}
+        {/* Make and Model Section with Buttons */}
         <div
           style={{
             display: "flex",
@@ -392,30 +460,35 @@ const IncubatorForm = ({
 
           <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
             <button
+              onClick={handleClear}
+              disabled={isSaving}
               style={{
                 padding: "10px 24px",
                 backgroundColor: "#fff",
                 border: "1px solid #e5e7eb",
                 borderRadius: "8px",
-                cursor: "pointer",
+                cursor: isSaving ? "not-allowed" : "pointer",
                 fontSize: "14px",
+                opacity: isSaving ? 0.6 : 1,
               }}
             >
               Clear
             </button>
             <button
               onClick={handleSaveLogs}
+              disabled={isSaving}
               style={{
                 padding: "10px 24px",
                 backgroundColor: "#1e293b",
                 color: "#fff",
                 border: "none",
                 borderRadius: "8px",
-                cursor: "pointer",
+                cursor: isSaving ? "not-allowed" : "pointer",
                 fontSize: "14px",
+                opacity: isSaving ? 0.6 : 1,
               }}
             >
-              Save
+              {isSaving ? "Saving..." : "Save"}
             </button>
           </div>
         </div>
