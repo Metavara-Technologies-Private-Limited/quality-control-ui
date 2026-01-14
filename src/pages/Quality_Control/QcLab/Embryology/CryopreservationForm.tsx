@@ -32,6 +32,13 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
     comments: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+
+  // ✅ TOAST NOTIFICATION FUNCTION
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000); // Auto-hide after 4 seconds
+  };
 
   // --- 1. AUTO-SELECT LOGIC (Same as Microscope) ---
   useEffect(() => {
@@ -149,7 +156,7 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
 
   const handleSaveLogs = async () => {
     if (!currentEquipment) {
-      alert("Please select a tank first");
+      showToast("Please select a tank first", "error");
       return;
     }
 
@@ -173,17 +180,17 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
       });
 
       if (requests.length === 0) {
-        alert("No matching parameters found in database or no data entered.");
+        showToast("No matching parameters found or no data entered", "error");
         setIsSaving(false);
         return;
       }
 
       await Promise.all(requests);
-      alert("Cryopreservation logs saved successfully!");
+      showToast("✓ Cryopreservation logs saved successfully!", "success");
       handleClearForm();
     } catch (err) {
       console.error("Save Error:", err);
-      alert("Failed to save logs.");
+      showToast("Failed to save logs. Check console for details.", "error");
     } finally {
       setIsSaving(false);
     }
@@ -390,6 +397,52 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* ✅ TOAST NOTIFICATION */}
+      {toast && (
+        <div
+          style={{
+            position: "fixed",
+            top: "20px",
+            right: "20px",
+            padding: "16px 20px",
+            borderRadius: "8px",
+            fontSize: "14px",
+            fontWeight: "500",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            zIndex: 9999,
+            animation: "slideIn 0.3s ease-out",
+            backgroundColor:
+              toast.type === "success"
+                ? "#04db16ff"
+                : toast.type === "error"
+                ? "#ef4444"
+                : "#cf0404ff",
+            color: "#fff",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+          }}
+        >
+          {toast.type === "success" && "✓"}
+          {toast.type === "error" && "✕"}
+          {toast.type === "info" && "ⓘ"}
+          <span>{toast.message}</span>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slideIn {
+          from {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 }; 

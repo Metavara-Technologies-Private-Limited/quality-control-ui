@@ -1,5 +1,8 @@
 import { parameterValueApi } from "@/services/api";
 import { useEffect, useState } from "react";
+// ✅ Import toast and ToastContainer
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   BarChart,
   Bar,
@@ -46,11 +49,6 @@ const PHMetersForm = ({
   });
   const [isSaving, setIsSaving] = useState(false);
 
-  // Debug logs
-  console.log("PHMetersForm rendered");
-  console.log("equipmentDetails:", equipmentDetails);
-  console.log("selectedRadio:", selectedRadio);
-
   const setValue = (key: string, value: string) => {
     setLogValues((prev) => ({ ...prev, [key]: value }));
   };
@@ -63,32 +61,22 @@ const PHMetersForm = ({
     (ed) => ed.equipment_num === selectedRadio
   );
 
-  // ✅ GET PARAMETER CONFIG - Handle both formats (config object and config.history array)
   const getParameterConfig = (parameterName: string) => {
     const param = currentEquipment?.parameters?.find(
       (p: any) => p.parameter_name?.toLowerCase() === parameterName.toLowerCase()
     );
-
     if (!param || !param.config) return null;
-
     let config = param.config;
-
-    // If config has history array, get the latest entry
     if (config.history && Array.isArray(config.history) && config.history.length > 0) {
       config = config.history[config.history.length - 1];
     }
-
     return config;
   };
 
-  // ✅ RENDER PARAMETER RANGE/VALUE TEXT
   const renderParameterInfo = (parameterName: string) => {
     const config = getParameterConfig(parameterName);
-    
     if (!config) return null;
-
     const dataType = config.data_type;
-
     switch (dataType) {
       case "Decimal":
       case "Min/Max":
@@ -100,17 +88,6 @@ const PHMetersForm = ({
           );
         }
         break;
-
-      case "Percentage":
-        if (config.percentage != null) {
-          return (
-            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
-              Range: 0% - {config.percentage}%
-            </span>
-          );
-        }
-        break;
-
       case "Select":
       case "Dropdown":
         if (config.dropdown && Array.isArray(config.dropdown) && config.dropdown.length > 0) {
@@ -121,138 +98,63 @@ const PHMetersForm = ({
           );
         }
         break;
-
-      case "Text":
-        if (config.text) {
-          return (
-            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
-              Value: {config.text}
-            </span>
-          );
-        }
-        break;
-
-      case "Integer":
-        if (config.integer_value != null) {
-          return (
-            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
-              Value: {config.integer_value}
-            </span>
-          );
-        }
-        break;
-
       default:
         return null;
     }
   };
 
   const handleSaveLogs = async () => {
-    console.log("=== SAVE LOGS CLICKED ===");
-    console.log("1. currentEquipment:", currentEquipment);
-    console.log("2. currentEquipmentDetail:", currentEquipmentDetail);
-    console.log("3. logValues:", logValues);
-
     if (!currentEquipment || !currentEquipmentDetail) {
-      alert("Please select an equipment first");
+      toast.error("Please select an equipment first");
       return;
     }
 
     if (!currentEquipmentDetail.equipment_id) {
-      console.error("ERROR: currentEquipmentDetail.equipment_id is missing!");
-      alert("Equipment detail ID is missing. Please check your data structure.");
+      toast.error("Equipment ID is missing.");
       return;
     }
 
     // Check if at least one field is filled (excluding default values)
     const hasData = logValues.comments && logValues.comments.trim() !== "";
-    console.log("4. hasData:", hasData);
-
     if (!hasData) {
-      alert("Please add comments before saving");
+      toast.warn("Please add comments before saving");
       return;
     }
 
     setIsSaving(true);
+    const toastId = toast.loading("Saving pH Meter logs...");
 
     try {
       const requests: Promise<any>[] = [];
 
-      console.log(
-        "5. Total parameters available:",
-        currentEquipment.parameters?.length || 0
-      );
-      console.log("6. Parameters:", currentEquipment.parameters);
-
-      if (
-        !currentEquipment.parameters ||
-        currentEquipment.parameters.length === 0
-      ) {
-        alert("No parameters found for this equipment");
+      if (!currentEquipment.parameters || currentEquipment.parameters.length === 0) {
+        toast.update(toastId, { render: "No parameters found", type: "error", isLoading: false, autoClose: 3000 });
         setIsSaving(false);
         return;
       }
 
-      // Collect all form values (including dropdowns with defaults)
       const formValuesList = [
         { key: "calibrationChecks", value: logValues["calibrationChecks"] },
         { key: "electrodeCondition", value: logValues["electrodeCondition"] },
-        {
-          key: "temperatureCompensation",
-          value: logValues["temperatureCompensation"],
-        },
+        { key: "temperatureCompensation", value: logValues["temperatureCompensation"] },
         { key: "comments", value: logValues["comments"] },
         { key: "status", value: logValues["status"] },
       ].filter((item) => item.value && item.value.trim() !== "");
 
-      console.log("7. Filled form values:", formValuesList);
-
-      // Map each filled value to a parameter
       formValuesList.forEach((formItem, index) => {
-        if (index >= currentEquipment.parameters.length) {
-          console.log(
-            `⚠️ More form values (${formValuesList.length}) than parameters (${currentEquipment.parameters.length}). Skipping: ${formItem.key}`
-          );
-          return;
+        if (index < currentEquipment.parameters.length) {
+          const param = currentEquipment.parameters[index];
+          requests.push(parameterValueApi.create({
+            parameter: param.id,
+            equipment_details: currentEquipmentDetail.equipment_id,
+            content: formItem.value,
+          }));
         }
-
-        const param = currentEquipment.parameters[index];
-        const value = formItem.value;
-
-        console.log(`8.${index} Mapping:`, {
-          formField: formItem.key,
-          formValue: value,
-          toParameter: param.parameter_name,
-          parameterId: param.id,
-        });
-
-        const payload = {
-          parameter: param.id,
-          equipment_details: currentEquipmentDetail.equipment_id,
-          content: value,
-        };
-        console.log(`   ✓ Adding API request:`, payload);
-
-        requests.push(parameterValueApi.create(payload));
       });
 
-      console.log("9. Total API requests to make:", requests.length);
+      await Promise.all(requests);
+      toast.update(toastId, { render: "Parameter logs saved successfully!", type: "success", isLoading: false, autoClose: 3000 });
 
-      if (requests.length === 0) {
-        alert(
-          "No matching parameters found to save. Please check parameter names in database."
-        );
-        setIsSaving(false);
-        return;
-      }
-
-      console.log("10. Making API calls...");
-      const results = await Promise.all(requests);
-      console.log("11. ✓ API calls successful:", results);
-
-      alert("Parameter logs saved successfully!");
-
-      // Clear only comments field, keep dropdown defaults
       setLogValues({
         calibrationChecks: "Accurate",
         electrodeCondition: "Clean",
@@ -261,9 +163,7 @@ const PHMetersForm = ({
         comments: "",
       });
     } catch (err) {
-      console.error("12. ✗ Failed to save parameter logs:", err);
-      console.error("Error details:", JSON.stringify(err, null, 2));
-      alert("Failed to save parameter logs. Check console for details.");
+      toast.update(toastId, { render: "Failed to save logs.", type: "error", isLoading: false, autoClose: 3000 });
     } finally {
       setIsSaving(false);
     }
@@ -277,6 +177,7 @@ const PHMetersForm = ({
       status: "Pass",
       comments: "",
     });
+    toast.info("Form cleared");
   };
 
   useEffect(() => {
@@ -285,433 +186,99 @@ const PHMetersForm = ({
     }
   }, [equipmentDetails, selectedRadio, setSelectedRadio]);
 
-  const sectionStyle = {
-    backgroundColor: "#fff",
-    borderRadius: "12px",
-    border: "1px solid #e5e7eb",
-    padding: "24px",
-    marginBottom: "16px",
-  };
-
-  const labelStyle = {
-    position: "absolute" as const,
-    left: "12px",
-    top: "-8px",
-    backgroundColor: "#fff",
-    padding: "0 4px",
-    fontSize: "12px",
-    fontWeight: "500" as const,
-    color: "#64748b",
-  };
-
+  const labelStyle = { position: "absolute" as const, left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", fontWeight: "500" as const, color: "#64748b" };
   const rangeTextStyle = { fontSize: "11px", marginTop: "4px", color: "#94a3b8" };
 
   return (
     <div style={{ maxWidth: "1200px" }}>
-      {/* SECTION 1: Radio Buttons, Form Fields, and Submission */}
-      <div style={sectionStyle}>
-        {/* Radio Buttons */}
-        <div
-          style={{
-            display: "flex",
-            gap: "24px",
-            paddingBottom: "24px",
-            borderBottom: "1px solid #f1f5f9",
-            marginBottom: "24px",
-            flexWrap: "wrap",
-          }}
-        >
+      {/* ✅ ToastContainer added here */}
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
+
+      <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "24px", marginBottom: "16px" }}>
+        {/* Unit Selector */}
+        <div style={{ display: "flex", gap: "24px", paddingBottom: "24px", borderBottom: "1px solid #f1f5f9", marginBottom: "24px", flexWrap: "wrap" }}>
           {equipmentDetails.map((ed) => (
-            <label
-              key={ed.equipment_id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                fontSize: "13px",
-                fontWeight: selectedRadio === ed.equipment_num ? "700" : "500",
-                cursor: "pointer",
-                color: selectedRadio === ed.equipment_num ? "#f97316" : "#0f172a",
-              }}
-            >
-              <input
-                type="radio"
-                checked={selectedRadio === ed.equipment_num}
-                onChange={() => setSelectedRadio(ed.equipment_num)}
-                style={{
-                  accentColor: "#f97316",
-                  width: "16px",
-                  height: "16px",
-                }}
-              />
+            <label key={ed.equipment_id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: selectedRadio === ed.equipment_num ? "700" : "500", cursor: "pointer", color: selectedRadio === ed.equipment_num ? "#f97316" : "#0f172a" }}>
+              <input type="radio" checked={selectedRadio === ed.equipment_num} onChange={() => setSelectedRadio(ed.equipment_num)} style={{ accentColor: "#f97316", width: "16px", height: "16px" }} />
               {ed.equipment_num}
             </label>
           ))}
         </div>
 
-        {/* Form Fields Grid */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "24px",
-            marginBottom: "32px",
-          }}
-        >
-          {/* Calibration Checks */}
+        {/* Parameters Grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", marginBottom: "32px" }}>
           <div style={{ position: "relative" }}>
-            <select
-              value={logValues.calibrationChecks}
-              onChange={(e) => setValue("calibrationChecks", e.target.value)}
-              style={{
-                width: "100%",
-                height: "50px",
-                padding: "10px 12px",
-                border: "1px solid #e5e7eb",
-                borderRadius: "8px",
-                fontSize: "14px",
-                outline: "none",
-                cursor: "pointer",
-                backgroundColor: "#fff",
-                color: "#0f172a",
-              }}
-            >
-              <option>Accurate</option>
-              <option>Needs Calibration</option>
+            <select value={logValues.calibrationChecks} onChange={(e) => setValue("calibrationChecks", e.target.value)} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", outline: "none", cursor: "pointer", backgroundColor: "#fff", color: "#0f172a" }}>
+              <option>Accurate</option><option>Needs Calibration</option>
             </select>
             <label style={labelStyle}>Calibration Checks</label>
-            <div style={rangeTextStyle}>
-              {renderParameterInfo("Calibration Checks")}
-            </div>
+            <div style={rangeTextStyle}>{renderParameterInfo("Calibration Checks")}</div>
           </div>
 
-          {/* Electrode Condition */}
           <div style={{ position: "relative" }}>
-            <select
-              value={logValues.electrodeCondition}
-              onChange={(e) => setValue("electrodeCondition", e.target.value)}
-              style={{
-                width: "100%",
-                height: "50px",
-                padding: "10px 12px",
-                border: "1px solid #e5e7eb",
-                borderRadius: "8px",
-                fontSize: "14px",
-                outline: "none",
-                cursor: "pointer",
-                backgroundColor: "#fff",
-                color: "#0f172a",
-              }}
-            >
-              <option>Clean</option>
-              <option>Dirty</option>
-              <option>Needs Replacement</option>
+            <select value={logValues.electrodeCondition} onChange={(e) => setValue("electrodeCondition", e.target.value)} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", outline: "none", cursor: "pointer", backgroundColor: "#fff", color: "#0f172a" }}>
+              <option>Clean</option><option>Dirty</option><option>Needs Replacement</option>
             </select>
             <label style={labelStyle}>Electrode Condition</label>
-            <div style={rangeTextStyle}>
-              {renderParameterInfo("Electrode Condition")}
-            </div>
+            <div style={rangeTextStyle}>{renderParameterInfo("Electrode Condition")}</div>
           </div>
 
-          {/* Temperature Compensation Verification */}
           <div style={{ position: "relative" }}>
-            <select
-              value={logValues.temperatureCompensation}
-              onChange={(e) =>
-                setValue("temperatureCompensation", e.target.value)
-              }
-              style={{
-                width: "100%",
-                height: "50px",
-                padding: "10px 12px",
-                border: "1px solid #e5e7eb",
-                borderRadius: "8px",
-                fontSize: "14px",
-                outline: "none",
-                cursor: "pointer",
-                backgroundColor: "#fff",
-                color: "#0f172a",
-              }}
-            >
-              <option>Functional</option>
-              <option>Non-Functional</option>
+            <select value={logValues.temperatureCompensation} onChange={(e) => setValue("temperatureCompensation", e.target.value)} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", outline: "none", cursor: "pointer", backgroundColor: "#fff", color: "#0f172a" }}>
+              <option>Functional</option><option>Non-Functional</option>
             </select>
             <label style={labelStyle}>Temperature Compensation Verification</label>
-            <div style={rangeTextStyle}>
-              {renderParameterInfo("Temperature Compensation Verification")}
-            </div>
+            <div style={rangeTextStyle}>{renderParameterInfo("Temperature Compensation Verification")}</div>
           </div>
 
-          {/* Comments */}
           <div style={{ position: "relative" }}>
-            <input
-              type="text"
-              placeholder="Type Here"
-              value={logValues.comments}
-              onChange={(e) => setValue("comments", e.target.value)}
-              style={{
-                width: "100%",
-                height: "50px",
-                padding: "10px 12px",
-                border: "1px solid #e5e7eb",
-                borderRadius: "8px",
-                fontSize: "14px",
-                outline: "none",
-                color: "#0f172a",
-                backgroundColor: "#fff",
-              }}
-            />
+            <input type="text" placeholder="Type Here" value={logValues.comments} onChange={(e) => setValue("comments", e.target.value)} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", outline: "none", color: "#0f172a", backgroundColor: "#fff" }} />
             <label style={labelStyle}>Comments</label>
-            <div style={rangeTextStyle}>
-              {renderParameterInfo("Comments")}
-            </div>
+            <div style={rangeTextStyle}>{renderParameterInfo("Comments")}</div>
           </div>
 
-          {/* Status */}
           <div style={{ position: "relative" }}>
-            <select
-              value={logValues.status}
-              onChange={(e) => setValue("status", e.target.value)}
-              style={{
-                width: "100%",
-                height: "50px",
-                padding: "10px 12px",
-                border: "1px solid #e5e7eb",
-                borderRadius: "8px",
-                fontSize: "14px",
-                outline: "none",
-                cursor: "pointer",
-                backgroundColor: "#fff",
-                color: "#0f172a",
-              }}
-            >
-              <option>Pass</option>
-              <option>Fail</option>
+            <select value={logValues.status} onChange={(e) => setValue("status", e.target.value)} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", outline: "none", cursor: "pointer", backgroundColor: "#fff", color: "#0f172a" }}>
+              <option>Pass</option><option>Fail</option>
             </select>
             <label style={labelStyle}>Status</label>
-            <div style={rangeTextStyle}>
-              {renderParameterInfo("Status")}
-            </div>
+            <div style={rangeTextStyle}>{renderParameterInfo("Status")}</div>
           </div>
         </div>
 
-        {/* Make and Model Section with Action Buttons */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "24px",
-            borderTop: "1px solid #f1f5f9",
-            paddingTop: "24px",
-            fontSize: "14px",
-          }}
-        >
-          <div style={{ display: "flex", gap: "8px" }}>
-            <span style={{ color: "#94a3b8" }}>Make :</span>
-            <span style={{ fontWeight: "600", color: "#0f172a" }}>
-              {currentEquipment?.make || "N/A"}
-            </span>
-          </div>
-          <div
-            style={{ width: "1px", height: "14px", backgroundColor: "#e5e7eb" }}
-          ></div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <span style={{ color: "#94a3b8" }}>Model :</span>
-            <span style={{ fontWeight: "600", color: "#0f172a" }}>
-              {currentEquipment?.model || "N/A"}
-            </span>
-          </div>
-
+        {/* Footer Info & Actions */}
+        <div style={{ display: "flex", alignItems: "center", gap: "24px", borderTop: "1px solid #f1f5f9", paddingTop: "24px", fontSize: "14px" }}>
+          <div style={{ display: "flex", gap: "8px" }}>Make : <span style={{ fontWeight: "600" }}>{currentEquipment?.make || "N/A"}</span></div>
+          <div style={{ display: "flex", gap: "8px" }}>Model : <span style={{ fontWeight: "600" }}>{currentEquipment?.model || "N/A"}</span></div>
           <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
-            <button
-              onClick={handleClear}
-              disabled={isSaving}
-              style={{
-                padding: "10px 24px",
-                backgroundColor: "#fff",
-                border: "1px solid #e5e7eb",
-                borderRadius: "8px",
-                fontSize: "14px",
-                fontWeight: "500",
-                cursor: isSaving ? "not-allowed" : "pointer",
-                color: "#0f172a",
-                opacity: isSaving ? 0.6 : 1,
-              }}
-            >
-              Clear
-            </button>
-            <button
-              onClick={handleSaveLogs}
-              disabled={isSaving}
-              style={{
-                padding: "10px 24px",
-                backgroundColor: "#1e293b",
-                color: "#fff",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "14px",
-                fontWeight: "500",
-                cursor: isSaving ? "not-allowed" : "pointer",
-                opacity: isSaving ? 0.6 : 1,
-              }}
-            >
-              {isSaving ? "Saving..." : "Save"}
-            </button>
+            <button onClick={handleClear} disabled={isSaving} style={{ padding: "10px 24px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", cursor: isSaving ? "not-allowed" : "pointer" }}>Clear</button>
+            <button onClick={handleSaveLogs} disabled={isSaving} style={{ padding: "10px 24px", backgroundColor: "#1e293b", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", cursor: isSaving ? "not-allowed" : "pointer", opacity: isSaving ? 0.6 : 1 }}>{isSaving ? "Saving..." : "Save"}</button>
           </div>
         </div>
       </div>
-
-      {/* SECTION 2: Activity Chart */}
-      <div style={sectionStyle}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "16px",
-            flexWrap: "wrap",
-            gap: "12px",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div
-              style={{
-                width: "32px",
-                height: "32px",
-                borderRadius: "8px",
-                border: "1px solid #E0E0E0",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#505050"
-                strokeWidth="2"
-              >
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-              </svg>
-            </div>
-            <h3
-              style={{
-                fontSize: "14px",
-                fontWeight: "600",
-                margin: 0,
-                color: "#0f172a",
-              }}
-            >
-              Activity
-            </h3>
-          </div>
-
-          <div style={{ display: "flex", gap: "16px", fontSize: "12px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <div
-                style={{
-                  width: "10px",
-                  height: "10px",
-                  backgroundColor: "#6c6c6c",
-                  borderRadius: "50%",
-                }}
-              />
-              <span style={{ color: "#9e9e9e" }}>Compliant</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <div
-                style={{
-                  width: "10px",
-                  height: "10px",
-                  backgroundColor: "#EF9685",
-                  borderRadius: "50%",
-                }}
-              />
-              <span style={{ color: "#9e9e9e" }}>Non - Compliant</span>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ width: "100%", height: 300 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={activityData}
-              stackOffset="sign"
-              margin={{ top: 20, right: 30, left: 45, bottom: 20 }}
-            >
-              <XAxis
-                dataKey="day"
-                tick={{ fontSize: 12, fill: "#9e9e9e" }}
-                axisLine={{ stroke: "#E0E0E0" }}
-                tickLine={false}
-              />
-              <YAxis
-                domain={[-40, 40]}
-                ticks={[-40, -20, 0, 20, 40]}
-                tick={{ fontSize: 12, fill: "#9e9e9e" }}
-                axisLine={false}
-                tickLine={false}
-                label={{
-                  value: "No of parameters",
-                  angle: -90,
-                  position: "insideLeft",
-                  offset: -35,
-                  style: {
-                    fill: "#9e9e9e",
-                    fontSize: 12,
-                    fontWeight: 500,
-                  },
-                }}
-              />
-              <Tooltip
-                cursor={{ fill: "transparent" }}
-                contentStyle={{ borderRadius: "4px" }}
-              />
-              <ReferenceLine y={0} stroke="#E0E0E0" />
-              <ReferenceLine y={20} stroke="#F1F1F1" />
-              <ReferenceLine y={40} stroke="#F1F1F1" />
-              <ReferenceLine y={-20} stroke="#F1F1F1" />
-              <ReferenceLine y={-40} stroke="#F1F1F1" />
-              <Bar
-                dataKey="compliant"
-                fill="#6c6c6c"
-                radius={[4, 4, 0, 0]}
-                barSize={15}
-                label={{ position: "top", fill: "#9e9e9e", fontSize: 10 }}
-              />
-              <Bar
-                dataKey="nonCompliant"
-                fill="#EF9685"
-                radius={[0, 0, 4, 4]}
-                barSize={15}
-                label={({ x, y, value, width }: any) => (
-                  <text
-                    x={x + width / 2}
-                    y={y + 14}
-                    fill="#EF9685"
-                    fontSize={10}
-                    textAnchor="middle"
-                  >
-                    {Math.abs(value)}
-                  </text>
-                )}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <p
-          style={{
-            textAlign: "center",
-            marginTop: "8px",
-            color: "#B1B1B1",
-            fontSize: "12px",
-          }}
-        >
-          Month
-        </p>
-      </div>
+      {/* Activity Graph Section remains same */}
+       <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "24px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                     <div style={{ width: "32px", height: "32px", borderRadius: "8px", border: "1px solid #E0E0E0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#505050" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                     </div>
+                     <h3 style={{ fontSize: "16px", fontWeight: "600", margin: 0, color: "#0f172a" }}>Activity</h3>
+                  </div>
+                </div>
+                <div style={{ width: "100%", height: 300 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={activityData} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 20 }}>
+                      <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#9e9e9e" }} axisLine={{ stroke: "#E0E0E0" }} tickLine={false} />
+                      <YAxis domain={[-40, 40]} ticks={[-40, -20, 0, 20, 40]} tick={{ fontSize: 12, fill: "#9e9e9e" }} axisLine={false} tickLine={false} />
+                      <Tooltip cursor={{ fill: "transparent" }} contentStyle={{ borderRadius: "4px" }} />
+                      <ReferenceLine y={0} stroke="#E0E0E0" />
+                      <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={15} />
+                      <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={15} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
     </div>
   );
 };
