@@ -13,13 +13,18 @@ import {
   Chip,
   Stack,
   Dialog,
-  // DialogTitle,
   DialogContent,
   DialogActions,
   Autocomplete,
   Checkbox,
   MenuItem,
   IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from "@mui/material";
 
 import {
@@ -30,7 +35,9 @@ import {
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
 
-import AddEquipmentDialog from "@/pages/Quality_Control/Configuration/AddEquipmentDialog";
+import AddEquipmentDialog, {
+  SelectedEquipmentData,
+} from "@/pages/Quality_Control/Configuration/AddEquipmentDialog";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { Assignee } from "@/types";
@@ -40,20 +47,6 @@ import { eventApi } from "@/services/api";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate } from "react-router-dom";
-
-
-type SelectedEquipment = {
-  equipment: {
-    id: number;
-    equipment_name: string;
-    make?: string;
-    model?: string;
-    parameters: {
-      id: number;
-      name: string;
-    }[];
-  };
-};
 
 /* ================= COLORS ================= */
 const COLORS = {
@@ -66,15 +59,6 @@ const COLORS = {
   button: "#4B4B4B",
   chip: "#F5F7FA",
 };
-
-/* ================= CONSTANTS ================= */
-// const assigneeOptions = [
-//   "John Doe",
-//   "Jane Smith",
-//   "Alice Johnson",
-//   "Bob Williams",
-//   "Michael Brown",
-// ];
 
 const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -122,44 +106,40 @@ const CreateEvent = () => {
   const [monthDay, setMonthDay] = useState("");
 
   const [assigneeDialogOpen, setAssigneeDialogOpen] = useState(false);
-  const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([]);
-  const [addedAssignees, setAddedAssignees] = useState<Assignee[]>([]);
+  const [selectedAssignee, setSelectedAssignee] = useState<Assignee | null>(
+    null
+  );
+  const [addedAssignee, setAddedAssignee] = useState<Assignee | null>(null);
 
   const [equipmentDialogOpen, setEquipmentDialogOpen] = useState(false);
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | "">(
-    ""
-  );
 
-  const [addedEquipments, setAddedEquipments] = useState<SelectedEquipment[]>(
-    []
-  );
-  console.info("addedEquipments", addedEquipments);
+  // Updated type to use SelectedEquipmentData from dialog
+  const [addedEquipments, setAddedEquipments] = useState<SelectedEquipmentData[]>([]);
 
   const { data: clinic } = useSelector((state: RootState) => state.clinic);
   const assigneeOptions = useSelector(
     (state: RootState) => state.assignees.data
   );
-  const departments = clinic ? clinic.department : [];
 
   const navigate = useNavigate();
 
+  const handleClearAll = () => {
+    setEventName("");
+    setDescription("");
+    setAddedEquipments([]);
+    setSelectedAssignee(null);
+    setAddedAssignee(null);
+  };
 
-  const allEquipments =
-    clinic && selectedDepartmentId
-      ? clinic.department
-          .filter((dep) => dep.id === selectedDepartmentId)
-          .flatMap((dep) =>
-            dep.equipments.map((eq) => ({ ...eq, department: dep }))
-          )
-      : [];
-
-  const filteredAssignees = selectedDepartmentId
-    ? assigneeOptions.filter(
-        (a) =>
-          a.department_name ===
-          departments.find((d) => d.id === selectedDepartmentId)?.name
+  // Get all equipments from all departments
+  const allEquipments = clinic
+    ? clinic.department.flatMap((dep) =>
+        dep.equipments.map((eq) => ({ ...eq, department: dep }))
       )
     : [];
+
+  // Use all assignees without department filtering
+  const filteredAssignees = assigneeOptions;
 
   const toggleDay = (day: string) => {
     setSelectedDays((prev) =>
@@ -167,39 +147,41 @@ const CreateEvent = () => {
     );
   };
 
-  const handleAddAssignees = () => {
-    setAddedAssignees((prev) => {
-      const map = new Map<number, Assignee>();
-      prev.forEach((a) => map.set(a.id, a));
-      selectedAssignees.forEach((a) => map.set(a.id, a));
-      return Array.from(map.values());
-    });
+  const handleAddAssignee = () => {
+    if (selectedAssignee) {
+      setAddedAssignee(selectedAssignee);
+      setSelectedAssignee(null);
+      setAssigneeDialogOpen(false);
+    }
+  };
 
-    setSelectedAssignees([]);
-    setAssigneeDialogOpen(false);
+  // Helper function to get only selected parameters for display
+  const getSelectedParameters = (item: SelectedEquipmentData) => {
+    const selectedParamIds = item.parameters.map((p) => p.id);
+    return item.equipment.parameters.filter((p) =>
+      selectedParamIds.includes(p.id)
+    );
   };
 
   const handleSave = async () => {
-    if (!clinic?.id || !selectedDepartmentId || !fromTime || !toTime) {
+    if (!clinic?.id || !fromTime || !toTime) {
       toast.warn("Please fill required fields");
       return;
     }
 
     try {
       await eventApi.create({
-        department_id: selectedDepartmentId,
         event_name: eventName,
         description,
 
-        assignment_id: addedAssignees[0]?.id ?? null,
+        assignment_id: addedAssignee?.id ?? null,
 
-        equipment_ids: addedEquipments.map(
-          (e: SelectedEquipment) => e.equipment.id
-        ),
+        // Only send selected equipment IDs
+        equipment_ids: addedEquipments.map((e) => e.equipment.id),
 
-        // optional – remove if not needed
-        parameter_ids: addedEquipments.flatMap((e: SelectedEquipment) =>
-          e.equipment.parameters.map((p) => p.id)
+        // Only send selected parameter IDs
+        parameter_ids: addedEquipments.flatMap((e) =>
+          e.parameters.map((p) => p.id)
         ),
 
         schedule: {
@@ -234,42 +216,28 @@ const CreateEvent = () => {
       <Card
         sx={{ p: 3, borderRadius: 2, border: `1px solid ${COLORS.border}` }}
       >
-        
+        <Box mb={3}>
+          <Box display="flex" flexDirection="column" gap="12px">
+            <IconButton
+              onClick={() => navigate("../events")}
+              sx={{
+                width: 24,
+                height: 24,
+                padding: 0,
+                opacity: 1,
+                color: "#374151",
+              }}
+            >
+              <ArrowBackIcon sx={{ fontSize: 24 }} />
+            </IconButton>
 
-<Box mb={3}>
-  {/* Arrow + title stack */}
-  <Box
-    display="flex"
-    flexDirection="column"
-    gap="12px"   // ✅ gap: 12px
-  >
-    {/* Arrow */}
-    <IconButton
-      onClick={() => navigate("../events")}
-      sx={{
-        width: 24,      // ✅ width: 24
-        height: 24,     // ✅ height: 24
-        padding: 0,
-        opacity: 1,
-        color: "#374151",
-      }}
-    >
-      <ArrowBackIcon sx={{ fontSize: 24 }} /> {/* 24×24 */}
-    </IconButton>
+            <Divider />
 
-    {/* Divider */}
-    <Divider />
-
-    {/* Title */}
-    <Typography
-      fontWeight={600}
-      fontSize={18}
-      color="#111827"
-    >
-      Create Event
-    </Typography>
-  </Box>
-</Box>
+            <Typography fontWeight={600} fontSize={18} color="#111827">
+              Create Event
+            </Typography>
+          </Box>
+        </Box>
 
         {/* EVENT INFO */}
         <Grid container spacing={2} mb={3}>
@@ -292,33 +260,10 @@ const CreateEvent = () => {
             />
           </Grid>
         </Grid>
-        <Grid container spacing={2} mb={3}>
-          <Grid item xs={6}>
-            <TextField
-              fullWidth
-              select
-              size="small"
-              label="Department"
-              value={selectedDepartmentId}
-              onChange={(e) => {
-                setSelectedDepartmentId(Number(e.target.value));
-                setAddedEquipments([]); // reset dependent data
-                setAddedAssignees([]);
-              }}
-            >
-              <MenuItem value="">Select Department</MenuItem>
-              {departments.map((dep) => (
-                <MenuItem key={dep.id} value={dep.id}>
-                  {dep.name}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-        </Grid>
 
         <Divider />
 
-        {/* SCHEDULE */}
+        {/* SCHEDULE SECTIONS */}
         <Typography fontWeight={600} mt={3}>
           Select Schedule
         </Typography>
@@ -351,7 +296,6 @@ const CreateEvent = () => {
         </RadioGroup>
 
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-          {/* ONE TIME */}
           {schedule === "one" && (
             <>
               <Typography fontWeight={600} mt={2}>
@@ -383,7 +327,6 @@ const CreateEvent = () => {
             </>
           )}
 
-          {/* DAILY */}
           {schedule === "daily" && (
             <>
               <Typography fontWeight={600} mt={2}>
@@ -425,7 +368,6 @@ const CreateEvent = () => {
             </>
           )}
 
-          {/* WEEKLY */}
           {schedule === "weekly" && (
             <>
               <Typography fontWeight={600} mt={2}>
@@ -496,7 +438,6 @@ const CreateEvent = () => {
             </>
           )}
 
-          {/* MONTHLY */}
           {schedule === "monthly" && (
             <>
               <Typography fontWeight={600} mt={2}>
@@ -532,7 +473,6 @@ const CreateEvent = () => {
                   />
                 </Grid>
 
-                {/* MONTH NAME DROPDOWN */}
                 <Grid item xs={4}>
                   <TextField
                     fullWidth
@@ -551,7 +491,6 @@ const CreateEvent = () => {
                   </TextField>
                 </Grid>
 
-                {/* DAY */}
                 <Grid item xs={4}>
                   <TextField
                     fullWidth
@@ -576,17 +515,21 @@ const CreateEvent = () => {
 
         <Divider sx={{ my: 3 }} />
 
-        {/* EQUIPMENT */}
-        <Box display="flex" justifyContent="space-between" alignItems="center">
+        {/* EQUIPMENT SECTION - TABLE FORMAT */}
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={2}
+        >
           <Typography fontWeight={600} color="#111827">
             Equipment
           </Typography>
 
           <Button
             onClick={() => setEquipmentDialogOpen(true)}
-            disabled={!selectedDepartmentId}
             sx={{
-              color: "#2563EB", // ✅ exact screenshot blue
+              color: "#2563EB",
               fontWeight: 500,
               textTransform: "none",
               padding: 0,
@@ -605,58 +548,138 @@ const CreateEvent = () => {
           </Button>
         </Box>
 
-        <Box mt={2} border="1px solid #E5E7EB" borderRadius="12px">
-          {addedEquipments.map((e) => (
-            <Box
-              key={e.equipment.id}
-              px={2}
-              py={1.5}
-              display="flex"
-              alignItems="flex-start"
-              gap={2}
-              borderBottom="1px solid #F1F5F9"
-              sx={{
-                "&:last-child": {
-                  borderBottom: "none",
-                },
-              }}
-            >
-              {/* LEFT PANEL – EQUIPMENT BOX */}
-              <Box width={220}>
-                <Typography fontSize={14} fontWeight={600} color="#111827">
-                  {e.equipment.equipment_name}
-                </Typography>
-
-                {/* <Typography fontSize={12} color="#6B7280">
-          Make: {e.equipment.make || "-"}
-        </Typography>
-
-        <Typography fontSize={12} color="#6B7280">
-          Model: {e.equipment.model || "-"}
-        </Typography> */}
-              </Box>
-
-              {/* RIGHT PANEL – PARAMETERS */}
-              <Box display="flex" gap={1} flexWrap="wrap">
-                {e.equipment.parameters.map((p) => (
-                  <Chip
-                    key={p.id}
-                    label={p.name}
-                    size="small"
+        {/* Equipment Table - ONLY SELECTED PARAMETERS */}
+        <TableContainer
+          sx={{
+            border: "1px solid #E5E7EB",
+            borderRadius: "8px",
+            overflow: "hidden",
+          }}
+        >
+          <Table>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: "#F9FAFB" }}>
+                <TableCell
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: "14px",
+                    color: "#6B7280",
+                    borderBottom: "1px solid #E5E7EB",
+                    width: "200px",
+                    py: 1.5,
+                  }}
+                >
+                  Equipment Name
+                </TableCell>
+                <TableCell
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: "14px",
+                    color: "#6B7280",
+                    borderBottom: "1px solid #E5E7EB",
+                    py: 1.5,
+                  }}
+                >
+                  Parameters
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {addedEquipments.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={2}
                     sx={{
-                      backgroundColor: "#F5F7FA",
-                      fontSize: "12px",
-                      fontWeight: 500,
-                      color: "#111827",
+                      textAlign: "center",
+                      color: "#9CA3AF",
+                      py: 4,
+                      fontSize: "14px",
                     }}
-                  />
-                ))}
-              </Box>
-            </Box>
-          ))}
-        </Box>
+                  >
+                    No equipment added yet
+                  </TableCell>
+                </TableRow>
+              ) : (
+                addedEquipments.map((item, index) => {
+                  // Get only the selected parameters
+                  const selectedParams = getSelectedParameters(item);
 
-        {/* ASSIGNEE */}
+                  return (
+                    <TableRow
+                      key={item.equipment.id}
+                      sx={{
+                        "&:last-child td": {
+                          borderBottom: "none",
+                        },
+                        "&:hover": {
+                          backgroundColor: "#F9FAFB",
+                        },
+                      }}
+                    >
+                      <TableCell
+                        sx={{
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "#111827",
+                          borderBottom:
+                            index === addedEquipments.length - 1
+                              ? "none"
+                              : "1px solid #F1F5F9",
+                          py: 1.5,
+                          verticalAlign: "top",
+                        }}
+                      >
+                        {item.equipment.equipment_name}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          borderBottom:
+                            index === addedEquipments.length - 1
+                              ? "none"
+                              : "1px solid #F1F5F9",
+                          py: 1.5,
+                        }}
+                      >
+                        <Box display="flex" gap={1} flexWrap="wrap">
+                          {selectedParams.length > 0 ? (
+                            selectedParams.map((p) => (
+                              <Chip
+                                key={p.id}
+                                label={p.name}
+                                size="small"
+                                sx={{
+                                  backgroundColor: "#F3F4F6",
+                                  fontSize: "12px",
+                                  fontWeight: 500,
+                                  color: "#374151",
+                                  height: "28px",
+                                  borderRadius: "6px",
+                                  "& .MuiChip-label": {
+                                    px: 1.5,
+                                  },
+                                }}
+                              />
+                            ))
+                          ) : (
+                            <Typography
+                              fontSize={12}
+                              color="#9CA3AF"
+                              fontStyle="italic"
+                            >
+                              No parameters selected
+                            </Typography>
+                          )}
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        {/* ASSIGNEE SECTION */}
         <Box
           display="flex"
           justifyContent="space-between"
@@ -668,10 +691,9 @@ const CreateEvent = () => {
           </Typography>
 
           <Button
-            disabled={!selectedDepartmentId}
             onClick={() => setAssigneeDialogOpen(true)}
             sx={{
-              color: "#2563EB", // ✅ exact screenshot blue
+              color: "#2563EB",
               fontWeight: 500,
               textTransform: "none",
               padding: 0,
@@ -691,24 +713,24 @@ const CreateEvent = () => {
         </Box>
 
         <Stack direction="row" spacing={1} mt={1}>
-          {addedAssignees.map((a) => (
+          {addedAssignee && (
             <Chip
-              key={a.id}
-              label={a.emp_name}
+              label={addedAssignee.emp_name}
+              onDelete={() => setAddedAssignee(null)}
               sx={{
                 backgroundColor: "#F5F7FA",
                 color: "#111827",
                 fontWeight: 500,
               }}
             />
-          ))}
+          )}
         </Stack>
 
         {/* ACTIONS */}
         <Box display="flex" justifyContent="flex-end" gap={2} mt={4}>
-          {/* CLEAR ALL */}
           <Button
             variant="outlined"
+            onClick={handleClearAll}
             sx={{
               textTransform: "none",
               borderRadius: "10px",
@@ -726,14 +748,13 @@ const CreateEvent = () => {
             Clear All
           </Button>
 
-          {/* SAVE */}
           <Button
             variant="contained"
             onClick={handleSave}
             sx={{
               textTransform: "none",
               borderRadius: "10px",
-              backgroundColor: "#4B4B4B", // ✅ exact screenshot dark grey
+              backgroundColor: "#4B4B4B",
               color: "#FFFFFF",
               fontWeight: 500,
               px: 4,
@@ -760,60 +781,55 @@ const CreateEvent = () => {
             },
           }}
         >
-          {/* HEADER WITH BACK ARROW + CLOSE ICON */}
-<Box
-  display="flex"
-  alignItems="center"
-  justifyContent="space-between"
-  px={3}
-  py={2}
-  borderBottom="1px solid #E5E7EB"
->
-  <Box display="flex" alignItems="center" gap={1.5}>
-    {/* BACK ARROW */}
-    <IconButton
-      onClick={() => setAssigneeDialogOpen(false)}
-      sx={{
-        color: "#374151",
-        border: "1px solid #E5E7EB",
-        borderRadius: "8px",
-        width: 32,
-        height: 32,
-        "&:hover": {
-          backgroundColor: "#F3F4F6",
-        },
-      }}
-    >
-      <ArrowBackIcon fontSize="small" />
-    </IconButton>
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+            px={3}
+            py={2}
+            borderBottom="1px solid #E5E7EB"
+          >
+            <Box display="flex" alignItems="center" gap={1.5}>
+              <IconButton
+                onClick={() => setAssigneeDialogOpen(false)}
+                sx={{
+                  color: "#374151",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: "8px",
+                  width: 32,
+                  height: 32,
+                  "&:hover": {
+                    backgroundColor: "#F3F4F6",
+                  },
+                }}
+              >
+                <ArrowBackIcon fontSize="small" />
+              </IconButton>
 
-    <Typography fontSize={18} fontWeight={600} color="#111827">
-      Select Assignees
-    </Typography>
-  </Box>
+              <Typography fontSize={18} fontWeight={600} color="#111827">
+                Select Assignee
+              </Typography>
+            </Box>
 
-  {/* CLOSE ICON */}
-  <IconButton
-    onClick={() => setAssigneeDialogOpen(false)}
-    sx={{ color: "#6B7280" }}
-  >
-    ✕
-  </IconButton>
-</Box>
+            <IconButton
+              onClick={() => setAssigneeDialogOpen(false)}
+              sx={{ color: "#6B7280" }}
+            >
+              ✕
+            </IconButton>
+          </Box>
 
-          {/* CONTENT */}
           <DialogContent sx={{ px: 3, pt: 3 }}>
             <Autocomplete
-              multiple
               options={filteredAssignees}
-              value={selectedAssignees}
-              onChange={(_, v) => setSelectedAssignees(v)}
+              value={selectedAssignee}
+              onChange={(_, v) => setSelectedAssignee(v)}
               getOptionLabel={(option) => option.emp_name}
               isOptionEqualToValue={(o, v) => o.id === v.id}
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  placeholder="Select Assignees"
+                  placeholder="Select Assignee"
                   fullWidth
                   sx={{
                     "& .MuiOutlinedInput-root": {
@@ -826,7 +842,6 @@ const CreateEvent = () => {
             />
           </DialogContent>
 
-          {/* ACTIONS */}
           <DialogActions
             sx={{
               px: 3,
@@ -851,7 +866,8 @@ const CreateEvent = () => {
             </Button>
 
             <Button
-              onClick={handleAddAssignees}
+              onClick={handleAddAssignee}
+              disabled={!selectedAssignee}
               sx={{
                 textTransform: "none",
                 borderRadius: "10px",
@@ -862,6 +878,10 @@ const CreateEvent = () => {
                 fontWeight: 500,
                 "&:hover": {
                   backgroundColor: "#3F3F3F",
+                },
+                "&:disabled": {
+                  backgroundColor: "#E5E7EB",
+                  color: "#9CA3AF",
                 },
               }}
             >
@@ -876,7 +896,7 @@ const CreateEvent = () => {
           equipments={allEquipments}
           onAdd={(items) => {
             setAddedEquipments((prev) => {
-              const map = new Map<number, any>();
+              const map = new Map<number, SelectedEquipmentData>();
 
               prev.forEach((e) => {
                 map.set(e.equipment.id, e);

@@ -33,9 +33,9 @@ interface Parameter {
   id: number;
   name: string;
   fieldType?: string;
-  min?: number | string;
-  max?: number | string;
-  value?: number | string;
+  min?: number;
+  max?: number;
+  value?: number;
   unit?: string;
   options?: string[];
 }
@@ -50,7 +50,7 @@ interface Equipment {
 export type SelectedEquipmentData = {
   equipment: Equipment;
   units: number[];
-  parameters: { id: number; value?: number | string }[];
+  parameters: { id: number; value?: number }[];
 };
 
 interface Props {
@@ -83,32 +83,39 @@ export default function AddEquipmentDialog({
 
       parameters: (eq.parameters || []).map((p: any) => {
         const content = p.parameter_values?.[0]?.content || p.config || {};
-        const dataType = (
+
+        const rawType =
           content.data_type ||
           p.parameter_data_type ||
           p.data_type ||
           p.field_type ||
-          ""
-        ).toLowerCase();
+          "";
+
+        const fieldType = rawType.toLowerCase();
+
+        const toNumber = (v: any) =>
+          v !== undefined && v !== null && v !== "" ? Number(v) : undefined;
 
         return {
           id: p.id,
           name: p.parameter_name,
-          fieldType: dataType,
+          fieldType,
 
-          // Only integer uses value, decimal keeps min/max
           value:
-            dataType === "integer"
-              ? content.value ?? content.default ?? undefined
+            fieldType === "integer"
+              ? toNumber(content.value ?? content.default)
+              : fieldType === "percentage"
+              ? toNumber(content.percentage)
               : undefined,
 
           min:
-            dataType !== "integer"
-              ? content.min_value ?? content.min ?? undefined
+            fieldType === "decimal"
+              ? toNumber(content.min_value ?? content.min)
               : undefined,
+
           max:
-            dataType !== "integer"
-              ? content.max_value ?? content.max ?? undefined
+            fieldType === "decimal"
+              ? toNumber(content.max_value ?? content.max)
               : undefined,
 
           unit: content.unit,
@@ -129,7 +136,7 @@ export default function AddEquipmentDialog({
       case "decimal":
         return p.min != null && p.max != null ? (
           <Typography fontSize={11} color={TEXT_GRAY}>
-            Range: {p.min} – {p.max} {p.unit ? p.unit : ""}
+            Range: {p.min} – {p.max} {p.unit ?? ""}
           </Typography>
         ) : (
           <Typography fontSize={11} color={TEXT_GRAY}>
@@ -140,18 +147,14 @@ export default function AddEquipmentDialog({
       case "integer":
         return (
           <Typography fontSize={11} color={TEXT_GRAY}>
-            Value: {p.value !== undefined ? p.value : "N/A"} {p.unit ?? ""}
+            Value: {p.value != null ? p.value : "N/A"}
           </Typography>
         );
 
       case "percentage":
-        return p.min != null ? (
+        return (
           <Typography fontSize={11} color={TEXT_GRAY}>
-            Value: {p.min}%
-          </Typography>
-        ) : (
-          <Typography fontSize={11} color={TEXT_GRAY}>
-            Value: N/A
+            Value: {p.value != null ? `${p.value}%` : "N/A"}
           </Typography>
         );
 
@@ -201,18 +204,24 @@ export default function AddEquipmentDialog({
 
   /* ===== HANDLERS ===== */
   const toggleEquipment = (eq: Equipment) => {
-    setActiveId(eq.id);
     setSelected((prev) => {
       const exists = prev.find((p) => p.equipment.id === eq.id);
+
       if (exists) {
+        if (activeId === eq.id) {
+          setActiveId(null);
+        }
         return prev.filter((p) => p.equipment.id !== eq.id);
       }
+
+      setActiveId(eq.id);
+
       return [
         ...prev,
         {
           equipment: eq,
           units: eq.units.map((u) => u.id),
-          parameters: eq.parameters.map((p) => ({ id: p.id, value: p.value })),
+          parameters: [], // ✅ FIX: start empty, add only when checked
         },
       ];
     });
@@ -220,30 +229,34 @@ export default function AddEquipmentDialog({
 
   const toggleUnit = (id: number) => {
     if (!active) return;
+
     setSelected((prev) =>
-      prev.map((s) =>
-        s.equipment.id === active.equipment.id
-          ? {
-              ...s,
-              units: s.units.includes(id)
-                ? s.units.filter((u) => u !== id)
-                : [...s.units, id],
-            }
-          : s
-      )
+      prev
+        .map((s) =>
+          s.equipment.id === active.equipment.id
+            ? {
+                ...s,
+                units: s.units.includes(id)
+                  ? s.units.filter((u) => u !== id)
+                  : [...s.units, id],
+              }
+            : s
+        )
+        .filter((s) => s.units.length > 0)
     );
   };
 
   const toggleParam = (id: number) => {
     if (!active) return;
+
     setSelected((prev) =>
       prev.map((s) =>
         s.equipment.id === active.equipment.id
           ? {
               ...s,
-              parameters: s.parameters.includes(id)
-                ? s.parameters.filter((p) => (p as any).id !== id)
-                : [...s.parameters, { id, value: undefined }],
+              parameters: s.parameters.some((p) => p.id === id)
+                ? s.parameters.filter((p) => p.id !== id)
+                : [...s.parameters, { id }],
             }
           : s
       )
@@ -258,7 +271,7 @@ export default function AddEquipmentDialog({
 
       <DialogContent sx={{ p: 3 }}>
         <Grid container spacing={3} minHeight={520}>
-          {/* LEFT BOX */}
+          {/* LEFT */}
           <Grid item xs={3}>
             <Box
               sx={{
@@ -322,7 +335,6 @@ export default function AddEquipmentDialog({
                     color: "#374151",
                     px: 3,
                     height: 44,
-                    fontWeight: 500,
                   }}
                 >
                   Cancel
@@ -331,13 +343,20 @@ export default function AddEquipmentDialog({
                   fullWidth
                   variant="contained"
                   disabled={!selected.length}
-                  sx={{
-                    backgroundColor: "#000",
-                    color: "#fff",
-                    textTransform: "none",
-                  }}
+                  sx={{ backgroundColor: "#000", textTransform: "none" }}
                   onClick={() => {
-                    onAdd(selected);
+                    const cleaned = selected
+                      .map((s) => ({
+                        ...s,
+                        units: s.units,
+                        parameters: s.parameters,
+                      }))
+                      .filter(
+                        (s) =>
+                          s.units.length > 0 && s.parameters.length > 0
+                      );
+
+                    onAdd(cleaned);
                     onClose();
                   }}
                 >
@@ -347,7 +366,7 @@ export default function AddEquipmentDialog({
             </Box>
           </Grid>
 
-          {/* RIGHT CONTENT */}
+          {/* RIGHT */}
           <Grid item xs={9}>
             {active && (
               <Stack spacing={3}>
@@ -355,81 +374,59 @@ export default function AddEquipmentDialog({
                   {active.equipment.equipment_name}
                 </Typography>
 
-                {/* UNITS */}
                 <Grid container spacing={2}>
-                  {active.equipment.units.map((u) => {
-                    const checked = active.units.includes(u.id);
-                    return (
-                      <Grid item xs={3} key={u.id}>
-                        <Card
-                          onClick={() => toggleUnit(u.id)}
-                          sx={{
-                            p: 1.5,
-                            borderRadius: 2,
-                            border: `1px solid ${BORDER}`,
-                            cursor: "pointer",
-                            bgcolor: "#fff",
-                          }}
-                        >
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <Checkbox
-                              size="small"
-                              checked={checked}
-                              sx={{
-                                color: "#000",
-                                "&.Mui-checked": { color: "#000" },
-                              }}
-                            />
-                            <Typography fontSize={13} fontWeight={500}>
-                              {u.name}
-                            </Typography>
-                          </Box>
-
-                          <Typography fontSize={11} color={TEXT_GRAY} mt={0.5}>
-                            Make : {u.make || "-"} | Model : {u.model || "-"}
-                          </Typography>
-                        </Card>
-                      </Grid>
-                    );
-                  })}
+                  {active.equipment.units.map((u) => (
+                    <Grid item xs={3} key={u.id}>
+                      <Card
+                        onClick={() => toggleUnit(u.id)}
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 2,
+                          border: `1px solid ${BORDER}`,
+                          cursor: "pointer",
+                        }}
+                      >
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <Checkbox
+                            size="small"
+                            checked={active.units.includes(u.id)}
+                          />
+                          <Typography fontSize={13}>{u.name}</Typography>
+                        </Box>
+                        <Typography fontSize={11} color={TEXT_GRAY}>
+                          Make : {u.make || "-"} | Model : {u.model || "-"}
+                        </Typography>
+                      </Card>
+                    </Grid>
+                  ))}
                 </Grid>
 
-                {/* PARAMETERS */}
                 <Typography fontWeight={600}>Parameters</Typography>
                 <Grid container spacing={2}>
-                  {active.equipment.parameters.map((p) => {
-                    const checked = active.parameters.some(
-                      (ap) => ap.id === p.id
-                    );
-                    return (
-                      <Grid item xs={3} key={p.id}>
-                        <Card
-                          onClick={() => toggleParam(p.id)}
-                          sx={{
-                            p: 1.5,
-                            borderRadius: 2,
-                            border: `1px solid ${BORDER}`,
-                            cursor: "pointer",
-                            bgcolor: "#fff",
-                          }}
-                        >
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <Checkbox
-                              size="small"
-                              checked={checked}
-                              sx={{
-                                color: "#000",
-                                "&.Mui-checked": { color: "#000" },
-                              }}
-                            />
-                            <Typography fontSize={13}>{p.name}</Typography>
-                          </Box>
-
-                          {renderParameterInfo(p)}
-                        </Card>
-                      </Grid>
-                    );
-                  })}
+                  {active.equipment.parameters.map((p) => (
+                    <Grid item xs={3} key={p.id}>
+                      <Card
+                        onClick={() => toggleParam(p.id)}
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 2,
+                          border: `1px solid ${BORDER}`,
+                          cursor: "pointer",
+                        }}
+                      >
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <Checkbox
+                            size="small"
+                            checked={active.parameters.some(
+                              (ap) => ap.id === p.id
+                            )}
+                          />
+                          <Typography fontSize={13}>{p.name}</Typography>
+                        </Box>
+                        {renderParameterInfo(p)}
+                      </Card>
+                    </Grid>
+                  ))}
                 </Grid>
               </Stack>
             )}
