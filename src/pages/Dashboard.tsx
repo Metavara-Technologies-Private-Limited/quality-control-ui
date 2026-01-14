@@ -86,7 +86,7 @@ const Dashboard = () => {
 
   const equipmentDetails = equipment?.equipment_details ?? [];
   const activeValue = parameter?.config;
-  
+
   return (
     <Container maxWidth={false} sx={{ py: 2 }}>
       <DashboardHeader />
