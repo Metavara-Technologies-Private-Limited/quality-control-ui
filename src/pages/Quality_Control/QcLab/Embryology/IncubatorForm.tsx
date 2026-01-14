@@ -17,7 +17,7 @@ interface IncubatorFormProps {
   setSelectedRadio: (name: string) => void;
   equipmentDetails: {
     equipment_num: string;
-    equipment_id: number; // This should be the PK of restapi_equipmentdetails
+    equipment_id: number;
     parameters: any[];
     make: string;
     model: string;
@@ -114,8 +114,100 @@ useEffect(() => {
 
 
 
+<<<<<<< Updated upstream
  const handleSaveLogs = async () => {
   if (!currentEquipment || !currentEquipmentDetail) return;
+=======
+  // ✅ GET PARAMETER CONFIG - Handle both formats (config object and config.history array)
+  const getParameterConfig = (parameterName: string) => {
+    const param = currentEquipment?.parameters?.find(
+      (p: any) => p.parameter_name?.toLowerCase() === parameterName.toLowerCase()
+    );
+
+    if (!param || !param.config) return null;
+
+    let config = param.config;
+
+    // If config has history array, get the latest entry
+    if (config.history && Array.isArray(config.history) && config.history.length > 0) {
+      config = config.history[config.history.length - 1];
+    }
+
+    return config;
+  };
+
+  // ✅ RENDER PARAMETER RANGE/VALUE TEXT
+  const renderParameterInfo = (parameterName: string) => {
+    const config = getParameterConfig(parameterName);
+    
+    if (!config) return null;
+
+    const dataType = config.data_type;
+
+    switch (dataType) {
+      case "Decimal":
+      case "Min/Max":
+        if (config.min_value != null && config.max_value != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Range: {config.min_value} - {config.max_value}
+            </span>
+          );
+        }
+        break;
+
+      case "Percentage":
+        if (config.percentage != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Range: 0% - {config.percentage}%
+            </span>
+          );
+        }
+        break;
+
+      case "Select":
+      case "Dropdown":
+        if (config.dropdown && Array.isArray(config.dropdown) && config.dropdown.length > 0) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Options: {config.dropdown.join(", ")}
+            </span>
+          );
+        }
+        break;
+
+      case "Text":
+        if (config.text) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Value: {config.text}
+            </span>
+          );
+        }
+        break;
+
+      case "Integer":
+        if (config.integer_value != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Value: {config.integer_value}
+            </span>
+          );
+        }
+        break;
+
+      default:
+        return null;
+    }
+  };
+
+  const handleSaveLogs = async () => {
+    console.log("=== SAVE LOGS CLICKED ===");
+    console.log("1. currentEquipment:", currentEquipment);
+    console.log("2. currentEquipmentDetail:", currentEquipmentDetail);
+    console.log("3. logValues:", logValues);
+>>>>>>> Stashed changes
 
   try {
     const requests = currentEquipment.parameters
@@ -124,7 +216,68 @@ useEffect(() => {
         const value = logValues[key];
         if (!value) return null;
 
+<<<<<<< Updated upstream
         return parameterValueApi.create({
+=======
+    if (!currentEquipmentDetail.equipment_id) {
+      console.error("ERROR: currentEquipmentDetail.equipment_id is missing!");
+      alert("Equipment detail ID is missing. Please check your data structure.");
+      return;
+    }
+
+    const hasData = Object.values(logValues).some(val => val && val.trim() !== '');
+    console.log("4. hasData:", hasData);
+    
+    if (!hasData) {
+      alert("Please fill at least one field before saving");
+      return;
+    }
+
+    setIsSaving(true);
+    
+    try {
+      const requests: Promise<any>[] = [];
+
+      console.log("5. Total parameters available:", currentEquipment.parameters?.length || 0);
+      console.log("6. Parameters:", currentEquipment.parameters);
+
+      if (!currentEquipment.parameters || currentEquipment.parameters.length === 0) {
+        alert("No parameters found for this equipment");
+        setIsSaving(false);
+        return;
+      }
+
+      const formValuesList = [
+        { key: "temperature", value: logValues["temperature"] },
+        { key: "co2", value: logValues["co2"] },
+        { key: "humidity", value: logValues["humidity"] },
+        { key: "gas", value: logValues["gas"] },
+        { key: "alarmStatus", value: logValues["alarmStatus"] },
+        { key: "alarmResponse", value: logValues["alarmResponse"] },
+        { key: "comments", value: logValues["comments"] },
+        { key: "status", value: logValues["status"] },
+      ].filter((item) => item.value && item.value.trim() !== "");
+
+      console.log("Filled form values:", formValuesList);
+
+      formValuesList.forEach((formItem, index) => {
+        if (index >= currentEquipment.parameters.length) {
+          console.log(`⚠️ More form values (${formValuesList.length}) than parameters (${currentEquipment.parameters.length}). Skipping: ${formItem.key}`);
+          return;
+        }
+
+        const param = currentEquipment.parameters[index];
+        const value = formItem.value;
+
+        console.log(`7.${index} Mapping:`, {
+          formField: formItem.key,
+          formValue: value,
+          toParameter: param.parameter_name,
+          parameterId: param.id,
+        });
+
+        const payload = {
+>>>>>>> Stashed changes
           parameter: param.id,
           equipment_details: currentEquipmentDetail.equipment_id,
           content: value,
@@ -136,6 +289,7 @@ useEffect(() => {
     alert("Parameter logs saved successfully");
 
 
+<<<<<<< Updated upstream
   } catch (err) {
     console.error("Failed to save parameter logs", err);
   }
@@ -164,79 +318,39 @@ const currentEquipment = equipmentDetails.find(
   const temperatureParam = currentEquipment?.parameters.find(
   (p: any) => p.parameter_name.toLowerCase() === "temperature"
 );
+=======
+      if (requests.length === 0) {
+        alert("No matching parameters found to save. Please check parameter names in database.");
+        setIsSaving(false);
+        return;
+      }
 
-  const renderRangeText = (param: any) => {
-    console.log("cc:param", param);
-    if (!param) return null;
-
-    switch (param.data_type) {
-      case "Decimal":
-        if (param.min_value != null && param.max_value != null) {
-          return (
-            <span style={{ color: "#94a3b8" }}>
-              Range: {param.min_value} - {param.max_value} °C
-            </span>
-          );
-        }
-        break;
-
-      case "Percentage":
-        if (param.percentage != null) {
-          return (
-            <span style={{ color: "#94a3b8" }}>
-              Range: 0% - {param.percentage}%
-            </span>
-          );
-        }
-        break;
-
-      case "Select":
-        if (param.dropdown?.length) {
-          return (
-            <span style={{ color: "#94a3b8" }}>
-              Options: {param.dropdown.join(", ")}
-            </span>
-          );
-        }
-        break;
-
-      case "Text":
-        if (param.text) {
-          return <span style={{ color: "#94a3b8" }}>Value: {param.text}</span>;
-        }
-        break;
-
-      case "Integer":
-        if (param.integer_value != null) {
-          return (
-            <span style={{ color: "#94a3b8" }}>
-              Value: {param.integer_value}
-            </span>
-          );
-        }
-        break;
-
-      default:
-        return null;
+      console.log("9. Making API calls...");
+      const results = await Promise.all(requests);
+      console.log("10. ✓ API calls successful:", results);
+      
+      alert("Parameter logs saved successfully!");
+      setLogValues({});
+      
+    } catch (err) {
+      console.error("11. ✗ Failed to save parameter logs:", err);
+      console.error("Error details:", JSON.stringify(err, null, 2));
+      alert("Failed to save parameter logs. Check console for details.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  // Returns the latest history config for a given parameter
-  const getLatestParam = (paramName: string) => {
-    const currentEq = equipmentDetails.find(
-      (ed) => ed.equipment_num === selectedRadio
-    );
-    const param = currentEq?.parameters.find(
-      (p) => p.parameter_name.toLowerCase() === paramName.toLowerCase()
-    );
-    if (!param || !param.config?.history?.length) return null;
-    return param.config.history[param.config.history.length - 1];
+  const handleClear = () => {
+    setLogValues({});
   };
-  
-  const latestTemp = getLatestParam("Temperature");
-  const latestCO2 = getLatestParam("CO2");
-  const latestHumidity = getLatestParam("Humidity");
-  const latestGas = getLatestParam("Gas");
+
+  useEffect(() => {
+    if (!selectedRadio && equipmentDetails.length > 0) {
+      setSelectedRadio(equipmentDetails[0].equipment_num);
+    }
+  }, [equipmentDetails, selectedRadio, setSelectedRadio]);
+>>>>>>> Stashed changes
 
   const inputContainerStyle = {
     position: "relative" as const,
@@ -263,7 +377,7 @@ const currentEquipment = equipmentDetails.find(
     color: "#64748b",
   };
   
-  const rangeTextStyle = { fontSize: "11px", marginTop: "4px" };
+  const rangeTextStyle = { fontSize: "11px", marginTop: "4px", color: "#94a3b8" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -276,7 +390,7 @@ const currentEquipment = equipmentDetails.find(
           padding: "24px",
         }}
       >
-        {/* Equipment Detail Radios - FIXED: Using equipment_id as key */}
+        {/* Equipment Detail Radios */}
         <div
           style={{
             display: "flex",
@@ -294,7 +408,8 @@ const currentEquipment = equipmentDetails.find(
                 alignItems: "center",
                 gap: "8px",
                 fontSize: "13px",
-                fontWeight: "500",
+                fontWeight: selectedRadio === ed.equipment_num ? "700" : "500",
+                color: selectedRadio === ed.equipment_num ? "#f97316" : "#0f172a",
                 cursor: "pointer",
               }}
             >
@@ -321,8 +436,9 @@ const currentEquipment = equipmentDetails.find(
             gap: "20px",
           }}
         >
-          {/* Temperature - ENABLED */}
+          {/* Temperature */}
           <div style={inputContainerStyle}>
+<<<<<<< Updated upstream
   <input
     style={inputStyle}
     disabled={!isParamAvailable("Temperature")}
@@ -361,6 +477,25 @@ const currentEquipment = equipmentDetails.find(
 
 </div>
 
+=======
+            <input
+              style={inputStyle}
+              value={logValues['temperature'] || ''}
+              onChange={(e) => setValue("temperature", e.target.value)}
+              placeholder="Type Here"
+            />
+            <label style={labelStyle}>Temperature (°C)</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Temperature") || (
+                <>
+                  <span style={{ color: "#94a3b8" }}>Recommended : 36.5 °C - </span>
+                  <span style={{ color: "#ef4444" }}>| Range : 36.5 °C - 37.5 °C</span>
+                </>
+              )}
+            </div>
+          </div>
+
+>>>>>>> Stashed changes
           {/* CO2 Concentration */}
           <div style={inputContainerStyle}>
             <input
@@ -370,44 +505,30 @@ const currentEquipment = equipmentDetails.find(
               placeholder="Type Here"
             />
             <label style={labelStyle}>CO2 Concentration (%)</label>
-            {latestCO2 && latestCO2.data_type === "Decimal" && (
-              <div style={{ ...rangeTextStyle, color: "#94a3b8" }}>
-                {renderRangeText(latestCO2)}
-              </div>
-            )}
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("CO2 Concentration") || (
+                <span style={{ color: "#94a3b8" }}>Range : 5% - 6%</span>
+              )}
+            </div>
           </div>
 
-          {/* Humidity Levels - ENABLED */}
+          {/* Humidity Levels */}
           <div style={inputContainerStyle}>
-            {latestHumidity?.data_type === "Select" ? (
-              <select
-                style={inputStyle}
-                value={logValues['humidity'] || (latestHumidity.dropdown[0] || '')}
-                onChange={(e) => setValue("humidity", e.target.value)}
-              >
-                {latestHumidity.dropdown.map((opt: string, idx: number) => (
-                  <option key={idx} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                style={inputStyle}
-                value={logValues['humidity'] || ''}
-                onChange={(e) => setValue("humidity", e.target.value)}
-                placeholder="Type Here"
-              />
-            )}
+            <input
+              style={inputStyle}
+              value={logValues['humidity'] || ''}
+              onChange={(e) => setValue("humidity", e.target.value)}
+              placeholder="Type Here"
+            />
             <label style={labelStyle}>Humidity Levels (%)</label>
-            {latestHumidity?.data_type === "Decimal" && (
-              <div style={{ ...rangeTextStyle, color: "#eab308" }}>
-                {renderRangeText(latestHumidity)}
-              </div>
-            )}
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Humidity Levels") || (
+                <span style={{ color: "#f59e0b" }}>Range : 30% - 60%</span>
+              )}
+            </div>
           </div>
 
-          {/* Gas Mixture - ENABLED */}
+          {/* Gas Mixture */}
           <div style={inputContainerStyle}>
             <input
               style={inputStyle}
@@ -416,14 +537,14 @@ const currentEquipment = equipmentDetails.find(
               placeholder="Type Here"
             />
             <label style={labelStyle}>Gas Mixture (% O2, CO2)</label>
-            {latestGas && (
-              <div style={{ ...rangeTextStyle, color: "#94a3b8" }}>
-                {renderRangeText(latestGas)}
-              </div>
-            )}
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Gas Mixture") || (
+                <span style={{ color: "#94a3b8" }}>Range : O2 : 20, CO2 : 5</span>
+              )}
+            </div>
           </div>
 
-          {/* Alarm Status - ENABLED */}
+          {/* Alarm Status */}
           <div style={inputContainerStyle}>
             <select
               style={inputStyle}
@@ -434,9 +555,12 @@ const currentEquipment = equipmentDetails.find(
               <option value="Maintenance Required">Maintenance Required</option>
             </select>
             <label style={labelStyle}>Alarm Status</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Alarm Status")}
+            </div>
           </div>
 
-          {/* Alarm Response Time - ENABLED */}
+          {/* Alarm Response Time */}
           <div style={inputContainerStyle}>
             <input
               style={inputStyle}
@@ -445,8 +569,40 @@ const currentEquipment = equipmentDetails.find(
               onChange={(e) => setValue("alarmResponse", e.target.value)}
             />
             <label style={labelStyle}>Alarm Response Time (Mins)</label>
-            <div style={{ ...rangeTextStyle, color: "#94a3b8" }}>
-              Range : &lt; 5
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Alarm Response Time") || (
+                <span style={{ color: "#94a3b8" }}>Range : &lt; 5</span>
+              )}
+            </div>
+          </div>
+
+          {/* Comments */}
+          <div style={inputContainerStyle}>
+            <input
+              style={inputStyle}
+              value={logValues['comments'] || ''}
+              onChange={(e) => setValue("comments", e.target.value)}
+              placeholder="Type Here"
+            />
+            <label style={labelStyle}>Comments</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Comments")}
+            </div>
+          </div>
+
+          {/* Status */}
+          <div style={inputContainerStyle}>
+            <select
+              style={inputStyle}
+              value={logValues['status'] || 'Pass'}
+              onChange={(e) => setValue("status", e.target.value)}
+            >
+              <option value="Pass">Pass</option>
+              <option value="Fail">Fail</option>
+            </select>
+            <label style={labelStyle}>Status</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Status")}
             </div>
           </div>
         </div>
@@ -636,6 +792,7 @@ const currentEquipment = equipmentDetails.find(
               <ReferenceLine y={-20} stroke="#F1F1F1" />
               <ReferenceLine y={-40} stroke="#F1F1F1" />
 
+<<<<<<< Updated upstream
 <Bar
   dataKey="compliant"
   stackId="a"
@@ -668,6 +825,32 @@ const currentEquipment = equipmentDetails.find(
     );
   }}
 />
+=======
+              <Bar
+                dataKey="compliant"
+                fill="#6c6c6c"
+                radius={[4, 4, 0, 0]}
+                barSize={15}
+                label={{ position: "top", fill: "#9e9e9e", fontSize: 10 }}
+              />
+              <Bar
+                dataKey="nonCompliant"
+                fill="#EF9685"
+                radius={[0, 0, 4, 4]}
+                barSize={15}
+                label={({ x, y, value, width }: any) => (
+                  <text
+                    x={x + width / 2}
+                    y={y + 14}
+                    fill="#EF9685"
+                    fontSize={10}
+                    textAnchor="middle"
+                  >
+                    {Math.abs(value)}
+                  </text>
+                )}
+              />
+>>>>>>> Stashed changes
             </BarChart>
           </ResponsiveContainer>
         </div>

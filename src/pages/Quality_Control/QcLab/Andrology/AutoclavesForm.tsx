@@ -5,7 +5,7 @@ import { parameterValueApi } from "@/services/api";
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine 
 } from 'recharts';
-import { Eye, ArrowLeft, Link as LinkIcon, Calendar, Clock } from "lucide-react";
+import { Eye, ArrowLeft, Link2 } from "lucide-react";
 
 interface AutoclavesFormProps {
   selectedRadio: string;
@@ -65,6 +65,90 @@ const AutoclavesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: A
     return currentEquipment?.parameters?.find(
       (p: any) => p.parameter_name.toLowerCase().trim() === dbName.toLowerCase().trim()
     );
+  };
+
+  // ✅ GET PARAMETER CONFIG - Handle both formats (config object and config.history array)
+  const getParameterConfig = (parameterName: string) => {
+    const param = currentEquipment?.parameters?.find(
+      (p: any) => p.parameter_name?.toLowerCase() === parameterName.toLowerCase()
+    );
+
+    if (!param || !param.config) return null;
+
+    let config = param.config;
+
+    // If config has history array, get the latest entry
+    if (config.history && Array.isArray(config.history) && config.history.length > 0) {
+      config = config.history[config.history.length - 1];
+    }
+
+    return config;
+  };
+
+  // ✅ RENDER PARAMETER RANGE/VALUE TEXT
+  const renderParameterInfo = (parameterName: string) => {
+    const config = getParameterConfig(parameterName);
+    
+    if (!config) return null;
+
+    const dataType = config.data_type;
+
+    switch (dataType) {
+      case "Decimal":
+      case "Min/Max":
+        if (config.min_value != null && config.max_value != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Range: {config.min_value} - {config.max_value}
+            </span>
+          );
+        }
+        break;
+
+      case "Percentage":
+        if (config.percentage != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Range: 0% - {config.percentage}%
+            </span>
+          );
+        }
+        break;
+
+      case "Select":
+      case "Dropdown":
+        if (config.dropdown && Array.isArray(config.dropdown) && config.dropdown.length > 0) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Options: {config.dropdown.join(", ")}
+            </span>
+          );
+        }
+        break;
+
+      case "Text":
+        if (config.text) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Value: {config.text}
+            </span>
+          );
+        }
+        break;
+
+      case "Integer":
+        if (config.integer_value != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Value: {config.integer_value}
+            </span>
+          );
+        }
+        break;
+
+      default:
+        return null;
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -249,6 +333,8 @@ const AutoclavesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: A
     color: "#64748b"
   };
 
+  const rangeTextStyle = { fontSize: "11px", marginTop: "4px", color: "#94a3b8", display: "block" };
+
   if (viewingFile) {
     return (
       <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "24px", minHeight: '600px' }}>
@@ -300,7 +386,7 @@ const AutoclavesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: A
                       fileType: "",
                     });
                   }}
-                  style={{ accentColor: "#f97316" }} 
+                  style={{ accentColor: "#f97316", width: "16px", height: "16px" }} 
                 />
                 {equipment}
               </label>
@@ -330,6 +416,9 @@ const AutoclavesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: A
                   style={{...inputStyle("Date") as any, display: "block"}}
                 />
                 <label style={labelStyle}>Date</label>
+                <span style={rangeTextStyle}>
+                  {renderParameterInfo("Date")}
+                </span>
               </div>
 
               {/* Time */}
@@ -343,6 +432,9 @@ const AutoclavesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: A
                   style={{...inputStyle("Time") as any, display: "block"}}
                 />
                 <label style={labelStyle}>Time</label>
+                <span style={rangeTextStyle}>
+                  {renderParameterInfo("Time")}
+                </span>
               </div>
 
               {/* Temperature */}
@@ -357,7 +449,11 @@ const AutoclavesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: A
                   style={{...inputStyle("Temperature") as any, display: "block"}}
                 />
                 <label style={labelStyle}>Temperature (°C)</label>
-                <span style={{fontSize: '11px', color: '#94a3b8', marginTop: '4px', display: 'block'}}>Range : 121 °C - 134 °C</span>
+                <span style={rangeTextStyle}>
+                  {renderParameterInfo("Temperature") || (
+                    <span style={{ color: "#94a3b8" }}>Range: 121 °C - 134 °C</span>
+                  )}
+                </span>
               </div>
 
               {/* Pressure */}
@@ -372,6 +468,9 @@ const AutoclavesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: A
                   style={{...inputStyle("Pressure") as any, display: "block"}}
                 />
                 <label style={labelStyle}>Pressure (kPa)</label>
+                <span style={rangeTextStyle}>
+                  {renderParameterInfo("Pressure")}
+                </span>
               </div>
 
               {/* Sterilization Cycle */}
@@ -387,6 +486,9 @@ const AutoclavesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: A
                   <option value="Invalid">Invalid</option>
                 </select>
                 <label style={labelStyle}>Sterilization Cycle Validation</label>
+                <span style={rangeTextStyle}>
+                  {renderParameterInfo("Sterilization Cycle Validation")}
+                </span>
               </div>
 
               {/* Maintenance Logs */}
@@ -401,14 +503,17 @@ const AutoclavesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: A
                   style={{...inputStyle("Maintenance Logs") as any, display: "block"}}
                 />
                 <label style={labelStyle}>Maintenance Logs</label>
+                <span style={rangeTextStyle}>
+                  {renderParameterInfo("Maintenance Logs")}
+                </span>
               </div>
 
               {/* Uploads Section */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', opacity: getDbParam("Uploads") ? 1 : 0.4 }}>
                 <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', height: "50px", padding: "0 12px", border: "1px solid #e5e7eb", borderRadius: "8px", backgroundColor: '#F0F4FF' }}>
-                  <LinkIcon size={18} color="#3b82f6" cursor="pointer" onClick={() => getDbParam("Uploads") && fileInputRef.current?.click()} style={{marginRight: '12px'}} />
+                  <Link2 size={18} color="#3b82f6" cursor="pointer" onClick={() => getDbParam("Uploads") && fileInputRef.current?.click()} style={{marginRight: '12px'}} />
                   <div style={{ flex: 1, backgroundColor: '#E0E7FF', padding: '4px 12px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                    <span style={{ fontSize: '11px', color: '#1e293b', whiteSpace: 'nowrap' }}>{formData.fileName}</span>
+                    <span style={{ fontSize: '11px', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{formData.fileName}</span>
                   </div>
                   <label style={labelStyle}>Uploads</label>
                 </div>
@@ -435,6 +540,9 @@ const AutoclavesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: A
                   <option value="Fail">Fail</option>
                 </select>
                 <label style={labelStyle}>Status</label>
+                <span style={rangeTextStyle}>
+                  {renderParameterInfo("Status")}
+                </span>
               </div>
 
               {/* Comments */}
@@ -449,6 +557,9 @@ const AutoclavesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: A
                   style={{...inputStyle("Comments") as any, display: "block"}}
                 />
                 <label style={labelStyle}>Comments</label>
+                <span style={rangeTextStyle}>
+                  {renderParameterInfo("Comments")}
+                </span>
               </div>
             </div>
 

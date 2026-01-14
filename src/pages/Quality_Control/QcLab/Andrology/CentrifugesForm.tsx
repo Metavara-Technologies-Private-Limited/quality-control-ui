@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { parameterValueApi } from "@/services/api";
@@ -19,16 +19,94 @@ const CentrifugesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: 
     (ed: any) => ed.equipment_num === selectedRadio
   );
 
-  // Helper to check if parameter exists in the equipment's parameter list
-  const getParamData = (searchName: string) => {
-    if (!currentEquipment?.parameters) return null;
-    return currentEquipment.parameters.find((p) =>
-      p.parameter_name.toLowerCase().includes(searchName.toLowerCase())
+  // --- CONFIGURATION: Map Form Keys to DB Parameter Names ---
+  const fieldMapping = useMemo(() => [
+    { key: "date", dbName: "Date" },
+    { key: "time", dbName: "Time" },
+    { key: "rpmCalibration", dbName: "RPM Calibration" },
+    { key: "timeAccuracy", dbName: "Time Accuracy" },
+    { key: "rotorCondition", dbName: "Rotor Condition" },
+    { key: "status", dbName: "Status" },
+    { key: "comments", dbName: "Comments" },
+  ], []);
+
+  // --- MATCHING HELPER ---
+  const getDbParam = (dbName: string) => {
+    return currentEquipment?.parameters?.find(
+      (p: any) => p.parameter_name.toLowerCase().trim() === dbName.toLowerCase().trim()
     );
   };
 
-  const isFieldEnabled = (searchName: string) => {
-    return !!getParamData(searchName);
+  // ✅ GET PARAMETER CONFIG - Handles history array logic
+  const getParameterConfig = (parameterName: string) => {
+    const param = getDbParam(parameterName);
+    if (!param || !param.config) return null;
+
+    let config = param.config;
+    if (config.history && Array.isArray(config.history) && config.history.length > 0) {
+      config = config.history[config.history.length - 1];
+    }
+    return config;
+  };
+
+  // ✅ RENDER PARAMETER RANGE/VALUE TEXT (Matched with Autoclaves logic)
+  const renderParameterInfo = (parameterName: string) => {
+    const config = getParameterConfig(parameterName);
+    if (!config) return null;
+
+    const dataType = config.data_type;
+
+    switch (dataType) {
+      case "Decimal":
+      case "Min/Max":
+        if (config.min_value != null && config.max_value != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Range: {config.min_value} - {config.max_value}
+            </span>
+          );
+        }
+        break;
+      case "Percentage":
+        if (config.percentage != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Range: 0% - {config.percentage}%
+            </span>
+          );
+        }
+        break;
+      case "Select":
+      case "Dropdown":
+        if (config.dropdown && Array.isArray(config.dropdown) && config.dropdown.length > 0) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Options: {config.dropdown.join(", ")}
+            </span>
+          );
+        }
+        break;
+      case "Text":
+        if (config.text) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Value: {config.text}
+            </span>
+          );
+        }
+        break;
+      case "Integer":
+        if (config.integer_value != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Value: {config.integer_value}
+            </span>
+          );
+        }
+        break;
+      default:
+        return null;
+    }
   };
 
   const setValue = (key: string, value: string) => {
@@ -48,23 +126,11 @@ const CentrifugesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: 
     }
 
     setIsSaving(true);
-
     try {
       const requests: Promise<any>[] = [];
 
-      // Map local form fields to actual DB parameter objects
-      const mapping = [
-        { key: "date", search: "Date" },
-        { key: "time", search: "Time" },
-        { key: "rpmCalibration", search: "RPM Calibration" },
-        { key: "timeAccuracy", search: "Time Accuracy" },
-        { key: "rotorCondition", search: "Rotor Condition" },
-        { key: "status", search: "Status" },
-        { key: "comments", search: "Comments" },
-      ];
-
-      mapping.forEach((item) => {
-        const dbParam = getParamData(item.search);
+      fieldMapping.forEach((item) => {
+        const dbParam = getDbParam(item.dbName);
         const val = logValues[item.key];
 
         if (dbParam && val && val.trim() !== "") {
@@ -77,18 +143,13 @@ const CentrifugesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: 
       });
 
       if (requests.length === 0) {
-        toast.error("No matching parameters found to save.");
+        toast.warn("No matching parameters found to save.");
         setIsSaving(false);
         return;
       }
 
       await Promise.all(requests);
-      toast.success("Parameter logs saved successfully!", {
-        position: "top-right",
-        autoClose: 2000,
-        theme: "colored",
-      });
-
+      toast.success("Parameter logs saved successfully!");
       setLogValues({});
       setActiveSubTab("Details");
     } catch (err) {
@@ -114,7 +175,6 @@ const CentrifugesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: 
         });
 
         if (response && response.results) {
-          // Group by parameter to get latest value for each
           const logsByParam: Record<string, any> = {};
           
           response.results.forEach((log: any) => {
@@ -125,7 +185,6 @@ const CentrifugesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: 
           });
 
           const formattedLogs = Object.values(logsByParam).map((log: any) => {
-            // Find parameter name for this log
             const param = currentEquipment.parameters.find((p: any) => p.id === log.parameter);
             return {
               id: log.id,
@@ -151,39 +210,7 @@ const CentrifugesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: 
     }
   }, [equipmentDetails, selectedRadio, setSelectedRadio]);
 
-  const renderRangeText = (paramName: string) => {
-    const param = getParamData(paramName);
-    if (!param || !param.config) return null;
-
-    let config = param.config;
-    if (config.history?.length > 0) {
-      config = config.history[config.history.length - 1];
-    }
-
-    switch (config.data_type) {
-      case "Decimal":
-      case "Min/Max":
-        return <span style={{ color: "#94a3b8", fontSize: "11px" }}>Range: {config.min_value} - {config.max_value}</span>;
-      case "Percentage":
-        return <span style={{ color: "#94a3b8", fontSize: "11px" }}>Range: {config.percentage}%</span>;
-      case "Select":
-      case "Dropdown":
-        return <span style={{ color: "#94a3b8", fontSize: "11px" }}>Options: {config.dropdown?.join(", ")}</span>;
-      default:
-        return null;
-    }
-  };
-
-  const activityData = [
-    { day: "Monday", compliant: 34, nonCompliant: -23 },
-    { day: "Tuesday", compliant: 28, nonCompliant: -22 },
-    { day: "Wednesday", compliant: 22, nonCompliant: -36 },
-    { day: "Thursday", compliant: 34, nonCompliant: -12 },
-    { day: "Friday", compliant: 29, nonCompliant: -28 },
-    { day: "Saturday", compliant: 15, nonCompliant: -33 },
-    { day: "Sunday", compliant: 25, nonCompliant: -25 },
-  ];
-
+  // Styles
   const sectionStyle = {
     backgroundColor: "#fff",
     borderRadius: "12px",
@@ -192,12 +219,13 @@ const CentrifugesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: 
     marginBottom: "16px",
   };
 
-  const inputContainerStyle = {
+  const inputContainerStyle = (dbName: string) => ({
     position: "relative" as const,
-    marginBottom: "20px",
-  };
+    marginBottom: "24px",
+    opacity: getDbParam(dbName) ? 1 : 0.4,
+  });
 
-  const getInputStyle = (enabled: boolean) => ({
+  const getInputStyle = (dbName: string) => ({
     width: "100%",
     height: "50px",
     padding: "10px 12px",
@@ -205,9 +233,9 @@ const CentrifugesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: 
     borderRadius: "8px",
     fontSize: "14px",
     outline: "none",
-    backgroundColor: enabled ? "#fff" : "#f8fafc",
-    cursor: enabled ? "text" : "not-allowed",
-    color: enabled ? "inherit" : "#94a3b8"
+    backgroundColor: getDbParam(dbName) ? "#fff" : "#f8fafc",
+    cursor: getDbParam(dbName) ? "text" : "not-allowed",
+    color: getDbParam(dbName) ? "inherit" : "#94a3b8"
   });
 
   const labelStyle = {
@@ -220,12 +248,14 @@ const CentrifugesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: 
     color: "#64748b",
   };
 
+  const rangeTextStyle = { fontSize: "11px", marginTop: "4px", color: "#94a3b8", display: "block" };
+
   return (
     <div style={{ maxWidth: "1200px" }}>
       <ToastContainer />
       
       <div style={sectionStyle}>
-        {/* Unit Selector Radios - Dynamic based on available equipments */}
+        {/* Unit Selector Radios */}
         {availableEquipments.length > 0 && (
           <div style={{ display: "flex", gap: "24px", paddingBottom: "24px", borderBottom: "1px solid #f1f5f9", marginBottom: "24px", flexWrap: "wrap" }}>
             {availableEquipments.map((equipment: string) => (
@@ -268,106 +298,109 @@ const CentrifugesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", marginBottom: "32px" }}>
               
               {/* Date */}
-              <div style={inputContainerStyle}>
+              <div style={inputContainerStyle("Date")}>
                 <input 
                   type="date" 
                   name="date"
                   value={logValues['date'] || ''}
                   onChange={(e) => setValue("date", e.target.value)}
-                  disabled={!isFieldEnabled("Date")}
-                  style={getInputStyle(isFieldEnabled("Date"))}
+                  disabled={!getDbParam("Date")}
+                  style={getInputStyle("Date")}
                 />
                 <label style={labelStyle}>Date</label>
-                <div style={{ fontSize: "11px", marginTop: "4px" }}>{renderRangeText("Date")}</div>
+                <span style={rangeTextStyle}>{renderParameterInfo("Date")}</span>
               </div>
 
               {/* Time */}
-              <div style={inputContainerStyle}>
+              <div style={inputContainerStyle("Time")}>
                 <input 
                   type="time" 
                   name="time"
                   value={logValues['time'] || ''}
                   onChange={(e) => setValue("time", e.target.value)}
-                  disabled={!isFieldEnabled("Time")}
-                  style={getInputStyle(isFieldEnabled("Time"))}
+                  disabled={!getDbParam("Time")}
+                  style={getInputStyle("Time")}
                 />
                 <label style={labelStyle}>Time</label>
-                <div style={{ fontSize: "11px", marginTop: "4px" }}>{renderRangeText("Time")}</div>
+                <span style={rangeTextStyle}>{renderParameterInfo("Time")}</span>
               </div>
 
               {/* RPM Calibration */}
-              <div style={inputContainerStyle}>
+              <div style={inputContainerStyle("RPM Calibration")}>
                 <input 
                   type="text" 
                   name="rpmCalibration" 
                   placeholder="Type Here" 
                   value={logValues['rpmCalibration'] || ''} 
                   onChange={(e) => setValue("rpmCalibration", e.target.value)}
-                  disabled={!isFieldEnabled("RPM Calibration")}
-                  style={getInputStyle(isFieldEnabled("RPM Calibration"))}
+                  disabled={!getDbParam("RPM Calibration")}
+                  style={getInputStyle("RPM Calibration")}
                 />
                 <label style={labelStyle}>RPM Calibration (RPM)</label>
-                <div style={{ fontSize: "11px", marginTop: "4px" }}>{renderRangeText("RPM Calibration")}</div>
+                <span style={rangeTextStyle}>{renderParameterInfo("RPM Calibration")}</span>
               </div>
 
               {/* Time Accuracy */}
-              <div style={inputContainerStyle}>
+              <div style={inputContainerStyle("Time Accuracy")}>
                 <select 
                   name="timeAccuracy" 
                   value={logValues['timeAccuracy'] || 'Accurate'} 
                   onChange={(e) => setValue("timeAccuracy", e.target.value)}
-                  disabled={!isFieldEnabled("Time Accuracy")}
-                  style={getInputStyle(isFieldEnabled("Time Accuracy"))}
+                  disabled={!getDbParam("Time Accuracy")}
+                  style={getInputStyle("Time Accuracy")}
                 >
                   <option value="Accurate">Accurate</option>
                   <option value="Inaccurate">Inaccurate</option>
                 </select>
                 <label style={labelStyle}>Time Accuracy</label>
+                <span style={rangeTextStyle}>{renderParameterInfo("Time Accuracy")}</span>
               </div>
 
               {/* Rotor Condition */}
-              <div style={inputContainerStyle}>
+              <div style={inputContainerStyle("Rotor Condition")}>
                 <select 
                   name="rotorCondition" 
                   value={logValues['rotorCondition'] || 'Good'} 
                   onChange={(e) => setValue("rotorCondition", e.target.value)}
-                  disabled={!isFieldEnabled("Rotor Condition")}
-                  style={getInputStyle(isFieldEnabled("Rotor Condition"))}
+                  disabled={!getDbParam("Rotor Condition")}
+                  style={getInputStyle("Rotor Condition")}
                 >
                   <option value="Good">Good</option>
                   <option value="Needs Maintenance">Needs Maintenance</option>
                 </select>
                 <label style={labelStyle}>Rotor Condition</label>
+                <span style={rangeTextStyle}>{renderParameterInfo("Rotor Condition")}</span>
               </div>
 
               {/* Status */}
-              <div style={inputContainerStyle}>
+              <div style={inputContainerStyle("Status")}>
                 <select 
                   name="status" 
                   value={logValues['status'] || 'Pass'} 
                   onChange={(e) => setValue("status", e.target.value)}
-                  disabled={!isFieldEnabled("Status")}
-                  style={getInputStyle(isFieldEnabled("Status"))}
+                  disabled={!getDbParam("Status")}
+                  style={getInputStyle("Status")}
                 >
                   <option value="Pass">Pass</option>
                   <option value="Fail">Fail</option>
                 </select>
                 <label style={labelStyle}>Status</label>
+                <span style={rangeTextStyle}>{renderParameterInfo("Status")}</span>
               </div>
 
               {/* Comments */}
-              <div style={inputContainerStyle}>
+              <div style={inputContainerStyle("Comments")}>
                 <input 
                   type="text" 
                   name="comments" 
                   placeholder="Type Here" 
                   value={logValues['comments'] || ''} 
                   onChange={(e) => setValue("comments", e.target.value)}
-                  disabled={!isFieldEnabled("Comments")}
-                  style={getInputStyle(isFieldEnabled("Comments"))}
+                  disabled={!getDbParam("Comments")}
+                  style={getInputStyle("Comments")}
                 />
                 <label style={labelStyle}>Comments</label>
-                <div style={{ fontSize: "11px", marginTop: "4px" }}>{renderRangeText("Comments")}</div>
+                <span style={rangeTextStyle}>{renderParameterInfo("Comments")}</span>
               </div>
             </div>
 
@@ -431,6 +464,7 @@ const CentrifugesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: 
         )}
       </div>
 
+      {/* Activity Graph Section */}
       <div style={sectionStyle}>
          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -442,7 +476,15 @@ const CentrifugesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: 
         </div>
         <div style={{ width: '100%', height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={activityData} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 0 }}>
+            <BarChart data={[
+              { day: "Mon", compliant: 34, nonCompliant: -23 },
+              { day: "Tue", compliant: 28, nonCompliant: -22 },
+              { day: "Wed", compliant: 22, nonCompliant: -36 },
+              { day: "Thu", compliant: 34, nonCompliant: -12 },
+              { day: "Fri", compliant: 29, nonCompliant: -28 },
+              { day: "Sat", compliant: 15, nonCompliant: -33 },
+              { day: "Sun", compliant: 25, nonCompliant: -25 },
+            ]} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 0 }}>
               <ReferenceLine y={0} stroke="#E0E0E0" />
               <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9e9e9e' }} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9e9e9e' }} domain={[-40, 40]} />

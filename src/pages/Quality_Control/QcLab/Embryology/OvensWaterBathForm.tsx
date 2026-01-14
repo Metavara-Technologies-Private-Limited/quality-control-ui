@@ -81,6 +81,90 @@ const OvensWaterBathForm = ({
     (ed) => ed.equipment_num === selectedRadio
   );
 
+  // ✅ GET PARAMETER CONFIG - Handle both formats (config object and config.history array)
+  const getParameterConfig = (parameterName: string) => {
+    const param = currentEquipment?.parameters?.find(
+      (p: any) => p.parameter_name?.toLowerCase() === parameterName.toLowerCase()
+    );
+
+    if (!param || !param.config) return null;
+
+    let config = param.config;
+
+    // If config has history array, get the latest entry
+    if (config.history && Array.isArray(config.history) && config.history.length > 0) {
+      config = config.history[config.history.length - 1];
+    }
+
+    return config;
+  };
+
+  // ✅ RENDER PARAMETER RANGE/VALUE TEXT
+  const renderParameterInfo = (parameterName: string) => {
+    const config = getParameterConfig(parameterName);
+    
+    if (!config) return null;
+
+    const dataType = config.data_type;
+
+    switch (dataType) {
+      case "Decimal":
+      case "Min/Max":
+        if (config.min_value != null && config.max_value != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Range: {config.min_value} - {config.max_value} °C
+            </span>
+          );
+        }
+        break;
+
+      case "Percentage":
+        if (config.percentage != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Range: 0% - {config.percentage}%
+            </span>
+          );
+        }
+        break;
+
+      case "Select":
+      case "Dropdown":
+        if (config.dropdown && Array.isArray(config.dropdown) && config.dropdown.length > 0) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Options: {config.dropdown.join(", ")}
+            </span>
+          );
+        }
+        break;
+
+      case "Text":
+        if (config.text) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Value: {config.text}
+            </span>
+          );
+        }
+        break;
+
+      case "Integer":
+        if (config.integer_value != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Value: {config.integer_value}
+            </span>
+          );
+        }
+        break;
+
+      default:
+        return null;
+    }
+  };
+
   const handleSaveLogs = async () => {
     console.log("=== SAVE LOGS CLICKED ===");
     console.log("1. currentEquipment:", currentEquipment);
@@ -341,7 +425,9 @@ const OvensWaterBathForm = ({
               placeholder="Type Here"
             />
             <label style={labelStyle}>Temperature Consistency (°C)</label>
-            <div style={rangeTextStyle}>Range : 37 °C For Embryo Culture</div>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Temperature Consistency (°C)")}
+            </div>
           </div>
 
           <div style={inputContainerStyle}>
@@ -355,6 +441,9 @@ const OvensWaterBathForm = ({
               <option value="Empty">Empty</option>
             </select>
             <label style={labelStyle}>Water Level Monitoring</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Water Level Monitoring")}
+            </div>
           </div>
 
           <div style={inputContainerStyle}>
@@ -367,6 +456,9 @@ const OvensWaterBathForm = ({
               <option value="Non-Functional">Non-Functional</option>
             </select>
             <label style={labelStyle}>Alarm Functionality</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Alarm Functionality")}
+            </div>
           </div>
 
           <div style={inputContainerStyle}>
@@ -377,7 +469,9 @@ const OvensWaterBathForm = ({
               placeholder="Type Here"
             />
             <label style={labelStyle}>Cleanliness & Decontamination Log</label>
-            <div style={rangeTextStyle}>Range : 0.45 - 0.75</div>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Cleanliness & Decontamination Log")}
+            </div>
           </div>
 
           <div style={inputContainerStyle}>
@@ -388,6 +482,9 @@ const OvensWaterBathForm = ({
               placeholder="Type Here"
             />
             <label style={labelStyle}>Comments</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Comments")}
+            </div>
           </div>
 
           <div style={inputContainerStyle}>
@@ -400,6 +497,9 @@ const OvensWaterBathForm = ({
               <option value="Fail">Fail</option>
             </select>
             <label style={labelStyle}>Status</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Status")}
+            </div>
           </div>
         </div>
 

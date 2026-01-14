@@ -63,6 +63,90 @@ const PHMetersForm = ({
     (ed) => ed.equipment_num === selectedRadio
   );
 
+  // ✅ GET PARAMETER CONFIG - Handle both formats (config object and config.history array)
+  const getParameterConfig = (parameterName: string) => {
+    const param = currentEquipment?.parameters?.find(
+      (p: any) => p.parameter_name?.toLowerCase() === parameterName.toLowerCase()
+    );
+
+    if (!param || !param.config) return null;
+
+    let config = param.config;
+
+    // If config has history array, get the latest entry
+    if (config.history && Array.isArray(config.history) && config.history.length > 0) {
+      config = config.history[config.history.length - 1];
+    }
+
+    return config;
+  };
+
+  // ✅ RENDER PARAMETER RANGE/VALUE TEXT
+  const renderParameterInfo = (parameterName: string) => {
+    const config = getParameterConfig(parameterName);
+    
+    if (!config) return null;
+
+    const dataType = config.data_type;
+
+    switch (dataType) {
+      case "Decimal":
+      case "Min/Max":
+        if (config.min_value != null && config.max_value != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Range: {config.min_value} - {config.max_value}
+            </span>
+          );
+        }
+        break;
+
+      case "Percentage":
+        if (config.percentage != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Range: 0% - {config.percentage}%
+            </span>
+          );
+        }
+        break;
+
+      case "Select":
+      case "Dropdown":
+        if (config.dropdown && Array.isArray(config.dropdown) && config.dropdown.length > 0) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Options: {config.dropdown.join(", ")}
+            </span>
+          );
+        }
+        break;
+
+      case "Text":
+        if (config.text) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Value: {config.text}
+            </span>
+          );
+        }
+        break;
+
+      case "Integer":
+        if (config.integer_value != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Value: {config.integer_value}
+            </span>
+          );
+        }
+        break;
+
+      default:
+        return null;
+    }
+  };
+
   const handleSaveLogs = async () => {
     console.log("=== SAVE LOGS CLICKED ===");
     console.log("1. currentEquipment:", currentEquipment);
@@ -209,6 +293,19 @@ const PHMetersForm = ({
     marginBottom: "16px",
   };
 
+  const labelStyle = {
+    position: "absolute" as const,
+    left: "12px",
+    top: "-8px",
+    backgroundColor: "#fff",
+    padding: "0 4px",
+    fontSize: "12px",
+    fontWeight: "500" as const,
+    color: "#64748b",
+  };
+
+  const rangeTextStyle = { fontSize: "11px", marginTop: "4px", color: "#94a3b8" };
+
   return (
     <div style={{ maxWidth: "1200px" }}>
       {/* SECTION 1: Radio Buttons, Form Fields, and Submission */}
@@ -282,20 +379,10 @@ const PHMetersForm = ({
               <option>Accurate</option>
               <option>Needs Calibration</option>
             </select>
-            <label
-              style={{
-                position: "absolute",
-                left: "12px",
-                top: "-8px",
-                backgroundColor: "#fff",
-                padding: "0 4px",
-                fontSize: "12px",
-                fontWeight: "500",
-                color: "#64748b",
-              }}
-            >
-              Calibration Checks
-            </label>
+            <label style={labelStyle}>Calibration Checks</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Calibration Checks")}
+            </div>
           </div>
 
           {/* Electrode Condition */}
@@ -320,20 +407,10 @@ const PHMetersForm = ({
               <option>Dirty</option>
               <option>Needs Replacement</option>
             </select>
-            <label
-              style={{
-                position: "absolute",
-                left: "12px",
-                top: "-8px",
-                backgroundColor: "#fff",
-                padding: "0 4px",
-                fontSize: "12px",
-                fontWeight: "500",
-                color: "#64748b",
-              }}
-            >
-              Electrode Condition
-            </label>
+            <label style={labelStyle}>Electrode Condition</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Electrode Condition")}
+            </div>
           </div>
 
           {/* Temperature Compensation Verification */}
@@ -359,20 +436,10 @@ const PHMetersForm = ({
               <option>Functional</option>
               <option>Non-Functional</option>
             </select>
-            <label
-              style={{
-                position: "absolute",
-                left: "12px",
-                top: "-8px",
-                backgroundColor: "#fff",
-                padding: "0 4px",
-                fontSize: "12px",
-                fontWeight: "500",
-                color: "#64748b",
-              }}
-            >
-              Temperature Compensation Verification
-            </label>
+            <label style={labelStyle}>Temperature Compensation Verification</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Temperature Compensation Verification")}
+            </div>
           </div>
 
           {/* Comments */}
@@ -394,20 +461,10 @@ const PHMetersForm = ({
                 backgroundColor: "#fff",
               }}
             />
-            <label
-              style={{
-                position: "absolute",
-                left: "12px",
-                top: "-8px",
-                backgroundColor: "#fff",
-                padding: "0 4px",
-                fontSize: "12px",
-                fontWeight: "500",
-                color: "#64748b",
-              }}
-            >
-              Comments
-            </label>
+            <label style={labelStyle}>Comments</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Comments")}
+            </div>
           </div>
 
           {/* Status */}
@@ -431,20 +488,10 @@ const PHMetersForm = ({
               <option>Pass</option>
               <option>Fail</option>
             </select>
-            <label
-              style={{
-                position: "absolute",
-                left: "12px",
-                top: "-8px",
-                backgroundColor: "#fff",
-                padding: "0 4px",
-                fontSize: "12px",
-                fontWeight: "500",
-                color: "#64748b",
-              }}
-            >
-              Status
-            </label>
+            <label style={labelStyle}>Status</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Status")}
+            </div>
           </div>
         </div>
 
