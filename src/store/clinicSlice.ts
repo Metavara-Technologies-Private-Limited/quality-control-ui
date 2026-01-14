@@ -29,7 +29,7 @@ const filterActiveClinicData = (clinic: Clinic | null): Clinic | null => {
           .filter((e) => e.is_active)
           .map((e) => ({
             ...e,
-            equipment_details: e.equipment_details.filter((ed) => ed.is_active),
+            // equipment_details: e.equipment_details.filter((ed) => ed.is_active),
             parameters: e.parameters.filter(
               (p) => p.is_active && !p.is_deleted
             ),

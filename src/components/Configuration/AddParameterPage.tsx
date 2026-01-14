@@ -265,6 +265,10 @@ const AddParameterPage = () => {
 
       setParameters((prev) => prev.filter((_, i) => i !== paramIndexToDelete));
       toast.info("Parameter deleted");
+      dispatch(fetchClinic(1));
+      setTimeout(() => {
+        navigate("/configuration/equipment", { replace: true });
+      }, 500);
     } catch (err) {
       toast.error("Failed to delete parameter");
       console.error(err);
