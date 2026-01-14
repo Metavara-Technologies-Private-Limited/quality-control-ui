@@ -1,41 +1,26 @@
-<<<<<<< Updated upstream
 import { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { Box, Container, Grid } from "@mui/material";
-=======
-import { useState, useEffect, useMemo } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
-import { Box, Container, Grid } from '@mui/material';
->>>>>>> Stashed changes
 
-import DepartmentTabs from '@/components/Dashboard/DepartmentTabs';
-import EquipmentCards from '@/components/Dashboard/EquipmentCards';
-import ParameterTabs from '@/components/Dashboard/ParameterTabs';
-import ParameterChart from '@/components/Dashboard/ParameterChart';
-import RecentActivity from '@/components/Dashboard/RecentActivity';
-import IncidentsChart from '@/components/Dashboard/IncidentsChart';
-import AverageParameterCards from '@/components/Dashboard/AverageParameterCards';
-import AssigneePanel from '@/components/Dashboard/AssigneePanel';
-import DashboardHeader from '@/components/Dashboard/DashboardHeader';
+import DepartmentTabs from "@/components/Dashboard/DepartmentTabs";
+import EquipmentCards from "@/components/Dashboard/EquipmentCards";
+import ParameterTabs from "@/components/Dashboard/ParameterTabs";
+import ParameterChart from "@/components/Dashboard/ParameterChart";
+import RecentActivity from "@/components/Dashboard/RecentActivity";
+import IncidentsChart from "@/components/Dashboard/IncidentsChart";
+import AverageParameterCards from "@/components/Dashboard/AverageParameterCards";
+import AssigneePanel from "@/components/Dashboard/AssigneePanel";
+import DashboardHeader from "@/components/Dashboard/DashboardHeader";
 
-<<<<<<< Updated upstream
 import type { Equipment, Parameter } from "@/types";
-=======
-import type { Equipment, Parameter } from '@/types';
->>>>>>> Stashed changes
 
 const Dashboard = () => {
   // Pull clinic data + loading state from Redux
   const { data: clinic, loading } = useSelector(
     (state: RootState) => state.clinic
-<<<<<<< Updated upstream
   ) as RootState["clinic"];
-  console.info("data:", clinic)
-=======
-  ) as RootState['clinic'];
->>>>>>> Stashed changes
+  console.info("data:", clinic);
 
   const [departmentId, setDepartmentId] = useState<number | null>(null);
   const [equipmentId, setEquipmentId] = useState<number | null>(null);
@@ -88,7 +73,7 @@ const Dashboard = () => {
   );
 
   const equipmentDetails = equipment?.equipment_details ?? [];
-  const activeValue = parameter?.parameter_values?.[0];
+  const activeValue = parameter?.config;
 
   return (
     <Container maxWidth={false} sx={{ py: 2 }}>
@@ -100,13 +85,8 @@ const Dashboard = () => {
         onChange={setDepartmentId}
       />
 
-<<<<<<< Updated upstream
       <Box sx={{ overflowX: "auto", pb: 1 }}>
         <Box sx={{ display: "inline-flex", gap: 2 }}>
-=======
-      <Box sx={{ overflowX: 'auto', pb: 1 }}>
-        <Box sx={{ display: 'inline-flex', gap: 2 }}>
->>>>>>> Stashed changes
           {equipments.map((eq) => (
             <EquipmentCards
               key={eq.id}
@@ -138,11 +118,7 @@ const Dashboard = () => {
                   equipmentId={equipment.id}
                   parameterId={parameter.id}
                   parameterName={parameter.parameter_name}
-<<<<<<< Updated upstream
-                  unit={activeValue?.content.unit || ""}
-=======
-                  unit={activeValue?.content.unit || ''}
->>>>>>> Stashed changes
+                  unit={activeValue?.unit || ""}
                 />
               </Grid>
 
@@ -164,7 +140,10 @@ const Dashboard = () => {
               </Grid>
 
               <Grid item xs={12} md={4}>
-                <AssigneePanel equipmentId={equipment.id} />
+                <AssigneePanel
+                  equipmentId={equipment.id}
+                  equipmentName={equipment.equipment_name}
+                />
               </Grid>
             </Grid>
           </Box>
