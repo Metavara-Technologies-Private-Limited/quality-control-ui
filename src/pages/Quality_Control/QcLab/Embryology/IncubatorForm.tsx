@@ -1,14 +1,16 @@
 import { parameterValueApi } from "@/services/api";
 import { useEffect, useState } from "react";
 import {
-  BarChart,
+  LineChart,
+  Line,
   Bar,
+  BarChart,ReferenceLine,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
 } from "recharts";
+
 
 interface IncubatorFormProps {
   selectedRadio: string;
@@ -22,68 +24,146 @@ interface IncubatorFormProps {
   }[];
 }
 
-const activityData = [
-  { day: "Monday", compliant: 34, nonCompliant: -23 },
-  { day: "Tuesday", compliant: 28, nonCompliant: -22 },
-  { day: "Wednesday", compliant: 22, nonCompliant: -36 },
-  { day: "Thursday", compliant: 34, nonCompliant: -12 },
-  { day: "Friday", compliant: 29, nonCompliant: -28 },
-  { day: "Saturday", compliant: 15, nonCompliant: -33 },
-  { day: "Sunday", compliant: 25, nonCompliant: -25 },
-];
-
 const IncubatorForm = ({
   selectedRadio,
   setSelectedRadio,
   equipmentDetails,
 }: IncubatorFormProps) => {
   const [logValues, setLogValues] = useState<Record<string, string>>({});
+  
+
+// --- ADD THIS CODE START ---
+const [chartData, setChartData] = useState<any[]>([
+  { day: "Mon", compliant: 0, nonCompliant: 0 },
+  { day: "Tue", compliant: 0, nonCompliant: 0 },
+  { day: "Wed", compliant: 0, nonCompliant: 0 },
+  { day: "Thu", compliant: 0, nonCompliant: 0 },
+  { day: "Fri", compliant: 0, nonCompliant: 0 },
+]);
+
+  const currentEquipmentDetail = equipmentDetails?.find(
+    (ed: any) => ed.equipment_num === selectedRadio
+  );
+const fetchGraphData = async () => {
+  if (!currentEquipmentDetail?.parameters) return;
+
+  const weekDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const chartMap: any = {};
+  weekDays.forEach((day) => {
+    chartMap[day] = { day, compliant: 0, nonCompliant: 0 };
+  });
+
+  try {
+    // This fetches data for ALL parameters (Temperature, Humidity, etc.)
+    const requests = currentEquipmentDetail.parameters.map((param: any) =>
+      parameterValueApi.listByParameter(param.id)
+    );
+
+    const responses = await Promise.all(requests);
+
+    responses.forEach((res, index) => {
+      // Get the name of the current parameter (e.g., "Temperature" or "Humidity")
+      const paramName = currentEquipmentDetail.parameters[index].parameter_name.toLowerCase();
+
+      res.data.forEach((entry: any) => {
+        if (!entry.created_at || entry.content === "NO_RECORD") return;
+
+        const value = Number(entry.content.replace('%', '')); // Remove % if present
+        if (isNaN(value)) return;
+
+        const dayName = weekDays[new Date(entry.created_at).getDay()];
+        
+        // --- SAFE RANGE SETTINGS ---
+        let isCompliant = false;
+
+        if (paramName.includes("temperature")) {
+          // Temperature safe range: 20 - 55
+          isCompliant = value >= 20 && value <= 55;
+        } 
+
+        else {
+          // Default fallback for other parameters
+          isCompliant = value > 0; 
+        }
+
+        // --- ASSIGN TO BARS ---
+        if (isCompliant) {
+          chartMap[dayName].compliant += value;
+        } else {
+          chartMap[dayName].nonCompliant -= value;
+        }
+      });
+    });
+
+    setChartData(weekDays.map((day) => chartMap[day]));
+  } catch (err) {
+    console.error("Graph fetch failed", err);
+  }
+};
+
+useEffect(() => {
+  if (selectedRadio) {
+    fetchGraphData();
+  }
+}, [selectedRadio, currentEquipmentDetail]); // This ensures it runs when radio changes
+
 
   const setValue = (key: string, value: string) => {
     setLogValues((prev) => ({ ...prev, [key]: value }));
   };
 
-  const currentEquipmentDetail = equipmentDetails?.find(
-    (ed: any) => ed.equipment_num === selectedRadio
-  );
 
-  const handleSaveLogs = async () => {
-    if (!currentEquipment || !currentEquipmentDetail) return;
 
-    try {
-      const requests = currentEquipment.parameters
-        .map((param: any) => {
-          const key = param.parameter_name.toLowerCase();
-          const value = logValues[key];
+ const handleSaveLogs = async () => {
+  if (!currentEquipment || !currentEquipmentDetail) return;
 
-          if (!value) return null;
+  try {
+    const requests = currentEquipment.parameters
+      .map((param: any) => {
+        const key = param.parameter_name.toLowerCase();
+        const value = logValues[key];
+        if (!value) return null;
 
-          return parameterValueApi.create({
-            parameter: param.id,
-            equipment_details: currentEquipmentDetail.equipment_id, // ✅ REQUIRED
-            content: value, // ✅ CORRECT FIELD
-          });
-        })
-        .filter(Boolean);
+        return parameterValueApi.create({
+          parameter: param.id,
+          equipment_details: currentEquipmentDetail.equipment_id,
+          content: value,
+        });
+      })
+      .filter(Boolean);
 
-      await Promise.all(requests);
+    await Promise.all(requests);
+    alert("Parameter logs saved successfully");
 
-      alert("Parameter logs saved successfully");
-    } catch (err) {
-      console.error("Failed to save parameter logs", err);
-    }
-  };
+
+  } catch (err) {
+    console.error("Failed to save parameter logs", err);
+  }
+};
 
   console.log("cc:selectedRadio", currentEquipmentDetail);
-  useEffect(() => {
-    if (!selectedRadio && equipmentDetails.length > 0) {
-      setSelectedRadio(equipmentDetails[0].equipment_num);
-    }
-  }, [equipmentDetails, selectedRadio, setSelectedRadio]);
+  
+  
+  // --- USEEFFECTS for equipments change  ---
+useEffect(() => {
+  if (!selectedRadio && equipmentDetails.length > 0) {
+    setSelectedRadio(equipmentDetails[0].equipment_num);
+  }
 
-  const currentEquipment = equipmentDetails.find(
+  if (selectedRadio && currentEquipmentDetail) {
+    console.log("Switching equipment to:", selectedRadio);
+    fetchGraphData();
+  }
+}, [selectedRadio, currentEquipmentDetail, equipmentDetails, setSelectedRadio]); 
+
+
+const currentEquipment = equipmentDetails.find(
     (ed) => ed.equipment_num === selectedRadio
   );
+
+  const temperatureParam = currentEquipment?.parameters.find(
+  (p: any) => p.parameter_name.toLowerCase() === "temperature"
+);
 
   const renderRangeText = (param: any) => {
     console.log("cc:param", param);
@@ -211,7 +291,7 @@ const IncubatorForm = ({
         >
           {equipmentDetails.map((ed) => (
             <label
-              key={ed.equipment_num}
+              key={ed.equipment_id}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -245,22 +325,44 @@ const IncubatorForm = ({
           }}
         >
           <div style={inputContainerStyle}>
-            <input
-              style={inputStyle}
-              // defaultValue={}
-              disabled={!isParamAvailable("Temperature")}
-              onChange={(e) => setValue("temperature", e.target.value)}
-              placeholder="Type Here"
-            />
-            <label style={labelStyle}>Temperature (°C)</label>
-            {latestTemp && (
-              <div style={rangeTextStyle}>
-                <span style={{ color: "#94a3b8" }}>
-                  {renderRangeText(latestTemp)}
-                </span>
-              </div>
-            )}
-          </div>
+  <input
+    style={inputStyle}
+    disabled={!isParamAvailable("Temperature")}
+    onChange={(e) => setValue("temperature", e.target.value)}
+    placeholder="Type Here"
+  />
+  <label style={labelStyle}>Temperature (°C)</label>
+
+{temperatureParam?.min_value != null &&
+ temperatureParam?.max_value != null && (
+  <div
+    style={{
+      fontSize: "11px",
+      marginTop: "4px",
+      display: "flex",
+      gap: "6px",
+      alignItems: "center",
+      color: "#94a3b8",
+    }}
+  >
+    {/* Recommended text (static or midpoint example) */}
+    <span>
+      Recommended :{" "}
+      {((temperatureParam.min_value + temperatureParam.max_value) / 2).toFixed(1)}
+      °C
+    </span>
+
+    <span>|</span>
+
+    {/* Range text (dynamic from parameters) */}
+    <span style={{ color: "#ef4444" }}>
+      Range : {temperatureParam.min_value}°C – {temperatureParam.max_value}°C
+    </span>
+  </div>
+)}
+
+</div>
+
           {/* CO2 Concentration */}
           <div style={inputContainerStyle}>
             <input
@@ -506,7 +608,7 @@ const IncubatorForm = ({
         <div style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={activityData}
+              data={chartData}
               stackOffset="sign"
               margin={{ top: 20, right: 30, left: 45, bottom: 20 }}
             >
@@ -517,8 +619,7 @@ const IncubatorForm = ({
                 tickLine={false}
               />
               <YAxis
-                domain={[-40, 40]}
-                ticks={[-40, -20, 0, 20, 40]}
+                domain={['auto', 'auto']}
                 tick={{ fontSize: 12, fill: "#9e9e9e" }}
                 axisLine={false}
                 tickLine={false}
@@ -545,30 +646,38 @@ const IncubatorForm = ({
               <ReferenceLine y={-20} stroke="#F1F1F1" />
               <ReferenceLine y={-40} stroke="#F1F1F1" />
 
-              <Bar
-                dataKey="compliant"
-                fill="#6c6c6c"
-                radius={[4, 4, 0, 0]}
-                barSize={15}
-                label={{ position: "top", fill: "#9e9e9e", fontSize: 10 }}
-              />
-              <Bar
-                dataKey="nonCompliant"
-                fill="#EF9685"
-                radius={[0, 0, 4, 4]}
-                barSize={15}
-                label={({ x, y, value, width }: any) => (
-                  <text
-                    x={x + width / 2}
-                    y={y + 14}
-                    fill="#EF9685"
-                    fontSize={10}
-                    textAnchor="middle"
-                  >
-                    {value}
-                  </text>
-                )}
-              />
+<Bar
+  dataKey="compliant"
+  stackId="a"
+  fill="#6c6c6c"
+  radius={[4, 4, 0, 0]}
+  barSize={20}
+  // Simplified label to avoid TS errors
+  label={{ position: 'top', fill: '#6c6c6c', fontSize: 10 }}
+/>
+
+<Bar
+  dataKey="nonCompliant"
+  stackId="a"
+  fill="#EF9685"
+  radius={[0, 0, 4, 4]}
+  barSize={20}
+  label={(props: any) => {
+    const { x, y, width, value } = props;
+    if (!value || value === 0) return null;
+    return (
+      <text 
+        x={x + width / 2} 
+        y={y + 15} // Positions text below the downward bar
+        fill="#EF9685" 
+        fontSize={10} 
+        textAnchor="middle"
+      >
+        {Math.abs(value)}
+      </text>
+    );
+  }}
+/>
             </BarChart>
           </ResponsiveContainer>
         </div>
