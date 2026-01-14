@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -7,47 +7,67 @@ import {
   Avatar,
   IconButton,
   Divider,
+  TextField,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
 
-import { mockAssignees, mockEquipments } from "@/utils/mockData";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
+import { getAvatarForId } from "@/utils/mockData";
 
 interface AssigneePanelProps {
   equipmentId: number;
+  equipmentName: string;
 }
 
-const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
-  const [assignees, setAssignees] = useState(mockAssignees);
-
-  const assigned = assignees.filter(
-    (a) => a.equipment_id === equipmentId
+const AssigneePanel: React.FC<AssigneePanelProps> = ({
+  // equipmentId,
+  equipmentName,
+}) => {
+  const assigneesFromStore = useSelector(
+    (state: RootState) => state.assignees.data
   );
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+
+  /** ✅ KEEP LOCAL STATE (same logic as before) */
+  const [assignees, setAssignees] = useState(assigneesFromStore);
+
+  /** Sync once store is loaded */
+  useEffect(() => {
+    setAssignees(assigneesFromStore);
+  }, [assigneesFromStore]);
+
+  const assigned = assignees.filter((a) => a.department_name === equipmentName);
 
   const available = assignees.filter(
-    (a) => a.equipment_id === null
+    (a) => a.department_name !== equipmentName
   );
 
-  const equipmentName =
-    mockEquipments.find((e) => e.id === equipmentId)?.equipment_name ||
-    "Incubator";
-
+  /** 🔁 SAME LOGIC — UNCHANGED */
   const handleAssign = (id: number) => {
     setAssignees((prev) =>
       prev.map((a) =>
-        a.id === id ? { ...a, equipment_id: equipmentId } : a
+        a.id === id ? { ...a, department_name: equipmentName } : a
       )
     );
   };
 
   const handleUnassign = (id: number) => {
     setAssignees((prev) =>
-      prev.map((a) =>
-        a.id === id ? { ...a, equipment_id: null } : a
-      )
+      prev.map((a) => (a.id === id ? { ...a, department_name: null } : a))
     );
   };
+
+  const filteredAssigned = assigned.filter((a) =>
+    a.emp_name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredAvailable = available.filter((a) =>
+    a.emp_name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <Card sx={{ height: "100%", minHeight: 350, borderRadius: 3 }}>
@@ -59,17 +79,27 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
           justifyContent: "space-between",
         }}
       >
-        <Typography fontWeight={700}>Incubator Assignees</Typography>
-        <IconButton size="small">
+        <Typography fontWeight={700}>{equipmentName} Assignees</Typography>
+        <IconButton size="small" onClick={() => setShowSearch((prev) => !prev)}>
           <SearchIcon />
         </IconButton>
+
+        {showSearch && (
+          <TextField
+            size="small"
+            placeholder="Search Assignees"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ ml: 1 }}
+          />
+        )}
       </CardContent>
 
       <Divider />
 
-      {/* Assigned bar */}
+      {/* Assigned */}
       <Box sx={{ p: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
-        {assigned.map((a) => (
+        {filteredAssigned.map((a) => (
           <Box
             key={a.id}
             sx={{
@@ -82,10 +112,10 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
               backgroundColor: "#f3f4f6",
             }}
           >
-            <Avatar src={a.avatar} sx={{ width: 28, height: 28 }} />
+            <Avatar src={getAvatarForId(a.id)} sx={{ width: 28, height: 28 }} />
             <Box>
               <Typography fontSize={13} fontWeight={500}>
-                {a.name}
+                {a.emp_name}
               </Typography>
               <Typography fontSize={11} color="text.secondary">
                 {equipmentName}
@@ -98,11 +128,9 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
         ))}
       </Box>
 
-      <Divider />
-
-      {/* Available list */}
+      {/* Available */}
       <Box sx={{ p: 2 }}>
-        {available.map((a) => (
+        {filteredAvailable.map((a) => (
           <Box
             key={a.id}
             sx={{
@@ -113,8 +141,8 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ equipmentId }) => {
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Avatar src={a.avatar} />
-              <Typography>{a.name}</Typography>
+              <Avatar src={getAvatarForId(a.id)} />
+              <Typography>{a.emp_name}</Typography>
             </Box>
             <IconButton size="small" onClick={() => handleAssign(a.id)}>
               <AddIcon />

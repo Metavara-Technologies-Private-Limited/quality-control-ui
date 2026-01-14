@@ -32,8 +32,12 @@ interface EquipmentUnit {
 interface Parameter {
   id: number;
   name: string;
-  min?: string;
-  max?: string;
+  fieldType?: string;
+  min?: number | string;
+  max?: number | string;
+  value?: number | string;
+  unit?: string;
+  options?: string[];
 }
 
 interface Equipment {
@@ -46,7 +50,7 @@ interface Equipment {
 export type SelectedEquipmentData = {
   equipment: Equipment;
   units: number[];
-  parameters: number[];
+  parameters: { id: number; value?: number | string }[];
 };
 
 interface Props {
@@ -65,28 +69,124 @@ export default function AddEquipmentDialog({
   onAdd,
 }: Props) {
   /* ===== NORMALIZE BACKEND ===== */
-
   const normalized: Equipment[] = useMemo(() => {
     return (equipments || []).map((eq) => ({
       id: eq.id,
       equipment_name: eq.equipment_name,
+
       units: (eq.equipment_details || []).map((u: any) => ({
         id: u.id,
         name: u.equipment_num,
         make: u.make,
         model: u.model,
       })),
-      parameters: (eq.parameters || []).map((p: any) => ({
-        id: p.id,
-        name: p.parameter_name,
-        min: p.parameter_values?.[0]?.content?.min_value,
-        max: p.parameter_values?.[0]?.content?.max_value,
-      })),
+
+      parameters: (eq.parameters || []).map((p: any) => {
+        const content = p.parameter_values?.[0]?.content || p.config || {};
+        const dataType = (
+          content.data_type ||
+          p.parameter_data_type ||
+          p.data_type ||
+          p.field_type ||
+          ""
+        ).toLowerCase();
+
+        return {
+          id: p.id,
+          name: p.parameter_name,
+          fieldType: dataType,
+
+          // Only integer uses value, decimal keeps min/max
+          value:
+            dataType === "integer"
+              ? content.value ?? content.default ?? undefined
+              : undefined,
+
+          min:
+            dataType !== "integer"
+              ? content.min_value ?? content.min ?? undefined
+              : undefined,
+          max:
+            dataType !== "integer"
+              ? content.max_value ?? content.max ?? undefined
+              : undefined,
+
+          unit: content.unit,
+
+          options: Array.isArray(content.dropdown)
+            ? content.dropdown
+            : content.dropdown
+            ? [content.dropdown]
+            : [],
+        };
+      }),
     }));
   }, [equipments]);
 
-  /* ===== STATE ===== */
+  /* ===== PARAMETER DISPLAY LOGIC ===== */
+  const renderParameterInfo = (p: Parameter) => {
+    switch (p.fieldType) {
+      case "decimal":
+        return p.min != null && p.max != null ? (
+          <Typography fontSize={11} color={TEXT_GRAY}>
+            Range: {p.min} – {p.max} {p.unit ? p.unit : ""}
+          </Typography>
+        ) : (
+          <Typography fontSize={11} color={TEXT_GRAY}>
+            Range: N/A
+          </Typography>
+        );
 
+      case "integer":
+        return (
+          <Typography fontSize={11} color={TEXT_GRAY}>
+            Value: {p.value !== undefined ? p.value : "N/A"} {p.unit ?? ""}
+          </Typography>
+        );
+
+      case "percentage":
+        return p.min != null ? (
+          <Typography fontSize={11} color={TEXT_GRAY}>
+            Value: {p.min}%
+          </Typography>
+        ) : (
+          <Typography fontSize={11} color={TEXT_GRAY}>
+            Value: N/A
+          </Typography>
+        );
+
+      case "dropdown":
+      case "select":
+        return (
+          <Typography fontSize={11} color={TEXT_GRAY}>
+            Options: {p.options?.length ? p.options.join(", ") : "N/A"}
+          </Typography>
+        );
+
+      case "boolean":
+        return (
+          <Typography fontSize={11} color={TEXT_GRAY}>
+            Values: Yes / No
+          </Typography>
+        );
+
+      case "text":
+        return (
+          <Typography fontSize={11} color={TEXT_GRAY}>
+            Text input
+          </Typography>
+        );
+
+      default:
+        return (
+          <Typography fontSize={11} color={TEXT_GRAY}>
+            N/A
+          </Typography>
+        );
+    }
+  };
+
+  /* ===== STATE ===== */
   const [selected, setSelected] = useState<SelectedEquipmentData[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
 
@@ -100,7 +200,6 @@ export default function AddEquipmentDialog({
   const active = selected.find((s) => s.equipment.id === activeId);
 
   /* ===== HANDLERS ===== */
-
   const toggleEquipment = (eq: Equipment) => {
     setActiveId(eq.id);
     setSelected((prev) => {
@@ -113,7 +212,7 @@ export default function AddEquipmentDialog({
         {
           equipment: eq,
           units: eq.units.map((u) => u.id),
-          parameters: eq.parameters.map((p) => p.id),
+          parameters: eq.parameters.map((p) => ({ id: p.id, value: p.value })),
         },
       ];
     });
@@ -143,8 +242,8 @@ export default function AddEquipmentDialog({
           ? {
               ...s,
               parameters: s.parameters.includes(id)
-                ? s.parameters.filter((p) => p !== id)
-                : [...s.parameters, id],
+                ? s.parameters.filter((p) => (p as any).id !== id)
+                : [...s.parameters, { id, value: undefined }],
             }
           : s
       )
@@ -152,7 +251,6 @@ export default function AddEquipmentDialog({
   };
 
   /* ================= UI ================= */
-
   return (
     <Dialog open={open} maxWidth="lg" fullWidth onClose={onClose}>
       <DialogTitle fontWeight={600}>Add Equipment</DialogTitle>
@@ -160,7 +258,7 @@ export default function AddEquipmentDialog({
 
       <DialogContent sx={{ p: 3 }}>
         <Grid container spacing={3} minHeight={520}>
-          {/* ================= LEFT BOX ================= */}
+          {/* LEFT BOX */}
           <Grid item xs={3}>
             <Box
               sx={{
@@ -214,24 +312,30 @@ export default function AddEquipmentDialog({
                 })}
               </Stack>
 
-              {/* ACTION BUTTONS */}
               <Stack direction="row" spacing={1} mt={3}>
                 <Button
-                  fullWidth
-                  variant="outlined"
-                  sx={{ textTransform: "none" }}
                   onClick={onClose}
+                  sx={{
+                    textTransform: "none",
+                    borderRadius: "10px",
+                    border: "1px solid #D1D5DB",
+                    color: "#374151",
+                    px: 3,
+                    height: 44,
+                    fontWeight: 500,
+                  }}
                 >
                   Cancel
                 </Button>
                 <Button
                   fullWidth
                   variant="contained"
+                  disabled={!selected.length}
                   sx={{
-                    backgroundColor: "#4B4B4B",
+                    backgroundColor: "#000",
+                    color: "#fff",
                     textTransform: "none",
                   }}
-                  disabled={!selected.length}
                   onClick={() => {
                     onAdd(selected);
                     onClose();
@@ -243,7 +347,7 @@ export default function AddEquipmentDialog({
             </Box>
           </Grid>
 
-          {/* ================= RIGHT CONTENT ================= */}
+          {/* RIGHT CONTENT */}
           <Grid item xs={9}>
             {active && (
               <Stack spacing={3}>
@@ -251,7 +355,7 @@ export default function AddEquipmentDialog({
                   {active.equipment.equipment_name}
                 </Typography>
 
-                {/* ===== UNITS ===== */}
+                {/* UNITS */}
                 <Grid container spacing={2}>
                   {active.equipment.units.map((u) => {
                     const checked = active.units.includes(u.id);
@@ -264,7 +368,7 @@ export default function AddEquipmentDialog({
                             borderRadius: 2,
                             border: `1px solid ${BORDER}`,
                             cursor: "pointer",
-                            bgcolor: checked ? LIGHT_GREEN : "#FFF",
+                            bgcolor: "#fff",
                           }}
                         >
                           <Box display="flex" alignItems="center" gap={1}>
@@ -272,8 +376,8 @@ export default function AddEquipmentDialog({
                               size="small"
                               checked={checked}
                               sx={{
-                                color: GREEN,
-                                "&.Mui-checked": { color: GREEN },
+                                color: "#000",
+                                "&.Mui-checked": { color: "#000" },
                               }}
                             />
                             <Typography fontSize={13} fontWeight={500}>
@@ -281,7 +385,6 @@ export default function AddEquipmentDialog({
                             </Typography>
                           </Box>
 
-                          {/* MAKE & MODEL — FIXED */}
                           <Typography fontSize={11} color={TEXT_GRAY} mt={0.5}>
                             Make : {u.make || "-"} | Model : {u.model || "-"}
                           </Typography>
@@ -291,12 +394,13 @@ export default function AddEquipmentDialog({
                   })}
                 </Grid>
 
-                {/* ===== PARAMETERS ===== */}
+                {/* PARAMETERS */}
                 <Typography fontWeight={600}>Parameters</Typography>
-
                 <Grid container spacing={2}>
                   {active.equipment.parameters.map((p) => {
-                    const checked = active.parameters.includes(p.id);
+                    const checked = active.parameters.some(
+                      (ap) => ap.id === p.id
+                    );
                     return (
                       <Grid item xs={3} key={p.id}>
                         <Card
@@ -306,7 +410,7 @@ export default function AddEquipmentDialog({
                             borderRadius: 2,
                             border: `1px solid ${BORDER}`,
                             cursor: "pointer",
-                            bgcolor: checked ? LIGHT_GREEN : "#FFF",
+                            bgcolor: "#fff",
                           }}
                         >
                           <Box display="flex" alignItems="center" gap={1}>
@@ -314,18 +418,14 @@ export default function AddEquipmentDialog({
                               size="small"
                               checked={checked}
                               sx={{
-                                color: GREEN,
-                                "&.Mui-checked": { color: GREEN },
+                                color: "#000",
+                                "&.Mui-checked": { color: "#000" },
                               }}
                             />
-                            <Typography fontSize={13}>
-                              {p.name}
-                            </Typography>
+                            <Typography fontSize={13}>{p.name}</Typography>
                           </Box>
 
-                          <Typography fontSize={11} color={TEXT_GRAY}>
-                            Range: {p.min} – {p.max}
-                          </Typography>
+                          {renderParameterInfo(p)}
                         </Card>
                       </Grid>
                     );

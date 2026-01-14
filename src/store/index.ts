@@ -1,9 +1,11 @@
-import { configureStore } from '@reduxjs/toolkit';
-import clinicReducer from './clinicSlice';
+import { configureStore } from "@reduxjs/toolkit";
+import clinicReducer from "./clinicSlice";
+import assigneeReducer from "./assigneeSlice";
 
 export const store = configureStore({
   reducer: {
     clinic: clinicReducer,
+    assignees: assigneeReducer,
   },
 });
 

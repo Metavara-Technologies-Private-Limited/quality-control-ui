@@ -1,100 +1,274 @@
-import React, { useState, useEffect } from "react";
-import { Filter, Plus } from "lucide-react";
+import { useState, useMemo } from "react";
+import { useSelector } from "react-redux";
+import { Plus, X } from "lucide-react";
+import { useOutletContext } from "react-router-dom";
+
+import { RootState } from "@/store";
+import { Assignee } from "@/types";
+
+import IncubatorForm from "./IncubatorForm";
 import LFHForm from "./LFHForm";
 import MicroscopesForm from "./MicroscopesForm";
 import CryopreservationForm from "./CryopreservationForm";
 import OvensWaterBathForm from "./OvensWaterBathForm";
 import PHMetersForm from "./PHMetersForm";
-import IncubatorForm from "./IncubatorForm";
 
-const Equipment = () => {
-  const [view, setView] = useState("list");
-  const [activeTab, setActiveTab] = useState("To-Do");
-  
-  const [equipmentData, setEquipmentData] = useState<any[]>([]);
-  const [selectedEquipment, setSelectedEquipment] = useState("");
-  const [selectedRadio, setSelectedRadio] = useState("");
-  const [equipmentType, setEquipmentType] = useState("incubator");
-  const [currentParameters, setCurrentParameters] = useState<any[]>([]); 
-  const [loading, setLoading] = useState(true);
+const formatCount = (value: number) => String(value).padStart(2, "0");
 
-  const assignees = [
-    "https://i.pravatar.cc/150?img=1",
-    "https://i.pravatar.cc/150?img=2",
-    "https://i.pravatar.cc/150?img=3",
-  ];
+const determineEquipmentType = (name: string) => {
+  const n = name.toLowerCase();
+  if (n.includes("incubator")) return "incubator";
+  if (n.includes("lfh") || n.includes("hood") || n.includes("laminar")) return "lfh";
+  if (n.includes("ovens") || n.includes("water bath") || n.includes("oven")) return "ovens";
+  if (n.includes("waterbath") || n.includes("water bath")) return "waterbath";
+  if (n.includes("microscope")) return "microscopes";
+  if (
+    n.includes("ph meter") ||
+    n.includes("phmeter") ||
+    n.includes("ph-meter") ||
+    n.includes("ph_meter") ||
+    n.includes("phmeters") ||
+    n.includes("ph meters") ||
+    n.includes("digital ph") ||
+    n.includes("benchtop ph") ||
+    n.includes("ph/mv meter")
+  ) return "phmeters";
+  if (n.includes("cryo") || n.includes("ln2")) return "cryopreservation";
+  return "other";
+};
 
-  const determineEquipmentType = (name: string) => {
-    const n = name.toLowerCase();
-    if (n.includes("incubator")) return "incubator";
-    if (n.includes("lfh") || n.includes("hood")) return "lfh";
-    if (n.includes("ovens") || n.includes("water bath")) return "ovens";
-    if (n.includes("waterbath") || n.includes("water bath")) return "waterbath";
-    if (n.includes("microscope")) return "microscopes";
-    if (n.includes("phmeters")) return "phmeters";
-    if (n.includes("cryo") || n.includes("ln2")) return "cryopreservation";
-    return "other";
+const CustomPlusIcon = () => (
+  <div style={{ width: "24px", height: "24px", borderRadius: "6px", border: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fff", cursor: "pointer" }}>
+    <div style={{ width: "18px", height: "18px", borderRadius: "50%", backgroundColor: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <Plus size={14} color="#fff" strokeWidth={3} />
+    </div>
+  </div>
+);
+
+// --- Assignee Dialog Component ---
+type AssigneeDialogProps = {
+  open: boolean;
+  onClose: () => void;
+  availableAssignees: Assignee[];
+  currentAssignees: Assignee[];
+  onAdd: (assignees: Assignee[]) => void;
+};
+
+const AssigneeDialog = ({ open, onClose, availableAssignees, currentAssignees, onAdd }: AssigneeDialogProps) => {
+  const [selected, setSelected] = useState<Assignee[]>([]);
+  if (!open) return null;
+
+  const handleToggle = (assignee: Assignee) => {
+    setSelected((prev) => {
+      const exists = prev.find((a) => a.id === assignee.id);
+      return exists ? prev.filter((a) => a.id !== assignee.id) : [...prev, assignee];
+    });
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(`http://127.0.0.1:8000/api/get_clinic/1/`);
-        const data = await response.json();
-
-        let equipmentList: any[] = [];
-        data.department.forEach((dep: any) => {
-          dep.equipments.forEach((eq: any) => {
-            const params = eq.parameters || []; 
-            equipmentList.push({
-              id: eq.id,
-              name: eq.equipment_name,
-              departmentName: dep.name,
-              parameters: params,
-              paramsCount: `${String(params.length).padStart(2, '0')}/${String(params.length).padStart(2, '0')}`,
-              progress: "100%",
-              type: determineEquipmentType(eq.equipment_name)
-            });
-          });
-        });
-
-        setEquipmentData(equipmentList);
-        if (equipmentList.length > 0) {
-          const firstEq = equipmentList[0];
-          setSelectedEquipment(firstEq.name);
-          setSelectedRadio(firstEq.name);
-          setEquipmentType(firstEq.type);
-          setCurrentParameters(firstEq.parameters);
-        }
-      } catch (error) {
-        console.error("Error loading equipments:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-
-  const handleSelectEquipment = (item: any) => {
-    setSelectedEquipment(item.name);
-    setEquipmentType(item.type);
-    setSelectedRadio(item.name);
-    setCurrentParameters(item.parameters);
+  const handleAdd = () => {
+    onAdd(selected);
+    setSelected([]);
+    onClose();
   };
 
-  const groupedEquipments = equipmentData.reduce((acc, curr) => {
-    if (!acc[curr.departmentName]) acc[curr.departmentName] = [];
-    acc[curr.departmentName].push(curr);
-    return acc;
-  }, {});
+  const available = availableAssignees.filter((a) => !currentAssignees.find((curr) => curr.id === a.id));
 
-  const CustomPlusIcon = () => (
-    <div style={{ width: "24px", height: "24px", borderRadius: "6px", border: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fff" }}>
-      <div style={{ width: "18px", height: "18px", borderRadius: "50%", backgroundColor: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Plus size={14} color="#fff" strokeWidth={3} />
+  return (
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }} onClick={onClose}>
+      <div style={{ backgroundColor: "#fff", borderRadius: "16px", width: "520px", maxHeight: "80vh", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid #E5E7EB" }}>
+          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 600 }}>Select Assignees</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center" }}><X size={20} color="#6B7280" /></button>
+        </div>
+        <div style={{ padding: "24px", overflowY: "auto", flex: 1 }}>
+          {available.length === 0 ? (
+            <p style={{ textAlign: "center", color: "#6B7280" }}>No available assignees</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {available.map((assignee) => {
+                const isSelected = selected.find((a) => a.id === assignee.id);
+                return (
+                  <div key={assignee.id} onClick={() => handleToggle(assignee)} style={{ padding: "12px 16px", borderRadius: "8px", border: isSelected ? "2px solid #2563EB" : "1px solid #E5E7EB", backgroundColor: isSelected ? "#EFF6FF" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{ width: "40px", height: "40px", borderRadius: "50%", backgroundColor: "#E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: "14px", color: "#374151" }}>{assignee.emp_name.charAt(0).toUpperCase()}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: "14px" }}>{assignee.emp_name}</div>
+                      <div style={{ fontSize: "12px", color: "#6B7280" }}>{assignee.department_name}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <div style={{ padding: "16px 24px", borderTop: "1px solid #E5E7EB", display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+          <button onClick={onClose} style={{ padding: "10px 24px", borderRadius: "10px", border: "1px solid #D1D5DB", backgroundColor: "#fff", cursor: "pointer", fontWeight: 500, fontSize: "14px" }}>Cancel</button>
+          <button onClick={handleAdd} disabled={selected.length === 0} style={{ padding: "10px 24px", borderRadius: "10px", border: "none", backgroundColor: selected.length === 0 ? "#D1D5DB" : "#4B4B4B", color: "#fff", cursor: selected.length === 0 ? "not-allowed" : "pointer", fontWeight: 500, fontSize: "14px" }}>Add ({selected.length})</button>
+        </div>
       </div>
     </div>
   );
+};
+
+// --- Equipment Card Component ---
+type EquipmentCardProps = {
+  item: any;
+  selected?: boolean;
+  onClick: () => void;
+  assignees: Assignee[];
+  onAddAssignee: () => void;
+  onRemoveAssignee: (assigneeId: number) => void;
+};
+
+const EquipmentCard = ({ item, selected = false, onClick, assignees, onAddAssignee, onRemoveAssignee }: EquipmentCardProps) => {
+  const totalParams = item.parameters.length || 0;
+  const activeParams = item.parameters.filter((p: any) => p.is_active).length;
+  const activePercent = totalParams > 0 ? Math.round((activeParams / totalParams) * 100) : 0;
+  const percentColor = activePercent === 100 ? "#16a34a" : "#f97316";
+
+  return (
+    <div style={{ padding: "16px", borderRadius: "12px", cursor: "pointer", backgroundColor: selected ? "#fef3f2" : "#fff", border: selected ? "2px solid #f97316" : "1px solid #e5e7eb", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }} onClick={onClick}>
+        <span style={{ fontSize: "13px", fontWeight: "700" }}>{item.detailName} : <span style={{ color: "#64748b", fontWeight: "400" }}>Parameters: {item.paramsCount}</span></span>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }} onClick={(e) => e.stopPropagation()}>
+          <span style={{ fontSize: "12px", fontWeight: "700", color: "#0f172a" }}>Assignee :</span>
+          <div style={{ display: "flex", position: "relative" }}>
+            {assignees.slice(0, 3).map((assignee, i) => (
+              <div key={assignee.id} style={{ position: "relative", marginLeft: i > 0 ? "-8px" : 0 }} title={assignee.emp_name}>
+                <div style={{ width: "24px", height: "24px", borderRadius: "50%", border: "2px solid white", backgroundColor: "#E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 600, color: "#374151" }}>{assignee.emp_name.charAt(0).toUpperCase()}</div>
+                <button onClick={(e) => { e.stopPropagation(); onRemoveAssignee(assignee.id); }} style={{ position: "absolute", top: "-4px", right: "-4px", width: "14px", height: "14px", borderRadius: "50%", border: "1px solid white", backgroundColor: "#EF4444", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0 }}><X size={10} color="white" /></button>
+              </div>
+            ))}
+            {assignees.length > 3 && <div style={{ width: "24px", height: "24px", borderRadius: "50%", border: "2px solid white", backgroundColor: "#6B7280", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 600, color: "white", marginLeft: "-8px" }}>+{assignees.length - 3}</div>}
+          </div>
+          <div onClick={onAddAssignee}><CustomPlusIcon /></div>
+        </div>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "12px" }} onClick={onClick}>
+        <span style={{ fontSize: "12px", fontWeight: "700", color: percentColor }}>{activePercent}%</span>
+        <div style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 500 }}>{assignees.length > 0 && `${assignees.length} assignee${assignees.length > 1 ? 's' : ''}`}</div>
+      </div>
+    </div>
+  );
+};
+
+const Equipment = () => {
+  // ✅ Destructure setSearchText from context
+  const { selectedAssigneeId, searchText = "", setSearchText } = useOutletContext<{
+    selectedAssigneeId: number | null;
+    searchText: string;
+    setSearchText: (val: string) => void;
+  }>();
+
+  const { data: clinic } = useSelector((state: RootState) => state.clinic);
+  const assigneeOptions = useSelector((state: RootState) => state.assignees.data);
+  const departments = clinic?.department ?? [];
+
+  const [view, setView] = useState<"list" | "detail">("list");
+  const [activeTab, setActiveTab] = useState("To-Do");
+  const [selectedEquipment, setSelectedEquipment] = useState("");
+  const [selectedRadio, setSelectedRadio] = useState("");
+  const [equipmentType, setEquipmentType] = useState("incubator");
+
+  const [equipmentAssignees, setEquipmentAssignees] = useState<Record<string, Assignee[]>>({});
+  const [assigneeDialogOpen, setAssigneeDialogOpen] = useState(false);
+  const [currentEquipmentId, setCurrentEquipmentId] = useState<string>("");
+
+  const embryologyDept = departments.find((dep) => dep.name === "Embryology");
+  const embryologyAssignees = assigneeOptions.filter((a) => a.department_name === "Embryology");
+
+  const rawEquipmentData = useMemo(() => {
+    return embryologyDept?.equipments.flatMap((eq) =>
+      eq.equipment_details.map((detail) => {
+        const total = eq.parameters?.length ?? 0;
+        const active = eq.parameters?.filter((param) => param.is_active).length ?? 0;
+        return {
+          id: detail.id,
+          name: eq.equipment_name,
+          detailName: detail.equipment_num,
+          make: detail.make,
+          model: detail.model,
+          parameters: eq.parameters || [],
+          paramsCount: `${formatCount(active)}/${formatCount(total)}`,
+          type: determineEquipmentType(eq.equipment_name),
+        };
+      })
+    ) || [];
+  }, [embryologyDept]);
+
+  // ✅ SEARCH AND ASSIGNEE FILTER LOGIC
+  const filteredGroupedEquipments = useMemo(() => {
+    const grouped: Record<string, typeof rawEquipmentData> = {};
+
+    rawEquipmentData.forEach((item) => {
+      const equipmentKey = `${item.name}-${item.detailName}`;
+      const assignees = equipmentAssignees[equipmentKey] || [];
+
+      // 1. Search Filter (matches category name OR detail name)
+      const matchesSearch = 
+        item.name.toLowerCase().includes(searchText.toLowerCase()) || 
+        item.detailName.toLowerCase().includes(searchText.toLowerCase());
+
+      // 2. Assignee Filter
+      const matchesAssignee = !selectedAssigneeId || assignees.some(a => a.id === selectedAssigneeId);
+
+      if (matchesSearch && matchesAssignee) {
+        if (!grouped[item.name]) grouped[item.name] = [];
+        grouped[item.name].push(item);
+      }
+    });
+
+    return grouped;
+  }, [rawEquipmentData, searchText, selectedAssigneeId, equipmentAssignees]);
+
+  const equipmentDetails = rawEquipmentData
+    .filter((e) => e.name === selectedEquipment)
+    .map((e) => ({
+      equipment_id: e.id,
+      equipment_num: e.detailName,
+      parameters: e.parameters,
+      make: e.make,
+      model: e.model,
+    }));
+
+ const selectEquipment = (eq: (typeof rawEquipmentData)[number]) => {
+    setSelectedEquipment(eq.name);
+    setSelectedRadio(eq.detailName);
+    setEquipmentType(eq.type);
+    
+    // ✅ CLEAR SEARCH INPUT AFTER SELECTION
+    if (setSearchText) {
+      setSearchText(""); 
+    }
+  };
+
+  const handleAddAssignee = (equipmentKey: string) => {
+    setCurrentEquipmentId(equipmentKey);
+    setAssigneeDialogOpen(true);
+  };
+
+  const handleAssigneesAdded = (newAssignees: Assignee[]) => {
+    setEquipmentAssignees((prev) => ({
+      ...prev,
+      [currentEquipmentId]: [...(prev[currentEquipmentId] || []), ...newAssignees],
+    }));
+  };
+
+  const handleRemoveAssignee = (equipmentKey: string, assigneeId: number) => {
+    setEquipmentAssignees((prev) => ({
+      ...prev,
+      [equipmentKey]: (prev[equipmentKey] || []).filter((a) => a.id !== assigneeId),
+    }));
+  };
+
+  const formMap: Record<string, any> = {
+    incubator: IncubatorForm,
+    lfh: LFHForm,
+    ovens: OvensWaterBathForm,
+    waterbath: OvensWaterBathForm,
+    microscopes: MicroscopesForm,
+    phmeters: PHMetersForm,
+    cryopreservation: CryopreservationForm,
+  };
 
   if (view === "list") {
     return (
@@ -102,7 +276,7 @@ const Equipment = () => {
         <div style={{ display: "flex", alignItems: "center", marginBottom: "32px", gap: "24px" }}>
           <h1 style={{ fontSize: "20px", fontWeight: "700", margin: 0, color: "#0f172a" }}>Equipments</h1>
           <div style={{ display: "inline-flex", backgroundColor: "#F2F2F2", padding: "4px", borderRadius: "12px", gap: "4px" }}>
-            {["To-Do", "Plan"].map(tab => (
+            {["To-Do", "Plan"].map((tab) => (
               <button key={tab} onClick={() => setActiveTab(tab)} style={{ width: "166px", height: "36px", borderRadius: "10px", border: "none", cursor: "pointer", fontSize: "14px", fontWeight: "700", backgroundColor: activeTab === tab ? "#FFFFFF" : "transparent", color: activeTab === tab ? "#E17E61" : "#94a3b8" }}>{tab}</button>
             ))}
           </div>
@@ -110,121 +284,81 @@ const Equipment = () => {
 
         {activeTab === "To-Do" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            {Object.keys(groupedEquipments).map((dept) => (
-              <div key={dept} style={{ borderRadius: "12px", backgroundColor: "#F8F8F8", padding: "15px" }}>
-                <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", color: "#0f172a", marginTop: 0 }}>{dept}</h2>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: "12px" }}>
-                  {groupedEquipments[dept].map((item: any) => (
-                    <div key={item.id} onClick={() => { handleSelectEquipment(item); setView("detail"); }} style={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "12px", padding: "16px", cursor: "pointer" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                        <span style={{ fontSize: "14px", fontWeight: "700" }}>{item.name} <span style={{ color: "#64748b", fontWeight: "400" }}>: Parameters : {item.paramsCount}</span></span>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span style={{ fontSize: "12px", fontWeight: "700", color: "#0f172a" }}>Assignee :</span>
-                          <div style={{ display: "flex" }}>
-                            {assignees.map((img, i) => (
-                              <img key={i} src={img} alt="assignee" style={{ width: "24px", height: "24px", borderRadius: "50%", border: "2px solid white", marginLeft: i > 0 ? "-8px" : 0 }} />
-                            ))}
-                          </div>
-                          <CustomPlusIcon />
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: "13px", color: "#22c55e", fontWeight: "700" }}>{item.progress}</span>
-                      </div>
-                    </div>
-                  ))}
+            {Object.keys(filteredGroupedEquipments).length > 0 ? (
+              Object.keys(filteredGroupedEquipments).map((eqName) => (
+                <div key={eqName} style={{ borderRadius: "12px", backgroundColor: "#F8F8F8", padding: "15px" }}>
+                  <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", color: "#0f172a", marginTop: 0 }}>{eqName}</h2>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: "12px" }}>
+                    {filteredGroupedEquipments[eqName].map((item) => {
+                      const equipmentKey = `${item.name}-${item.detailName}`;
+                      return (
+                        <EquipmentCard
+                          key={item.id}
+                          item={item}
+                          onClick={() => { selectEquipment(item); setView("detail"); }}
+                          assignees={equipmentAssignees[equipmentKey] || []}
+                          onAddAssignee={() => handleAddAssignee(equipmentKey)}
+                          onRemoveAssignee={(id) => handleRemoveAssignee(equipmentKey, id)}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div style={{ textAlign: "center", marginTop: "100px", color: "#94a3b8" }}>
+                No equipments found matching "{searchText}"
               </div>
-            ))}
+            )}
           </div>
-        ) : <div style={{ textAlign: "center", marginTop: "100px", color: "#94a3b8" }}>No plans added yet</div>}
+        ) : (
+          <div style={{ textAlign: "center", marginTop: "100px", color: "#94a3b8" }}>No plans added yet</div>
+        )}
+
+        <AssigneeDialog open={assigneeDialogOpen} onClose={() => setAssigneeDialogOpen(false)} availableAssignees={embryologyAssignees} currentAssignees={equipmentAssignees[currentEquipmentId] || []} onAdd={handleAssigneesAdded} />
       </div>
     );
   }
 
+  const ActiveForm = formMap[equipmentType];
+
   return (
     <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#f9fafb", padding: "20px", gap: "20px", fontFamily: "'Montserrat', sans-serif" }}>
-      {/* Sidebar */}
       <div style={{ width: "512px", height: "840px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "20px", borderBottom: "1px solid #e5e7eb" }}>
-          <button onClick={() => setView("list")} style={{ background: "none", border: "none", fontSize: "14px", fontWeight: "700", cursor: "pointer", color: "#0f172a", marginBottom: '16px' }}>Equipments</button>
-          
-          <div style={{ display: "inline-flex", backgroundColor: "#F2F2F2", padding: "4px", borderRadius: "12px", gap: "4px", width: '100%' }}>
-            {["To-Do", "Plan"].map(tab => (
-              <button 
-                key={tab} 
-                onClick={() => setActiveTab(tab)} 
-                style={{ 
-                  flex: 1,
-                  height: "36px", 
-                  borderRadius: "10px", 
-                  border: "none", 
-                  cursor: "pointer", 
-                  fontSize: "14px", 
-                  fontWeight: "700", 
-                  backgroundColor: activeTab === tab ? "#FFFFFF" : "transparent", 
-                  color: activeTab === tab ? "#E17E61" : "#94a3b8" 
-                }}
-              >
-                {tab}
-              </button>
+          <button onClick={() => setView("list")} style={{ background: "none", border: "none", fontSize: "14px", fontWeight: "700", cursor: "pointer", color: "#0f172a", marginBottom: "16px" }}>← Equipments</button>
+          <div style={{ display: "inline-flex", backgroundColor: "#F2F2F2", padding: "4px", borderRadius: "12px", gap: "4px", width: "100%" }}>
+            {["To-Do", "Plan"].map((tab) => (
+              <button key={tab} onClick={() => setActiveTab(tab)} style={{ flex: 1, height: "36px", borderRadius: "10px", border: "none", cursor: "pointer", fontSize: "14px", fontWeight: "700", backgroundColor: activeTab === tab ? "#FFFFFF" : "transparent", color: activeTab === tab ? "#E17E61" : "#94a3b8" }}>{tab}</button>
             ))}
           </div>
         </div>
 
         <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "10px", overflowY: "auto", flex: 1 }}>
           {activeTab === "To-Do" ? (
-            equipmentData.map((item) => (
-              <div key={item.id} onClick={() => handleSelectEquipment(item)} style={{ padding: "16px", borderRadius: "12px", cursor: "pointer", backgroundColor: selectedEquipment === item.name ? "#fef3f2" : "#fff", border: selectedEquipment === item.name ? "2px solid #f97316" : "1px solid #f1f5f9" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "700" }}>{item.name} : <span style={{ color: "#64748b", fontWeight: "400" }}>Parameters : {item.paramsCount}</span></span>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <div style={{ display: "flex" }}>
-                      {assignees.map((img, i) => (
-                        <img key={i} src={img} alt="user" style={{ width: "20px", height: "20px", borderRadius: "50%", border: "1px solid white", marginLeft: i > 0 ? "-8px" : 0 }} />
-                      ))}
-                    </div>
-                    <CustomPlusIcon />
-                  </div>
-                </div>
-              </div>
-            ))
+            Object.keys(filteredGroupedEquipments).map((eqName) => {
+              const eqItems = filteredGroupedEquipments[eqName];
+              const itemsToShow = eqName === selectedEquipment ? eqItems.filter((item) => item.detailName === selectedRadio) : [eqItems[0]];
+              return itemsToShow.map((item) => {
+                const equipmentKey = `${item.name}-${item.detailName}`;
+                return (
+                  <EquipmentCard key={item.id} item={item} selected={selectedRadio === item.detailName} onClick={() => selectEquipment(item)} assignees={equipmentAssignees[equipmentKey] || []} onAddAssignee={() => handleAddAssignee(equipmentKey)} onRemoveAssignee={(id) => handleRemoveAssignee(equipmentKey, id)} />
+                );
+              });
+            })
           ) : (
-            <div style={{ textAlign: "center", marginTop: "20px", color: "#94a3b8", fontSize: '14px' }}>No plans available</div>
+            <div style={{ textAlign: "center", marginTop: "20px", color: "#94a3b8", fontSize: "14px" }}>No plans available</div>
           )}
         </div>
       </div>
 
-      {/* Main Content Area */}
       <div style={{ width: "994px" }}>
-        {/* LOGIC: Only show forms if tab is To-Do, else show empty plan state */}
-        {activeTab === "To-Do" ? (
-          <>
-            {equipmentType === "incubator" && <IncubatorForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} parameters={currentParameters} />}
-            {equipmentType === "lfh" && <LFHForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
-            {equipmentType === "ovens" && <OvensWaterBathForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
-            {equipmentType === "waterbath" && <OvensWaterBathForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
-            {equipmentType === "microscopes" && <MicroscopesForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
-            {equipmentType === "phmeters" && <PHMetersForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
-            {equipmentType === "cryopreservation" && <CryopreservationForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />}
-          </>
-        ) : (
-          <div style={{ 
-            height: "840px", 
-            backgroundColor: "#fff", 
-            borderRadius: "14px", 
-            border: "1px solid #e5e7eb", 
-            display: "flex", 
-            alignItems: "center", 
-            justifyContent: "center",
-            color: "#94a3b8",
-            fontSize: "16px",
-            fontWeight: "500"
-          }}>
-            No plans added for this equipment yet.
-          </div>
+        {activeTab === "To-Do" && ActiveForm && (
+          <ActiveForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} equipmentDetails={equipmentDetails} />
         )}
       </div>
+
+      <AssigneeDialog open={assigneeDialogOpen} onClose={() => setAssigneeDialogOpen(false)} availableAssignees={embryologyAssignees} currentAssignees={equipmentAssignees[currentEquipmentId] || []} onAdd={handleAssigneesAdded} />
     </div>
   );
 };

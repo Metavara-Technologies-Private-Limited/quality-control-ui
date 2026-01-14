@@ -12,6 +12,7 @@ import { PieChart, Pie, ResponsiveContainer } from "recharts";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import RemoveIcon from "@mui/icons-material/Remove";
+import { EquipmentDetail } from "@/types";
 
 /* -----------------------------
    TYPES
@@ -24,18 +25,13 @@ type IncidentSummary = {
 
 interface IncidentsChartProps {
   equipmentId: number;
-  equipmentDetails: { id: number; equipment_num: string }[];
+  equipmentDetails: EquipmentDetail[];
 }
 
 /* -----------------------------
    COLORS
 ----------------------------- */
-const INCUBATOR_COLORS = [
-  "#6B7280",
-  "#9CA3AF",
-  "#FBCFE8",
-  "#FB7185",
-];
+const INCUBATOR_COLORS = ["#6B7280", "#9CA3AF", "#FBCFE8", "#FB7185"];
 
 /* -----------------------------
    INCIDENT LOGIC (API BASED)
@@ -69,11 +65,13 @@ const getIncidentSummary = (equipmentId: number): IncidentSummary => {
           Object.values(byDetail).forEach((list) => {
             if (list.length === 0) return;
 
-            const latest = list.sort(
+            const sorted = list.sort(
               (a, b) =>
                 new Date(a.recorded_at).getTime() -
                 new Date(b.recorded_at).getTime()
-            ).at(-1);
+            );
+
+            const latest = sorted[sorted.length - 1];
 
             if (!latest) return;
 
@@ -89,7 +87,6 @@ const getIncidentSummary = (equipmentId: number): IncidentSummary => {
 
   return { high, normal, low };
 };
-
 
 /* -----------------------------
    COMPONENT

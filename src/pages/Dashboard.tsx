@@ -66,6 +66,18 @@ const Dashboard = () => {
 
   // Get All parameters
   const parameters = equipment?.parameters ?? [];
+  
+  useEffect(() => {
+    if (!parameters.length) {
+      setParameterId(null);
+      return;
+    }
+  
+    const exists = parameters.some(p => p.id === parameterId);
+    if (!exists) {
+      setParameterId(parameters[0].id);
+    }
+  }, [parameters]);  
 
   const parameter: Parameter | null = useMemo(
     () => parameters.find((p) => p.id === parameterId) ?? null,

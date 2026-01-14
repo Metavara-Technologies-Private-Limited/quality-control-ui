@@ -9,7 +9,6 @@ import MainLayout from "./components/Layout/MainLayout";
 /* ================= GLOBAL PAGES ================= */
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
-import Configuration from "./pages/Configuration";
 import UserConfiguration from "./pages/UserConfiguration";
 import AuditTrail from "./pages/AuditTrail";
 
@@ -35,8 +34,23 @@ import AndrologyEquipment from "./pages/Quality_Control/QcLab/Andrology/Equipmen
 import AndrologyEnvironment from "./pages/Quality_Control/QcLab/Andrology/Environment";
 import AndrologyTask from "./pages/Quality_Control/QcLab/Andrology/Task";
 
-
 import CryopreservationLayout from "./pages/Quality_Control/QcLab/Cryopreservation/CryopreservationLayout";
+import CryoEquipment from "./pages/Quality_Control/QcLab/Cryopreservation/Equipments";
+import CryoEnvironment from "./pages/Quality_Control/QcLab/Cryopreservation/Environment";
+import CryoTask from "./pages/Quality_Control/QcLab/Cryopreservation/Task";
+
+
+import EnvironmentalLayout from "./pages/Quality_Control/QcLab/Environmental/EnvironmentalLayout";
+import EnvEquipment from "./pages/Quality_Control/QcLab/Environmental/Equipment";
+import EnvEnvironment from "./pages/Quality_Control/QcLab/Environmental/Environment";
+import EnvTask from "./pages/Quality_Control/QcLab/Environmental/Task";
+
+
+import LabEquipmentLayout from "./pages/Quality_Control/QcLab/LabEquipment/LabEquipmentLayout";
+import LabEquipEquipment from "./pages/Quality_Control/QcLab/LabEquipment/Equipment";
+import LabEquipEnvironment from "./pages/Quality_Control/QcLab/LabEquipment/Environment";
+import LabEquipTask from "./pages/Quality_Control/QcLab/LabEquipment/Task";
+
 
 /* ================= CONFIGURATION COMPONENTS ================= */
 import EquipmentPage from "./components/Configuration/EquipmentPage";
@@ -56,12 +70,14 @@ import WorkFlows from "./pages/Document_Control/WorkFlows";
 
 /* ================= RISK MANAGEMENT ================= */
 import RiskA from "./pages/Risk_Management/Risk_A";
+import { fetchAssigneesByClinic } from "./store/assigneeSlice";
 
 function App() {
   const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
     dispatch(fetchClinic(1));
+    dispatch(fetchAssigneesByClinic(1));
   }, [dispatch]);
 
   return (
@@ -88,17 +104,36 @@ function App() {
             <Route path="task" element={<Task />} />
           </Route>
 
-         <Route path="andrology" element={<AndrologyLayout />}>
+          <Route path="andrology" element={<AndrologyLayout />}>
             <Route index element={<Navigate to="equipments" replace />} />
             <Route path="equipments" element={<AndrologyEquipment />} />
             <Route path="environment" element={<AndrologyEnvironment />} />
             <Route path="task" element={<AndrologyTask />} />
-         </Route>
-          <Route
-            path="cryopreservation"
-            element={<CryopreservationLayout />}
-          />
+          </Route>
+
+          <Route path="cryopreservation" element={<CryopreservationLayout />}>
+            <Route index element={<Navigate to="equipments" replace />} />
+            <Route path="equipments" element={<CryoEquipment />} />
+            <Route path="environment" element={<CryoEnvironment />} />
+            <Route path="task" element={<CryoTask />} />
+          </Route>
+
+          <Route path="environmental" element={<EnvironmentalLayout />}>
+            <Route index element={<Navigate to="equipments" replace />} />
+            <Route path="equipments" element={<EnvEquipment />} />
+            <Route path="environment" element={<EnvEnvironment />} />
+            <Route path="task" element={<EnvTask />} />
+          </Route>
+
+          <Route path="labequipment" element={<LabEquipmentLayout />}>
+            <Route index element={<Navigate to="equipments" replace />} />
+            <Route path="equipments" element={<LabEquipEquipment />} />
+            <Route path="environment" element={<LabEquipEnvironment />} />
+            <Route path="task" element={<LabEquipTask />} />
+          </Route>
         </Route>
+
+       
 
         {/* ================= QUALITY CONTROL CONFIGURATION ================= */}
         <Route path="configuration" element={<ConfigurationLayout />}>
@@ -106,9 +141,12 @@ function App() {
 
           <Route path="equipment" element={<EquipmentPage />} />
           <Route path="equipment/view" element={<ViewEquipment />} />
-          <Route path="equipment/add-parameter" element={<AddParameterPage />} />
+          <Route
+            path="equipment/add-parameter"
+            element={<AddParameterPage />}
+          />
 
-          {/* EVENTS */}
+          {/* ================= EVENTS ================= */}
           <Route path="events" element={<Events />} />
           <Route path="events/create" element={<CreateEvent />} />
         </Route>

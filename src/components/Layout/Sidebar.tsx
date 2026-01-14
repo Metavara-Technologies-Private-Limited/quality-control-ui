@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 import {
@@ -12,7 +12,7 @@ import {
   IconButton,
 } from "@mui/material";
 
-import { useView } from "@/utils/viewContext";
+// import { useView } from "@/utils/viewContext";
 
 /* ===== ORIGINAL ICONS ===== */
 import ShieldTickIcon from "../../assets/icons/shield-tick.svg";
@@ -42,6 +42,8 @@ import SubtractBg_4 from "../../assets/icons/Subtract_4.svg";
 import ClinicLogo from "../../assets/icons/Clinic-Logo.svg";
 import VidaiLogo from "../../assets/icons/Vidai-logo.svg";
 import DashboardCardBg from "../../assets/icons/dashboard_card_bg.svg";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 
 /* ================= ICON CONFIG ================= */
 
@@ -87,8 +89,23 @@ const SELECTED_ICON_STYLE = [
 ];
 
 /* ================= MENU MAP ================= */
+// Type for a single menu item
+type MenuItem = {
+  key: string;
+  text: string;
+  path: string;
+  children?: MenuItem[];
+};
 
-const ICON_MENU_MAP: Record<string, any[]> = {
+// Type for the map
+type IconMenuMap = {
+  quality: MenuItem[];
+  documentation: MenuItem[];
+  risk: MenuItem[];
+  compliance: MenuItem[];
+};
+
+export const buildIconMenuMap = (departments: any[]): IconMenuMap => ({
   quality: [
     {
       key: "dashboard",
@@ -106,23 +123,11 @@ const ICON_MENU_MAP: Record<string, any[]> = {
       key: "lab",
       text: "Lab",
       path: "/qc-lab",
-      children: [
-        {
-          key: "embryology",
-          text: "Embryology",
-          path: "/qc-lab/embryology",
-        },
-        {
-          key: "andrology",
-          text: "Andrology",
-          path: "/qc-lab/andrology",
-        },
-        {
-          key: "cryo",
-          text: "Cryo Preservation",
-          path: "/qc-lab/cryopreservation",
-        },
-      ],
+      children: departments.map((d) => ({
+        key: d.name.toLowerCase().replace(/\s+/g, "_"),
+        text: d.name,
+        path: `/qc-lab/${d.name.toLowerCase().replace(/\s+/g, "")}`,
+      })),
     },
 
     {
@@ -180,7 +185,7 @@ const ICON_MENU_MAP: Record<string, any[]> = {
     { key: "clinical", text: "Clinical", path: "/compliance/clinical" },
     { key: "lab", text: "Lab", path: "/compliance/lab" },
   ],
-};
+});
 
 const ICON_INDEX_MAP = [
   "quality",
@@ -192,7 +197,11 @@ const ICON_INDEX_MAP = [
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentView } = useView();
+  // const { currentView } = useView();
+
+  const { data: clinic } = useSelector((state: RootState) => state.clinic);
+  const departments = clinic?.department ?? [];
+  const ICON_MENU_MAP = buildIconMenuMap(departments);
 
   const [selectedIcon, setSelectedIcon] = useState(0);
 
@@ -272,7 +281,11 @@ const Sidebar = () => {
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-            <img src={CARD_HEADING_ICON_MAP[selectedIcon]} width={28} alt="icon" />
+            <img
+              src={CARD_HEADING_ICON_MAP[selectedIcon]}
+              width={28}
+              alt="icon"
+            />
             <Typography sx={{ fontWeight: 700, color: "#E17E61" }}>
               {ICON_CONFIG[selectedIcon].title}
             </Typography>
@@ -288,13 +301,14 @@ const Sidebar = () => {
             }}
           >
             {menuItems.map((item: any) => {
-const isItemActive =
-  location.pathname === item.path ||
-  (item.children && location.pathname.startsWith(item.path));
+              const isItemActive =
+                location.pathname === item.path ||
+                (item.children && location.pathname.startsWith(item.path));
               const isLab = item.key === "lab";
               const isLabOpen = location.pathname.startsWith("/qc-lab");
               const isConfiguration = item.key === "configuration";
-              const isConfigurationOpen = location.pathname.startsWith("/configuration");
+              const isConfigurationOpen =
+                location.pathname.startsWith("/configuration");
 
               return (
                 <Box key={item.key}>
@@ -325,7 +339,9 @@ const isItemActive =
                       }}
                     >
                       {item.children.map((sub: any) => {
-                        const isSubActive = location.pathname.startsWith(sub.path);
+                        const isSubActive = location.pathname.startsWith(
+                          sub.path
+                        );
                         return (
                           <ListItemButton
                             key={sub.key}
@@ -353,7 +369,9 @@ const isItemActive =
                                   width: 8,
                                   height: 8,
                                   borderRadius: "50%",
-                                  backgroundColor: isSubActive ? "#E17E61" : "#CFD1D4",
+                                  backgroundColor: isSubActive
+                                    ? "#E17E61"
+                                    : "#CFD1D4",
                                 }}
                               />
                             </Box>
@@ -412,7 +430,9 @@ const isItemActive =
                                   width: 8,
                                   height: 8,
                                   borderRadius: "50%",
-                                  backgroundColor: isSubActive ? "#E17E61" : "#CFD1D4",
+                                  backgroundColor: isSubActive
+                                    ? "#E17E61"
+                                    : "#CFD1D4",
                                 }}
                               />
                             </Box>

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { parameterValueApi } from "@/services/api";
+import { useState, useMemo, useEffect } from "react";
 import { 
   BarChart, 
   Bar, 
@@ -9,8 +10,20 @@ import {
   ReferenceLine 
 } from 'recharts';
 
-const CryopreservationForm = ({ selectedRadio, setSelectedRadio }) => {
-  const [formData, setFormData] = useState({
+interface CryopreservationFormProps {
+  selectedRadio: string;
+  setSelectedRadio: (name: string) => void;
+  equipmentDetails: {
+    equipment_num: string;
+    equipment_id: number;
+    parameters: any[];
+    make: string;
+    model: string;
+  }[];
+}
+
+const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: CryopreservationFormProps) => {
+  const [formData, setFormData] = useState<Record<string, string>>({
     liquidNitrogenLevels: "",
     temperature: "",
     backSystemFunctionality: "Functional",
@@ -18,6 +31,81 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio }) => {
     status: "Pass",
     comments: "",
   });
+  const [isSaving, setIsSaving] = useState(false);
+
+  // --- 1. AUTO-SELECT LOGIC (Same as Microscope) ---
+  useEffect(() => {
+    if (!selectedRadio && equipmentDetails.length > 0) {
+      setSelectedRadio(equipmentDetails[0].equipment_num);
+    }
+  }, [equipmentDetails, selectedRadio, setSelectedRadio]);
+
+  // --- 2. CONFIGURATION: Map Form Keys to DB Parameter Names ---
+  const fieldMapping = useMemo(() => [
+    { key: "liquidNitrogenLevels", dbName: "Liquid Nitrogen Levels (mm)" },
+    { key: "temperature", dbName: "Temperature (°C)" },
+    { key: "backSystemFunctionality", dbName: "Back System Functionality" },
+    { key: "alarmStatus", dbName: "Alarm Status" },
+    { key: "comments", dbName: "Comments" },
+    { key: "status", dbName: "Status" },
+  ], []);
+
+  const currentEquipment = equipmentDetails.find(
+    (ed) => ed.equipment_num === selectedRadio
+  );
+
+  // --- 3. MATCHING HELPER ---
+  const getDbParam = (dbName: string) => {
+    return currentEquipment?.parameters?.find(
+      (p: any) => p.parameter_name.toLowerCase().trim() === dbName.toLowerCase().trim()
+    );
+  };
+
+  const setValue = (key: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveLogs = async () => {
+    if (!currentEquipment) {
+      alert("Please select a tank first");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const requests: Promise<any>[] = [];
+
+      fieldMapping.forEach((field) => {
+        const dbParam = getDbParam(field.dbName);
+        const value = formData[field.key];
+
+        if (dbParam && value && value.trim() !== "") {
+          requests.push(
+            parameterValueApi.create({
+              parameter: dbParam.id,
+              equipment_details: currentEquipment.equipment_id,
+              content: value,
+            })
+          );
+        }
+      });
+
+      if (requests.length === 0) {
+        alert("No matching parameters found in database or no data entered.");
+        setIsSaving(false);
+        return;
+      }
+
+      await Promise.all(requests);
+      alert("Cryopreservation logs saved successfully!");
+      handleClearForm();
+    } catch (err) {
+      console.error("Save Error:", err);
+      alert("Failed to save logs.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleClearForm = () => {
     setFormData({
@@ -40,36 +128,29 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio }) => {
     { day: "Sunday", compliant: 25, nonCompliant: -33 },
   ];
 
-  // Updated form field style based on your requirements
-  const inputStyle = {
-    width: "304.6666564941406px",
+  // --- STYLING HELPERS ---
+  const inputContainerStyle = (dbName: string) => ({
+    position: "relative" as const,
+    marginBottom: "20px",
+    opacity: getDbParam(dbName) ? 1 : 0.4,
+  });
+
+  const inputStyle = (dbName: string) => ({
+    width: "100%",
     height: "50px",
     borderRadius: "10px",
     border: "1px solid #e5e7eb",
-    paddingTop: "13px",
-    paddingRight: "16px",
-    paddingBottom: "13px",
-    paddingLeft: "16px",
+    padding: "13px 16px",
     fontSize: "14px",
     outline: "none",
     color: "#0f172a",
-    backgroundColor: "#fff",
-    display: "flex",
-    justifyContent: "space-between", // As per your styles
-    opacity: 1, // As per your styles
-    boxSizing: "border-box"
-  };
-
-  const sectionStyle = {
-    backgroundColor: "#fff",
-    borderRadius: "12px",
-    border: "1px solid #e5e7eb",
-    padding: "24px",
-    marginBottom: "16px",
-  };
+    backgroundColor: getDbParam(dbName) ? "#fff" : "#f1f5f9",
+    cursor: getDbParam(dbName) ? "text" : "not-allowed",
+    boxSizing: "border-box" as const
+  });
 
   const labelOverlayStyle = {
-    position: "absolute",
+    position: "absolute" as const,
     left: "12px",
     top: "-8px",
     backgroundColor: "#fff",
@@ -80,148 +161,125 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio }) => {
   };
 
   return (
-    <div style={{ maxWidth: "1566px" }}>
-      
-      {/* SECTION 1: Radio Selection and Form Fields */}
-      <div style={sectionStyle}>
-        {/* Radio Buttons Row */}
-        <div style={{ display: "flex", gap: "24px", paddingBottom: "24px", borderBottom: "1px solid #f1f5f9", marginBottom: "24px", flexWrap: "wrap" }}>
-          {["Cryo Tank A", "Cryo Tank B", "Cryo Tank C", "Cryo Tank D", "Cryo Tank E"].map((name) => (
-            <label key={name} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: "500", cursor: "pointer", color: "#0f172a" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "24px" }}>
+        
+        {/* Unit Selector Radios (Updated to iterate over equipmentDetails) */}
+        <div style={{ display: "flex", gap: "24px", marginBottom: "24px", borderBottom: "1px solid #f1f5f9", paddingBottom: "20px" }}>
+          {equipmentDetails.map((ed) => (
+            <label key={ed.equipment_id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: selectedRadio === ed.equipment_num ? "700" : "500", color: selectedRadio === ed.equipment_num ? "#f97316" : "#0f172a", cursor: "pointer" }}>
               <input 
                 type="radio" 
-                name="equipment" 
-                checked={selectedRadio === name} 
-                onChange={() => setSelectedRadio(name)} 
+                checked={selectedRadio === ed.equipment_num} 
+                onChange={() => setSelectedRadio(ed.equipment_num)} 
                 style={{ accentColor: "#f97316", width: "16px", height: "16px" }} 
               />
-              {name}
+              {ed.equipment_num}
             </label>
           ))}
         </div>
 
-        {/* Form Fields Grid */}
-        <div style={{ 
-          display: "grid", 
-          gridTemplateColumns: "repeat(auto-fill, 304.66px)", // Matches exact input width
-          gap: "24px", 
-          marginBottom: "32px",
-          justifyContent: "start" 
-        }}>
-          {/* Liquid Nitrogen Levels */}
-          <div style={{ position: "relative", width: "304.66px" }}>
-            <input
-              type="text"
-              placeholder="Type Here"
-              value={formData.liquidNitrogenLevels}
-              onChange={(e) => setFormData({ ...formData, liquidNitrogenLevels: e.target.value })}
-              style={inputStyle}
+        {/* Form Grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
+          
+          <div style={inputContainerStyle("Liquid Nitrogen Levels (mm)")}>
+            <input 
+              type="text" 
+              placeholder="Type Here" 
+              disabled={!getDbParam("Liquid Nitrogen Levels (mm)")} 
+              value={formData.liquidNitrogenLevels} 
+              onChange={(e) => setValue("liquidNitrogenLevels", e.target.value)} 
+              style={inputStyle("Liquid Nitrogen Levels (mm)")} 
             />
             <label style={labelOverlayStyle}>Liquid Nitrogen Levels (mm)</label>
-            <p style={{ fontSize: "11px", color: "#64748b", margin: "4px 0 0 0" }}>Range: &gt;100</p>
           </div>
 
-          {/* Temperature */}
-          <div style={{ position: "relative", width: "304.66px" }}>
-            <input
-              type="text"
-              placeholder="Type Here"
-              value={formData.temperature}
-              onChange={(e) => setFormData({ ...formData, temperature: e.target.value })}
-              style={inputStyle}
+          <div style={inputContainerStyle("Temperature (°C)")}>
+            <input 
+              type="text" 
+              placeholder="Type Here" 
+              disabled={!getDbParam("Temperature (°C)")} 
+              value={formData.temperature} 
+              onChange={(e) => setValue("temperature", e.target.value)} 
+              style={inputStyle("Temperature (°C)")} 
             />
             <label style={labelOverlayStyle}>Temperature (°C)</label>
-            <p style={{ fontSize: "11px", color: "#64748b", margin: "4px 0 0 0" }}>Range: -196 [-243]</p>
           </div>
 
-          {/* Back System Functionality */}
-          <div style={{ position: "relative", width: "304.66px" }}>
-            <select
-              value={formData.backSystemFunctionality}
-              onChange={(e) => setFormData({ ...formData, backSystemFunctionality: e.target.value })}
-              style={{ ...inputStyle, cursor: "pointer" }}
+          <div style={inputContainerStyle("Back System Functionality")}>
+            <select 
+              disabled={!getDbParam("Back System Functionality")} 
+              value={formData.backSystemFunctionality} 
+              onChange={(e) => setValue("backSystemFunctionality", e.target.value)} 
+              style={{ ...inputStyle("Back System Functionality"), cursor: "pointer" }}
             >
-              <option>Functional</option>
-              <option>Non-Functional</option>
+              <option value="Functional">Functional</option>
+              <option value="Non-Functional">Non-Functional</option>
             </select>
             <label style={labelOverlayStyle}>Back System Functionality</label>
           </div>
 
-          {/* Alarm Status */}
-          <div style={{ position: "relative", width: "304.66px" }}>
-            <select
-              value={formData.alarmStatus}
-              onChange={(e) => setFormData({ ...formData, alarmStatus: e.target.value })}
-              style={{ ...inputStyle, cursor: "pointer" }}
+          <div style={inputContainerStyle("Alarm Status")}>
+            <select 
+              disabled={!getDbParam("Alarm Status")} 
+              value={formData.alarmStatus} 
+              onChange={(e) => setValue("alarmStatus", e.target.value)} 
+              style={{ ...inputStyle("Alarm Status"), cursor: "pointer" }}
             >
-              <option>Functional</option>
-              <option>Non-Functional</option>
+              <option value="Functional">Functional</option>
+              <option value="Non-Functional">Non-Functional</option>
             </select>
             <label style={labelOverlayStyle}>Alarm Status</label>
           </div>
 
-          {/* Comments */}
-          <div style={{ position: "relative", width: "304.66px" }}>
-            <input
-              type="text"
-              placeholder="Type Here"
-              value={formData.comments}
-              onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
-              style={inputStyle}
+          <div style={inputContainerStyle("Comments")}>
+            <input 
+              type="text" 
+              placeholder="Type Here" 
+              disabled={!getDbParam("Comments")} 
+              value={formData.comments} 
+              onChange={(e) => setValue("comments", e.target.value)} 
+              style={inputStyle("Comments")} 
             />
             <label style={labelOverlayStyle}>Comments</label>
           </div>
 
-          {/* Status */}
-          <div style={{ position: "relative", width: "304.66px" }}>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              style={{ ...inputStyle, cursor: "pointer" }}
+          <div style={inputContainerStyle("Status")}>
+            <select 
+              disabled={!getDbParam("Status")} 
+              value={formData.status} 
+              onChange={(e) => setValue("status", e.target.value)} 
+              style={{ ...inputStyle("Status"), cursor: "pointer" }}
             >
-              <option>Pass</option>
-              <option>Fail</option>
+              <option value="Pass">Pass</option>
+              <option value="Fail">Fail</option>
             </select>
             <label style={labelOverlayStyle}>Status</label>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "24px" }}>
-          <button onClick={handleClearForm} style={{ padding: "10px 24px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", fontWeight: "500", cursor: "pointer", color: "#0f172a" }}>Clear</button>
-          <button style={{ padding: "10px 24px", backgroundColor: "#1e293b", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: "500", cursor: "pointer" }}>Save</button>
+        <div style={{ display: "flex", alignItems: "center", gap: "24px", marginTop: "20px", fontSize: "14px" }}>
+          <div><span style={{ color: "#94a3b8" }}>Make :</span> <b>{currentEquipment?.make || "N/A"}</b></div>
+          <div style={{ width: "1px", height: "14px", backgroundColor: "#e5e7eb" }}></div>
+          <div><span style={{ color: "#94a3b8" }}>Model :</span> <b>{currentEquipment?.model || "N/A"}</b></div>
+          <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
+            <button onClick={handleClearForm} style={{ padding: "10px 24px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", cursor: "pointer" }}>Clear</button>
+            <button onClick={handleSaveLogs} disabled={isSaving} style={{ padding: "10px 24px", backgroundColor: "#1e293b", color: "#fff", border: "none", borderRadius: "8px", cursor: isSaving ? "not-allowed" : "pointer", opacity: isSaving ? 0.7 : 1 }}>
+              {isSaving ? "Saving..." : "Save"}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* SECTION 2: Activity Chart Card */}
-      <div style={sectionStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#505050" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-            </div>
-            <h3 style={{ fontSize: "14px", fontWeight: "600", margin: 0, color: "#0f172a" }}>Activity</h3>
-          </div>
-          
-          <div style={{ display: "flex", gap: "16px", fontSize: "12px" }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '10px', height: '10px', backgroundColor: '#6c6c6c', borderRadius: '50%' }} />
-              <span style={{ color: '#9e9e9e' }}>Compliant</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '10px', height: '10px', backgroundColor: '#EF9685', borderRadius: '50%' }} />
-              <span style={{ color: '#9e9e9e' }}>Non - Compliant</span>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ width: '100%', height: 300 }}>
+      {/* Activity Chart */}
+      <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "24px" }}>
+        <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px" }}>Activity</h3>
+        <div style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={activityData} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 20 }}>
               <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#9e9e9e' }} axisLine={{ stroke: '#E0E0E0' }} tickLine={false} />
-              <YAxis domain={[-40, 40]} ticks={[-40, -20, 0, 20, 40]} tick={{ fontSize: 12, fill: '#9e9e9e' }} axisLine={false} tickLine={false} 
-                label={{ value: 'No of parameters', angle: -90, position: 'insideLeft', offset: -35, style: { fill: '#9e9e9e', fontSize: 12, fontWeight: 500 } }} 
-              />
+              <YAxis domain={[-40, 40]} ticks={[-40, -20, 0, 20, 40]} tick={{ fontSize: 12, fill: '#9e9e9e' }} axisLine={false} tickLine={false} />
               <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '4px' }} />
               <ReferenceLine y={0} stroke="#E0E0E0" />
               <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={15} />
@@ -229,7 +287,6 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio }) => {
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <p style={{ textAlign: 'center', marginTop: '8px', color: '#B1B1B1', fontSize: '12px' }}>Month</p>
       </div>
     </div>
   );

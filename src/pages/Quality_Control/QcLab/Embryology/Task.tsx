@@ -234,6 +234,13 @@ export default function Task() {
                   justifyContent: "center",
                   cursor: "pointer"
                 }}
+                // onClick={() => {
+                //   setSelectedTaskDetails(t);
+                //   setTaskDetails(t.description || ""); // Load saved description here
+                //   setOpenTaskDetails(true);
+                //   setTaskDetailsErrors({ description: "" });
+                // }}
+                onClick={openTask}
               >
                 <AddIcon sx={{ fontSize: 16, color: "#323234ff" }} />
               </Box>
