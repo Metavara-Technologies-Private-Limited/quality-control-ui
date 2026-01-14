@@ -32,6 +32,13 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
     comments: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+
+  // ✅ TOAST NOTIFICATION FUNCTION
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000); // Auto-hide after 4 seconds
+  };
 
   // --- 1. AUTO-SELECT LOGIC (Same as Microscope) ---
   useEffect(() => {
@@ -61,13 +68,95 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
     );
   };
 
+  // ✅ GET PARAMETER CONFIG - Handle both formats (config object and config.history array)
+  const getParameterConfig = (dbName: string) => {
+    const param = getDbParam(dbName);
+    
+    if (!param || !param.config) return null;
+
+    let config = param.config;
+
+    // If config has history array, get the latest entry
+    if (config.history && Array.isArray(config.history) && config.history.length > 0) {
+      config = config.history[config.history.length - 1];
+    }
+
+    return config;
+  };
+
+  // ✅ RENDER PARAMETER RANGE/VALUE TEXT
+  const renderParameterInfo = (dbName: string) => {
+    const config = getParameterConfig(dbName);
+    
+    if (!config) return null;
+
+    const dataType = config.data_type;
+
+    switch (dataType) {
+      case "Decimal":
+      case "Min/Max":
+        if (config.min_value != null && config.max_value != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Range: {config.min_value} - {config.max_value} mm
+            </span>
+          );
+        }
+        break;
+
+      case "Percentage":
+        if (config.percentage != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Range: 0% - {config.percentage}%
+            </span>
+          );
+        }
+        break;
+
+      case "Select":
+      case "Dropdown":
+        if (config.dropdown && Array.isArray(config.dropdown) && config.dropdown.length > 0) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Options: {config.dropdown.join(", ")}
+            </span>
+          );
+        }
+        break;
+
+      case "Text":
+        if (config.text) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Value: {config.text}
+            </span>
+          );
+        }
+        break;
+
+      case "Integer":
+        if (config.integer_value != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Value: {config.integer_value}
+            </span>
+          );
+        }
+        break;
+
+      default:
+        return null;
+    }
+  };
+
   const setValue = (key: string, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleSaveLogs = async () => {
     if (!currentEquipment) {
-      alert("Please select a tank first");
+      showToast("Please select a tank first", "error");
       return;
     }
 
@@ -91,17 +180,17 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
       });
 
       if (requests.length === 0) {
-        alert("No matching parameters found in database or no data entered.");
+        showToast("No matching parameters found or no data entered", "error");
         setIsSaving(false);
         return;
       }
 
       await Promise.all(requests);
-      alert("Cryopreservation logs saved successfully!");
+      showToast("✓ Cryopreservation logs saved successfully!", "success");
       handleClearForm();
     } catch (err) {
       console.error("Save Error:", err);
-      alert("Failed to save logs.");
+      showToast("Failed to save logs. Check console for details.", "error");
     } finally {
       setIsSaving(false);
     }
@@ -160,6 +249,8 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
     color: "#64748b"
   };
 
+  const rangeTextStyle = { fontSize: "11px", marginTop: "4px" };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "24px" }}>
@@ -192,6 +283,9 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
               style={inputStyle("Liquid Nitrogen Levels (mm)")} 
             />
             <label style={labelOverlayStyle}>Liquid Nitrogen Levels (mm)</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Liquid Nitrogen Levels (mm)")}
+            </div>
           </div>
 
           <div style={inputContainerStyle("Temperature (°C)")}>
@@ -204,6 +298,9 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
               style={inputStyle("Temperature (°C)")} 
             />
             <label style={labelOverlayStyle}>Temperature (°C)</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Temperature (°C)")}
+            </div>
           </div>
 
           <div style={inputContainerStyle("Back System Functionality")}>
@@ -217,6 +314,9 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
               <option value="Non-Functional">Non-Functional</option>
             </select>
             <label style={labelOverlayStyle}>Back System Functionality</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Back System Functionality")}
+            </div>
           </div>
 
           <div style={inputContainerStyle("Alarm Status")}>
@@ -230,6 +330,9 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
               <option value="Non-Functional">Non-Functional</option>
             </select>
             <label style={labelOverlayStyle}>Alarm Status</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Alarm Status")}
+            </div>
           </div>
 
           <div style={inputContainerStyle("Comments")}>
@@ -242,6 +345,9 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
               style={inputStyle("Comments")} 
             />
             <label style={labelOverlayStyle}>Comments</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Comments")}
+            </div>
           </div>
 
           <div style={inputContainerStyle("Status")}>
@@ -255,6 +361,9 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
               <option value="Fail">Fail</option>
             </select>
             <label style={labelOverlayStyle}>Status</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Status")}
+            </div>
           </div>
         </div>
 
@@ -264,7 +373,7 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
           <div style={{ width: "1px", height: "14px", backgroundColor: "#e5e7eb" }}></div>
           <div><span style={{ color: "#94a3b8" }}>Model :</span> <b>{currentEquipment?.model || "N/A"}</b></div>
           <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
-            <button onClick={handleClearForm} style={{ padding: "10px 24px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", cursor: "pointer" }}>Clear</button>
+            <button onClick={handleClearForm} disabled={isSaving} style={{ padding: "10px 24px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", cursor: isSaving ? "not-allowed" : "pointer", opacity: isSaving ? 0.6 : 1 }}>Clear</button>
             <button onClick={handleSaveLogs} disabled={isSaving} style={{ padding: "10px 24px", backgroundColor: "#1e293b", color: "#fff", border: "none", borderRadius: "8px", cursor: isSaving ? "not-allowed" : "pointer", opacity: isSaving ? 0.7 : 1 }}>
               {isSaving ? "Saving..." : "Save"}
             </button>
@@ -288,6 +397,52 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* ✅ TOAST NOTIFICATION */}
+      {toast && (
+        <div
+          style={{
+            position: "fixed",
+            top: "20px",
+            right: "20px",
+            padding: "16px 20px",
+            borderRadius: "8px",
+            fontSize: "14px",
+            fontWeight: "500",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            zIndex: 9999,
+            animation: "slideIn 0.3s ease-out",
+            backgroundColor:
+              toast.type === "success"
+                ? "#04db16ff"
+                : toast.type === "error"
+                ? "#ef4444"
+                : "#cf0404ff",
+            color: "#fff",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+          }}
+        >
+          {toast.type === "success" && "✓"}
+          {toast.type === "error" && "✕"}
+          {toast.type === "info" && "ⓘ"}
+          <span>{toast.message}</span>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slideIn {
+          from {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 }; 

@@ -1,23 +1,24 @@
 import { parameterValueApi } from "@/services/api";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+// ✅ Import toast and ToastContainer
+import { toast, ToastContainer } from "react-toastify"; 
+import "react-toastify/dist/ReactToastify.css";
 import {
-  LineChart,
-  Line,
+  BarChart,
   Bar,
-  BarChart,ReferenceLine,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  ReferenceLine,
 } from "recharts";
-
 
 interface IncubatorFormProps {
   selectedRadio: string;
   setSelectedRadio: (name: string) => void;
   equipmentDetails: {
     equipment_num: string;
-    equipment_id: number; // This should be the PK of restapi_equipmentdetails
+    equipment_id: number;
     parameters: any[];
     make: string;
     model: string;
@@ -30,657 +31,317 @@ const IncubatorForm = ({
   equipmentDetails,
 }: IncubatorFormProps) => {
   const [logValues, setLogValues] = useState<Record<string, string>>({});
-  
-
-// --- ADD THIS CODE START ---
-const [chartData, setChartData] = useState<any[]>([
-  { day: "Mon", compliant: 0, nonCompliant: 0 },
-  { day: "Tue", compliant: 0, nonCompliant: 0 },
-  { day: "Wed", compliant: 0, nonCompliant: 0 },
-  { day: "Thu", compliant: 0, nonCompliant: 0 },
-  { day: "Fri", compliant: 0, nonCompliant: 0 },
-]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [chartData, setChartData] = useState<any[]>([
+    { day: "Mon", compliant: 0, nonCompliant: 0 },
+    { day: "Tue", compliant: 0, nonCompliant: 0 },
+    { day: "Wed", compliant: 0, nonCompliant: 0 },
+    { day: "Thu", compliant: 0, nonCompliant: 0 },
+    { day: "Fri", compliant: 0, nonCompliant: 0 },
+  ]);
 
   const currentEquipmentDetail = equipmentDetails?.find(
     (ed: any) => ed.equipment_num === selectedRadio
   );
-const fetchGraphData = async () => {
-  if (!currentEquipmentDetail?.parameters) return;
 
-  const weekDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const chartMap: any = {};
-  weekDays.forEach((day) => {
-    chartMap[day] = { day, compliant: 0, nonCompliant: 0 };
-  });
-
-  try {
-    // This fetches data for ALL parameters (Temperature, Humidity, etc.)
-    const requests = currentEquipmentDetail.parameters.map((param: any) =>
-      parameterValueApi.listByParameter(param.id)
-    );
-
-    const responses = await Promise.all(requests);
-
-    responses.forEach((res, index) => {
-      // Get the name of the current parameter (e.g., "Temperature" or "Humidity")
-      const paramName = currentEquipmentDetail.parameters[index].parameter_name.toLowerCase();
-
-      res.data.forEach((entry: any) => {
-        if (!entry.created_at || entry.content === "NO_RECORD") return;
-
-        const value = Number(entry.content.replace('%', '')); // Remove % if present
-        if (isNaN(value)) return;
-
-        const dayName = weekDays[new Date(entry.created_at).getDay()];
-        
-        // --- SAFE RANGE SETTINGS ---
-        let isCompliant = false;
-
-        if (paramName.includes("temperature")) {
-          // Temperature safe range: 20 - 55
-          isCompliant = value >= 20 && value <= 55;
-        } 
-
-        else {
-          // Default fallback for other parameters
-          isCompliant = value > 0; 
-        }
-
-        // --- ASSIGN TO BARS ---
-        if (isCompliant) {
-          chartMap[dayName].compliant += value;
-        } else {
-          chartMap[dayName].nonCompliant -= value;
-        }
-      });
-    });
-
-    setChartData(weekDays.map((day) => chartMap[day]));
-  } catch (err) {
-    console.error("Graph fetch failed", err);
-  }
-};
-
-useEffect(() => {
-  if (selectedRadio) {
-    fetchGraphData();
-  }
-}, [selectedRadio, currentEquipmentDetail]); // This ensures it runs when radio changes
-
+  const currentEquipment = equipmentDetails.find(
+    (ed) => ed.equipment_num === selectedRadio
+  );
 
   const setValue = (key: string, value: string) => {
     setLogValues((prev) => ({ ...prev, [key]: value }));
   };
 
+  const getParameterConfig = (parameterName: string) => {
+    if (!currentEquipment?.parameters) return null;
+    let param = currentEquipment.parameters.find(
+      (p: any) => p.parameter_name?.toLowerCase().trim() === parameterName.toLowerCase().trim()
+    );
+    if (!param) {
+      param = currentEquipment.parameters.find(
+        (p: any) => p.parameter_name?.toLowerCase().includes(parameterName.toLowerCase())
+      );
+    }
+    if (!param) {
+      param = currentEquipment.parameters.find(
+        (p: any) => parameterName.toLowerCase().includes(p.parameter_name?.toLowerCase())
+      );
+    }
+    if (!param || !param.config) return null;
+    let config = param.config;
+    if (config.history && Array.isArray(config.history) && config.history.length > 0) {
+      config = config.history[config.history.length - 1];
+    }
+    return config;
+  };
 
-
- const handleSaveLogs = async () => {
-  if (!currentEquipment || !currentEquipmentDetail) return;
-
-  try {
-    const requests = currentEquipment.parameters
-      .map((param: any) => {
-        const key = param.parameter_name.toLowerCase();
-        const value = logValues[key];
-        if (!value) return null;
-
-        return parameterValueApi.create({
-          parameter: param.id,
-          equipment_details: currentEquipmentDetail.equipment_id,
-          content: value,
-        });
-      })
-      .filter(Boolean);
-
-    await Promise.all(requests);
-    alert("Parameter logs saved successfully");
-
-
-  } catch (err) {
-    console.error("Failed to save parameter logs", err);
-  }
-};
-
-  console.log("cc:selectedRadio", currentEquipmentDetail);
-  
-  
-  // --- USEEFFECTS for equipments change  ---
-useEffect(() => {
-  if (!selectedRadio && equipmentDetails.length > 0) {
-    setSelectedRadio(equipmentDetails[0].equipment_num);
-  }
-
-  if (selectedRadio && currentEquipmentDetail) {
-    console.log("Switching equipment to:", selectedRadio);
-    fetchGraphData();
-  }
-}, [selectedRadio, currentEquipmentDetail, equipmentDetails, setSelectedRadio]); 
-
-
-const currentEquipment = equipmentDetails.find(
-    (ed) => ed.equipment_num === selectedRadio
-  );
-
-  const temperatureParam = currentEquipment?.parameters.find(
-  (p: any) => p.parameter_name.toLowerCase() === "temperature"
-);
-
-  const renderRangeText = (param: any) => {
-    console.log("cc:param", param);
-    if (!param) return null;
-
-    switch (param.data_type) {
+  const renderParameterInfo = (parameterName: string) => {
+    const config = getParameterConfig(parameterName);
+    if (!config) return null;
+    const dataType = config.data_type;
+    switch (dataType) {
       case "Decimal":
-        if (param.min_value != null && param.max_value != null) {
+      case "Min/Max":
+        if (config.min_value != null && config.max_value != null) {
           return (
-            <span style={{ color: "#94a3b8" }}>
-              Range: {param.min_value} - {param.max_value} °C
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Range: {config.min_value} - {config.max_value} °C
             </span>
           );
         }
         break;
-
       case "Percentage":
-        if (param.percentage != null) {
+        if (config.percentage != null) {
           return (
-            <span style={{ color: "#94a3b8" }}>
-              Range: 0% - {param.percentage}%
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Range: 0% - {config.percentage}%
             </span>
           );
         }
         break;
-
       case "Select":
-        if (param.dropdown?.length) {
+      case "Dropdown":
+        if (config.dropdown && Array.isArray(config.dropdown) && config.dropdown.length > 0) {
           return (
-            <span style={{ color: "#94a3b8" }}>
-              Options: {param.dropdown.join(", ")}
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Options: {config.dropdown.join(", ")}
             </span>
           );
         }
         break;
-
       case "Text":
-        if (param.text) {
-          return <span style={{ color: "#94a3b8" }}>Value: {param.text}</span>;
-        }
-        break;
-
-      case "Integer":
-        if (param.integer_value != null) {
+        if (config.text) {
           return (
-            <span style={{ color: "#94a3b8" }}>
-              Value: {param.integer_value}
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Value: {config.text}
             </span>
           );
         }
         break;
-
+      case "Integer":
+        if (config.integer_value != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Value: {config.integer_value}
+            </span>
+          );
+        }
+        break;
       default:
         return null;
     }
   };
 
-  // Returns the latest history config for a given parameter
-  const getLatestParam = (paramName: string) => {
-    const currentEq = equipmentDetails.find(
-      (ed) => ed.equipment_num === selectedRadio
-    );
-    const param = currentEq?.parameters.find(
-      (p) => p.parameter_name.toLowerCase() === paramName.toLowerCase()
-    );
-    if (!param || !param.config?.history?.length) return null;
-    return param.config.history[param.config.history.length - 1];
+  const fetchGraphData = async () => {
+    if (!currentEquipmentDetail?.parameters) return;
+    const weekDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const chartMap: any = {};
+    weekDays.forEach((day) => {
+      chartMap[day] = { day, compliant: 0, nonCompliant: 0 };
+    });
+    try {
+      const requests = currentEquipmentDetail.parameters.map((param: any) =>
+        parameterValueApi.listByParameter(param.id)
+      );
+      const responses = await Promise.all(requests);
+      responses.forEach((res, index) => {
+        const paramName = currentEquipmentDetail.parameters[index].parameter_name.toLowerCase();
+        res.data.forEach((entry: any) => {
+          if (!entry.created_at || entry.content === "NO_RECORD") return;
+          const value = Number(entry.content.replace('%', ''));
+          if (isNaN(value)) return;
+          const dayName = weekDays[new Date(entry.created_at).getDay()];
+          let isCompliant = false;
+          if (paramName.includes("temperature")) {
+            isCompliant = value >= 20 && value <= 55;
+          } else {
+            isCompliant = value > 0;
+          }
+          if (isCompliant) {
+            chartMap[dayName].compliant += value;
+          } else {
+            chartMap[dayName].nonCompliant -= value;
+          }
+        });
+      });
+      setChartData(weekDays.map((day) => chartMap[day]));
+    } catch (err) {
+      console.error("Graph fetch failed", err);
+    }
   };
-  
-  const latestTemp = getLatestParam("Temperature");
-  const latestCO2 = getLatestParam("CO2");
-  const latestHumidity = getLatestParam("Humidity");
-  const latestGas = getLatestParam("Gas");
 
-  const inputContainerStyle = {
-    position: "relative" as const,
-    marginBottom: "20px",
+  const handleSaveLogs = async () => {
+    if (!currentEquipment || !currentEquipmentDetail) {
+      toast.error("Please select an equipment first");
+      return;
+    }
+    if (!currentEquipmentDetail.equipment_id) {
+      toast.error("Equipment detail ID is missing.");
+      return;
+    }
+    const hasData = Object.values(logValues).some(val => val && val.trim() !== '');
+    if (!hasData) {
+      toast.warn("Please fill at least one field before saving");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const requests: Promise<any>[] = [];
+      if (!currentEquipment.parameters || currentEquipment.parameters.length === 0) {
+        toast.error("No parameters found for this equipment");
+        setIsSaving(false);
+        return;
+      }
+      const formValuesList = [
+        { key: "temperature", value: logValues["temperature"] },
+        { key: "co2", value: logValues["co2"] },
+        { key: "humidity", value: logValues["humidity"] },
+        { key: "gas", value: logValues["gas"] },
+        { key: "alarmStatus", value: logValues["alarmStatus"] },
+        { key: "alarmResponse", value: logValues["alarmResponse"] },
+        { key: "comments", value: logValues["comments"] },
+        { key: "status", value: logValues["status"] },
+      ].filter((item) => item.value && item.value.trim() !== "");
+
+      formValuesList.forEach((formItem, index) => {
+        if (index < currentEquipment.parameters.length) {
+          const param = currentEquipment.parameters[index];
+          const payload = {
+            parameter: param.id,
+            equipment_details: currentEquipmentDetail.equipment_id,
+            content: formItem.value,
+          };
+          requests.push(parameterValueApi.create(payload));
+        }
+      });
+
+      if (requests.length === 0) {
+        toast.warn("No matching parameters found to save.");
+        setIsSaving(false);
+        return;
+      }
+      await Promise.all(requests);
+      toast.success("Parameter logs saved successfully!");
+      setLogValues({});
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save parameter logs.");
+    } finally {
+      setIsSaving(false);
+    }
   };
-  
-  const inputStyle = {
-    width: "100%",
-    height: "50px",
-    padding: "10px 12px",
-    border: "1px solid #e5e7eb",
-    borderRadius: "8px",
-    fontSize: "14px",
-    outline: "none",
+
+  const handleClear = () => {
+    setLogValues({});
+    toast.info("Form cleared");
   };
-  
-  const labelStyle = {
-    position: "absolute" as const,
-    left: "12px",
-    top: "-8px",
-    backgroundColor: "#fff",
-    padding: "0 4px",
-    fontSize: "12px",
-    color: "#64748b",
-  };
-  
-  const rangeTextStyle = { fontSize: "11px", marginTop: "4px" };
+
+  useEffect(() => {
+    if (!selectedRadio && equipmentDetails.length > 0) {
+      setSelectedRadio(equipmentDetails[0].equipment_num);
+    }
+  }, [equipmentDetails, selectedRadio, setSelectedRadio]);
+
+  useEffect(() => {
+    if (selectedRadio && currentEquipmentDetail) {
+      fetchGraphData();
+    }
+  }, [selectedRadio, currentEquipmentDetail]);
+
+  const inputContainerStyle = { position: "relative" as const, marginBottom: "20px" };
+  const inputStyle = { width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", outline: "none" };
+  const labelStyle = { position: "absolute" as const, left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" };
+  const rangeTextStyle = { fontSize: "11px", marginTop: "4px", color: "#94a3b8" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      {/* SECTION 1: Details Card */}
-      <div
-        style={{
-          backgroundColor: "#fff",
-          borderRadius: "12px",
-          border: "1px solid #e5e7eb",
-          padding: "24px",
-        }}
-      >
-        {/* Equipment Detail Radios - FIXED: Using equipment_id as key */}
-        <div
-          style={{
-            display: "flex",
-            gap: "24px",
-            marginBottom: "24px",
-            borderBottom: "1px solid #f1f5f9",
-            paddingBottom: "20px",
-          }}
-        >
+      {/* REQUIRED: The ToastContainer must be rendered for toasts to show */}
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
+
+      <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "24px" }}>
+        <div style={{ display: "flex", gap: "24px", marginBottom: "24px", borderBottom: "1px solid #f1f5f9", paddingBottom: "20px" }}>
           {equipmentDetails.map((ed) => (
-            <label
-              key={ed.equipment_id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                fontSize: "13px",
-                fontWeight: "500",
-                cursor: "pointer",
-              }}
-            >
-              <input
-                type="radio"
-                checked={selectedRadio === ed.equipment_num}
-                onChange={() => setSelectedRadio(ed.equipment_num)}
-                style={{
-                  accentColor: "#f97316",
-                  width: "16px",
-                  height: "16px",
-                }}
-              />
+            <label key={ed.equipment_id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: selectedRadio === ed.equipment_num ? "700" : "500", color: selectedRadio === ed.equipment_num ? "#f97316" : "#0f172a", cursor: "pointer" }}>
+              <input type="radio" checked={selectedRadio === ed.equipment_num} onChange={() => setSelectedRadio(ed.equipment_num)} style={{ accentColor: "#f97316", width: "16px", height: "16px" }} />
               {ed.equipment_num}
             </label>
           ))}
         </div>
 
-        {/* Form Grid */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "20px",
-          }}
-        >
-          {/* Temperature - ENABLED */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
           <div style={inputContainerStyle}>
-  <input
-    style={inputStyle}
-    disabled={!isParamAvailable("Temperature")}
-    onChange={(e) => setValue("temperature", e.target.value)}
-    placeholder="Type Here"
-  />
-  <label style={labelStyle}>Temperature (°C)</label>
-
-{temperatureParam?.min_value != null &&
- temperatureParam?.max_value != null && (
-  <div
-    style={{
-      fontSize: "11px",
-      marginTop: "4px",
-      display: "flex",
-      gap: "6px",
-      alignItems: "center",
-      color: "#94a3b8",
-    }}
-  >
-    {/* Recommended text (static or midpoint example) */}
-    <span>
-      Recommended :{" "}
-      {((temperatureParam.min_value + temperatureParam.max_value) / 2).toFixed(1)}
-      °C
-    </span>
-
-    <span>|</span>
-
-    {/* Range text (dynamic from parameters) */}
-    <span style={{ color: "#ef4444" }}>
-      Range : {temperatureParam.min_value}°C – {temperatureParam.max_value}°C
-    </span>
-  </div>
-)}
-
-</div>
-
-          {/* CO2 Concentration */}
+            <input style={inputStyle} value={logValues['temperature'] || ''} onChange={(e) => setValue("temperature", e.target.value)} placeholder="Type Here" />
+            <label style={labelStyle}>Temperature (°C)</label>
+            <div style={rangeTextStyle}>{renderParameterInfo("Temperature")}</div>
+          </div>
           <div style={inputContainerStyle}>
-            <input
-              style={inputStyle}
-              value={logValues['co2'] || ''}
-              onChange={(e) => setValue("co2", e.target.value)}
-              placeholder="Type Here"
-            />
+            <input style={inputStyle} value={logValues['co2'] || ''} onChange={(e) => setValue("co2", e.target.value)} placeholder="Type Here" />
             <label style={labelStyle}>CO2 Concentration (%)</label>
-            {latestCO2 && latestCO2.data_type === "Decimal" && (
-              <div style={{ ...rangeTextStyle, color: "#94a3b8" }}>
-                {renderRangeText(latestCO2)}
-              </div>
-            )}
+            <div style={rangeTextStyle}>{renderParameterInfo("CO2 Concentration")}</div>
           </div>
-
-          {/* Humidity Levels - ENABLED */}
           <div style={inputContainerStyle}>
-            {latestHumidity?.data_type === "Select" ? (
-              <select
-                style={inputStyle}
-                value={logValues['humidity'] || (latestHumidity.dropdown[0] || '')}
-                onChange={(e) => setValue("humidity", e.target.value)}
-              >
-                {latestHumidity.dropdown.map((opt: string, idx: number) => (
-                  <option key={idx} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                style={inputStyle}
-                value={logValues['humidity'] || ''}
-                onChange={(e) => setValue("humidity", e.target.value)}
-                placeholder="Type Here"
-              />
-            )}
+            <input style={inputStyle} value={logValues['humidity'] || ''} onChange={(e) => setValue("humidity", e.target.value)} placeholder="Type Here" />
             <label style={labelStyle}>Humidity Levels (%)</label>
-            {latestHumidity?.data_type === "Decimal" && (
-              <div style={{ ...rangeTextStyle, color: "#eab308" }}>
-                {renderRangeText(latestHumidity)}
-              </div>
-            )}
+            <div style={rangeTextStyle}>{renderParameterInfo("Humidity Levels")}</div>
           </div>
-
-          {/* Gas Mixture - ENABLED */}
           <div style={inputContainerStyle}>
-            <input
-              style={inputStyle}
-              value={logValues['gas'] || ''}
-              onChange={(e) => setValue("gas", e.target.value)}
-              placeholder="Type Here"
-            />
+            <input style={inputStyle} value={logValues['gas'] || ''} onChange={(e) => setValue("gas", e.target.value)} placeholder="Type Here" />
             <label style={labelStyle}>Gas Mixture (% O2, CO2)</label>
-            {latestGas && (
-              <div style={{ ...rangeTextStyle, color: "#94a3b8" }}>
-                {renderRangeText(latestGas)}
-              </div>
-            )}
+            <div style={rangeTextStyle}>{renderParameterInfo("Gas Mixture")}</div>
           </div>
-
-          {/* Alarm Status - ENABLED */}
           <div style={inputContainerStyle}>
-            <select
-              style={inputStyle}
-              value={logValues['alarmStatus'] || 'Functional'}
-              onChange={(e) => setValue("alarmStatus", e.target.value)}
-            >
+            <select style={inputStyle} value={logValues['alarmStatus'] || 'Functional'} onChange={(e) => setValue("alarmStatus", e.target.value)}>
               <option value="Functional">Functional</option>
               <option value="Maintenance Required">Maintenance Required</option>
             </select>
             <label style={labelStyle}>Alarm Status</label>
+            <div style={rangeTextStyle}>{renderParameterInfo("Alarm Status")}</div>
           </div>
-
-          {/* Alarm Response Time - ENABLED */}
           <div style={inputContainerStyle}>
-            <input
-              style={inputStyle}
-              value={logValues['alarmResponse'] || ''}
-              placeholder="Type Here"
-              onChange={(e) => setValue("alarmResponse", e.target.value)}
-            />
+            <input style={inputStyle} value={logValues['alarmResponse'] || ''} placeholder="Type Here" onChange={(e) => setValue("alarmResponse", e.target.value)} />
             <label style={labelStyle}>Alarm Response Time (Mins)</label>
-            <div style={{ ...rangeTextStyle, color: "#94a3b8" }}>
-              Range : &lt; 5
-            </div>
+            <div style={rangeTextStyle}>{renderParameterInfo("Alarm Response Time")}</div>
+          </div>
+          <div style={inputContainerStyle}>
+            <input style={inputStyle} value={logValues['comments'] || ''} onChange={(e) => setValue("comments", e.target.value)} placeholder="Type Here" />
+            <label style={labelStyle}>Comments</label>
+            <div style={rangeTextStyle}>{renderParameterInfo("Comments")}</div>
+          </div>
+          <div style={inputContainerStyle}>
+            <select style={inputStyle} value={logValues['status'] || 'Pass'} onChange={(e) => setValue("status", e.target.value)}>
+              <option value="Pass">Pass</option>
+              <option value="Fail">Fail</option>
+            </select>
+            <label style={labelStyle}>Status</label>
+            <div style={rangeTextStyle}>{renderParameterInfo("Status")}</div>
           </div>
         </div>
 
-        {/* Make and Model Section with Buttons */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "24px",
-            marginTop: "20px",
-            fontSize: "14px",
-          }}
-        >
-          <div style={{ display: "flex", gap: "8px" }}>
-            <span style={{ color: "#94a3b8" }}>Make :</span>
-            <span style={{ fontWeight: "600", color: "#0f172a" }}>
-              {currentEquipment?.make || "N/A"}
-            </span>
-          </div>
-          <div
-            style={{ width: "1px", height: "14px", backgroundColor: "#e5e7eb" }}
-          ></div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <span style={{ color: "#94a3b8" }}>Model :</span>
-            <span style={{ fontWeight: "600", color: "#0f172a" }}>
-              {currentEquipment?.model || "N/A"}
-            </span>
-          </div>
-
+        <div style={{ display: "flex", alignItems: "center", gap: "24px", marginTop: "20px", fontSize: "14px" }}>
+          <div style={{ display: "flex", gap: "8px" }}><span style={{ color: "#94a3b8" }}>Make :</span><span style={{ fontWeight: "600", color: "#0f172a" }}>{currentEquipment?.make || "N/A"}</span></div>
+          <div style={{ width: "1px", height: "14px", backgroundColor: "#e5e7eb" }}></div>
+          <div style={{ display: "flex", gap: "8px" }}><span style={{ color: "#94a3b8" }}>Model :</span><span style={{ fontWeight: "600", color: "#0f172a" }}>{currentEquipment?.model || "N/A"}</span></div>
           <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
-            <button
-              onClick={handleClear}
-              disabled={isSaving}
-              style={{
-                padding: "10px 24px",
-                backgroundColor: "#fff",
-                border: "1px solid #e5e7eb",
-                borderRadius: "8px",
-                cursor: isSaving ? "not-allowed" : "pointer",
-                fontSize: "14px",
-                opacity: isSaving ? 0.6 : 1,
-              }}
-            >
-              Clear
-            </button>
-            <button
-              onClick={handleSaveLogs}
-              disabled={isSaving}
-              style={{
-                padding: "10px 24px",
-                backgroundColor: "#1e293b",
-                color: "#fff",
-                border: "none",
-                borderRadius: "8px",
-                cursor: isSaving ? "not-allowed" : "pointer",
-                fontSize: "14px",
-                opacity: isSaving ? 0.6 : 1,
-              }}
-            >
-              {isSaving ? "Saving..." : "Save"}
-            </button>
+            <button onClick={handleClear} disabled={isSaving} style={{ padding: "10px 24px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", cursor: isSaving ? "not-allowed" : "pointer", fontSize: "14px", opacity: isSaving ? 0.6 : 1 }}>Clear</button>
+            <button onClick={handleSaveLogs} disabled={isSaving} style={{ padding: "10px 24px", backgroundColor: "#1e293b", color: "#fff", border: "none", borderRadius: "8px", cursor: isSaving ? "not-allowed" : "pointer", fontSize: "14px", opacity: isSaving ? 0.6 : 1 }}>{isSaving ? "Saving..." : "Save"}</button>
           </div>
         </div>
       </div>
 
-      {/* SECTION 2: Activity Graph */}
-      <div
-        style={{
-          backgroundColor: "#fff",
-          borderRadius: "12px",
-          border: "1px solid #e5e7eb",
-          padding: "24px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "16px",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div
-              style={{
-                width: "32px",
-                height: "32px",
-                borderRadius: "8px",
-                border: "1px solid #E0E0E0",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#505050"
-                strokeWidth="2"
-              >
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-              </svg>
-            </div>
-            <h3
-              style={{
-                fontSize: "16px",
-                fontWeight: "600",
-                margin: 0,
-                color: "#0f172a",
-              }}
-            >
-              Activity
-            </h3>
-          </div>
-
-          <div style={{ display: "flex", gap: "16px", fontSize: "12px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <div
-                style={{
-                  width: "10px",
-                  height: "10px",
-                  backgroundColor: "#6c6c6c",
-                  borderRadius: "50%",
-                }}
-              />
-              <span style={{ color: "#9e9e9e" }}>Compliant</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <div
-                style={{
-                  width: "10px",
-                  height: "10px",
-                  backgroundColor: "#EF9685",
-                  borderRadius: "50%",
-                }}
-              />
-              <span style={{ color: "#9e9e9e" }}>Non - Compliant</span>
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{ borderBottom: "1px solid #f1f5f9", marginBottom: "24px" }}
-        ></div>
-
+      <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "24px" }}>
+        <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "#0f172a" }}>Activity</h3>
         <div style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              stackOffset="sign"
-              margin={{ top: 20, right: 30, left: 45, bottom: 20 }}
-            >
-              <XAxis
-                dataKey="day"
-                tick={{ fontSize: 12, fill: "#9e9e9e" }}
-                axisLine={{ stroke: "#E0E0E0" }}
-                tickLine={false}
-              />
-              <YAxis
-                domain={['auto', 'auto']}
-                tick={{ fontSize: 12, fill: "#9e9e9e" }}
-                axisLine={false}
-                tickLine={false}
-                label={{
-                  value: "No of parameters",
-                  angle: -90,
-                  position: "insideLeft",
-                  offset: -35,
-                  style: {
-                    textAnchor: "middle",
-                    fill: "#9e9e9e",
-                    fontSize: 12,
-                    fontWeight: 500,
-                  },
-                }}
-              />
-              <Tooltip
-                cursor={{ fill: "transparent" }}
-                contentStyle={{ borderRadius: "4px" }}
-              />
+            <BarChart data={chartData} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 20 }}>
+              <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#9e9e9e" }} axisLine={{ stroke: "#E0E0E0" }} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: "#9e9e9e" }} axisLine={false} tickLine={false} label={{ value: "No of parameters", angle: -90, position: "insideLeft", offset: -35, style: { fill: "#9e9e9e", fontSize: 12 } }} />
+              <Tooltip cursor={{ fill: "transparent" }} />
               <ReferenceLine y={0} stroke="#E0E0E0" />
-              <ReferenceLine y={20} stroke="#F1F1F1" />
-              <ReferenceLine y={40} stroke="#F1F1F1" />
-              <ReferenceLine y={-20} stroke="#F1F1F1" />
-              <ReferenceLine y={-40} stroke="#F1F1F1" />
-
-<Bar
-  dataKey="compliant"
-  stackId="a"
-  fill="#6c6c6c"
-  radius={[4, 4, 0, 0]}
-  barSize={20}
-  // Simplified label to avoid TS errors
-  label={{ position: 'top', fill: '#6c6c6c', fontSize: 10 }}
-/>
-
-<Bar
-  dataKey="nonCompliant"
-  stackId="a"
-  fill="#EF9685"
-  radius={[0, 0, 4, 4]}
-  barSize={20}
-  label={(props: any) => {
-    const { x, y, width, value } = props;
-    if (!value || value === 0) return null;
-    return (
-      <text 
-        x={x + width / 2} 
-        y={y + 15} // Positions text below the downward bar
-        fill="#EF9685" 
-        fontSize={10} 
-        textAnchor="middle"
-      >
-        {Math.abs(value)}
-      </text>
-    );
-  }}
-/>
+              <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={15} />
+              <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={15} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <p
-          style={{
-            textAlign: "center",
-            marginTop: "12px",
-            color: "#B1B1B1",
-            fontSize: "12px",
-          }}
-        >
-          Month
-        </p>
       </div>
     </div>
   );

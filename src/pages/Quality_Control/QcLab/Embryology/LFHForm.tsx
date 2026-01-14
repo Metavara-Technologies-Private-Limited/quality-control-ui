@@ -1,5 +1,7 @@
 import { parameterValueApi } from "@/services/api";
 import { useEffect, useState, useRef } from "react";
+import { toast, ToastContainer } from "react-toastify"; // Added ToastContainer here
+import "react-toastify/dist/ReactToastify.css";
 import {
   BarChart,
   Bar,
@@ -54,7 +56,75 @@ const LFHForm = ({
     (ed) => ed.equipment_num === selectedRadio
   );
 
-  // File handling
+  const getParameterConfig = (parameterName: string) => {
+    const param = currentEquipment?.parameters?.find(
+      (p: any) => p.parameter_name?.toLowerCase() === parameterName.toLowerCase()
+    );
+    if (!param || !param.config) return null;
+    let config = param.config;
+    if (config.history && Array.isArray(config.history) && config.history.length > 0) {
+      config = config.history[config.history.length - 1];
+    }
+    return config;
+  };
+
+  const renderParameterInfo = (parameterName: string) => {
+    const config = getParameterConfig(parameterName);
+    if (!config) return null;
+    const dataType = config.data_type;
+    switch (dataType) {
+      case "Decimal":
+      case "Min/Max":
+        if (config.min_value != null && config.max_value != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Range: {config.min_value} - {config.max_value} m/s
+            </span>
+          );
+        }
+        break;
+      case "Percentage":
+        if (config.percentage != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Range: 0% - {config.percentage}%
+            </span>
+          );
+        }
+        break;
+      case "Select":
+      case "Dropdown":
+        if (config.dropdown && Array.isArray(config.dropdown) && config.dropdown.length > 0) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Options: {config.dropdown.join(", ")}
+            </span>
+          );
+        }
+        break;
+      case "Text":
+        if (config.text) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Value: {config.text}
+            </span>
+          );
+        }
+        break;
+      case "Integer":
+        if (config.integer_value != null) {
+          return (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+              Value: {config.integer_value}
+            </span>
+          );
+        }
+        break;
+      default:
+        return null;
+    }
+  };
+
   const handleLinkClick = () => {
     fileInputRef.current?.click();
   };
@@ -63,6 +133,7 @@ const LFHForm = ({
     const file = event.target.files?.[0];
     if (file) {
       setUploadedFile(file);
+      toast.info(`File "${file.name}" selected`); // Optional: notify file select
     }
   };
 
@@ -74,31 +145,22 @@ const LFHForm = ({
   };
 
   const handleSaveLogs = async () => {
-    console.log("=== SAVE LOGS CLICKED ===");
-    console.log("1. currentEquipment:", currentEquipment);
-    console.log("2. currentEquipmentDetail:", currentEquipmentDetail);
-    console.log("3. logValues:", logValues);
-    console.log("4. uploadedFile:", uploadedFile?.name);
-
     if (!currentEquipment || !currentEquipmentDetail) {
-      alert("Please select an equipment first");
+      toast.error("Please select an equipment first");
       return;
     }
 
     if (!currentEquipmentDetail.equipment_id) {
-      console.error("ERROR: currentEquipmentDetail.equipment_id is missing!");
-      alert("Equipment detail ID is missing. Please check your data structure.");
+      toast.error("Equipment detail ID is missing.");
       return;
     }
 
-    // Check if at least one field is filled
     const hasData =
       Object.values(logValues).some((val) => val && val.trim() !== "") ||
       uploadedFile !== null;
-    console.log("5. hasData:", hasData);
 
     if (!hasData) {
-      alert("Please fill at least one field before saving");
+      toast.warn("Please fill at least one field before saving");
       return;
     }
 
@@ -107,27 +169,16 @@ const LFHForm = ({
     try {
       const requests: Promise<any>[] = [];
 
-      console.log(
-        "6. Total parameters available:",
-        currentEquipment.parameters?.length || 0
-      );
-      console.log("7. Parameters:", currentEquipment.parameters);
-
-      if (
-        !currentEquipment.parameters ||
-        currentEquipment.parameters.length === 0
-      ) {
-        alert("No parameters found for this equipment");
+      if (!currentEquipment.parameters || currentEquipment.parameters.length === 0) {
+        toast.error("No parameters found for this equipment");
         setIsSaving(false);
         return;
       }
 
-      // Store file name if uploaded
       if (uploadedFile) {
         logValues["uploadedFileName"] = uploadedFile.name;
       }
 
-      // Collect all filled form values
       const formValuesList = [
         { key: "airflowVelocity", value: logValues["airflowVelocity"] },
         { key: "hepaFilter", value: logValues["hepaFilter"] },
@@ -138,60 +189,32 @@ const LFHForm = ({
         { key: "status", value: logValues["status"] },
       ].filter((item) => item.value && item.value.trim() !== "");
 
-      console.log("8. Filled form values:", formValuesList);
-
-      // Map each filled value to a parameter
       formValuesList.forEach((formItem, index) => {
-        if (index >= currentEquipment.parameters.length) {
-          console.log(
-            `⚠️ More form values (${formValuesList.length}) than parameters (${currentEquipment.parameters.length}). Skipping: ${formItem.key}`
-          );
-          return;
+        if (index < currentEquipment.parameters.length) {
+          const param = currentEquipment.parameters[index];
+          const payload = {
+            parameter: param.id,
+            equipment_details: currentEquipmentDetail.equipment_id,
+            content: formItem.value,
+          };
+          requests.push(parameterValueApi.create(payload));
         }
-
-        const param = currentEquipment.parameters[index];
-        const value = formItem.value;
-
-        console.log(`9.${index} Mapping:`, {
-          formField: formItem.key,
-          formValue: value,
-          toParameter: param.parameter_name,
-          parameterId: param.id,
-        });
-
-        const payload = {
-          parameter: param.id,
-          equipment_details: currentEquipmentDetail.equipment_id,
-          content: value,
-        };
-        console.log(`   ✓ Adding API request:`, payload);
-
-        requests.push(parameterValueApi.create(payload));
       });
 
-      console.log("10. Total API requests to make:", requests.length);
-
       if (requests.length === 0) {
-        alert(
-          "No matching parameters found to save. Please check parameter names in database."
-        );
+        toast.warn("No valid parameters found to match your input.");
         setIsSaving(false);
         return;
       }
 
-      console.log("11. Making API calls...");
-      const results = await Promise.all(requests);
-      console.log("12. ✓ API calls successful:", results);
+      await Promise.all(requests);
+      toast.success("Parameter logs saved successfully!"); // Toast for success
 
-      alert("Parameter logs saved successfully!");
-
-      // Clear form after successful save
       setLogValues({});
       setUploadedFile(null);
     } catch (err) {
-      console.error("13. ✗ Failed to save parameter logs:", err);
-      console.error("Error details:", JSON.stringify(err, null, 2));
-      alert("Failed to save parameter logs. Check console for details.");
+      console.error(err);
+      toast.error("Failed to save parameter logs. Please try again."); // Toast for failure
     } finally {
       setIsSaving(false);
     }
@@ -200,6 +223,7 @@ const LFHForm = ({
   const handleClear = () => {
     setLogValues({});
     setUploadedFile(null);
+    toast.info("Form cleared");
   };
 
   useEffect(() => {
@@ -237,6 +261,9 @@ const LFHForm = ({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      {/* REQUIRED: The ToastContainer must be rendered for toasts to show */}
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
+
       <div
         style={{
           backgroundColor: "#fff",
@@ -245,7 +272,6 @@ const LFHForm = ({
           padding: "24px",
         }}
       >
-        {/* Hidden File Input */}
         <input
           type="file"
           ref={fileInputRef}
@@ -307,7 +333,9 @@ const LFHForm = ({
               placeholder="Type Here"
             />
             <label style={labelStyle}>Airflow Velocity (m/s)</label>
-            <div style={rangeTextStyle}>Range : 0.45 - 0.75</div>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Airflow Velocity (m/s)")}
+            </div>
           </div>
 
           <div style={inputContainerStyle}>
@@ -321,6 +349,9 @@ const LFHForm = ({
               <option value="Needs Replacement">Needs Replacement</option>
             </select>
             <label style={labelStyle}>HEPA Filter Integrity</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("HEPA Filter Integrity")}
+            </div>
           </div>
 
           <div style={inputContainerStyle}>
@@ -333,6 +364,9 @@ const LFHForm = ({
               <option value="Non-Functional">Non-Functional</option>
             </select>
             <label style={labelStyle}>UV Light Functionality</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("UV Light Functionality")}
+            </div>
           </div>
 
           <div style={inputContainerStyle}>
@@ -343,10 +377,11 @@ const LFHForm = ({
               placeholder="Type Here"
             />
             <label style={labelStyle}>Cleanliness & Decontamination Log</label>
-            <div style={rangeTextStyle}>Range : 0.45 - 0.75</div>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Cleanliness & Decontamination Log")}
+            </div>
           </div>
 
-          {/* File Upload Row */}
           <div
             style={{
               display: "flex",
@@ -398,7 +433,6 @@ const LFHForm = ({
               )}
             </div>
 
-            {/* View Icon */}
             <div
               onClick={handleViewFile}
               style={{
@@ -436,6 +470,9 @@ const LFHForm = ({
               placeholder="Type Here"
             />
             <label style={labelStyle}>Comments</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Comments")}
+            </div>
           </div>
 
           <div style={inputContainerStyle}>
@@ -448,10 +485,12 @@ const LFHForm = ({
               <option value="Fail">Fail</option>
             </select>
             <label style={labelStyle}>Status</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Status")}
+            </div>
           </div>
         </div>
 
-        {/* Make and Model Section with Action Buttons */}
         <div
           style={{
             display: "flex",
@@ -513,7 +552,7 @@ const LFHForm = ({
         </div>
       </div>
 
-      {/* Activity Graph Section */}
+      {/* Activity Graph Section stays the same */}
       <div
         style={{
           backgroundColor: "#fff",
@@ -553,48 +592,11 @@ const LFHForm = ({
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
               </svg>
             </div>
-            <h3
-              style={{
-                fontSize: "16px",
-                fontWeight: "600",
-                margin: 0,
-                color: "#0f172a",
-              }}
-            >
+            <h3 style={{ fontSize: "16px", fontWeight: "600", margin: 0, color: "#0f172a" }}>
               Activity
             </h3>
           </div>
-
-          <div style={{ display: "flex", gap: "16px", fontSize: "12px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <div
-                style={{
-                  width: "10px",
-                  height: "10px",
-                  backgroundColor: "#6c6c6c",
-                  borderRadius: "50%",
-                }}
-              />
-              <span style={{ color: "#9e9e9e" }}>Compliant</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <div
-                style={{
-                  width: "10px",
-                  height: "10px",
-                  backgroundColor: "#EF9685",
-                  borderRadius: "50%",
-                }}
-              />
-              <span style={{ color: "#9e9e9e" }}>Non - Compliant</span>
-            </div>
-          </div>
         </div>
-
-        <div
-          style={{ borderBottom: "1px solid #f1f5f9", marginBottom: "24px" }}
-        ></div>
-
         <div style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -610,7 +612,6 @@ const LFHForm = ({
               />
               <YAxis
                 domain={[-40, 40]}
-                ticks={[-40, -20, 0, 20, 40]}
                 tick={{ fontSize: 12, fill: "#9e9e9e" }}
                 axisLine={false}
                 tickLine={false}
@@ -619,61 +620,16 @@ const LFHForm = ({
                   angle: -90,
                   position: "insideLeft",
                   offset: -35,
-                  style: {
-                    textAnchor: "middle",
-                    fill: "#9e9e9e",
-                    fontSize: 12,
-                    fontWeight: 500,
-                  },
+                  style: { fill: "#9e9e9e", fontSize: 12 },
                 }}
               />
-              <Tooltip
-                cursor={{ fill: "transparent" }}
-                contentStyle={{ borderRadius: "4px" }}
-              />
+              <Tooltip cursor={{ fill: "transparent" }} />
               <ReferenceLine y={0} stroke="#E0E0E0" />
-              <ReferenceLine y={20} stroke="#F1F1F1" />
-              <ReferenceLine y={40} stroke="#F1F1F1" />
-              <ReferenceLine y={-20} stroke="#F1F1F1" />
-              <ReferenceLine y={-40} stroke="#F1F1F1" />
-
-              <Bar
-                dataKey="compliant"
-                fill="#6c6c6c"
-                radius={[4, 4, 0, 0]}
-                barSize={15}
-                label={{ position: "top", fill: "#9e9e9e", fontSize: 10 }}
-              />
-              <Bar
-                dataKey="nonCompliant"
-                fill="#EF9685"
-                radius={[0, 0, 4, 4]}
-                barSize={15}
-                label={({ x, y, value, width }: any) => (
-                  <text
-                    x={x + width / 2}
-                    y={y + 14}
-                    fill="#EF9685"
-                    fontSize={10}
-                    textAnchor="middle"
-                  >
-                    {Math.abs(value)}
-                  </text>
-                )}
-              />
+              <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={15} />
+              <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={15} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <p
-          style={{
-            textAlign: "center",
-            marginTop: "12px",
-            color: "#B1B1B1",
-            fontSize: "12px",
-          }}
-        >
-          Month
-        </p>
       </div>
     </div>
   );

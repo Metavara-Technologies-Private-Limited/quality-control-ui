@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { Plus, X } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
+import { toast } from "react-toastify";
 
 import { RootState } from "@/store";
 import { Assignee } from "@/types";
@@ -152,7 +153,6 @@ const EquipmentCard = ({ item, selected = false, onClick, assignees, onAddAssign
 };
 
 const Equipment = () => {
-  // ✅ Destructure setSearchText from context
   const { selectedAssigneeId, searchText = "", setSearchText } = useOutletContext<{
     selectedAssigneeId: number | null;
     searchText: string;
@@ -169,7 +169,15 @@ const Equipment = () => {
   const [selectedRadio, setSelectedRadio] = useState("");
   const [equipmentType, setEquipmentType] = useState("incubator");
 
-  const [equipmentAssignees, setEquipmentAssignees] = useState<Record<string, Assignee[]>>({});
+  const [equipmentAssignees, setEquipmentAssignees] = useState<Record<string, Assignee[]>>(() => {
+    try {
+      const saved = localStorage.getItem("embryology_equipment_assignees");
+      return saved ? JSON.parse(saved) : {};
+    } catch (error) {
+      console.error("Failed to load assignees from localStorage:", error);
+      return {};
+    }
+  });
   const [assigneeDialogOpen, setAssigneeDialogOpen] = useState(false);
   const [currentEquipmentId, setCurrentEquipmentId] = useState<string>("");
 
@@ -195,7 +203,15 @@ const Equipment = () => {
     ) || [];
   }, [embryologyDept]);
 
-  // ✅ SEARCH AND ASSIGNEE FILTER LOGIC
+  // Save assignees to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem("embryology_equipment_assignees", JSON.stringify(equipmentAssignees));
+    } catch (error) {
+      console.error("Failed to save assignees to localStorage:", error);
+    }
+  }, [equipmentAssignees]);
+
   const filteredGroupedEquipments = useMemo(() => {
     const grouped: Record<string, typeof rawEquipmentData> = {};
 
@@ -203,12 +219,10 @@ const Equipment = () => {
       const equipmentKey = `${item.name}-${item.detailName}`;
       const assignees = equipmentAssignees[equipmentKey] || [];
 
-      // 1. Search Filter (matches category name OR detail name)
       const matchesSearch = 
         item.name.toLowerCase().includes(searchText.toLowerCase()) || 
         item.detailName.toLowerCase().includes(searchText.toLowerCase());
 
-      // 2. Assignee Filter
       const matchesAssignee = !selectedAssigneeId || assignees.some(a => a.id === selectedAssigneeId);
 
       if (matchesSearch && matchesAssignee) {
@@ -230,12 +244,11 @@ const Equipment = () => {
       model: e.model,
     }));
 
- const selectEquipment = (eq: (typeof rawEquipmentData)[number]) => {
+  const selectEquipment = (eq: (typeof rawEquipmentData)[number]) => {
     setSelectedEquipment(eq.name);
     setSelectedRadio(eq.detailName);
     setEquipmentType(eq.type);
     
-    // ✅ CLEAR SEARCH INPUT AFTER SELECTION
     if (setSearchText) {
       setSearchText(""); 
     }
@@ -251,6 +264,7 @@ const Equipment = () => {
       ...prev,
       [currentEquipmentId]: [...(prev[currentEquipmentId] || []), ...newAssignees],
     }));
+    toast.success("Assignees added successfully!");
   };
 
   const handleRemoveAssignee = (equipmentKey: string, assigneeId: number) => {
@@ -258,6 +272,7 @@ const Equipment = () => {
       ...prev,
       [equipmentKey]: (prev[equipmentKey] || []).filter((a) => a.id !== assigneeId),
     }));
+    toast.success("Assignee removed!");
   };
 
   const formMap: Record<string, any> = {
