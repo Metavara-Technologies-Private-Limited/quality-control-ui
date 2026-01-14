@@ -203,4 +203,6 @@ export const parameterValueApi = {
 
   listByParameter: (parameterId: number) =>
     http.get(`/parameters/${parameterId}/values/`),
+
+
 };
