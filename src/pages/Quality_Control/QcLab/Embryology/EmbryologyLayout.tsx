@@ -175,7 +175,11 @@ const EmbryologyLayout = () => {
 
       <Box mt={3}>
         {/* Pass BOTH selectedAssigneeId and searchText to child routes */}
-        <Outlet context={{ selectedAssigneeId, searchText }} />
+       <Outlet context={{ 
+    selectedAssigneeId, 
+    searchText, 
+    setSearchText // ✅ Add this setter to the context
+}} />
       </Box>
     </Box>
   );
