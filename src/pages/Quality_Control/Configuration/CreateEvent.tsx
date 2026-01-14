@@ -38,6 +38,10 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { eventApi } from "@/services/api";
 
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { useNavigate } from "react-router-dom";
+
+
 type SelectedEquipment = {
   equipment: {
     id: number;
@@ -137,6 +141,9 @@ const CreateEvent = () => {
   );
   const departments = clinic ? clinic.department : [];
 
+  const navigate = useNavigate();
+
+
   const allEquipments =
     clinic && selectedDepartmentId
       ? clinic.department
@@ -227,9 +234,42 @@ const CreateEvent = () => {
       <Card
         sx={{ p: 3, borderRadius: 2, border: `1px solid ${COLORS.border}` }}
       >
-        <Typography fontWeight={600} mb={3}>
-          Create Event
-        </Typography>
+        
+
+<Box mb={3}>
+  {/* Arrow + title stack */}
+  <Box
+    display="flex"
+    flexDirection="column"
+    gap="12px"   // ✅ gap: 12px
+  >
+    {/* Arrow */}
+    <IconButton
+      onClick={() => navigate("../events")}
+      sx={{
+        width: 24,      // ✅ width: 24
+        height: 24,     // ✅ height: 24
+        padding: 0,
+        opacity: 1,
+        color: "#374151",
+      }}
+    >
+      <ArrowBackIcon sx={{ fontSize: 24 }} /> {/* 24×24 */}
+    </IconButton>
+
+    {/* Divider */}
+    <Divider />
+
+    {/* Title */}
+    <Typography
+      fontWeight={600}
+      fontSize={18}
+      color="#111827"
+    >
+      Create Event
+    </Typography>
+  </Box>
+</Box>
 
         {/* EVENT INFO */}
         <Grid container spacing={2} mb={3}>
@@ -710,7 +750,6 @@ const CreateEvent = () => {
         </Box>
 
         {/* ASSIGNEE DIALOG */}
-        {/* ASSIGNEE DIALOG */}
         <Dialog
           open={assigneeDialogOpen}
           onClose={() => setAssigneeDialogOpen(false)}
@@ -721,26 +760,46 @@ const CreateEvent = () => {
             },
           }}
         >
-          {/* HEADER WITH ARROW / CLOSE ICON */}
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
-            px={3}
-            py={2}
-            borderBottom="1px solid #E5E7EB"
-          >
-            <Typography fontSize={18} fontWeight={600} color="#111827">
-              Select Assignees
-            </Typography>
+          {/* HEADER WITH BACK ARROW + CLOSE ICON */}
+<Box
+  display="flex"
+  alignItems="center"
+  justifyContent="space-between"
+  px={3}
+  py={2}
+  borderBottom="1px solid #E5E7EB"
+>
+  <Box display="flex" alignItems="center" gap={1.5}>
+    {/* BACK ARROW */}
+    <IconButton
+      onClick={() => setAssigneeDialogOpen(false)}
+      sx={{
+        color: "#374151",
+        border: "1px solid #E5E7EB",
+        borderRadius: "8px",
+        width: 32,
+        height: 32,
+        "&:hover": {
+          backgroundColor: "#F3F4F6",
+        },
+      }}
+    >
+      <ArrowBackIcon fontSize="small" />
+    </IconButton>
 
-            <IconButton
-              onClick={() => setAssigneeDialogOpen(false)}
-              sx={{ color: "#6B7280" }}
-            >
-              ✕
-            </IconButton>
-          </Box>
+    <Typography fontSize={18} fontWeight={600} color="#111827">
+      Select Assignees
+    </Typography>
+  </Box>
+
+  {/* CLOSE ICON */}
+  <IconButton
+    onClick={() => setAssigneeDialogOpen(false)}
+    sx={{ color: "#6B7280" }}
+  >
+    ✕
+  </IconButton>
+</Box>
 
           {/* CONTENT */}
           <DialogContent sx={{ px: 3, pt: 3 }}>
