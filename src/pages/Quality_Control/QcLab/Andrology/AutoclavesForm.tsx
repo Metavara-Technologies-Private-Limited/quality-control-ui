@@ -1,44 +1,71 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { parameterValueApi } from "@/services/api";
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine 
 } from 'recharts';
-import { Eye, X, ArrowLeft, Link as LinkIcon, FileText, Download, Calendar, Clock } from "lucide-react";
+import { Eye, ArrowLeft, Link as LinkIcon, Calendar, Clock } from "lucide-react";
 
-const AutoclavesForm = ({ selectedRadio = "", setSelectedRadio }: any) => {
+interface AutoclavesFormProps {
+  selectedRadio: string;
+  setSelectedRadio: (name: string) => void;
+  equipmentDetails: {
+    equipment_num: string;
+    equipment_id: number;
+    parameters: any[];
+    make: string;
+    model: string;
+  }[];
+}
+
+const AutoclavesForm = ({ selectedRadio, setSelectedRadio, equipmentDetails }: AutoclavesFormProps) => {
   const [activeSubTab, setActiveSubTab] = useState("Details");
   const [viewingFile, setViewingFile] = useState<{name: string, data: string, type: string} | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [logsData, setLogsData] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState({
-    date: "2025-12-31",
-    time: "11:24 AM",
+  // Get unique equipment numbers from equipmentDetails
+  const availableEquipments = equipmentDetails?.map((ed: any) => ed.equipment_num) || [];
+
+  const [formData, setFormData] = useState<Record<string, string>>({
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     temperature: "",
     pressure: "",
     sterilizationCycle: "Valid",
     maintenanceLogs: "",
     status: "Pass",
     comments: "",
-    fileName: "Sample ID.doc", 
-    fileData: "", 
-    fileType: "", 
+    fileName: "No File",
+    fileData: "",
+    fileType: "",
   });
 
-  const [logsData, setLogsData] = useState<any[]>([]);
+  // --- CONFIGURATION: Map Form Keys to DB Parameter Names ---
+  const fieldMapping = useMemo(() => [
+    { key: "date", dbName: "Date" },
+    { key: "time", dbName: "Time" },
+    { key: "temperature", dbName: "Temperature" },
+    { key: "pressure", dbName: "Pressure" },
+    { key: "sterilizationCycle", dbName: "Sterilization Cycle Validation" },
+    { key: "maintenanceLogs", dbName: "Maintenance Logs" },
+    { key: "comments", dbName: "Comments" },
+    { key: "status", dbName: "Status" },
+    { key: "fileData", dbName: "Uploads" },
+  ], []);
 
-  const getMappedName = (input: string) => {
-    if (!input) return "Autoclaves B";
-    const val = input.toString().toUpperCase();
-    if (val.includes("01") || val.includes(" 1") || val.endsWith(" A")) return "Autoclaves A";
-    if (val.includes("02") || val.includes(" 2") || val.endsWith(" B")) return "Autoclaves B";
-    if (val.includes("03") || val.includes(" 3") || val.endsWith(" C")) return "Autoclaves C";
-    if (val.includes("04") || val.includes(" 4") || val.endsWith(" D")) return "Autoclaves D";
-    if (val.includes("05") || val.includes(" 5") || val.endsWith(" E")) return "Autoclaves E";
-    return input;
+  const currentEquipment = equipmentDetails.find(
+    (ed) => ed.equipment_num === selectedRadio
+  );
+
+  // --- MATCHING HELPER ---
+  const getDbParam = (dbName: string) => {
+    return currentEquipment?.parameters?.find(
+      (p: any) => p.parameter_name.toLowerCase().trim() === dbName.toLowerCase().trim()
+    );
   };
-
-  const currentSelection = getMappedName(selectedRadio);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -61,30 +88,166 @@ const AutoclavesForm = ({ selectedRadio = "", setSelectedRadio }: any) => {
     }
   };
 
-  const handleSave = () => {
-    if (!formData.temperature || !formData.pressure) {
-      toast.error("Please fill in Temperature and Pressure!");
+  const handleSave = async () => {
+    if (!currentEquipment) {
+      toast.error("Please select an equipment first");
       return;
     }
-    const newEntry = {
-      ...formData,
-      id: Date.now(),
-      dateTime: `${formData.date} ${formData.time}`,
-    };
-    setLogsData([newEntry, ...logsData]);
-    toast.success("Successfully Saved!");
-    setActiveSubTab("Logs");
+
+    const hasData = Object.entries(formData).some(([key, val]) => {
+      if (key === 'fileName') return val !== "No File";
+      if (key === 'date' || key === 'time') return true;
+      return val && val.trim() !== "";
+    });
+
+    if (!hasData) {
+      toast.error("Please fill at least one field before saving");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const requests: Promise<any>[] = [];
+      
+      fieldMapping.forEach((field) => {
+        const dbParam = getDbParam(field.dbName);
+        let value = formData[field.key];
+
+        if (field.key === "fileData") {
+          value = formData.fileName;
+        }
+
+        if (dbParam && value && value.trim() !== "" && value !== "No File") {
+          requests.push(parameterValueApi.create({
+            parameter: dbParam.id,
+            equipment_details: currentEquipment.equipment_id,
+            content: value,
+          }));
+        }
+      });
+
+      if (requests.length === 0) {
+        toast.warn("No matching parameters found to save.");
+        setIsSaving(false);
+        return;
+      }
+
+      await Promise.all(requests);
+      toast.success("Successfully Saved!");
+      setFormData({
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        temperature: "",
+        pressure: "",
+        sterilizationCycle: "Valid",
+        maintenanceLogs: "",
+        status: "Pass",
+        comments: "",
+        fileName: "No File",
+        fileData: "",
+        fileType: "",
+      });
+      setActiveSubTab("Details");
+    } catch (err) {
+      console.error("Failed to save:", err);
+      toast.error("Failed to save logs.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const activityData = [
-    { day: "Monday", compliant: 34, nonCompliant: -23 },
-    { day: "Tuesday", compliant: 28, nonCompliant: -22 },
-    { day: "Wednesday", compliant: 22, nonCompliant: -36 },
-    { day: "Thursday", compliant: 34, nonCompliant: -12 },
-    { day: "Friday", compliant: 29, nonCompliant: -28 },
-    { day: "Saturday", compliant: 15, nonCompliant: -33 },
-    { day: "Sunday", compliant: 25, nonCompliant: -25 },
-  ];
+  // Fetch logs from database
+  useEffect(() => {
+    const fetchLogs = async () => {
+      if (!currentEquipment?.equipment_id) return;
+
+      try {
+        const response = await parameterValueApi.list({
+          equipment_details: currentEquipment.equipment_id,
+        });
+
+        if (response && response.results) {
+          const logsByParam: Record<string, any> = {};
+          
+          response.results.forEach((log: any) => {
+            const paramId = log.parameter;
+            if (!logsByParam[paramId] || new Date(log.created_at) > new Date(logsByParam[paramId].created_at)) {
+              logsByParam[paramId] = log;
+            }
+          });
+
+          const formattedLogs = Object.values(logsByParam).map((log: any) => {
+            const param = currentEquipment.parameters.find((p: any) => p.id === log.parameter);
+            return {
+              id: log.id,
+              dateTime: new Date(log.created_at).toLocaleString(),
+              paramName: param?.parameter_name || "N/A",
+              content: log.content || "N/A",
+            };
+          });
+          
+          setLogsData(formattedLogs);
+        }
+      } catch (err) {
+        console.error("Failed to fetch logs:", err);
+      }
+    };
+
+    fetchLogs();
+  }, [currentEquipment?.equipment_id, currentEquipment?.parameters]);
+
+  useEffect(() => {
+    if (!selectedRadio && equipmentDetails?.length > 0) {
+      setSelectedRadio(equipmentDetails[0].equipment_num);
+    }
+  }, [equipmentDetails, selectedRadio, setSelectedRadio]);
+
+  const handleClear = () => {
+    setFormData({
+      ...formData,
+      temperature: "",
+      pressure: "",
+      sterilizationCycle: "Valid",
+      maintenanceLogs: "",
+      comments: "",
+      fileName: "No File",
+      fileData: "",
+      fileType: "",
+    });
+  };
+
+  // Styles
+  const inputContainerStyle = (dbName: string) => ({
+    position: "relative" as const,
+    marginBottom: "24px",
+    opacity: getDbParam(dbName) ? 1 : 0.4,
+  });
+
+  const inputStyle = (dbName: string) => ({
+    width: "100%",
+    height: "50px",
+    padding: "0 12px",
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+    outline: 'none',
+    fontSize: '14px',
+    backgroundColor: getDbParam(dbName) ? "#fff" : "#f1f5f9",
+    cursor: getDbParam(dbName) ? "text" : "not-allowed",
+    color: getDbParam(dbName) ? "inherit" : "#94a3b8",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+  });
+
+  const labelStyle = {
+    position: "absolute" as const,
+    left: "12px",
+    top: "-8px",
+    backgroundColor: "#fff",
+    padding: "0 4px",
+    fontSize: "12px",
+    color: "#64748b"
+  };
 
   if (viewingFile) {
     return (
@@ -98,15 +261,8 @@ const AutoclavesForm = ({ selectedRadio = "", setSelectedRadio }: any) => {
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', padding: '20px', backgroundColor: '#fff', minHeight: '400px' }}>
             {viewingFile.type.startsWith("image/") ? (
-              <img src={viewingFile.data} alt="preview" style={{ maxWidth: '100%', maxHeight: '500px', objectFit: 'contain' }} />
-            ) : viewingFile.type === "application/pdf" ? (
-              <iframe src={viewingFile.data} width="100%" height="500px" title="pdf-preview" />
-            ) : (
-              <div style={{ textAlign: 'center', padding: '40px' }}>
-                <FileText size={64} color="#cbd5e1" />
-                <p>Preview not available. <a href={viewingFile.data} download={viewingFile.name} style={{color: '#E17E61'}}>Download</a> to view.</p>
-              </div>
-            )}
+              <img src={viewingFile.data} style={{ maxWidth: '100%', maxHeight: '500px', objectFit: 'contain' }} alt="preview" />
+            ) : <iframe src={viewingFile.data} width="100%" height="500px" title="pdf" />}
           </div>
         </div>
       </div>
@@ -119,190 +275,249 @@ const AutoclavesForm = ({ selectedRadio = "", setSelectedRadio }: any) => {
       <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
       
       <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "24px", marginBottom: "16px" }}>
-        {/* Unit Selector */}
-        <div style={{ display: "flex", gap: "24px", paddingBottom: "24px", borderBottom: "1px solid #f1f5f9", marginBottom: "24px" }}>
-          {["Autoclaves A", "Autoclaves B", "Autoclaves C", "Autoclaves D", "Autoclaves E"].map((name) => (
-            <label key={name} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: currentSelection === name ? "700" : "500", color: currentSelection === name ? "#000" : "#64748b", cursor: "pointer" }}>
-              <input type="radio" checked={currentSelection === name} onChange={() => setSelectedRadio(name)} style={{ accentColor: "#f97316" }} />
-              {name}
-            </label>
-          ))}
-        </div>
+        
+        {/* Unit Selector - Dynamic based on available equipments */}
+        {availableEquipments.length > 0 && (
+          <div style={{ display: "flex", gap: "24px", paddingBottom: "24px", borderBottom: "1px solid #f1f5f9", marginBottom: "24px", flexWrap: "wrap" }}>
+            {availableEquipments.map((equipment: string) => (
+              <label key={equipment} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: selectedRadio === equipment ? "700" : "500", color: selectedRadio === equipment ? "#f97316" : "#0f172a", cursor: "pointer" }}>
+                <input 
+                  type="radio" 
+                  checked={selectedRadio === equipment} 
+                  onChange={() => {
+                    setSelectedRadio(equipment);
+                    setFormData({
+                      date: new Date().toISOString().split('T')[0],
+                      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                      temperature: "",
+                      pressure: "",
+                      sterilizationCycle: "Valid",
+                      maintenanceLogs: "",
+                      status: "Pass",
+                      comments: "",
+                      fileName: "No File",
+                      fileData: "",
+                      fileType: "",
+                    });
+                  }}
+                  style={{ accentColor: "#f97316" }} 
+                />
+                {equipment}
+              </label>
+            ))}
+          </div>
+        )}
 
         {/* Tabs */}
         <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
           {["Details", "Logs"].map(tab => (
-            <button key={tab} onClick={() => setActiveSubTab(tab)} style={{ padding: "8px 32px", borderRadius: "8px", border: "1px solid #e5e7eb", cursor: "pointer", backgroundColor: activeSubTab === tab ? "#FFFFFF" : "transparent", color: activeSubTab === tab ? "#E17E61" : "#94a3b8", fontWeight: "600", boxShadow: activeSubTab === tab ? "0px 2px 4px rgba(0,0,0,0.05)" : "none" }}>{tab}</button>
+            <button key={tab} onClick={() => setActiveSubTab(tab)} style={{ padding: "8px 32px", borderRadius: "8px", border: "1px solid #e5e7eb", cursor: "pointer", backgroundColor: activeSubTab === tab ? "#FFFFFF" : "transparent", color: activeSubTab === tab ? "#E17E61" : "#94a3b8", fontWeight: "600" }}>{tab}</button>
           ))}
         </div>
 
         {activeSubTab === "Details" ? (
           <>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px", marginBottom: "24px" }}>
+              
               {/* Date */}
-              <div style={{ position: "relative" }}>
-                <div style={{ display: 'flex', alignItems: 'center', width: "100%", height: "50px", padding: "0 12px", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
-                  <span style={{flex: 1, fontSize: '14px'}}>{formData.date}</span>
-                  <Calendar size={18} color="#64748b" />
-                </div>
-                <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Date</label>
+              <div style={inputContainerStyle("Date")}>
+                <input 
+                  type="date" 
+                  name="date" 
+                  value={formData.date}
+                  onChange={handleChange}
+                  disabled={!getDbParam("Date")}
+                  style={{...inputStyle("Date") as any, display: "block"}}
+                />
+                <label style={labelStyle}>Date</label>
               </div>
 
               {/* Time */}
-              <div style={{ position: "relative" }}>
-                <div style={{ display: 'flex', alignItems: 'center', width: "100%", height: "50px", padding: "0 12px", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
-                  <span style={{flex: 1, fontSize: '14px'}}>{formData.time}</span>
-                  <Clock size={18} color="#64748b" />
-                </div>
-                <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Time</label>
+              <div style={inputContainerStyle("Time")}>
+                <input 
+                  type="time" 
+                  name="time" 
+                  value={formData.time}
+                  onChange={handleChange}
+                  disabled={!getDbParam("Time")}
+                  style={{...inputStyle("Time") as any, display: "block"}}
+                />
+                <label style={labelStyle}>Time</label>
               </div>
 
               {/* Temperature */}
-              <div style={{ position: "relative" }}>
-                <input type="text" name="temperature" placeholder="Type Here" value={formData.temperature} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "0 12px", border: "1px solid #e5e7eb", borderRadius: "8px", outline: 'none' }} />
-                <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Temperature (°C)</label>
+              <div style={inputContainerStyle("Temperature")}>
+                <input 
+                  type="text" 
+                  name="temperature" 
+                  placeholder="Type Here" 
+                  disabled={!getDbParam("Temperature")} 
+                  value={formData.temperature} 
+                  onChange={handleChange} 
+                  style={{...inputStyle("Temperature") as any, display: "block"}}
+                />
+                <label style={labelStyle}>Temperature (°C)</label>
                 <span style={{fontSize: '11px', color: '#94a3b8', marginTop: '4px', display: 'block'}}>Range : 121 °C - 134 °C</span>
               </div>
 
               {/* Pressure */}
-              <div style={{ position: "relative" }}>
-                <input type="text" name="pressure" placeholder="Type Here" value={formData.pressure} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "0 12px", border: "1px solid #e5e7eb", borderRadius: "8px", outline: 'none' }} />
-                <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Pressure (kPa)</label>
-                <span style={{fontSize: '11px', color: '#94a3b8', marginTop: '4px', display: 'block'}}>Range : 121 °C - 134 °C</span>
+              <div style={inputContainerStyle("Pressure")}>
+                <input 
+                  type="text" 
+                  name="pressure" 
+                  placeholder="Type Here" 
+                  disabled={!getDbParam("Pressure")} 
+                  value={formData.pressure} 
+                  onChange={handleChange} 
+                  style={{...inputStyle("Pressure") as any, display: "block"}}
+                />
+                <label style={labelStyle}>Pressure (kPa)</label>
               </div>
 
-              {/* Sterilization */}
-              <div style={{ position: "relative" }}>
-                <select name="sterilizationCycle" value={formData.sterilizationCycle} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "0 12px", border: "1px solid #e5e7eb", borderRadius: "8px", outline: 'none', appearance: 'none', background: 'white' }}>
+              {/* Sterilization Cycle */}
+              <div style={inputContainerStyle("Sterilization Cycle Validation")}>
+                <select 
+                  name="sterilizationCycle" 
+                  disabled={!getDbParam("Sterilization Cycle Validation")} 
+                  value={formData.sterilizationCycle} 
+                  onChange={handleChange} 
+                  style={{...inputStyle("Sterilization Cycle Validation") as any, display: "block"}}
+                >
                   <option value="Valid">Valid</option>
                   <option value="Invalid">Invalid</option>
                 </select>
-                <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Sterilization Cycle Validation</label>
+                <label style={labelStyle}>Sterilization Cycle Validation</label>
               </div>
 
-              {/* Maintenance */}
-              <div style={{ position: "relative" }}>
-                <input type="text" name="maintenanceLogs" placeholder="Type Here" value={formData.maintenanceLogs} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "0 12px", border: "1px solid #e5e7eb", borderRadius: "8px", outline: 'none' }} />
-                <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Maintenance Logs</label>
+              {/* Maintenance Logs */}
+              <div style={inputContainerStyle("Maintenance Logs")}>
+                <input 
+                  type="text" 
+                  name="maintenanceLogs" 
+                  placeholder="Type Here" 
+                  disabled={!getDbParam("Maintenance Logs")} 
+                  value={formData.maintenanceLogs} 
+                  onChange={handleChange} 
+                  style={{...inputStyle("Maintenance Logs") as any, display: "block"}}
+                />
+                <label style={labelStyle}>Maintenance Logs</label>
               </div>
 
-              {/* UPLOAD FIELD WITH EYE ICON IN RED CIRCLE */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {/* Uploads Section */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', opacity: getDbParam("Uploads") ? 1 : 0.4 }}>
                 <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', height: "50px", padding: "0 12px", border: "1px solid #e5e7eb", borderRadius: "8px", backgroundColor: '#F0F4FF' }}>
-                  <LinkIcon size={18} color="#3b82f6" cursor="pointer" onClick={() => fileInputRef.current?.click()} style={{marginRight: '12px'}} />
-                  <div style={{ flex: 1, backgroundColor: '#E0E7FF', padding: '4px 12px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '12px', color: '#1e293b' }}>{formData.fileName}</span>
-                    <X size={14} color="#ef4444" cursor="pointer" onClick={() => setFormData({...formData, fileName: "No File", fileData: ""})} />
+                  <LinkIcon size={18} color="#3b82f6" cursor="pointer" onClick={() => getDbParam("Uploads") && fileInputRef.current?.click()} style={{marginRight: '12px'}} />
+                  <div style={{ flex: 1, backgroundColor: '#E0E7FF', padding: '4px 12px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                    <span style={{ fontSize: '11px', color: '#1e293b', whiteSpace: 'nowrap' }}>{formData.fileName}</span>
                   </div>
-                  <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Uploads</label>
+                  <label style={labelStyle}>Uploads</label>
                 </div>
-                
-                {/* THE RED/GREEN INDICATOR CIRCLE WITH EYE ICON */}
                 <div 
                   onClick={() => formData.fileData && setViewingFile({name: formData.fileName, data: formData.fileData, type: formData.fileType})}
-                  style={{ 
-                    width: '32px', 
-                    height: '32px', 
-                    borderRadius: '50%', 
-                    border: formData.fileData ? '2px solid #DEEFE1' : '2px solid #FEF2F2', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    cursor: formData.fileData ? 'pointer' : 'default',
-                    position: 'relative'
-                  }}
+                  style={{ width: '32px', height: '32px', borderRadius: '50%', border: formData.fileData ? '2px solid #DEEFE1' : '2px solid #FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: formData.fileData ? 'pointer' : 'default' }}
                 >
-                  <div style={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    borderRadius: '50%', 
-                    backgroundColor: formData.fileData ? '#22c55e' : '#ef4444',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
+                  <div style={{ width: '100%', height: '100%', borderRadius: '50%', backgroundColor: formData.fileData ? '#22c55e' : '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Eye size={16} color="white" />
                   </div>
                 </div>
               </div>
 
               {/* Status */}
-              <div style={{ position: "relative" }}>
-                <select name="status" value={formData.status} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "0 12px", border: "1px solid #e5e7eb", borderRadius: "8px", outline: 'none', appearance: 'none', background: 'white' }}>
+              <div style={inputContainerStyle("Status")}>
+                <select 
+                  name="status" 
+                  disabled={!getDbParam("Status")} 
+                  value={formData.status} 
+                  onChange={handleChange} 
+                  style={{...inputStyle("Status") as any, display: "block"}}
+                >
                   <option value="Pass">Pass</option>
                   <option value="Fail">Fail</option>
                 </select>
-                <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Status</label>
+                <label style={labelStyle}>Status</label>
               </div>
 
               {/* Comments */}
-              <div style={{ position: "relative" }}>
-                <input type="text" name="comments" placeholder="Type Here" value={formData.comments} onChange={handleChange} style={{ width: "100%", height: "50px", padding: "0 12px", border: "1px solid #e5e7eb", borderRadius: "8px", outline: 'none' }} />
-                <label style={{ position: "absolute", left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "12px", color: "#64748b" }}>Comments</label>
+              <div style={inputContainerStyle("Comments")}>
+                <input 
+                  type="text" 
+                  name="comments" 
+                  placeholder="Type Here" 
+                  disabled={!getDbParam("Comments")} 
+                  value={formData.comments} 
+                  onChange={handleChange} 
+                  style={{...inputStyle("Comments") as any, display: "block"}}
+                />
+                <label style={labelStyle}>Comments</label>
               </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "20px" }}>
-              <button onClick={() => setFormData({...formData, temperature: "", pressure: "", maintenanceLogs: "", comments: ""})} style={{ padding: "10px 40px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", cursor: "pointer", fontWeight: "600", color: "#000" }}>Clear</button>
-              <button onClick={handleSave} style={{ padding: "10px 40px", backgroundColor: "#334155", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}>Save</button>
+            {/* Make and Model Footer */}
+            <div style={{ display: "flex", alignItems: "center", gap: "24px", marginTop: "20px", fontSize: "14px" }}>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <span style={{ color: "#94a3b8" }}>Make :</span>
+                <span style={{ fontWeight: "600", color: "#0f172a" }}>{currentEquipment?.make || "N/A"}</span>
+              </div>
+              <div style={{ width: "1px", height: "14px", backgroundColor: "#e5e7eb" }}></div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <span style={{ color: "#94a3b8" }}>Model :</span>
+                <span style={{ fontWeight: "600", color: "#0f172a" }}>{currentEquipment?.model || "N/A"}</span>
+              </div>
+
+              <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
+                <button onClick={handleClear} style={{ padding: "10px 40px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}>Clear</button>
+                <button onClick={handleSave} disabled={isSaving} style={{ padding: "10px 40px", backgroundColor: "#1e293b", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", opacity: isSaving ? 0.7 : 1 }}>
+                  {isSaving ? "Saving..." : "Save"}
+                </button>
+              </div>
             </div>
           </>
         ) : (
-          /* Logs View logic remains same as provided previously */
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid #f1f5f9", textAlign: 'left', color: '#64748b' }}>
                   <th style={{ padding: "12px" }}>Date & Time</th>
-                  <th style={{ padding: "12px" }}>Temp.</th>
-                  <th style={{ padding: "12px" }}>Uploads</th>
-                  <th style={{ padding: "12px" }}>Status</th>
-                  <th style={{ padding: "12px" }}>Action</th>
+                  <th style={{ padding: "12px" }}>Parameter</th>
+                  <th style={{ padding: "12px" }}>Value</th>
                 </tr>
               </thead>
               <tbody>
                 {logsData.length > 0 ? logsData.map((log) => (
                   <tr key={log.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "12px", fontWeight: '600' }}>{log.dateTime}</td>
-                    <td style={{ padding: "12px" }}>{log.temp}</td>
-                    <td style={{ padding: "12px", color: '#3b82f6' }}>{log.fileName}</td>
-                    <td style={{ padding: "12px" }}>
-                      <span style={{ padding: "4px 12px", borderRadius: "16px", backgroundColor: log.status === "Pass" ? "#DCFCE7" : "#FEE2E2", color: log.status === "Pass" ? "#15803D" : "#B91C1C", fontSize: "11px", fontWeight: "600" }}>{log.status}</span>
-                    </td>
-                    <td style={{ padding: "12px" }}>
-                       {log.fileData && <Eye size={18} color="#64748b" cursor="pointer" onClick={() => setViewingFile({name: log.fileName, data: log.fileData, type: log.fileType})} />}
-                    </td>
+                    <td style={{ padding: "12px" }}>{log.paramName}</td>
+                    <td style={{ padding: "12px" }}>{log.content}</td>
                   </tr>
-                )) : <tr><td colSpan={5} style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>No logs yet.</td></tr>}
+                )) : (
+                  <tr><td colSpan={3} style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>No logs recorded yet.</td></tr>
+                )}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* Activity Chart Card */}
+      {/* Activity Graph Section */}
       <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "24px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-               <span style={{ fontSize: '14px' }}>📈</span>
-            </div>
-            <h3 style={{ fontSize: "16px", fontWeight: "600", margin: 0, color: "#0f172a" }}>Activity</h3>
-          </div>
-        </div>
+        <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px" }}>Activity</h3>
         <div style={{ width: '100%', height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={activityData} stackOffset="sign" margin={{ top: 20, right: 30, left: 45, bottom: 0 }}>
+            <BarChart data={[
+              { day: "Mon", compliant: 34, nonCompliant: -23 },
+              { day: "Tue", compliant: 28, nonCompliant: -22 },
+              { day: "Wed", compliant: 22, nonCompliant: -36 },
+              { day: "Thu", compliant: 34, nonCompliant: -12 },
+              { day: "Fri", compliant: 29, nonCompliant: -28 },
+              { day: "Sat", compliant: 15, nonCompliant: -33 },
+              { day: "Sun", compliant: 25, nonCompliant: -25 },
+            ]} stackOffset="sign">
               <ReferenceLine y={0} stroke="#E0E0E0" />
-              <ReferenceLine y={20} stroke="#F1F1F1" />
-              <ReferenceLine y={40} stroke="#F1F1F1" />
-              <ReferenceLine y={-20} stroke="#F1F1F1" />
-              <ReferenceLine y={-40} stroke="#F1F1F1" />
-              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9e9e9e' }} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9e9e9e' }} domain={[-40, 40]} ticks={[-40, -20, 0, 20, 40]} label={{ value: 'No of Parameters', angle: -90, position: 'insideLeft', offset: -30, style: { fill: '#9e9e9e', fontSize: 12 } }} />
-              <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }} />
-              <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={12} label={{ position: 'top', fill: '#6c6c6c', fontSize: 10, dy: -5 }} />
-              <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={12} label={{ position: 'bottom', fill: '#EF9685', fontSize: 10, dy: 5 }} />
+              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9e9e9e' }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9e9e9e' }} />
+              <Tooltip cursor={{ fill: 'transparent' }} />
+              <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={12} />
+              <Bar dataKey="nonCompliant" fill="#EF9685" radius={[0, 0, 4, 4]} barSize={12} />
             </BarChart>
           </ResponsiveContainer>
         </div>

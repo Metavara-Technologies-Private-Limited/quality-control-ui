@@ -17,7 +17,7 @@ interface IncubatorFormProps {
   setSelectedRadio: (name: string) => void;
   equipmentDetails: {
     equipment_num: string;
-    equipment_id: number;
+    equipment_id: number; // This should be the PK of restapi_equipmentdetails
     parameters: any[];
     make: string;
     model: string;
@@ -171,7 +171,6 @@ const currentEquipment = equipmentDetails.find(
 
     switch (param.data_type) {
       case "Decimal":
-        // Use min_value and max_value
         if (param.min_value != null && param.max_value != null) {
           return (
             <span style={{ color: "#94a3b8" }}>
@@ -231,8 +230,9 @@ const currentEquipment = equipmentDetails.find(
       (p) => p.parameter_name.toLowerCase() === paramName.toLowerCase()
     );
     if (!param || !param.config?.history?.length) return null;
-    return param.config.history[param.config.history.length - 1]; // latest
+    return param.config.history[param.config.history.length - 1];
   };
+  
   const latestTemp = getLatestParam("Temperature");
   const latestCO2 = getLatestParam("CO2");
   const latestHumidity = getLatestParam("Humidity");
@@ -242,6 +242,7 @@ const currentEquipment = equipmentDetails.find(
     position: "relative" as const,
     marginBottom: "20px",
   };
+  
   const inputStyle = {
     width: "100%",
     height: "50px",
@@ -251,6 +252,7 @@ const currentEquipment = equipmentDetails.find(
     fontSize: "14px",
     outline: "none",
   };
+  
   const labelStyle = {
     position: "absolute" as const,
     left: "12px",
@@ -260,13 +262,8 @@ const currentEquipment = equipmentDetails.find(
     fontSize: "12px",
     color: "#64748b",
   };
+  
   const rangeTextStyle = { fontSize: "11px", marginTop: "4px" };
-
-  // Map parameter names to input enabling
-  const isParamAvailable = (paramName: string) =>
-    currentEquipment?.parameters.some((p: any) =>
-      p.parameter_name.toLowerCase().includes(paramName.toLowerCase())
-    );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -279,7 +276,7 @@ const currentEquipment = equipmentDetails.find(
           padding: "24px",
         }}
       >
-        {/* Equipment Detail Radios */}
+        {/* Equipment Detail Radios - FIXED: Using equipment_id as key */}
         <div
           style={{
             display: "flex",
@@ -324,6 +321,7 @@ const currentEquipment = equipmentDetails.find(
             gap: "20px",
           }}
         >
+          {/* Temperature - ENABLED */}
           <div style={inputContainerStyle}>
   <input
     style={inputStyle}
@@ -367,14 +365,7 @@ const currentEquipment = equipmentDetails.find(
           <div style={inputContainerStyle}>
             <input
               style={inputStyle}
-              defaultValue={
-                latestCO2
-                  ? latestCO2.data_type === "Percentage"
-                    ? `${latestCO2.percentage}%`
-                    : latestCO2.text || ""
-                  : ""
-              }
-              disabled={!isParamAvailable("CO2")}
+              value={logValues['co2'] || ''}
               onChange={(e) => setValue("co2", e.target.value)}
               placeholder="Type Here"
             />
@@ -386,13 +377,13 @@ const currentEquipment = equipmentDetails.find(
             )}
           </div>
 
-          {/* Humidity Levels */}
+          {/* Humidity Levels - ENABLED */}
           <div style={inputContainerStyle}>
             {latestHumidity?.data_type === "Select" ? (
               <select
                 style={inputStyle}
-                disabled={!isParamAvailable("Humidity")}
-                defaultValue={latestHumidity.dropdown[0]}
+                value={logValues['humidity'] || (latestHumidity.dropdown[0] || '')}
+                onChange={(e) => setValue("humidity", e.target.value)}
               >
                 {latestHumidity.dropdown.map((opt: string, idx: number) => (
                   <option key={idx} value={opt}>
@@ -403,12 +394,7 @@ const currentEquipment = equipmentDetails.find(
             ) : (
               <input
                 style={inputStyle}
-                defaultValue={
-                  latestHumidity?.percentage
-                    ? `${latestHumidity.percentage}%`
-                    : ""
-                }
-                disabled={!isParamAvailable("Humidity")}
+                value={logValues['humidity'] || ''}
                 onChange={(e) => setValue("humidity", e.target.value)}
                 placeholder="Type Here"
               />
@@ -420,14 +406,12 @@ const currentEquipment = equipmentDetails.find(
               </div>
             )}
           </div>
-          {/* Gas Mixture */}
+
+          {/* Gas Mixture - ENABLED */}
           <div style={inputContainerStyle}>
             <input
               style={inputStyle}
-              defaultValue={
-                latestGas?.text || latestGas?.dropdown?.join(", ") || ""
-              }
-              disabled={!isParamAvailable("Gas")}
+              value={logValues['gas'] || ''}
               onChange={(e) => setValue("gas", e.target.value)}
               placeholder="Type Here"
             />
@@ -439,11 +423,11 @@ const currentEquipment = equipmentDetails.find(
             )}
           </div>
 
+          {/* Alarm Status - ENABLED */}
           <div style={inputContainerStyle}>
             <select
               style={inputStyle}
-              defaultValue="Functional"
-              disabled={!isParamAvailable("alarm status")}
+              value={logValues['alarmStatus'] || 'Functional'}
               onChange={(e) => setValue("alarmStatus", e.target.value)}
             >
               <option value="Functional">Functional</option>
@@ -452,12 +436,13 @@ const currentEquipment = equipmentDetails.find(
             <label style={labelStyle}>Alarm Status</label>
           </div>
 
+          {/* Alarm Response Time - ENABLED */}
           <div style={inputContainerStyle}>
             <input
               style={inputStyle}
+              value={logValues['alarmResponse'] || ''}
               placeholder="Type Here"
               onChange={(e) => setValue("alarmResponse", e.target.value)}
-              disabled={!isParamAvailable("alarm response")}
             />
             <label style={labelStyle}>Alarm Response Time (Mins)</label>
             <div style={{ ...rangeTextStyle, color: "#94a3b8" }}>
@@ -466,7 +451,7 @@ const currentEquipment = equipmentDetails.find(
           </div>
         </div>
 
-        {/* --- ADDED MAKE AND MODEL SECTION --- */}
+        {/* Make and Model Section with Buttons */}
         <div
           style={{
             display: "flex",
@@ -494,30 +479,35 @@ const currentEquipment = equipmentDetails.find(
 
           <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
             <button
+              onClick={handleClear}
+              disabled={isSaving}
               style={{
                 padding: "10px 24px",
                 backgroundColor: "#fff",
                 border: "1px solid #e5e7eb",
                 borderRadius: "8px",
-                cursor: "pointer",
+                cursor: isSaving ? "not-allowed" : "pointer",
                 fontSize: "14px",
+                opacity: isSaving ? 0.6 : 1,
               }}
             >
               Clear
             </button>
             <button
               onClick={handleSaveLogs}
+              disabled={isSaving}
               style={{
                 padding: "10px 24px",
                 backgroundColor: "#1e293b",
                 color: "#fff",
                 border: "none",
                 borderRadius: "8px",
-                cursor: "pointer",
+                cursor: isSaving ? "not-allowed" : "pointer",
                 fontSize: "14px",
+                opacity: isSaving ? 0.6 : 1,
               }}
             >
-              Save
+              {isSaving ? "Saving..." : "Save"}
             </button>
           </div>
         </div>
