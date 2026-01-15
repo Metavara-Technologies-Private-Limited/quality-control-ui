@@ -30,7 +30,7 @@ import AddTaskDialog from "./utils/taskpage/AddTaskDialog";
 import { AddEventDialog } from "./utils/taskpage/AddEventDialog";
 import { ArrowRightRounded } from "@mui/icons-material";
 
-export default function Task() {
+function Task() {
   const [index, setIndex] = useState(0)
   const [selectedEvent, setSelectedEvent] = useState("Daily Maintenance");
   const [activeFilter, setActiveFilter] = useState("All");
@@ -234,13 +234,6 @@ export default function Task() {
                   justifyContent: "center",
                   cursor: "pointer"
                 }}
-                // onClick={() => {
-                //   setSelectedTaskDetails(t);
-                //   setTaskDetails(t.description || ""); // Load saved description here
-                //   setOpenTaskDetails(true);
-                //   setTaskDetailsErrors({ description: "" });
-                // }}
-                onClick={openTask}
               >
                 <AddIcon sx={{ fontSize: 16, color: "#323234ff" }} />
               </Box>
@@ -468,3 +461,5 @@ export default function Task() {
     </LocalizationProvider>
   );
 }
+
+export default Task;

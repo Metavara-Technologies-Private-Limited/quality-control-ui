@@ -318,7 +318,7 @@ const LFHForm = ({
             />
             <label style={labelStyle}>Airflow Velocity (m/s)</label>
             <div style={rangeTextStyle}>
-              {renderParameterInfo("Airflow Velocity (m/s)")}
+              {renderParameterInfo("Airflow Velocity")}
             </div>
           </div>
 

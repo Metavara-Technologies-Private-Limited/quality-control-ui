@@ -16,62 +16,58 @@ import {
   Grid,
   Chip,
   Divider,
+  TableContainer,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import UndoIcon from "@mui/icons-material/Undo";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { eventApi } from "@/services/api";
 
-// Figma Colors
 const COLORS = {
-  background: "#F8F9FB",
-  primaryButton: "#111827",
-  searchIcon: "#9CA3AF",
-  tableHeader: "#374151",
-  textPrimary: "#111827", // Pure Black
-  avatarBg: "#E5E7EB",
+  textPrimary: "#000000",
+  textSecondary: "#4B5563",
+  textMuted: "#9CA3AF",
+  border: "#E5E7EB",
+  bgLight: "#F9FAFB",
+  bgChip: "#F3F4F6",
 };
 
-// ---------------- HEADER ----------------
-const EventsHeader = ({
-  onCreate,
-  onSearch,
-}: {
-  onCreate: () => void;
-  onSearch: (value: string) => void;
-}) => (
-  <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-    <Typography fontSize={18} fontWeight={600} color={COLORS.textPrimary}>
+/* ---------------- HELPER FOR FORMATTING ---------------- */
+const formatTime = (isoString: string) => {
+  if (!isoString) return "-";
+  return new Date(isoString).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+const formatDate = (isoString: string) => {
+  if (!isoString) return "-";
+  return new Date(isoString).toLocaleDateString("en-GB"); // DD/MM/YYYY
+};
+
+/* ---------------- HEADER ---------------- */
+const EventsHeader = ({ onCreate, onSearch }: any) => (
+  <Stack direction="row" justifyContent="space-between" mb={3} alignItems="center">
+    <Typography fontSize={18} fontWeight={700} color={COLORS.textPrimary}>
       Events
     </Typography>
-
     <Stack direction="row" spacing={2}>
       <TextField
         size="small"
         placeholder="Search Events"
-        sx={{ width: 220 }}
-        InputProps={{
-          startAdornment: (
-            <SearchIcon sx={{ color: COLORS.searchIcon, mr: 1 }} />
-          ),
-        }}
+        sx={{ width: 250, "& .MuiOutlinedInput-root": { borderRadius: "8px" } }}
+        InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1, color: COLORS.textMuted }} /> }}
         onChange={(e) => onSearch(e.target.value)}
       />
-
       <Button
         variant="contained"
         startIcon={<AddIcon />}
-        sx={{
-          textTransform: "none",
-          backgroundColor: COLORS.primaryButton,
-          borderRadius: "8px",
-          "&:hover": { backgroundColor: "#0f172a" },
-        }}
+        sx={{ textTransform: "none", bgcolor: "#111827", borderRadius: "8px", px: 3, "&:hover": { bgcolor: "#000" } }}
         onClick={onCreate}
       >
         Create Event
@@ -80,244 +76,201 @@ const EventsHeader = ({
   </Stack>
 );
 
-// ---------------- DETAIL VIEW (FIXED TO SHOW EQUIP/PARAMS) ----------------
-const EventDetailView = ({ event, onBack }: { event: any; onBack: () => void }) => (
-  <Box sx={{ p: 3 }}>
-    <Stack direction="row" spacing={1} alignItems="center" mb={3}>
-      <IconButton onClick={onBack} size="small" sx={{ border: "1px solid #E5E7EB", borderRadius: "4px" }}>
-        <ArrowBackIcon fontSize="small" />
+/* ---------------- DETAIL VIEW ---------------- */
+const EventDetailView = ({ event, onBack }: any) => (
+  <Box>
+    <Stack direction="row" spacing={1} alignItems="center" mb={2.5}>
+      <IconButton onClick={onBack} size="small" sx={{ bgcolor: COLORS.bgChip, borderRadius: "6px", p: 0.5 }}>
+        <UndoIcon sx={{ fontSize: 16, transform: "scaleX(-1)" }} />
       </IconButton>
-      <Typography variant="body2" color="textSecondary">
-        Quality Control &gt; Configuration &gt; <b>Events</b>
+      <Typography variant="body2" color={COLORS.textMuted} fontSize={12}>
+        Quality Control &nbsp; &gt; &nbsp; Configuration &nbsp; &gt; &nbsp; <span style={{color: COLORS.textPrimary, fontWeight: 500}}>Events</span>
       </Typography>
     </Stack>
 
-    <Typography variant="h5" fontWeight={700} mb={3} color={COLORS.textPrimary}>
-      {event.name}
-    </Typography>
+    <Card sx={{ borderRadius: "12px", border: `1px solid ${COLORS.border}`, boxShadow: "none" }}>
+      <Box p={3} borderBottom={`1px solid ${COLORS.bgChip}`}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Typography fontSize={20} fontWeight={500} color={COLORS.textPrimary}>{event.name}</Typography>
+          <Stack direction="row" spacing={3} alignItems="center">
+            <Typography fontSize={12} color={COLORS.textMuted}>
+              Created Date: <span style={{ color: COLORS.textSecondary }}>{event.createdDate}</span>
+            </Typography>
+            <Divider orientation="vertical" flexItem sx={{ height: 14, my: "auto" }} />
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography fontSize={12} color={COLORS.textMuted}>Created By:</Typography>
+              <Avatar sx={{ width: 22, height: 22, fontSize: 10, bgcolor: "#E5E7EB" }}>{event.createdBy?.charAt(0)}</Avatar>
+              <Typography fontSize={12} fontWeight={600} color={COLORS.textPrimary}>{event.createdBy}</Typography>
+            </Stack>
+          </Stack>
+        </Stack>
+      </Box>
 
-    <Card sx={{ p: 4, borderRadius: "12px", border: "1px solid #E5E7EB", boxShadow: "none" }}>
-      <Grid container spacing={4}>
-        <Grid item xs={6}>
-          <Typography variant="caption" fontWeight={600} color="textSecondary">Event Name</Typography>
-          <TextField fullWidth value={event.name} disabled size="small" sx={{ mt: 1, "& .MuiInputBase-input.Mui-disabled": { WebkitTextFillColor: COLORS.textPrimary, color: COLORS.textPrimary } }} />
+      <Box p={3.5}>
+        <Typography fontSize={14} fontWeight={700} mb={2} color={COLORS.textPrimary}>Event Name</Typography>
+        <Grid container spacing={3} mb={5}>
+          <Grid item xs={12} md={5}>
+            <Box sx={{ bgcolor: COLORS.bgLight, p: 2, borderRadius: "8px", border: `1px solid ${COLORS.border}` }}>
+              <Typography fontSize={11} color={COLORS.textMuted} fontWeight={600} mb={0.5}>Name</Typography>
+              <Typography fontSize={15} color={COLORS.textPrimary}>{event.name}</Typography>
+            </Box>
+          </Grid>
+          <Grid item xs={12} md={5}>
+            <Box sx={{ bgcolor: COLORS.bgLight, p: 2, borderRadius: "8px", border: `1px solid ${COLORS.border}` }}>
+              <Typography fontSize={11} color={COLORS.textMuted} fontWeight={600} mb={0.5}>Description</Typography>
+              <Typography fontSize={15} color={COLORS.textPrimary}>{event.description}</Typography>
+            </Box>
+          </Grid>
         </Grid>
-        <Grid item xs={6}>
-          <Typography variant="caption" fontWeight={600} color="textSecondary">Created Date</Typography>
-          <TextField fullWidth value={event.createdDate} disabled size="small" sx={{ mt: 1, "& .MuiInputBase-input.Mui-disabled": { WebkitTextFillColor: COLORS.textPrimary, color: COLORS.textPrimary } }} />
-        </Grid>
+
+        <Divider sx={{ mb: 4 }} />
+
+        <Typography fontSize={15} fontWeight={700} mb={1.5} color={COLORS.textPrimary}>Schedule</Typography>
+        <Typography fontSize={14} fontWeight={600} mb={3.5} color={COLORS.textPrimary}>{event.scheduleType}</Typography>
         
-        <Grid item xs={12}><Divider /></Grid>
-
-        {/* NEW SECTION: Displays the equipment and their parameters */}
-        <Grid item xs={12}>
-          <Typography variant="subtitle1" fontWeight={700} color={COLORS.textPrimary} mb={2}>
-            Equipment & Parameters
-          </Typography>
-          <Box border="1px solid #E5E7EB" borderRadius="12px" overflow="hidden">
-            {event.equipmentsDetails && event.equipmentsDetails.length > 0 ? (
-              event.equipmentsDetails.map((item: any, idx: number) => (
-                <Box key={idx} p={2} display="flex" borderBottom={idx !== event.equipmentsDetails.length - 1 ? "1px solid #F1F5F9" : "none"}>
-                  <Box width={250}>
-                    <Typography fontSize={14} fontWeight={600} color={COLORS.textPrimary}>
-                      {item.equipment_name || item.name}
-                    </Typography>
-                  </Box>
-                  <Box flex={1} display="flex" gap={1} flexWrap="wrap">
-                    {item.parameters?.map((p: any, pIdx: number) => (
-                      <Chip key={pIdx} label={p.name || p} size="small" sx={{ bgcolor: "#F5F7FA", borderRadius: "6px", fontWeight: 500, color: COLORS.textPrimary }} />
-                    ))}
-                  </Box>
-                </Box>
-              ))
-            ) : (
-              <Box p={3} textAlign="center" color="textSecondary">No equipment added to this event.</Box>
-            )}
-          </Box>
+        <Grid container columnSpacing={10} rowSpacing={4} mb={6}>
+          <Grid item>
+            <Typography fontSize={12} color={COLORS.textMuted} fontWeight={600} mb={1.5}>From Time</Typography>
+            <Typography fontSize={15} fontWeight={600} color={COLORS.textPrimary}>{event.fromTime}</Typography>
+          </Grid>
+          <Grid item>
+            <Typography fontSize={12} color={COLORS.textMuted} fontWeight={600} mb={1.5}>To Time</Typography>
+            <Typography fontSize={15} fontWeight={600} color={COLORS.textPrimary}>{event.toTime}</Typography>
+          </Grid>
+          <Grid item>
+            <Typography fontSize={12} color={COLORS.textMuted} fontWeight={600} mb={1.5}>Start Date</Typography>
+            <Typography fontSize={15} fontWeight={600} color={COLORS.textPrimary}>{event.startDate}</Typography>
+          </Grid>
+          <Grid item>
+            <Typography fontSize={12} color={COLORS.textMuted} fontWeight={600} mb={1.5}>End Date</Typography>
+            <Typography fontSize={15} fontWeight={600} color={COLORS.textPrimary}>{event.endDate}</Typography>
+          </Grid>
+          <Grid item>
+            <Typography fontSize={12} color={COLORS.textMuted} fontWeight={600} mb={1.5}>Recur Every Weeks on</Typography>
+            <Typography fontSize={15} fontWeight={600} color={COLORS.textPrimary}>{event.recurDuration || "1"}</Typography>
+          </Grid>
+          <Grid item>
+            <Typography fontSize={12} color={COLORS.textMuted} fontWeight={600} mb={1.5}>Days</Typography>
+            <Typography fontSize={15} fontWeight={600} color={COLORS.textPrimary}>{event.days}</Typography>
+          </Grid>
         </Grid>
 
-        <Grid item xs={12}><Divider /></Grid>
+        <Typography fontSize={15} fontWeight={700} mb={2.5} color={COLORS.textPrimary}>Equipment</Typography>
+        <TableContainer sx={{ border: `1px solid ${COLORS.border}`, borderRadius: "10px", mb: 5 }}>
+          <Table>
+            <TableHead sx={{ bgcolor: COLORS.bgLight }}>
+              <TableRow>
+                <TableCell sx={{ fontSize: 13, fontWeight: 600, py: 2 }}>Equipment Name</TableCell>
+                <TableCell sx={{ fontSize: 13, fontWeight: 600, py: 2 }}>Parameters</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {event.equipmentsDetails.map((eq: any, idx: number) => (
+                <TableRow key={idx}>
+                  <TableCell sx={{ fontSize: 14, width: "30%" }}>{eq.equipment_name}</TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                      {eq.parameters.map((p: any, i: number) => (
+                        <Chip key={i} label={p.name} size="small" sx={{ fontSize: 11, bgcolor: COLORS.bgChip, borderRadius: "6px", height: 24 }} />
+                      ))}
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
 
-        <Grid item xs={6}>
-           <Typography variant="subtitle1" fontWeight={700} mt={2} color={COLORS.textPrimary}>Schedule</Typography>
-           <Typography variant="body2" color="textSecondary" mt={1}>{event.schedule}</Typography>
-        </Grid>
-
-        <Grid item xs={6}>
-           <Typography variant="subtitle1" fontWeight={700} mt={2} color={COLORS.textPrimary}>Assignee</Typography>
-           <Stack direction="row" spacing={2} mt={1}>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Avatar sx={{ width: 24, height: 24 }}>{event.createdBy?.charAt(0) || "U"}</Avatar>
-                <Typography variant="body2" color={COLORS.textPrimary}>{event.createdBy}</Typography>
-              </Stack>
-           </Stack>
-        </Grid>
-      </Grid>
+        <Typography fontSize={15} fontWeight={700} mb={2.5} color={COLORS.textPrimary}>Assignee</Typography>
+        <Box sx={{ display: 'inline-flex', alignItems: 'center', bgcolor: COLORS.bgChip, px: 2, py: 0.8, borderRadius: '24px', border: `1px solid ${COLORS.border}` }}>
+          <Avatar sx={{ width: 22, height: 22, mr: 1.5, fontSize: 11 }} />
+          <Typography fontSize={14} fontWeight={600}>{event.createdBy}</Typography>
+        </Box>
+      </Box>
     </Card>
   </Box>
 );
 
-// ---------------- TABLE ----------------
-const EventsTable = ({
-  data,
-  totalCount,
-  page,
-  rowsPerPage,
-  onPageChange,
-  onRowClick,
-}: {
-  data: any[];
-  totalCount: number;
-  page: number;
-  rowsPerPage: number;
-  onPageChange: (newPage: number) => void;
-  onRowClick: (event: any) => void;
-}) => {
-  const totalPages = Math.ceil(totalCount / rowsPerPage);
-  const from = totalCount === 0 ? 0 : page * rowsPerPage + 1;
-  const to = Math.min((page + 1) * rowsPerPage, totalCount);
-
-  return (
-    <Card sx={{ borderRadius: "12px", border: "1px solid #E5E7EB", boxShadow: "none" }}>
-      <Table>
-        <TableHead sx={{ backgroundColor: "#F9FAFB" }}>
-          <TableRow>
-            <TableCell sx={{ fontWeight: 600, color: COLORS.tableHeader }}>Event Name</TableCell>
-            <TableCell sx={{ fontWeight: 600, color: COLORS.tableHeader }}>Created By</TableCell>
-            <TableCell sx={{ fontWeight: 600, color: COLORS.tableHeader }}>Created Date</TableCell>
-            <TableCell sx={{ fontWeight: 600, color: COLORS.tableHeader }}>Schedule On</TableCell>
-            <TableCell sx={{ fontWeight: 600, color: COLORS.tableHeader }} align="center">Total Equipment</TableCell>
-            <TableCell sx={{ fontWeight: 600, color: COLORS.tableHeader }} align="center">Total Parameters</TableCell>
+/* ---------------- TABLE LIST ---------------- */
+const EventsTable = ({ data, onRowClick }: any) => (
+  <Card sx={{ borderRadius: "12px", border: `1px solid ${COLORS.border}`, boxShadow: "none" }}>
+    <Table>
+      <TableHead sx={{ bgcolor: COLORS.bgLight }}>
+        <TableRow>
+          <TableCell sx={{ fontWeight: 600 }}>Event Name</TableCell>
+          <TableCell sx={{ fontWeight: 600 }}>Created By</TableCell>
+          <TableCell sx={{ fontWeight: 600 }}>Created Date</TableCell>
+          <TableCell sx={{ fontWeight: 600 }}>Schedule</TableCell>
+          <TableCell align="center" sx={{ fontWeight: 600 }}>Equipments</TableCell>
+          <TableCell align="center" sx={{ fontWeight: 600 }}>Parameters</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {data.map((row: any) => (
+          <TableRow key={row.id} hover sx={{ cursor: "pointer" }} onClick={() => onRowClick(row)}>
+            <TableCell sx={{ fontWeight: 500 }}>{row.name}</TableCell>
+            <TableCell>{row.createdBy}</TableCell>
+            <TableCell>{row.createdDate}</TableCell>
+            <TableCell>{row.scheduleType}</TableCell>
+            <TableCell align="center">{row.equipmentCount}</TableCell>
+            <TableCell align="center">{row.parameterCount}</TableCell>
           </TableRow>
-        </TableHead>
+        ))}
+      </TableBody>
+    </Table>
+  </Card>
+);
 
-        <TableBody>
-          {data.length > 0 ? (
-            data.map((row) => (
-              <TableRow 
-                key={row.id} 
-                hover 
-                onClick={() => onRowClick(row)} 
-                sx={{ cursor: "pointer" }}
-              >
-                <TableCell sx={{ color: COLORS.textPrimary, fontWeight: 400 }}>{row.name}</TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Avatar sx={{ width: 28, height: 28, bgcolor: COLORS.avatarBg }}>
-                      {row.createdBy?.charAt(0) || "U"}
-                    </Avatar>
-                    <Typography variant="body2" color={COLORS.textPrimary}>{row.createdBy}</Typography>
-                  </Stack>
-                </TableCell>
-                <TableCell sx={{ color: COLORS.textPrimary }}>{row.createdDate}</TableCell>
-                <TableCell sx={{ color: COLORS.textPrimary }}>{row.schedule}</TableCell>
-                <TableCell align="center" sx={{ color: COLORS.textPrimary }}>{row.equipmentCount}</TableCell>
-                <TableCell align="center" sx={{ color: COLORS.textPrimary }}>{row.parameterCount}</TableCell>
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={6} align="center" sx={{ py: 3, color: "#9CA3AF" }}>No events found.</TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-      
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ p: 2, borderTop: "1px solid #E5E7EB" }}>
-        <Typography variant="body2" color="#6B7280">
-          Showing <b>{from}</b> to <b>{to}</b> of <b>{totalCount}</b> entries
-        </Typography>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <IconButton size="small" disabled={page === 0} onClick={(e) => {e.stopPropagation(); onPageChange(page - 1);}} sx={{ border: "1px solid #E5E7EB", borderRadius: "4px" }}>
-            <ChevronLeftIcon fontSize="small" />
-          </IconButton>
-          {Array.from({ length: totalPages }, (_, i) => (
-            <Button key={i} onClick={(e) => {e.stopPropagation(); onPageChange(i);}} sx={{ minWidth: 32, height: 32, borderRadius: "4px", backgroundColor: page === i ? COLORS.primaryButton : "transparent", color: page === i ? "#fff" : "#6B7280", border: page === i ? "none" : "1px solid #E5E7EB", fontSize: "14px" }}>
-              {i + 1}
-            </Button>
-          ))}
-          <IconButton size="small" disabled={page >= totalPages - 1} onClick={(e) => {e.stopPropagation(); onPageChange(page + 1);}} sx={{ border: "1px solid #E5E7EB", borderRadius: "4px" }}>
-            <ChevronRightIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-      </Stack>
-    </Card>
-  );
-};
-
-// ---------------- MAPPER ----------------
+/* ---------------- DATA MAPPING ---------------- */
 const mapEventToRow = (e: any) => ({
   id: e.id,
   name: e.event_name,
-  createdBy: e.assignment_name ?? e.assignment ?? "-",
-  createdDate: e.created_at ? new Date(e.created_at).toLocaleDateString() : "-",
-  schedule: e.schedule?.type === 2 ? `Weekly` : "One Time",
+  description: e.description,
+  createdBy: e.assignment ?? "-",
+  createdDate: formatDate(e.created_at),
+  // Dynamic Schedule Mapping
+  scheduleType: e.schedule?.type === 2 ? "Weekly" : e.schedule?.type === 1 ? "One Time" : "Monthly",
+  fromTime: formatTime(e.schedule?.from_time),
+  toTime: formatTime(e.schedule?.to_time),
+  startDate: formatDate(e.schedule?.start_date || e.schedule?.one_time_date),
+  endDate: formatDate(e.schedule?.end_date || e.schedule?.one_time_date),
+  days: e.schedule?.days ? e.schedule.days.join(", ") : "-",
+  recurDuration: e.schedule?.recurring_duration,
+  
   equipmentCount: e.equipments?.length || 0,
   parameterCount: e.parameters?.length || 0,
-  // We store the full equipment array here so the detail view can display it
-  equipmentsDetails: e.equipments || []
+  equipmentsDetails: (e.equipments || []).map((eq: any) => ({
+    equipment_name: eq.equipment__equipment_name,
+    parameters: (e.parameters || []).map((p: any) => ({
+      name: p.parameter__parameter_name,
+    })),
+  })),
 });
 
-// ---------------- MAIN PAGE ----------------
+/* ---------------- MAIN COMPONENT ---------------- */
 const Events = () => {
   const navigate = useNavigate();
   const { data: clinic } = useSelector((s: RootState) => s.clinic);
-
   const [events, setEvents] = useState<any[]>([]);
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
-  const [viewingEvent, setViewingEvent] = useState<any | null>(null);
+  const [viewingEvent, setViewingEvent] = useState<any>(null);
 
-  const rowsPerPage = 10;
-
-  const fetchEvents = async () => {
+  useEffect(() => {
     if (!clinic?.id) return;
-    try {
-      const res = await eventApi.listByClinic(clinic.id, page + 1, rowsPerPage);
-      const raw = res.data.results || res.data;
-      setEvents(raw.map(mapEventToRow));
-      setTotalCount(res.data.count ?? raw.length);
-    } catch (err) { console.error(err); }
-  };
-
-  useEffect(() => { fetchEvents(); }, [clinic?.id, page]);
-
-  const handleSearch = (val: string) => {
-    setSearch(val);
-    setPage(0);
-  };
-
-  const filteredEvents = events.filter((e) =>
-    e.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  if (viewingEvent) {
-    return (
-      <Box sx={{ backgroundColor: COLORS.background, minHeight: "100vh" }}>
-        <EventDetailView 
-          event={viewingEvent} 
-          onBack={() => setViewingEvent(null)} 
-        />
-      </Box>
-    );
-  }
+    eventApi.listByClinic(clinic.id, 1, 10).then((res) => {
+      setEvents(res.data.results.map(mapEventToRow));
+    });
+  }, [clinic?.id]);
 
   return (
-    <Box sx={{ p: 3, backgroundColor: COLORS.background, minHeight: "100vh" }}>
-      <EventsHeader
-        onCreate={() => navigate("/configuration/events/create")}
-        onSearch={handleSearch}
-      />
-
-      <EventsTable
-        data={filteredEvents}
-        totalCount={totalCount}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        onPageChange={setPage}
-        onRowClick={(row) => setViewingEvent(row)} 
-      />
+    <Box p={4} sx={{ bgcolor: "#FAFAFA", minHeight: "100vh" }}>
+      {viewingEvent ? (
+        <EventDetailView event={viewingEvent} onBack={() => setViewingEvent(null)} />
+      ) : (
+        <>
+          <EventsHeader onCreate={() => navigate("/configuration/events/create")} onSearch={() => {}} />
+          <EventsTable data={events} onRowClick={setViewingEvent} />
+        </>
+      )}
     </Box>
   );
 };
