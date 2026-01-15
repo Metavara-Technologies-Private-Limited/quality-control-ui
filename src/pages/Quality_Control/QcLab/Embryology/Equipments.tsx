@@ -38,6 +38,22 @@ const determineEquipmentType = (name: string) => {
   return "other";
 };
 
+const avatarColors = [
+  '#F44336', '#E91E63', '#9C27B0', '#673AB7',
+  '#3F51B5', '#2196F3', '#03A9F4', '#00BCD4',
+  '#009688', '#4CAF50', '#8BC34A', '#FFC107',
+  '#FF9800', '#FF5722', '#795548', '#607D8B',
+];
+
+const getAvatarColor = (name: string) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return avatarColors[Math.abs(hash) % avatarColors.length];
+};
+
+
 const CustomPlusIcon = () => (
   <div style={{ width: "24px", height: "24px", borderRadius: "6px", border: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fff", cursor: "pointer" }}>
     <div style={{ width: "18px", height: "18px", borderRadius: "50%", backgroundColor: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -89,8 +105,8 @@ const AssigneeDialog = ({ open, onClose, availableAssignees, currentAssignees, o
               {available.map((assignee) => {
                 const isSelected = selected.find((a) => a.id === assignee.id);
                 return (
-                  <div key={assignee.id} onClick={() => handleToggle(assignee)} style={{ padding: "12px 16px", borderRadius: "8px", border: isSelected ? "2px solid #2563EB" : "1px solid #E5E7EB", backgroundColor: isSelected ? "#EFF6FF" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: "12px" }}>
-                    <div style={{ width: "40px", height: "40px", borderRadius: "50%", backgroundColor: "#E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: "14px", color: "#374151" }}>{assignee.emp_name.charAt(0).toUpperCase()}</div>
+                  <div key={assignee.id} onClick={() => handleToggle(assignee)} style={{ padding: "12px 16px", borderRadius: "8px", border: isSelected ? "2px solid #E17E61" : "none", backgroundColor: isSelected ? "#FFFFFF" : "#F9FAFB", cursor: "pointer", display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{ width: "40px", height: "40px", borderRadius: "50%", backgroundColor: getAvatarColor(assignee.emp_name), display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: "14px", color: "#FFFFFF" }}>{assignee.emp_name.charAt(0).toUpperCase()}</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600, fontSize: "14px" }}>{assignee.emp_name}</div>
                       <div style={{ fontSize: "12px", color: "#6B7280" }}>{assignee.department_name}</div>
@@ -102,8 +118,8 @@ const AssigneeDialog = ({ open, onClose, availableAssignees, currentAssignees, o
           )}
         </div>
         <div style={{ padding: "16px 24px", borderTop: "1px solid #E5E7EB", display: "flex", justifyContent: "flex-end", gap: "12px" }}>
-          <button onClick={onClose} style={{ padding: "10px 24px", borderRadius: "10px", border: "1px solid #D1D5DB", backgroundColor: "#fff", cursor: "pointer", fontWeight: 500, fontSize: "14px" }}>Cancel</button>
-          <button onClick={handleAdd} disabled={selected.length === 0} style={{ padding: "10px 24px", borderRadius: "10px", border: "none", backgroundColor: selected.length === 0 ? "#D1D5DB" : "#4B4B4B", color: "#fff", cursor: selected.length === 0 ? "not-allowed" : "pointer", fontWeight: 500, fontSize: "14px" }}>Add ({selected.length})</button>
+          <button onClick={onClose} style={{ padding: "10px 24px", borderRadius: "10px", border: "2px solid #505050", backgroundColor: "#fff", cursor: "pointer", fontWeight: 500, fontSize: "14px" }}>Cancel</button>
+          <button onClick={handleAdd} disabled={selected.length === 0} style={{ padding: "10px 24px", borderRadius: "10px", border: "none", backgroundColor: selected.length === 0 ? "#D1D5DB" : "#505050", color: "#fff", cursor: selected.length === 0 ? "not-allowed" : "pointer", fontWeight: 500, fontSize: "14px" }}>Add ({selected.length})</button>
         </div>
       </div>
     </div>
@@ -127,15 +143,16 @@ const EquipmentCard = ({ item, selected = false, onClick, assignees, onAddAssign
   const percentColor = activePercent === 100 ? "#16a34a" : "#f97316";
 
   return (
-    <div style={{ padding: "16px", borderRadius: "12px", cursor: "pointer", backgroundColor: selected ? "#fef3f2" : "#fff", border: selected ? "2px solid #f97316" : "1px solid #e5e7eb", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+    <div style={{ padding: "16px", borderRadius: "12px", cursor: "pointer", backgroundColor: selected ? "#FFFFFF" : "#F9FAFB",boxShadow: selected ? "0 6px 12px rgba(0,0,0,0.12)" : "none",
+ border: selected ? "2px solid #f97316" : "none", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }} onClick={onClick}>
-        <span style={{ fontSize: "13px", fontWeight: "700" }}>{item.detailName} : <span style={{ color: "#64748b", fontWeight: "400" }}>Parameters: {item.paramsCount}</span></span>
+        <span style={{ fontSize: "13px", fontWeight: "700" }}>{item.detailName} : <span style={{ color: "#232323", fontWeight: "500" }}> {item.paramsCount}</span></span>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }} onClick={(e) => e.stopPropagation()}>
-          <span style={{ fontSize: "12px", fontWeight: "700", color: "#0f172a" }}>Assignee :</span>
+          <span style={{ fontSize: "12px", fontWeight: "700", color: "#0f172a" }}></span>
           <div style={{ display: "flex", position: "relative" }}>
             {assignees.slice(0, 3).map((assignee, i) => (
               <div key={assignee.id} style={{ position: "relative", marginLeft: i > 0 ? "-8px" : 0 }} title={assignee.emp_name}>
-                <div style={{ width: "24px", height: "24px", borderRadius: "50%", border: "2px solid white", backgroundColor: "#E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 600, color: "#374151" }}>{assignee.emp_name.charAt(0).toUpperCase()}</div>
+                <div style={{ width: "24px", height: "24px", borderRadius: "50%", border: "2px solid white", backgroundColor: getAvatarColor(assignee.emp_name), display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 600, color: "#FFFFFF" }}>{assignee.emp_name.charAt(0).toUpperCase()}</div>
                 <button onClick={(e) => { e.stopPropagation(); onRemoveAssignee(assignee.id); }} style={{ position: "absolute", top: "-4px", right: "-4px", width: "14px", height: "14px", borderRadius: "50%", border: "1px solid white", backgroundColor: "#EF4444", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0 }}><X size={10} color="white" /></button>
               </div>
             ))}
@@ -289,7 +306,7 @@ const Equipment = () => {
     return (
       <div style={{ minHeight: "100vh", backgroundColor: "#fff", padding: "12px", fontFamily: "'Montserrat', sans-serif" }}>
         <div style={{ display: "flex", alignItems: "center", marginBottom: "32px", gap: "24px" }}>
-          <h1 style={{ fontSize: "20px", fontWeight: "700", margin: 0, color: "#0f172a" }}>Equipments</h1>
+          <h1 style={{ fontSize: "18px", fontWeight: "700", margin: 0, color: "#232323"}}>Equipments</h1>
           <div style={{ display: "inline-flex", backgroundColor: "#F2F2F2", padding: "4px", borderRadius: "12px", gap: "4px" }}>
             {["To-Do", "Plan"].map((tab) => (
               <button key={tab} onClick={() => setActiveTab(tab)} style={{ width: "166px", height: "36px", borderRadius: "10px", border: "none", cursor: "pointer", fontSize: "14px", fontWeight: "700", backgroundColor: activeTab === tab ? "#FFFFFF" : "transparent", color: activeTab === tab ? "#E17E61" : "#94a3b8" }}>{tab}</button>
@@ -302,7 +319,7 @@ const Equipment = () => {
             {Object.keys(filteredGroupedEquipments).length > 0 ? (
               Object.keys(filteredGroupedEquipments).map((eqName) => (
                 <div key={eqName} style={{ borderRadius: "12px", backgroundColor: "#F8F8F8", padding: "15px" }}>
-                  <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", color: "#0f172a", marginTop: 0 }}>{eqName}</h2>
+                  <h2 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px", color: "#0f172a", marginTop: 0 }}>{eqName}</h2>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: "12px" }}>
                     {filteredGroupedEquipments[eqName].map((item) => {
                       const equipmentKey = `${item.name}-${item.detailName}`;
@@ -341,7 +358,7 @@ const Equipment = () => {
     <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#f9fafb", padding: "20px", gap: "20px", fontFamily: "'Montserrat', sans-serif" }}>
       <div style={{ width: "512px", height: "840px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "20px", borderBottom: "1px solid #e5e7eb" }}>
-          <button onClick={() => setView("list")} style={{ background: "none", border: "none", fontSize: "14px", fontWeight: "700", cursor: "pointer", color: "#0f172a", marginBottom: "16px" }}>← Equipments</button>
+          <button onClick={() => setView("list")} style={{ background: "none", border: "none", fontSize: "18px", fontWeight: "700", cursor: "pointer", color: "#232323", marginBottom: "16px" }}>← Equipments</button>
           <div style={{ display: "inline-flex", backgroundColor: "#F2F2F2", padding: "4px", borderRadius: "12px", gap: "4px", width: "100%" }}>
             {["To-Do", "Plan"].map((tab) => (
               <button key={tab} onClick={() => setActiveTab(tab)} style={{ flex: 1, height: "36px", borderRadius: "10px", border: "none", cursor: "pointer", fontSize: "14px", fontWeight: "700", backgroundColor: activeTab === tab ? "#FFFFFF" : "transparent", color: activeTab === tab ? "#E17E61" : "#94a3b8" }}>{tab}</button>
