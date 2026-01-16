@@ -1,6 +1,8 @@
 import { parameterValueApi } from "@/services/api";
 import { useState, useMemo, useEffect } from "react";
 import Chart_activity from "@/assets/icons/Chart_activity.svg";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { 
   BarChart, 
   Bar, 
@@ -8,7 +10,9 @@ import {
   YAxis, 
   Tooltip, 
   ResponsiveContainer, 
-  ReferenceLine, CartesianGrid, LabelList
+  ReferenceLine, 
+  CartesianGrid, 
+  LabelList
 } from 'recharts';
 
 interface CryopreservationFormProps {
@@ -33,15 +37,8 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
     comments: "",
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
-  // ✅ TOAST NOTIFICATION FUNCTION
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000); // Auto-hide after 4 seconds
-  };
-
-  // --- 1. AUTO-SELECT LOGIC (Same as Microscope) ---
+  // --- 1. AUTO-SELECT LOGIC ---
   useEffect(() => {
     if (!selectedRadio && equipmentDetails.length > 0) {
       setSelectedRadio(equipmentDetails[0].equipment_num);
@@ -69,7 +66,7 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
     );
   };
 
-  // ✅ GET PARAMETER CONFIG - Handle both formats (config object and config.history array)
+  // GET PARAMETER CONFIG - Handle both formats
   const getParameterConfig = (dbName: string) => {
     const param = getDbParam(dbName);
     
@@ -85,7 +82,7 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
     return config;
   };
 
-  // ✅ RENDER PARAMETER RANGE/VALUE TEXT
+  // RENDER PARAMETER RANGE/VALUE TEXT
   const renderParameterInfo = (dbName: string) => {
     const config = getParameterConfig(dbName);
     
@@ -157,11 +154,22 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
 
   const handleSaveLogs = async () => {
     if (!currentEquipment) {
-      showToast("Please select a tank first", "error");
+      toast.error("Please select a tank first");
+      return;
+    }
+
+    const hasData = Object.entries(formData).some(
+      ([key, val]) => key !== "backSystemFunctionality" && key !== "alarmStatus" && key !== "status" && val && val.trim() !== ""
+    );
+
+    if (!hasData) {
+      toast.warning("Please fill at least one field before saving");
       return;
     }
 
     setIsSaving(true);
+    const id = toast.loading("Saving parameter logs...");
+
     try {
       const requests: Promise<any>[] = [];
 
@@ -181,17 +189,32 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
       });
 
       if (requests.length === 0) {
-        showToast("No matching parameters found or no data entered", "error");
+        toast.update(id, { 
+          render: "No matching parameters found or no data entered", 
+          type: "error", 
+          isLoading: false, 
+          autoClose: 3000 
+        });
         setIsSaving(false);
         return;
       }
 
       await Promise.all(requests);
-      showToast("✓ Cryopreservation logs saved successfully!", "success");
+      toast.update(id, { 
+        render: "Parameter logs saved successfully!", 
+        type: "success", 
+        isLoading: false, 
+        autoClose: 3000 
+      });
       handleClearForm();
     } catch (err) {
       console.error("Save Error:", err);
-      showToast("Failed to save logs. Check console for details.", "error");
+      toast.update(id, { 
+        render: "Failed to save logs. Please check console.", 
+        type: "error", 
+        isLoading: false, 
+        autoClose: 3000 
+      });
     } finally {
       setIsSaving(false);
     }
@@ -206,6 +229,7 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
       status: "Pass",
       comments: "",
     });
+    toast.info("Form cleared");
   };
 
   const activityData = [
@@ -245,31 +269,33 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      {/* ✅ Add ToastContainer here to enable popups */}
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
+
       <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "2px solid #e5e7eb", padding: "24px" }}>
         
-        {/* Unit Selector Radios (Updated to iterate over equipmentDetails) */}
+        {/* Unit Selector Radios */}
         <div style={{ display: "flex", gap: "24px", marginBottom: "24px", borderBottom: "2px solid #f1f5f9", paddingBottom: "20px" }}>
           {equipmentDetails.map((ed) => (
             <label key={ed.equipment_id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: selectedRadio === ed.equipment_num ? "600" : "500", color: selectedRadio === ed.equipment_num ? "#232323": "#E17E61" , cursor: "pointer" }}>
-
               <input
-  type="radio"
-  checked={selectedRadio === ed.equipment_num}
-  onChange={() => setSelectedRadio(ed.equipment_num)}
-  style={{
-    appearance: "none",
-    WebkitAppearance: "none",
-    width: "16px",
-    height: "16px",
-    borderRadius: "50%",
-    cursor: "pointer",
-    border: `2px solid ${selectedRadio === ed.equipment_num ? "#232323" : "#d1d5db"}`,
-    backgroundColor: "#fff",
-    boxShadow: selectedRadio === ed.equipment_num ? "inset 0 0 0 2px #fff, inset 0 0 0 14px #E17E61" : "none",
-    outline: "none"
-  }}
-/> 
-{ed.equipment_num}
+                type="radio"
+                checked={selectedRadio === ed.equipment_num}
+                onChange={() => setSelectedRadio(ed.equipment_num)}
+                style={{
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  width: "16px",
+                  height: "16px",
+                  borderRadius: "50%",
+                  cursor: "pointer",
+                  border: `2px solid ${selectedRadio === ed.equipment_num ? "#232323" : "#d1d5db"}`,
+                  backgroundColor: "#fff",
+                  boxShadow: selectedRadio === ed.equipment_num ? "inset 0 0 0 2px #fff, inset 0 0 0 14px #E17E61" : "none",
+                  outline: "none"
+                }}
+              /> 
+              {ed.equipment_num}
             </label>
           ))}
         </div>
@@ -385,7 +411,7 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
         </div>
       </div>
 
-            {/* Activity Graph Section Starts Here */}
+      {/* Activity Graph Section */}
       <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "12px",overflow: "hidden" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
           
@@ -410,14 +436,14 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
           </div>
         </div>        
         
-<hr 
-  style={{ 
-    border: "none", 
-    borderTop: "1px solid #E2E3E5", 
-    margin: "-20px -24px 16px -24px",
-    width: "auto"
-  }} 
-/>        
+        <hr 
+          style={{ 
+            border: "none", 
+            borderTop: "1px solid #E2E3E5", 
+            margin: "-20px -24px 16px -24px",
+            width: "auto"
+          }} 
+        />        
         <div style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={activityData} stackOffset="sign" barGap={-25} margin={{ top: 20, right: 30, left: 45, bottom: 20 }}>
@@ -431,7 +457,7 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
                 formatter={(value: number, name: string) => {
                   const absoluteValue = Math.abs(value);
                   const label = name === "compliant" ? "Compliant" : "Non-Compliant";
-                  return [ `${absoluteValue} m/s`, label ]; // Use m/s for LFH
+                  return [ `${absoluteValue} m/s`, label ];
                 }}
               /> 
               <ReferenceLine y={0} stroke="#E0E0E0" strokeDasharray="3 3"/>
@@ -453,52 +479,6 @@ const CryopreservationForm = ({ selectedRadio, setSelectedRadio, equipmentDetail
         </div>
       </div>
       {/* END OF ACTIVITY SECTION */}
-
-      {/* ✅ TOAST NOTIFICATION */}
-      {toast && (
-        <div
-          style={{
-            position: "fixed",
-            top: "20px",
-            right: "20px",
-            padding: "16px 20px",
-            borderRadius: "8px",
-            fontSize: "14px",
-            fontWeight: "500",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-            zIndex: 9999,
-            animation: "slideIn 0.3s ease-out",
-            backgroundColor:
-              toast.type === "success"
-                ? "#04db16ff"
-                : toast.type === "error"
-                ? "#ef4444"
-                : "#cf0404ff",
-            color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-          }}
-        >
-          {toast.type === "success" && "✓"}
-          {toast.type === "error" && "✕"}
-          {toast.type === "info" && "ⓘ"}
-          <span>{toast.message}</span>
-        </div>
-      )}
-
-      <style>{`
-        @keyframes slideIn {
-          from {
-            transform: translateX(400px);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-      `}</style>
     </div>
   );
 }; 

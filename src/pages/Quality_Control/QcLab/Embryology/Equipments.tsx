@@ -15,6 +15,7 @@ import OvensWaterBathForm from "./OvensWaterBathForm";
 import PHMetersForm from "./PHMetersForm";
 import { IconButton } from "@mui/material";
 import TurnLeftIcon from '@mui/icons-material/TurnLeft';
+import PlusIcon from "@/assets/icons/Lab_plusIcon.svg";
 
 const formatCount = (value: number) => String(value).padStart(2, "0");
 
@@ -55,12 +56,23 @@ const getAvatarColor = (name: string) => {
   return avatarColors[Math.abs(hash) % avatarColors.length];
 };
 
-
 const CustomPlusIcon = () => (
-  <div style={{ width: "24px", height: "24px", borderRadius: "6px", border: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fff", cursor: "pointer" }}>
-    <div style={{ width: "18px", height: "18px", borderRadius: "50%", backgroundColor: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <Plus size={14} color="#fff" strokeWidth={3} />
-    </div>
+  <div style={{ 
+    width: "24px", 
+    height: "24px", 
+    borderRadius: "6px", 
+    border: "1px solid #E5E7EB", 
+    display: "flex", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    backgroundColor: "#fff", 
+    cursor: "pointer" 
+  }}>
+    <img 
+      src={PlusIcon} 
+      alt="Add assignee" 
+      style={{ width: "24px", height: "24px" }} 
+    />
   </div>
 );
 

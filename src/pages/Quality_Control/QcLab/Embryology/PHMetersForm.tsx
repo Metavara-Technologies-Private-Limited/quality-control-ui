@@ -138,7 +138,7 @@ const PHMetersForm = ({
         { key: "calibrationChecks", value: logValues["calibrationChecks"] },
         { key: "electrodeCondition", value: logValues["electrodeCondition"] },
         { key: "temperatureCompensation", value: logValues["temperatureCompensation"] },
-        { key: "comments", value: logValues["comments"] },
+        { key: "omments", value: logValues["comments"] },
         { key: "status", value: logValues["status"] },
       ].filter((item) => item.value && item.value.trim() !== "");
 
@@ -252,7 +252,7 @@ const PHMetersForm = ({
           <div style={{ position: "relative" }}>
             <input type="text" placeholder="Type Here" value={logValues.comments} onChange={(e) => setValue("comments", e.target.value)} style={{ width: "100%", height: "50px", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", outline: "none", color: "#0f172a", backgroundColor: "#fff" }} />
             <label style={labelStyle}>Comments</label>
-            <div style={rangeTextStyle}>{renderParameterInfo("Comments")}</div>
+            <div style={rangeTextStyle}>{renderParameterInfo("Comment")}</div>
           </div>
 
           <div style={{ position: "relative" }}>
