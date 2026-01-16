@@ -44,7 +44,10 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({
             new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         );
 
-      if (!edValues.length) return;
+        if (!edValues.length) {
+          normalCount++; // or lowCount / separate "No Data"
+          return;
+        }        
 
       const latest = edValues[edValues.length - 1];
       const val = Number(latest.content);

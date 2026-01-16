@@ -43,11 +43,12 @@ interface TaskDetailsDialogProps {
   taskIndex: number;
   selectedEvent: string;
   setTasksByEvent: React.Dispatch<React.SetStateAction<any>>;
+  onUpdated?: () => void;
 }
 
 const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
   open,
-  openTaskDetails,
+  // openTaskDetails,
   onClose,
   task,
   taskIndex,
@@ -247,8 +248,8 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
       </Menu>
 
      <Dialog
-  open={openTaskDetails}
-  onClose={() => setOpenTaskDetails(false)}
+  open={open}
+  onClose={onClose}
     maxWidth="md"
           fullWidth
           PaperProps={{

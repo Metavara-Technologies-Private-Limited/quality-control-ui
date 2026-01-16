@@ -12,9 +12,11 @@ interface AddEventDialogProps {
     setEvents: (events: any[]) => void;
     setTasksByEvent: (tasksByEvent: any) => void;
     setSelectedEvent: (event: string) => void;
+    setSelectedEventId?: (id: number) => void;
+
 }
 
-export const AddEventDialog = ({ openAddEvent, setOpenAddEvent, newEventName, setNewEventName, eventError, setEventError, setEvents, setTasksByEvent, setSelectedEvent }) => {
+export const AddEventDialog = ({ openAddEvent, setOpenAddEvent, newEventName, setNewEventName, eventError, setEventError, setEvents, setTasksByEvent, setSelectedEvent }: AddEventDialogProps) => {
     return (
     
         <div> <Dialog open={openAddEvent} onClose={() => setOpenAddEvent(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: "16px", p: 1 } }}>

@@ -8,20 +8,20 @@ import {
   Stack,
   Divider,
   Avatar,
-  IconButton,
-  TextField,
-  Dialog,
-  DialogContent,
+  // IconButton,
+  // TextField,
+  // Dialog,
+  // DialogContent,
  
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
+// import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
-import { EVENTS } from "./utils/taskpage/data/events";
+// import { EVENTS } from "./utils/taskpage/data/events";
 import { COLORS } from "./utils/taskpage/data/colors";
-import { TASKS_BY_EVENT_INITIAL } from "./utils/taskpage/data/task_initial_data";
+// import { TASKS_BY_EVENT_INITIAL } from "./utils/taskpage/data/task_initial_data";
 import { formatDueDateDisplay } from "./utils/taskpage/formatDueDateDisplay";
 
 import { trackIcons } from "./utils/taskpage/trackIcons";
@@ -29,28 +29,70 @@ import TaskDetailsDialog from "./utils/taskpage/TaskDetailsDIalog";
 import AddTaskDialog from "./utils/taskpage/AddTaskDialog";
 import { AddEventDialog } from "./utils/taskpage/AddEventDialog";
 import { ArrowRightRounded } from "@mui/icons-material";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
+import { eventApi, taskApi } from "@/services/api";
+
 
 function Task() {
   const [index, setIndex] = useState(0)
-  const [selectedEvent, setSelectedEvent] = useState("Daily Maintenance");
   const [activeFilter, setActiveFilter] = useState("All");
   const [openAddEvent, setOpenAddEvent] = useState(false);
   const [newEventName, setNewEventName] = useState("");
-  const [events, setEvents] = useState(() => {
-    const saved = localStorage.getItem("events");
-    return saved ? JSON.parse(saved) : EVENTS;
+  // const [events, setEvents] = useState(() => {
+  //   const saved = localStorage.getItem("events");
+  //   return saved ? JSON.parse(saved) : EVENTS;
+  // });
+  // const [tasksByEvent, setTasksByEvent] = useState(() => {
+  //   const saved = localStorage.getItem("tasksByEvent");
+  //   return saved ? JSON.parse(saved) : TASKS_BY_EVENT_INITIAL;
+  // });
+  const clinic = useSelector((s: RootState) => s.clinic.data);
+const [events, setEvents] = useState<any[]>([]);
+const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+
+type TaskItem = {
+  id: number;
+  name: string;
+  status: "To Do" | "In Progress" | "Completed";
+  due?: string;
+  description?: string;
+  time?: string;
+};
+
+const [tasks, setTasks] = useState<TaskItem[]>([]);
+const [selectedTaskDetails, setSelectedTaskDetails] = useState<TaskItem | null>(null);
+
+useEffect(() => {
+  if (!selectedEventId) return;
+
+  taskApi.getById(selectedEventId).then((res) => {
+    setTasks(res.data ?? []);
   });
-  const [tasksByEvent, setTasksByEvent] = useState(() => {
-    const saved = localStorage.getItem("tasksByEvent");
-    return saved ? JSON.parse(saved) : TASKS_BY_EVENT_INITIAL;
+  
+}, [selectedEventId]);
+
+useEffect(() => {
+  if (!clinic?.id) return;
+
+  eventApi.listByClinic(clinic.id).then((res) => {
+    const data = res.data.results ?? res.data ?? [];
+    setEvents(data);
+    setSelectedEventId(data[0]?.id ?? null); // auto select first
   });
+}, [clinic?.id]);
+const selectedEvent = useMemo(
+  () => events.find(e => e.id === selectedEventId),
+  [events, selectedEventId]
+);
+
 
   const [openAddTask, setOpenAddTask] = useState(false);
   const [addTaskStep, setAddTaskStep] = useState(1);
-  const [selectedMaintenance, setSelectedMaintenance] = useState(selectedEvent)
+  // const [selectedMaintenance, setSelectedMaintenance] = useState(selectedEvent)
   const [dueDate, setDueDate] = useState<dayjs.Dayjs | null>(null);
   const [newTaskStatus, setNewTaskStatus] = useState("To Do");
-  const [newTaskDescription, setNewTaskDescription] = useState();
+  const [newTaskDescription, setNewTaskDescription] = useState<string>("");
 
   const savedRangeRef = React.useRef<Range | null>(null);
   const taskDetailsEditorRef = React.useRef<HTMLDivElement>(null);
@@ -59,16 +101,13 @@ function Task() {
  
 
   const [openTaskDetails, setOpenTaskDetails] = useState(false);
-  const [selectedTaskDetails, setSelectedTaskDetails] = useState(null);
   const [detailsTab, setDetailsTab] = useState(0);
   const [taskDetails, setTaskDetails] = useState("");
   const [taskStatus, setTaskStatus] = useState(""); 
 
-  const [activeFormats, setActiveFormats] = useState([]);
-  
-
-  const [statusAnchorEl, setStatusAnchorEl] = useState(null);
-  const [statusTaskIndex, setStatusTaskIndex] = useState(null);
+  const [activeFormats, setActiveFormats] = useState<string[]>([]);
+const [statusAnchorEl, setStatusAnchorEl] = useState<HTMLElement | null>(null);
+const [statusTaskIndex, setStatusTaskIndex] = useState<number | null>(null);
 
   
   
@@ -99,13 +138,13 @@ function Task() {
   const [eventError, setEventError] = useState("");
 
   
-  useEffect(() => {
-    localStorage.setItem("events", JSON.stringify(events));
-  }, [events]);
+  // useEffect(() => {
+  //   localStorage.setItem("events", JSON.stringify(events));
+  // }, [events]);
 
-  useEffect(() => {
-    localStorage.setItem("tasksByEvent", JSON.stringify(tasksByEvent));
-  }, [tasksByEvent]);
+  // useEffect(() => {
+  //   localStorage.setItem("tasksByEvent", JSON.stringify(tasksByEvent));
+  // }, [tasksByEvent]);
 
   
   useEffect(() => {
@@ -169,14 +208,13 @@ function Task() {
   const showStatus = activeFilter === "All";
 
   const filteredTasks = useMemo(() => {
-    const tasks = tasksByEvent[selectedEvent] || [];
     if (activeFilter === "All") return tasks;
     if (activeFilter === "To-Do") return tasks.filter(t => t.status === "To Do");
     if (activeFilter === "In-Progress") return tasks.filter(t => t.status === "In Progress");
     if (activeFilter === "Complete") return tasks.filter(t => t.status === "Completed");
     return tasks;
-  }, [activeFilter, selectedEvent, tasksByEvent]);
-
+  }, [tasks, activeFilter]);
+  
  
  const handleStatusClick = (event: React.MouseEvent<HTMLElement>, taskIndex: number) => {
   event.stopPropagation(); 
@@ -240,33 +278,30 @@ function Task() {
             </Stack>
             <Box sx={{ background: COLORS.bgLight, borderRadius: "12px", p: 1.5 }}>
               <Stack spacing={1.6}>
-                {events.map(e => (
-                  <Box
-                    key={e.name}
-                    onClick={() => setSelectedEvent(e.name)}
-                    sx={{
-                      p: "20px 16px",
-                      borderRadius: "12px",
-                      border: selectedEvent === e.name ? `1px solid ${COLORS.activeBorder}` : `1px solid ${COLORS.border}`,
-                      background: "#FFF",
-                      cursor: "pointer"
-                    }}
-                  >
-                    <Stack direction="row" justifyContent="space-between">
-                      <Typography fontWeight={600}>{e.name}</Typography>
-                      <Typography fontWeight={600}>{e.count}</Typography>
-                    </Stack>
-                    <Typography fontSize={12} color={COLORS.textSecondary}>
-                      Assigned : {e.assigned} | Unassigned : {e.unassigned}
-                    </Typography>
-                  </Box>
-                ))}
+              {events.map(e => (
+  <Box
+    key={e.id}
+    onClick={() => setSelectedEventId(e.id)}
+    sx={{
+      border: selectedEventId === e.id
+  ? `1px solid ${COLORS.activeBorder}`
+  : `1px solid transparent`,
+
+    }}
+  >
+    <Typography>{e.event_name}</Typography>
+  </Box>
+))}
+
               </Stack>
             </Box>
           </Box>
 
           <Box flex={1} minWidth={0}>
-            <Typography fontSize={20} fontWeight={700} mb={2}>{selectedEvent}</Typography>
+          <Typography fontSize={20} fontWeight={700}>
+  {selectedEvent?.event_name}
+</Typography>
+
 
             <Stack direction="row" justifyContent="space-between" mb={2}>
               <Stack direction="row" gap="2px">
@@ -298,9 +333,16 @@ function Task() {
                 sx={{ height: 36, px: 3, bgcolor: "#F3F4F6", borderRadius: "6px", color: "#111" }}
                 onClick={() => {
                   setOpenAddTask(true);
-                  setSelectedMaintenance(selectedEvent);
+                  // setSelectedMaintenance(selectedEvent);
                   setAddTaskStep(1);
-                  setMainErrors({ name: "", maintenance: "", assignee: "", dueDate: "", description: "" });
+                  setMainErrors({
+                    name: "",
+                    maintenance: "",
+                    assignee: "",
+                    dueDate: "",
+                    description: "",
+                    status: ""
+                  });                  
                   setSubTaskErrors({ name: "", status: "", due: "", assignee: "" });
                   setNewTaskDescription("");
                   setSubTasks([]);
@@ -412,7 +454,7 @@ function Task() {
        
 
         
-     <AddEventDialog   
+        <AddEventDialog
   openAddEvent={openAddEvent}
   setOpenAddEvent={setOpenAddEvent}
   newEventName={newEventName}
@@ -420,8 +462,7 @@ function Task() {
   eventError={eventError}
   setEventError={setEventError}
   setEvents={setEvents}
-  setTasksByEvent={setTasksByEvent}
-  setSelectedEvent={setSelectedEvent}
+  setSelectedEventId={setSelectedEventId}
 />
 
       <AddTaskDialog
@@ -429,31 +470,23 @@ function Task() {
   onClose={() => setOpenAddTask(false)}
   events={events}
   initialSelectedEvent={selectedEvent}
-  onTaskCreated={(newTask, eventName) => {
-    setTasksByEvent((prev) => ({
-      ...prev,
-      [eventName]: [...(prev[eventName] || []), newTask],
-    }));
-
-    setEvents((prev) =>
-      prev.map((e) =>
-        e.name === eventName ? { ...e, count: e.count + 1 } : e
-      )
-    );
-
-    toast.success('Task created successfully');
-  }}
+  onTaskCreated={() => {
+    taskApi.getById(selectedEventId!).then(res => {
+      setTasks(res.data ?? []);
+    });
+  }}  
 />
 
         {}
-     <TaskDetailsDialog
-  open={true}
-  openTaskDetails={openTaskDetails}
+        <TaskDetailsDialog
+  open={openTaskDetails}
   onClose={() => setOpenTaskDetails(false)}
   task={selectedTaskDetails}
-  taskIndex={index}
-  selectedEvent={selectedEvent}
-  setTasksByEvent={setTasksByEvent}
+  onUpdated={() => {
+    taskApi.getById(selectedEventId!).then(res => {
+      setTasks(res.data ?? []);
+    });
+  }}
 />
 
       </Box>

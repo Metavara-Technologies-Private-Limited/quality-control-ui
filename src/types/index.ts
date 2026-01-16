@@ -228,25 +228,32 @@ export interface ParameterChartData {
   chartType: string;
 }
 
+export enum TaskStatus {
+  TODO = 0,
+  IN_PROGRESS = 1,
+  COMPLETED = 2,
+}
 export interface Task {
   id: number;
   name: string;
-  description: string; // HTML
-  status: "TODO" | "IN_PROGRESS" | "COMPLETED";
-  due_date: string; // ISO
+  description: string;        // plain text or HTML (backend allows)
+  status: TaskStatus;         // ✅ numeric enum
+  due_date: string;           // ISO string
   time?: string;
-  assignee_id?: number | null;
-  event_id: number;
+
+  event: number;              // ✅ event ID
+  assignment?: number | null; // ✅ employee ID
+
   sub_tasks: SubTask[];
   attachments?: Attachment[];
 }
 
 export interface SubTask {
-  id?: number; // optional for create
+  id?: number;                // optional on create
   name: string;
-  status: "TODO" | "IN_PROGRESS" | "COMPLETED";
-  due_date: string;
-  assignee_id?: number | null;
+  status: TaskStatus;         // ✅ numeric enum
+  due_date: string;           // ISO
+  assignment?: number | null; // optional
 }
 
 export interface Attachment {

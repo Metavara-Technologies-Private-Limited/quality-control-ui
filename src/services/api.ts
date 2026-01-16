@@ -178,7 +178,7 @@ export const taskApi = {
 
   getById: (id: number) => http.get<Task>(`/tasks/${id}/`),
 
-  create: (data: Partial<Task>) => http.post<Task>("/tasks/", data),
+  create: (data: Partial<Task>) => http.post<Task>("/tasks", data),
 
   update: (id: number, data: Partial<Task>) =>
     http.put<Task>(`/tasks/${id}/`, data),

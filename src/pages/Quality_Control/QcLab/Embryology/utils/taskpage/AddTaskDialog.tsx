@@ -35,8 +35,18 @@ import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
 
 import { CustomStepIndicator } from './CustomStepIndicator';
-import { ASSIGNEES, STATUS_OPTIONS } from './data/data';
+import { STATUS_OPTIONS } from './data/data';
 import { COLORS } from './data/colors';
+import { eventApi, taskApi } from '@/services/api';
+import { Task } from '@/types';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
+
+const STATUS_MAP: Record<string, number> = {
+  'To Do': 0,
+  'In Progress': 1,
+  'Completed': 2,
+};
 
 interface AddTaskDialogProps {
   open: boolean;
@@ -49,7 +59,7 @@ interface AddTaskDialogProps {
 const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   open,
   onClose,
-  events,
+  // events,
   initialSelectedEvent,
   onTaskCreated,
 }) => {
@@ -57,8 +67,8 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
 
   // Step 1 fields
   const [name, setName] = useState('');
-  const [selectedEvent, setSelectedEvent] = useState(initialSelectedEvent);
-  const [assignee, setAssignee] = useState('');
+  // const [selectedEvent, setSelectedEvent] = useState(initialSelectedEvent);
+  const [assignee, setAssignee] = useState<number | ''>('');
   const [dueDate, setDueDate] = useState<dayjs.Dayjs | null>(null);
   const [status] = useState('To Do'); // fixed for new task
 
@@ -70,6 +80,19 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   const [activeFormats, setActiveFormats] = useState<string[]>([]);
   const [selectedColor, setSelectedColor] = useState('inherit');
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const clinic = useSelector((s: RootState) => s.clinic.data);
+  const [events, setEvents] = useState<any[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<number | "">("");
+
+  useEffect(() => {
+    if (!clinic?.id) return;
+
+    eventApi.listByClinic(clinic.id).then((res) => {
+      const raw = res.data.results ?? res.data ?? [];
+      setEvents(raw);
+    });
+  }, [clinic?.id]);
+
 
   // Step 3 - sub tasks
   const [subTasks, setSubTasks] = useState<any[]>([]);
@@ -77,11 +100,11 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
     name: '',
     status: 'To Do',
     due: null as dayjs.Dayjs | null,
-    assignee: '',
+    assignee: '' as number | '',
   });
 
   // Errors
-  const [errors, setErrors] = useState({
+  const INITIAL_ERRORS = {
     name: '',
     event: '',
     assignee: '',
@@ -91,25 +114,30 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
     subStatus: '',
     subDue: '',
     subAssignee: '',
-  });
+  }
+  const [errors, setErrors] = useState(INITIAL_ERRORS);
 
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
       setStep(1);
       setName('');
-      setSelectedEvent(initialSelectedEvent);
+      // setSelectedEvent(initialSelectedEvent);
       setAssignee('');
       setDueDate(null);
       setDescriptionHtml('');
       setSubTasks([]);
       setNewSubTask({ name: '', status: 'To Do', due: null, assignee: '' });
-      setErrors({});
+      setErrors(INITIAL_ERRORS);
       if (editorRef.current) {
         editorRef.current.innerHTML = '';
       }
     }
   }, [open, initialSelectedEvent]);
+
+  const assigneeOptions = useSelector(
+    (state: RootState) => state.assignees.data
+  );  
 
   // Rich text editor format checking
   const checkFormats = () => {
@@ -175,14 +203,14 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   // Validation
   const validateStep1 = () => {
     const newErrors = {
-      name: !name.trim() ? 'Task name is required' : '',
-      event: !selectedEvent ? 'Event is required' : '',
-      assignee: !assignee ? 'Assignee is required' : '',
-      dueDate: !dueDate ? 'Due date is required' : '',
+      name: !name.trim() ? "Task name is required" : "",
+      event: !selectedEventId ? "Event is required" : "",
+      assignee: !assignee ? "Assignee is required" : "",
+      dueDate: !dueDate ? "Due date is required" : "",
     };
     setErrors((prev) => ({ ...prev, ...newErrors }));
     return Object.values(newErrors).every((v) => !v);
-  };
+  };  
 
   const validateStep2 = () => {
     const text = editorRef.current?.innerText?.trim() || '';
@@ -224,20 +252,39 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   };
 
   // Final save
-  const handleSaveTask = () => {
-    const newTask = {
+const handleSaveTask = async () => {
+  try {
+    const payload: Partial<Task> = {
+      event: Number(selectedEventId),            // number
+      assignment: Number(assignee),       // employee ID
       name: name.trim(),
-      time: '00:00 min.',
-      status: status,
-      due: dueDate ? dueDate.format('YYYY-MM-DD') : '',
-      description: descriptionHtml,
-      subtasks: subTasks, // optional: if you want to save subtasks
-      assignee,
+      description: descriptionHtml
+        .replace(/<[^>]*>/g, "")
+        .slice(0, 500),
+      due_date: dueDate?.toISOString(),
+      status: STATUS_MAP[status],
+      sub_tasks: subTasks.map(st => ({
+        name: st.name,
+        due_date: dayjs(st.due, "DD/MM/YYYY").toISOString(),
+        status: STATUS_MAP[st.status],
+      })),
     };
 
-    onTaskCreated(newTask, selectedEvent);
+    if (!payload.event || !payload.assignment) {
+      toast.error("Event or assignee missing");
+      return;
+    }
+
+    const createdTask = await taskApi.create(payload);
+
+    toast.success("Task created successfully");
+    onTaskCreated(createdTask, JSON.stringify(selectedEventId));
     onClose();
-  };
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to create task");
+  }
+};
 
   const handleNext = () => {
     if (step === 1) {
@@ -308,13 +355,18 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
                   </Typography>
                   <FormControl fullWidth error={!!errors.event}>
                     <Select
-                      value={selectedEvent}
-                      onChange={(e) => setSelectedEvent(e.target.value)}
-                      sx={{ borderRadius: '12px' }}
+                      value={selectedEventId}
+                      onChange={(e) => setSelectedEventId(e.target.value as number)}
+                      displayEmpty
+                      sx={{ borderRadius: "12px" }}
                     >
+                      <MenuItem value="" disabled>
+                        Select Event
+                      </MenuItem>
+
                       {events.map((e) => (
-                        <MenuItem key={e.name} value={e.name}>
-                          {e.name}
+                        <MenuItem key={e.id} value={e.id}>
+                          {e.event_name}
                         </MenuItem>
                       ))}
                     </Select>
@@ -328,18 +380,20 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
                     Assignee
                   </Typography>
                   <FormControl fullWidth error={!!errors.assignee}>
-                    <Select
+                  <Select
                       value={assignee}
-                      onChange={(e) => setAssignee(e.target.value)}
+                      onChange={(e) =>
+                        setAssignee(e.target.value === '' ? '' : Number(e.target.value))
+                      }
                       displayEmpty
                       sx={{ borderRadius: '12px' }}
                     >
                       <MenuItem value="" disabled>
                         Select assignee
                       </MenuItem>
-                      {ASSIGNEES.map((a) => (
-                        <MenuItem key={a} value={a}>
-                          {a}
+                      {assigneeOptions.map((a) => (
+                        <MenuItem key={a.id} value={a.id}>
+                          {a.emp_name}
                         </MenuItem>
                       ))}
                     </Select>
@@ -711,17 +765,20 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
                       <Select
                         value={newSubTask.assignee}
                         onChange={(e) =>
-                          setNewSubTask({ ...newSubTask, assignee: e.target.value })
-                        }
+                          setNewSubTask({
+                            ...newSubTask,
+                            assignee: e.target.value === '' ? '' : Number(e.target.value),
+                          })
+                        }                                                
                         displayEmpty
                         sx={{ borderRadius: '8px' }}
                       >
                         <MenuItem value="" disabled>
                           Select Assignee
                         </MenuItem>
-                        {ASSIGNEES.map((a) => (
-                          <MenuItem key={a} value={a}>
-                            {a}
+                        {assigneeOptions.map((a) => (
+                          <MenuItem key={a.id} value={a.id}>
+                            {a.emp_name}
                           </MenuItem>
                         ))}
                       </Select>
