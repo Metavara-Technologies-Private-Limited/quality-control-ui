@@ -282,7 +282,7 @@ export default function AddEquipmentDialog({
               }}
             >
               <Typography fontWeight={600} mb={1}>
-                All Equipment's
+                All Equipments
               </Typography>
 
               <Stack spacing={0.5}>

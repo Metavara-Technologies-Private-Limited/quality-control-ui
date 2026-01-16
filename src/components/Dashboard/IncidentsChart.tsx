@@ -8,103 +8,60 @@ import {
   IconButton,
 } from "@mui/material";
 import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
-import { PieChart, Pie, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, ResponsiveContainer, Cell } from "recharts";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import RemoveIcon from "@mui/icons-material/Remove";
-import { EquipmentDetail } from "@/types";
-
-/* -----------------------------
-   TYPES
------------------------------ */
-type IncidentSummary = {
-  high: number;
-  normal: number;
-  low: number;
-};
+import { EquipmentDetail, ParameterContent } from "@/types";
 
 interface IncidentsChartProps {
-  equipmentId: number;
   equipmentDetails: EquipmentDetail[];
+  values: any[];
+  parameterConfig: ParameterContent;
 }
 
-/* -----------------------------
-   COLORS
------------------------------ */
-const INCUBATOR_COLORS = ["#6B7280", "#9CA3AF", "#FBCFE8", "#FB7185"];
+const COLORS = ["#F25B5B", "#47B35F", "#9E9E9E"]; // high, normal, low
 
-/* -----------------------------
-   INCIDENT LOGIC (API BASED)
------------------------------ */
-const getIncidentSummary = (equipmentId: number): IncidentSummary => {
-  const rawClinic = localStorage.getItem("clinic");
-  if (!rawClinic) return { high: 0, normal: 0, low: 0 };
-
-  const clinic = JSON.parse(rawClinic);
-  let high = 0;
-  let normal = 0;
-  let low = 0;
-
-  clinic.department?.forEach((dept: any) => {
-    dept.equipments
-      ?.filter((e: any) => e.id === equipmentId)
-      .forEach((equipment: any) => {
-        equipment.parameters?.forEach((param: any) => {
-          const pv = param.parameter_values?.[0];
-          const readings = pv?.content?.readings ?? [];
-          const min = Number(pv?.content?.min_value);
-          const max = Number(pv?.content?.max_value);
-
-          // group by equipment_detail_id
-          const byDetail: Record<number, any[]> = {};
-          readings.forEach((r: any) => {
-            byDetail[r.equipment_detail_id] ??= [];
-            byDetail[r.equipment_detail_id].push(r);
-          });
-
-          Object.values(byDetail).forEach((list) => {
-            if (list.length === 0) return;
-
-            const sorted = list.sort(
-              (a, b) =>
-                new Date(a.recorded_at).getTime() -
-                new Date(b.recorded_at).getTime()
-            );
-
-            const latest = sorted[sorted.length - 1];
-
-            if (!latest) return;
-
-            const value = Number(latest.value);
-
-            if (value > max) high++;
-            else if (value < min) low++;
-            else normal++;
-          });
-        });
-      });
-  });
-
-  return { high, normal, low };
-};
-
-/* -----------------------------
-   COMPONENT
------------------------------ */
 const IncidentsChart: React.FC<IncidentsChartProps> = ({
-  equipmentId,
   equipmentDetails,
+  values,
+  parameterConfig,
 }) => {
-  const { high, normal, low } = useMemo(
-    () => getIncidentSummary(equipmentId),
-    [equipmentId]
-  );
+  const { high, normal, low } = useMemo(() => {
+    let highCount = 0,
+      normalCount = 0,
+      lowCount = 0;
+
+    const min = Number(parameterConfig?.min_value);
+    const max = Number(parameterConfig?.max_value);
+
+    equipmentDetails.forEach((ed) => {
+      // Filter values for this equipment detail
+      const edValues = values
+        .filter((v) => v.equipment_details_id === ed.id)
+        .sort(
+          (a, b) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+
+      if (!edValues.length) return;
+
+      const latest = edValues[edValues.length - 1];
+      const val = Number(latest.content);
+      if (isNaN(val)) return;
+
+      if (!isNaN(max) && val > max) highCount++;
+      else if (!isNaN(min) && val < min) lowCount++;
+      else normalCount++;
+    });
+
+    return { high: highCount, normal: normalCount, low: lowCount };
+  }, [equipmentDetails, values, parameterConfig]);
 
   const total = high + normal + low;
 
   return (
     <Card sx={{ height: "100%", minHeight: 350, borderRadius: 3 }}>
-      {/* HEADER */}
       <CardContent
         sx={{
           height: 56,
@@ -121,7 +78,6 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({
 
       <Divider />
 
-      {/* BODY */}
       <Box
         sx={{
           p: 2.5,
@@ -130,21 +86,24 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({
           gap: 3,
         }}
       >
-        {/* DONUT */}
         <Box sx={{ position: "relative", height: 220 }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              {INCUBATOR_COLORS.map((color, idx) => (
-                <Pie
-                  key={idx}
-                  data={[{ value: total }]}
-                  dataKey="value"
-                  innerRadius={90 - idx * 12}
-                  outerRadius={100 - idx * 12}
-                  fill={color}
-                  stroke="none"
-                />
-              ))}
+              <Pie
+                data={[
+                  { name: "High", value: high },
+                  { name: "Normal", value: normal },
+                  { name: "Low", value: low },
+                ]}
+                dataKey="value"
+                innerRadius={60}  // make inner circle smaller
+                outerRadius={80}  // reduce outer radius to fit container
+                paddingAngle={2}  // optional: add small gaps between slices
+              >
+                {COLORS.map((color, idx) => (
+                  <Cell key={idx} fill={color} />
+                ))}
+              </Pie>
             </PieChart>
           </ResponsiveContainer>
 
@@ -166,50 +125,28 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({
           </Box>
         </Box>
 
-        {/* RIGHT PANEL */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
           <SummaryRow
-            label={`High (${high} logs)`}
+            label={`High (${high})`}
             color="#F25B5B"
             icon={<ArrowUpwardIcon />}
           />
           <SummaryRow
-            label={`Normal (${normal} logs)`}
+            label={`Normal (${normal})`}
             color="#47B35F"
             icon={<RemoveIcon />}
           />
           <SummaryRow
-            label={`Low (${low} logs)`}
+            label={`Low (${low})`}
             color="#9E9E9E"
             icon={<ArrowDownwardIcon />}
           />
-
-          {/* LEGEND */}
-          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
-            {equipmentDetails.map((ed, idx) => (
-              <Box key={ed.id} sx={{ display: "flex", gap: 1 }}>
-                <Box
-                  sx={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    backgroundColor:
-                      INCUBATOR_COLORS[idx % INCUBATOR_COLORS.length],
-                  }}
-                />
-                <Typography fontSize={12}>{ed.equipment_num}</Typography>
-              </Box>
-            ))}
-          </Box>
         </Box>
       </Box>
     </Card>
   );
 };
 
-/* -----------------------------
-   SMALL UI HELPER
------------------------------ */
 const SummaryRow = ({
   label,
   color,

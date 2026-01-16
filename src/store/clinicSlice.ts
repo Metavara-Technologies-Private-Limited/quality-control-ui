@@ -26,7 +26,7 @@ const filterActiveClinicData = (clinic: Clinic | null): Clinic | null => {
       .map((d) => ({
         ...d,
         equipments: d.equipments
-          .filter((e) => e.is_active)
+          // .filter((e) => e.is_active)
           .map((e) => ({
             ...e,
             // equipment_details: e.equipment_details.filter((ed) => ed.is_active),

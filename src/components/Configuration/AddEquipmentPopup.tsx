@@ -64,7 +64,7 @@ const AddEquipmentPopup: React.FC<{
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="sm"
+      maxWidth="xs"
       fullWidth
       PaperProps={{
         sx: {
@@ -82,7 +82,7 @@ const AddEquipmentPopup: React.FC<{
           alignItems: "center",
         }}
       >
-        Add Equipments
+        Add Equipment
         <IconButton onClick={onClose} size="small">
           <CloseIcon />
         </IconButton>
@@ -104,6 +104,7 @@ const AddEquipmentPopup: React.FC<{
               "&.Mui-focused fieldset": { borderColor: "#CFD1D4" },
             },
           }}
+          InputLabelProps={{ shrink: true }}
         />
 
         <TextField
@@ -124,6 +125,7 @@ const AddEquipmentPopup: React.FC<{
               "&.Mui-focused fieldset": { borderColor: "#CFD1D4" },
             },
           }}
+          InputLabelProps={{ shrink: true }}
         >
           {departments
             .filter((d) => d.is_active)

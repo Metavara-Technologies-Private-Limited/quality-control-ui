@@ -1,5 +1,6 @@
-import { Box, Tabs, Tab, Typography } from '@mui/material';
+import { Box, Tabs, Tab, Typography, Button } from '@mui/material';
 import type { Parameter } from '@/types';
+import { Add } from '@mui/icons-material';
 
 interface ParameterTabsProps {
   parameters: Parameter[];
@@ -17,7 +18,7 @@ const ParameterTabs = ({
   if (loading || parameters.length === 0) return null;
 
   return (
-    <Box sx={{ mb: 3 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Typography
           variant='body2'
@@ -30,7 +31,9 @@ const ParameterTabs = ({
           sx={{
             backgroundColor: '#fafafa',
             borderRadius: 1,
-            display: 'inline-block',
+            display: 'flex',
+            alignItems: 'center',
+            px: 1,
           }}
         >
           <Tabs
@@ -72,6 +75,25 @@ const ParameterTabs = ({
           </Tabs>
         </Box>
       </Box>
+      <Button
+        variant='contained'
+        startIcon={<Add />}
+        sx={{
+          textTransform: 'none',
+          backgroundColor: '#090909ff',
+          borderRadius: 2,
+          px: 2.5,
+          boxShadow: 'none',
+          ml: 2, // spacing from tabs
+          '&:hover': {
+            backgroundColor: '#0b0c0cda',
+            boxShadow:
+              '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+          },
+        }}
+      >
+        Record
+      </Button>
     </Box>
   );
 };

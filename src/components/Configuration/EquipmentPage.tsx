@@ -126,7 +126,7 @@ const EquipmentPage = () => {
             onClick={() => setOpenAddEquipmentPopup(true)}
             sx={{ background: "#505050", "&:hover": { background: "#505050" } }}
           >
-            Add Equipments
+            Add Equipment
           </Button>
         </Box>
       </Box>
@@ -156,12 +156,13 @@ const EquipmentPage = () => {
                     top: 8,
                     right: 8,
                     background: isInactive ? "#ffcccc" : "#d4f8d4",
-                    color: isInactive ? "#b30000" : "#008000",
+                    color: isInactive ? "#b30000" : "#47B35F",
                     fontSize: 10,
                     fontWeight: 700,
                     px: 1.3,
                     py: 0.5,
                     borderRadius: 20,
+                    letterSpacing: "0.08em",
                     textTransform: "uppercase",
                   }}
                 >
@@ -226,7 +227,9 @@ const EquipmentPage = () => {
                     <span style={{ color: "#9CA3AF", fontSize: 14 }}>
                       Created Date:
                     </span>{" "}
-                    {getCreatedDate(item.created_at)}
+                    <span style={{ fontSize: 14, fontWeight: 500 }}>
+                      {getCreatedDate(item.created_at)}
+                    </span>
                   </Typography>
 
                   <Box sx={{ display: "flex", gap: 1 }}>

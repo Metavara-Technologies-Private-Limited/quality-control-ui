@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Card,
   CardContent,
@@ -19,6 +19,8 @@ import {
   Air,
 } from "@mui/icons-material";
 import { formatTimeAgo } from "@/utils/formatters";
+import { EquipmentDetail } from "@/types";
+// import { parameterValueApi } from "@/services/api";
 
 /* =========================
    Types
@@ -36,29 +38,28 @@ type Activity = {
 /* =========================
    Helpers
 ========================= */
-const normalize = (s: string) =>
-  s.toLowerCase().replace(/\s+/g, "");
+// const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, "");
 
-const buildDetailIdLabelMap = (clinic: any): Record<number, string> => {
-  const map: Record<number, string> = {};
+// const buildDetailIdLabelMap = (clinic: any): Record<number, string> => {
+//   const map: Record<number, string> = {};
 
-  clinic.department?.forEach((d: any) => {
-    d.equipments?.forEach((e: any) => {
-      e.equipment_details?.forEach((ed: any) => {
-        map[ed.id] = ed.equipment_num;
-      });
-    });
-  });
+//   clinic.department?.forEach((d: any) => {
+//     d.equipments?.forEach((e: any) => {
+//       e.equipment_details_id?.forEach((ed: any) => {
+//         map[ed.id] = ed.equipment_num;
+//       });
+//     });
+//   });
 
-  return map;
+//   return map;
+// };
+const getParameterType = (name: string) => {
+  const n = name.toLowerCase().replace("₂", "2");
+  if (n.includes("co2")) return "co2";
+  if (n.includes("humid")) return "humidity";
+  if (n.includes("air")) return "airflow";
+  return "temperature";
 };
-  const getParameterType = (name: string) => {
-    const n = name.toLowerCase().replace('₂', '2');
-    if (n.includes('co2')) return 'co2';
-    if (n.includes('humid')) return 'humidity';
-    if (n.includes('air')) return 'airflow';
-    return 'temperature';
-  };
 
 /* =========================
    Activity Deriver
@@ -85,8 +86,7 @@ export function deriveTrendActivities(
   return Object.entries(grouped).flatMap(([detailId, values]) => {
     values.sort(
       (a, b) =>
-        new Date(a.recorded_at).getTime() -
-        new Date(b.recorded_at).getTime()
+        new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
     );
 
     const latest = values[values.length - 1];
@@ -116,53 +116,80 @@ export function deriveTrendActivities(
    Component
 ========================= */
 interface RecentActivityProps {
+  parameterId: number;
   parameterName: string;
+  unit: string;
+  equipmentDetails: EquipmentDetail[];
+  values: any[];
 }
 
-const RecentActivity: React.FC<RecentActivityProps> = ({ parameterName }) => {
-  
-  const parameterType = getParameterType(parameterName);
+const RecentActivity: React.FC<RecentActivityProps> = ({
+  parameterId,
+  parameterName,
+  unit,
+  equipmentDetails,
+  values,
+}) => {
   const [activities, setActivities] = useState<Activity[]>([]);
+  const detailIdToLabel = useMemo(
+    () =>
+      equipmentDetails.reduce<Record<number, string>>((acc, d) => {
+        if (typeof d.id !== "number") return acc;
+        acc[d.id] = d.equipment_num;
+        return acc;
+      }, {}),
+    [equipmentDetails]
+  );
 
   useEffect(() => {
-    const rawClinic = localStorage.getItem("clinic");
-    if (!rawClinic) {
+    if (!values.length) {
       setActivities([]);
       return;
     }
-
-    const clinic = JSON.parse(rawClinic);
-    const detailIdToLabel = buildDetailIdLabelMap(clinic);
-    const normalizedType = normalize(parameterType);
-
-    const equipments =
-      clinic.department?.flatMap((d: any) => d.equipments || []) || [];
-
-    const derived = equipments.flatMap((equipment: any) =>
-      equipment.parameters?.flatMap((parameter: any) => {
-        const content = parameter.parameter_values?.[0]?.content;
-        if (!content?.readings?.length) return [];
-
-        const paramName = normalize(parameter.parameter_name ?? "");
-
-        const matches =
-          paramName.includes(normalizedType) ||
-          (normalizedType === "temperature" && paramName.includes("temp"));
-
-        if (!matches) return [];
-
-        return deriveTrendActivities(
-          content.readings,
-          parameterType as ActivityType,
-          equipment.id,
-          content.unit ?? "",
-          detailIdToLabel
-        );
-      }) ?? []
-    );
-
+    console.log("cc:",parameterId)
+  
+    const grouped: Record<number, any[]> = {};
+  
+    values.forEach((v: any) => {
+      if (!v.equipment_details_id) return;
+      grouped[v.equipment_details_id] ??= [];
+      grouped[v.equipment_details_id].push(v);
+    });
+  
+    let id = 1;
+    const derived: Activity[] = [];
+  
+    Object.entries(grouped).forEach(([detailId, items]) => {
+      items.sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() -
+          new Date(b.created_at).getTime()
+      );
+  
+      if (items.length < 2) return;
+  
+      const latest = items[items.length - 1];
+      const previous = items[items.length - 2];
+  
+      const diff = Number(latest.content) - Number(previous.content);
+      if (Math.abs(diff) < 0.5) return;
+  
+      const label =
+        detailIdToLabel[Number(detailId)] ?? `Unit-${detailId}`;
+  
+      derived.push({
+        id: id++,
+        equipment_id: Number(detailId),
+        type: getParameterType(parameterName),
+        message: `${label} ${
+          diff > 0 ? "rise" : "drop"
+        } in ${parameterName} by ${Math.abs(diff).toFixed(1)}${unit}`,
+        timestamp: latest.created_at,
+      });
+    });
+  
     setActivities(derived);
-  }, [parameterType]);
+  }, [values, parameterName, unit, detailIdToLabel]);  
 
   const getIcon = (type: ActivityType) => {
     switch (type) {
@@ -219,9 +246,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ parameterName }) => {
               />
               <IconButton
                 onClick={() =>
-                  setActivities((prev) =>
-                    prev.filter((x) => x.id !== a.id)
-                  )
+                  setActivities((prev) => prev.filter((x) => x.id !== a.id))
                 }
               >
                 <Close fontSize="small" />

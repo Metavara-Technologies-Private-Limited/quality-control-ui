@@ -137,7 +137,7 @@ function App() {
 
         {/* ================= QUALITY CONTROL CONFIGURATION ================= */}
         <Route path="configuration" element={<ConfigurationLayout />}>
-          <Route index element={<Navigate to="equipment" replace />} />
+          <Route index element={<Navigate to="events" replace />} />
 
           <Route path="equipment" element={<EquipmentPage />} />
           <Route path="equipment/view" element={<ViewEquipment />} />

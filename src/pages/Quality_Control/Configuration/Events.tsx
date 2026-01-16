@@ -20,7 +20,10 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
-import UndoIcon from "@mui/icons-material/Undo";
+// import UndoIcon from "@mui/icons-material/Undo";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
@@ -80,12 +83,22 @@ const EventsHeader = ({ onCreate, onSearch }: any) => (
 const EventDetailView = ({ event, onBack }: any) => (
   <Box>
     <Stack direction="row" spacing={1} alignItems="center" mb={2.5}>
-      <IconButton onClick={onBack} size="small" sx={{ bgcolor: COLORS.bgChip, borderRadius: "6px", p: 0.5 }}>
-        <UndoIcon sx={{ fontSize: 16, transform: "scaleX(-1)" }} />
-      </IconButton>
-      <Typography variant="body2" color={COLORS.textMuted} fontSize={12}>
+        <ArrowBackIcon
+          onClick={onBack}
+          sx={{
+            mr: 1,
+            cursor: "pointer",
+            border: "1px solid #E5E7EB",
+            borderRadius: "8px",
+            padding: "4px",
+          }}
+        />
+      {/* <IconButton onClick={onBack} size="small" sx={{  borderRadius: "6px", p: 0.5 }}> */}
+      {/* <UndoIcon sx={{ fontSize: 16, transform: "scaleX(-1)" }} /> */}
+      {/* </IconButton> */}
+      {/* <Typography variant="body2" color={COLORS.textMuted} fontSize={12}>
         Quality Control &nbsp; &gt; &nbsp; Configuration &nbsp; &gt; &nbsp; <span style={{color: COLORS.textPrimary, fontWeight: 500}}>Events</span>
-      </Typography>
+      </Typography> */}
     </Stack>
 
     <Card sx={{ borderRadius: "12px", border: `1px solid ${COLORS.border}`, boxShadow: "none" }}>
@@ -192,22 +205,49 @@ const EventDetailView = ({ event, onBack }: any) => (
 );
 
 /* ---------------- TABLE LIST ---------------- */
-const EventsTable = ({ data, onRowClick }: any) => (
-  <Card sx={{ borderRadius: "12px", border: `1px solid ${COLORS.border}`, boxShadow: "none" }}>
+const EventsTable = ({
+  data,
+  page,
+  rowsPerPage,
+  total,
+  onPageChange,
+  onRowClick,
+}: any) => {
+  const totalPages = Math.ceil(total / rowsPerPage);
+
+const from = total === 0 ? 0 : page * rowsPerPage + 1;
+const to = Math.min((page + 1) * rowsPerPage, total);
+
+  return <Card
+    sx={{
+      borderRadius: "12px",
+      border: `1px solid ${COLORS.border}`,
+      boxShadow: "none",
+    }}
+  >
     <Table>
       <TableHead sx={{ bgcolor: COLORS.bgLight }}>
         <TableRow>
           <TableCell sx={{ fontWeight: 600 }}>Event Name</TableCell>
           <TableCell sx={{ fontWeight: 600 }}>Created By</TableCell>
           <TableCell sx={{ fontWeight: 600 }}>Created Date</TableCell>
-          <TableCell sx={{ fontWeight: 600 }}>Schedule</TableCell>
-          <TableCell align="center" sx={{ fontWeight: 600 }}>Equipments</TableCell>
-          <TableCell align="center" sx={{ fontWeight: 600 }}>Parameters</TableCell>
+          <TableCell sx={{ fontWeight: 600 }}>Schedule On</TableCell>
+          <TableCell align="center" sx={{ fontWeight: 600 }}>
+            Total No Equipment
+          </TableCell>
+          <TableCell align="center" sx={{ fontWeight: 600 }}>
+            Total No Parameters
+          </TableCell>
         </TableRow>
       </TableHead>
       <TableBody>
         {data.map((row: any) => (
-          <TableRow key={row.id} hover sx={{ cursor: "pointer" }} onClick={() => onRowClick(row)}>
+          <TableRow
+            key={row.id}
+            hover
+            sx={{ cursor: "pointer" }}
+            onClick={() => onRowClick(row)}
+          >
             <TableCell sx={{ fontWeight: 500 }}>{row.name}</TableCell>
             <TableCell>{row.createdBy}</TableCell>
             <TableCell>{row.createdDate}</TableCell>
@@ -218,8 +258,63 @@ const EventsTable = ({ data, onRowClick }: any) => (
         ))}
       </TableBody>
     </Table>
+    <Stack
+      direction="row"
+      justifyContent="space-between"
+      alignItems="center"
+      sx={{ p: 2, borderTop: "1px solid #E5E7EB" }}
+    >
+      <Typography variant="body2" color="#6B7280">
+        Showing <b>{from}</b> to <b>{to}</b> of <b>{total}</b> entries
+      </Typography>
+
+      <Stack direction="row" spacing={1} alignItems="center">
+        <IconButton
+          size="small"
+          disabled={page === 0}
+          onClick={(e) => {
+            e.stopPropagation();
+            onPageChange(page - 1);
+          }}
+          sx={{ border: "1px solid #E5E7EB", borderRadius: "4px" }}
+        >
+          <ChevronLeftIcon fontSize="small" />
+        </IconButton>
+        {Array.from({ length: totalPages }, (_, i) => (
+          <Button
+            key={i}
+            onClick={(e) => {
+              e.stopPropagation();
+              onPageChange(i);
+            }}
+            sx={{
+              minWidth: 32,
+              height: 32,
+              borderRadius: "4px",
+              backgroundColor: page === i ? "#111827" : "transparent",
+              color: page === i ? "#fff" : "#6B7280",
+              border: page === i ? "none" : "1px solid #E5E7EB",
+              fontSize: "14px",
+            }}
+          >
+            {i + 1}
+          </Button>
+        ))}
+        <IconButton
+          size="small"
+          disabled={page >= totalPages - 1}
+          onClick={(e) => {
+            e.stopPropagation();
+            onPageChange(page + 1);
+          }}
+          sx={{ border: "1px solid #E5E7EB", borderRadius: "4px" }}
+        >
+          <ChevronRightIcon fontSize="small" />
+        </IconButton>
+      </Stack>
+    </Stack>
   </Card>
-);
+};
 
 /* ---------------- DATA MAPPING ---------------- */
 const mapEventToRow = (e: any) => ({
@@ -253,22 +348,55 @@ const Events = () => {
   const { data: clinic } = useSelector((s: RootState) => s.clinic);
   const [events, setEvents] = useState<any[]>([]);
   const [viewingEvent, setViewingEvent] = useState<any>(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+
+  const rowsPerPage = 10;
+  const handleSearch = (val: string) => {
+    setSearch(val);
+    setPage(0);
+  };
 
   useEffect(() => {
     if (!clinic?.id) return;
-    eventApi.listByClinic(clinic.id, 1, 10).then((res) => {
-      setEvents(res.data.results.map(mapEventToRow));
+
+    eventApi.listByClinic(clinic.id).then((res) => {
+      const raw = res.data.results ?? res.data ?? [];
+      setEvents(raw.map(mapEventToRow));
     });
   }, [clinic?.id]);
 
+  const filteredEvents = events.filter((e) =>
+    e.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const paginatedEvents = filteredEvents.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
   return (
-    <Box p={4} sx={{ bgcolor: "#FAFAFA", minHeight: "100vh" }}>
+    <Box sx={{ minHeight: "100vh" }}>
       {viewingEvent ? (
-        <EventDetailView event={viewingEvent} onBack={() => setViewingEvent(null)} />
+        <EventDetailView
+          event={viewingEvent}
+          onBack={() => setViewingEvent(null)}
+        />
       ) : (
         <>
-          <EventsHeader onCreate={() => navigate("/configuration/events/create")} onSearch={() => {}} />
-          <EventsTable data={events} onRowClick={setViewingEvent} />
+          <EventsHeader
+            onCreate={() => navigate("/configuration/events/create")}
+            onSearch={handleSearch}
+          />
+
+          <EventsTable
+            data={paginatedEvents}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            total={filteredEvents.length}
+            onPageChange={setPage}
+            onRowClick={setViewingEvent}
+          />
         </>
       )}
     </Box>

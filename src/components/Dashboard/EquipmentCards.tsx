@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Box,
   Card,
@@ -6,7 +6,7 @@ import {
   Typography,
   Badge,
   Skeleton,
-} from '@mui/material';
+} from "@mui/material";
 import {
   MedicalServices,
   Air,
@@ -14,8 +14,8 @@ import {
   LocalFireDepartment,
   Whatshot,
   CleaningServices,
-} from '@mui/icons-material';
-import type { Equipment } from '@/types';
+} from "@mui/icons-material";
+import type { Equipment } from "@/types";
 
 interface EquipmentCardsProps {
   equipments: Equipment[];
@@ -26,10 +26,10 @@ interface EquipmentCardsProps {
 
 const equipmentIcons: Record<string, React.ReactElement> = {
   Incubator: <MedicalServices />,
-  'Laminar Flow Hoods': <Air />,
-  'Cryopreservation Tanks (LN2)': <Storage />,
+  "Laminar Flow Hoods": <Air />,
+  "Cryopreservation Tanks (LN2)": <Storage />,
   Autoclaves: <LocalFireDepartment />,
-  'Ovens & Water Baths': <Whatshot />,
+  "Ovens & Water Baths": <Whatshot />,
   Sterilizers: <CleaningServices />,
 };
 
@@ -41,11 +41,11 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
 }) => {
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+      <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <Skeleton
             key={i}
-            variant='rectangular'
+            variant="rectangular"
             width={180}
             height={100}
             sx={{ borderRadius: 2 }}
@@ -56,7 +56,7 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
   }
 
   return (
-    <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+    <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
       {equipments.map((equipment) => {
         const isSelected = selected?.id === equipment.id;
 
@@ -64,12 +64,12 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
           <Badge
             key={equipment.id}
             badgeContent={0}
-            color='error'
+            color="error"
             sx={{
-              '& .MuiBadge-badge': {
+              "& .MuiBadge-badge": {
                 right: 8,
                 top: 8,
-                border: '2px solid #ffffff',
+                border: "2px solid #ffffff",
                 fontWeight: 600,
               },
             }}
@@ -77,33 +77,39 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
             <Card
               onClick={() => onSelect(equipment)}
               sx={{
-                minWidth: 180,
-                cursor: 'pointer',
-                borderRadius: 2,
-                border: isSelected ? '2px solid #ea580c' : '1px solid #e5e7eb',
-                backgroundColor: isSelected ? '#fff7ed' : '#ffffff',
-                boxShadow: isSelected
-                  ? '0 4px 6px rgba(0,0,0,0.15)'
-                  : '0 1px 3px rgba(0,0,0,0.1)',
-                transition: 'all 0.2s ease',
-                mt: 1,
+                width: 250,
+                height: 82,
+                padding: "16px",
+                borderRadius: "12px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                backgroundColor: isSelected ? "#FFFFFF" : "#FAFAFA",
+                border: isSelected ? "1px solid #E5E7EB" : "none",
+                boxShadow: "none",
+                transition: "background-color 0.2s ease",
 
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  '& .equipment-text': { color: '#ea580c' },
+                "&:hover": {
+                  backgroundColor: "#F3F4F6",
                 },
               }}
             >
               <CardContent
-                sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}
+                sx={{
+                  padding: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "24px",
+                  "&:last-child": { paddingBottom: 0 },
+                }}
               >
                 <Box
                   sx={{
-                    color: '#ea580c',
+                    color: "#ea580c",
                     // mb: 1.5,
-                    display: 'flex',
+                    display: "flex",
                     // justifyContent: 'center',
-                    '& svg': { fontSize: 32 },
+                    "& svg": { fontSize: 32 },
                   }}
                 >
                   {equipmentIcons[equipment.equipment_name] || (
@@ -112,13 +118,13 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
                 </Box>
 
                 <Typography
-                  className='equipment-text'
-                  variant='body2'
+                  className="equipment-text"
+                  variant="body2"
                   sx={{
                     fontWeight: 500,
-                    color: isSelected ? '#ea580c' : '#111827',
-                    fontSize: '0.875rem',
-                    transition: 'all 0.2s ease',
+                    color: isSelected ? "#ea580c" : "#111827",
+                    fontSize: "16px",
+                    transition: "all 0.2s ease",
                   }}
                 >
                   {equipment.equipment_name}

@@ -46,6 +46,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { eventApi } from "@/services/api";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import TurnLeftIcon from '@mui/icons-material/TurnLeft';
 import { useNavigate } from "react-router-dom";
 
 /* ================= COLORS ================= */
@@ -115,8 +116,10 @@ const CreateEvent = () => {
 
   // Updated type to use SelectedEquipmentData from dialog
   const [addedEquipments, setAddedEquipments] = useState<SelectedEquipmentData[]>([]);
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null);
 
   const { data: clinic } = useSelector((state: RootState) => state.clinic);
+  const departments = clinic ? clinic.department : [];
   const assigneeOptions = useSelector(
     (state: RootState) => state.assignees.data
   );
@@ -132,14 +135,23 @@ const CreateEvent = () => {
   };
 
   // Get all equipments from all departments
-  const allEquipments = clinic
-    ? clinic.department.flatMap((dep) =>
-        dep.equipments.map((eq) => ({ ...eq, department: dep }))
-      )
-    : [];
+  const allEquipments =
+    clinic && selectedDepartmentId
+      ? clinic.department
+          .filter((dep) => dep.id === selectedDepartmentId)
+          .flatMap((dep) =>
+            dep.equipments.map((eq) => ({ ...eq, department: dep }))
+          )
+      : [];
 
   // Use all assignees without department filtering
-  const filteredAssignees = assigneeOptions;
+  const filteredAssignees = selectedDepartmentId
+    ? assigneeOptions.filter(
+        (a) =>
+          a.department_name ===
+          departments.find((d) => d.id === selectedDepartmentId)?.name
+      )
+    : [];
 
   const toggleDay = (day: string) => {
     setSelectedDays((prev) =>
@@ -164,13 +176,23 @@ const CreateEvent = () => {
   };
 
   const handleSave = async () => {
-    if (!clinic?.id || !fromTime || !toTime) {
+    if (
+      !clinic?.id ||
+      !selectedDepartmentId ||
+      !eventName.trim() ||
+      !description.trim() ||
+      !fromTime ||
+      !toTime ||
+      !addedAssignee ||
+      addedEquipments.length === 0
+    ) {
       toast.warn("Please fill required fields");
       return;
     }
 
     try {
       await eventApi.create({
+        department_id: selectedDepartmentId,
         event_name: eventName,
         description,
 
@@ -204,6 +226,9 @@ const CreateEvent = () => {
       });
 
       toast.success("Event created successfully");
+      setTimeout(() => {
+          navigate("/configuration/events", { replace: true });
+        }, 2000);
     } catch (err) {
       console.error(err);
       toast.error("Failed to create event");
@@ -216,38 +241,46 @@ const CreateEvent = () => {
       <Card
         sx={{ p: 3, borderRadius: 2, border: `1px solid ${COLORS.border}` }}
       >
-        <Box mb={3}>
+        <Box mb={2}>
           <Box display="flex" flexDirection="column" gap="12px">
             <IconButton
               onClick={() => navigate("../events")}
               sx={{
                 width: 24,
                 height: 24,
-                padding: 0,
+                padding: "10px",
                 opacity: 1,
                 color: "#374151",
+                borderRadius: 1,
+                boxShadow: "3px 3px 6px rgba(0,0,0,0.2)",
+                backgroundColor: "#fff"
               }}
             >
-              <ArrowBackIcon sx={{ fontSize: 24 }} />
+              <TurnLeftIcon sx={{ fontSize: 24, padding: "3px", }}/>
             </IconButton>
 
             <Divider />
 
-            <Typography fontWeight={600} fontSize={18} color="#111827">
+            <Typography fontWeight={700} fontSize={20} color="#111827">
               Create Event
             </Typography>
           </Box>
         </Box>
+
+        <Typography fontWeight={700} fontSize={16} mb={3}>
+          Event
+        </Typography>
 
         {/* EVENT INFO */}
         <Grid container spacing={2} mb={3}>
           <Grid item xs={6}>
             <TextField
               fullWidth
-              label="Event Name"
+              label="Name"
               size="small"
               value={eventName}
               onChange={(e) => setEventName(e.target.value)}
+              InputLabelProps={{ shrink: true }}
             />
           </Grid>
           <Grid item xs={6}>
@@ -257,14 +290,39 @@ const CreateEvent = () => {
               size="small"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              InputLabelProps={{ shrink: true }}
             />
+          </Grid>
+        </Grid>
+        <Grid container spacing={2} mb={3}>
+          <Grid item xs={6}>
+            <TextField
+              fullWidth
+              select
+              size="small"
+              label="Department"
+              value={selectedDepartmentId}
+              InputLabelProps={{ shrink: true }}
+              onChange={(e) => {
+                setSelectedDepartmentId(Number(e.target.value));
+                setAddedEquipments([]);
+                setAddedAssignee(null);
+              }}
+            >
+              {/* <MenuItem value="">Select Department</MenuItem> */}
+              {departments.map((dep) => (
+                <MenuItem key={dep.id} value={dep.id}>
+                  {dep.name}
+                </MenuItem>
+              ))}
+            </TextField>
           </Grid>
         </Grid>
 
         <Divider />
 
         {/* SCHEDULE SECTIONS */}
-        <Typography fontWeight={600} mt={3}>
+        <Typography fontWeight={700} mt={3}>
           Select Schedule
         </Typography>
 
@@ -272,6 +330,7 @@ const CreateEvent = () => {
           row
           value={schedule}
           onChange={(e) => setSchedule(e.target.value as any)}
+          sx={{ gap: 12 }}
         >
           {[
             { label: "One Time", value: "one" },
@@ -362,7 +421,7 @@ const CreateEvent = () => {
                   />
                 </Grid>
                 <Grid item xs={4}>
-                  <TextField fullWidth size="small" label="Recur Day" />
+                  <TextField fullWidth size="medium" label="Recur Day" InputLabelProps={{ shrink: true }} />
                 </Grid>
               </Grid>
             </>
@@ -405,10 +464,11 @@ const CreateEvent = () => {
                 <Grid item xs={4}>
                   <TextField
                     fullWidth
-                    size="small"
+                    size="medium"
                     label="Recur Every Weeks On"
                     value={recurWeeks}
                     onChange={(e) => setRecurWeeks(e.target.value)}
+                    InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
               </Grid>
@@ -476,7 +536,7 @@ const CreateEvent = () => {
                 <Grid item xs={4}>
                   <TextField
                     fullWidth
-                    size="small"
+                    size="medium"
                     label="Months"
                     select
                     value={month}
@@ -494,7 +554,7 @@ const CreateEvent = () => {
                 <Grid item xs={4}>
                   <TextField
                     fullWidth
-                    size="small"
+                    size="medium"
                     label="Day"
                     select
                     value={monthDay}
@@ -522,7 +582,7 @@ const CreateEvent = () => {
           alignItems="center"
           mb={2}
         >
-          <Typography fontWeight={600} color="#111827">
+          <Typography fontWeight={700} color="#111827">
             Equipment
           </Typography>
 
@@ -686,7 +746,7 @@ const CreateEvent = () => {
           alignItems="center"
           mt={3}
         >
-          <Typography fontWeight={600} color="#111827">
+          <Typography fontWeight={700} color="#111827">
             Assignee
           </Typography>
 
@@ -804,6 +864,7 @@ const CreateEvent = () => {
                 }}
               >
                 <ArrowBackIcon fontSize="small" />
+                
               </IconButton>
 
               <Typography fontSize={18} fontWeight={600} color="#111827">
@@ -829,7 +890,7 @@ const CreateEvent = () => {
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  placeholder="Select Assignee"
+                  label="Select Assignee"
                   fullWidth
                   sx={{
                     "& .MuiOutlinedInput-root": {
@@ -837,6 +898,7 @@ const CreateEvent = () => {
                       minHeight: 52,
                     },
                   }}
+                  InputLabelProps={{ shrink: true }}
                 />
               )}
             />

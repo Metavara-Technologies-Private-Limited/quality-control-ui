@@ -3,7 +3,7 @@ import { Box } from '@mui/material';
 
 const LabLayout = () => {
   return (
-    <Box sx={{ px: 2, py: 1 }}>
+    <Box>
       <Outlet />
     </Box>
   );

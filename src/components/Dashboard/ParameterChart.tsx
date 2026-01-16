@@ -29,25 +29,29 @@ import { LocalizationProvider, DateCalendar } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
 import { CHART_COLORS } from "@/utils/constants";
-import type { ParameterChartData } from "@/types";
+import type { EquipmentDetail, ParameterChartData } from "@/types";
 
 interface ParameterChartProps {
-  equipmentId: number;
+  equipmentDetails: EquipmentDetail[];
   parameterId: number;
   parameterName: string;
   unit: string;
+  values: any[];
+  loading: boolean;
 }
 
 const CO2_BAR_COLORS = ["#6B7280", "#9CA3AF", "#FBCFE8", "#F97316"];
 
 const ParameterChart: React.FC<ParameterChartProps> = ({
-  equipmentId,
+  equipmentDetails,
   parameterId,
   parameterName,
   unit,
+  values,
+  loading,
 }) => {
   const [chartData, setChartData] = useState<ParameterChartData | null>(null);
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
   const [chartType, setChartType] = useState<"line" | "bar">("line");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
@@ -55,41 +59,56 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
     null
   );
 
+  console.log("parameterId",parameterId)
   useEffect(() => {
-    let mounted = true;
-
-    const load = async () => {
-      setLoading(true);
-      const { getMockChartData } = await import("@/utils/mockData");
-      const mockData = getMockChartData(equipmentId, parameterId);
-
-      if (!mounted || !mockData) return;
-
-      setChartData({
-        ...mockData,
-        parameter_name: parameterName,
-        unit,
-      });
-
-      setLoading(false);
-    };
-
-    load();
-
-    return () => {
-      mounted = false;
-    };
-  }, [equipmentId, parameterName, unit]);  
+    if (!values.length) {
+      setChartData(null);
+      return;
+    }
+  
+    const detailMap = equipmentDetails.reduce<Record<number, string>>(
+      (acc, { id, equipment_num }) => {
+        if (id != null) acc[id] = equipment_num;
+        return acc;
+      },
+      {}
+    );
+  
+    const equipmentNames = new Set<string>();
+    const dataMap: Record<string, any> = {};
+  
+    values.forEach((v: any) => {
+      if (!v.equipment_details_id) return;
+  
+      const day = dayjs(v.created_at);
+      if (!day.isSame(selectedDate, "day")) return;
+  
+      const eqName = detailMap[v.equipment_details_id];
+      if (!eqName) return;
+  
+      const time = day.format("HH:mm");
+      equipmentNames.add(eqName);
+  
+      dataMap[time] ??= { date: time };
+      dataMap[time][eqName] = Number(v.content);
+    });
+  
+    const data = Object.values(dataMap)
+      .sort((a, b) => dayjs(a.date, "HH:mm").diff(dayjs(b.date, "HH:mm")))
+      .reverse();
+  
+    setChartData({
+      chartType: "line",
+      unit,
+      parameter_name: parameterName,
+      equipment_names: [...equipmentNames],
+      data,
+    });
+  }, [values, selectedDate, equipmentDetails, parameterName, unit]);  
 
   const displayData = useMemo(() => {
-    if (!chartData) return [];
-
-    const today = dayjs();
-    if (selectedDate.isSame(today, "day")) {
-      return chartData.data;
-    }
-    return [];
-  }, [chartData, selectedDate]);
+    return chartData?.data ?? [];
+  }, [chartData]);  
 
   const INCUBATOR_BULLET_COLORS: Record<string, string> = {
     A: "#232323", // Incubator A bullet color
@@ -98,15 +117,22 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
     D: "#E17E61", // Incubator D bullet color in the legend
   };
 
-  if (loading || !chartData) {
-    return (
-      <Card>
-        <CardContent>
-          <Typography>Loading chart...</Typography>
-        </CardContent>
-      </Card>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <Card sx={{ borderRadius: 2, border: "1px solid #e5e7eb" }}>
+  //       <CardContent>
+  //         <Box
+  //           height={320}
+  //           display="flex"
+  //           alignItems="center"
+  //           justifyContent="center"
+  //         >
+  //           <Typography>Loading chart...</Typography>
+  //         </Box>
+  //       </CardContent>
+  //     </Card>
+  //   );
+  // }  
 
   return (
     <Card sx={{ borderRadius: 2, border: "1px solid #e5e7eb" }}>
@@ -124,7 +150,7 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
           {/* RIGHT: LEGEND + ICONS ----- Incubator A B C D -------- on top of chart */}
           <Box display="flex" alignItems="center" gap={2}>
             <Box display="flex" alignItems="center" gap={1}>
-              {chartData.equipment_names.map((name, index) => (
+              {chartData?.equipment_names?.map((name, index) => (
                 <Box key={name} display="flex" alignItems="center" gap={0.5}>
                   <Box
                     sx={{
@@ -242,9 +268,19 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
         </Box>
 
         {/* NO DATA / GRAPH */}
-        {displayData.length === 0 ? (
+        <Box height={320}>
+        {loading ? (
           <Box
-            height={320}
+            height="100%"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Typography>Loading chart...</Typography>
+          </Box>
+        ) : displayData.length === 0 ? (
+          <Box
+            height="100%"
             display="flex"
             alignItems="center"
             justifyContent="center"
@@ -254,15 +290,14 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
             </Typography>
           </Box>
         ) : (
-          <ResponsiveContainer width="100%" height={320}>
+          <ResponsiveContainer width="100%" height="100%">
             {chartType === "bar" ? (
               <BarChart data={displayData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
-
-                {chartData.equipment_names.map((name, index) => (
+                {chartData?.equipment_names?.map((name, index) => (
                   <Bar
                     key={name}
                     dataKey={name}
@@ -277,7 +312,7 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
-                {chartData.equipment_names.map((name, index) => (
+                {chartData?.equipment_names?.map((name, index) => (
                   <Line
                     key={name}
                     dataKey={name}
@@ -285,12 +320,14 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
                     strokeWidth={2}
                     dot={false}
                     type="monotone"
+                    connectNulls
                   />
                 ))}
               </LineChart>
             )}
           </ResponsiveContainer>
         )}
+      </Box>
       </CardContent>
     </Card>
   );

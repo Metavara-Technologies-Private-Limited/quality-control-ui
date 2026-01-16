@@ -225,6 +225,7 @@ export interface ParameterChartData {
   unit: string;
   data: ChartDataPoint[];
   equipment_names: string[];
+  chartType: string;
 }
 
 export interface Task {

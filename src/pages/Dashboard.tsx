@@ -11,9 +11,10 @@ import RecentActivity from "@/components/Dashboard/RecentActivity";
 import IncidentsChart from "@/components/Dashboard/IncidentsChart";
 import AverageParameterCards from "@/components/Dashboard/AverageParameterCards";
 import AssigneePanel from "@/components/Dashboard/AssigneePanel";
-import DashboardHeader from "@/components/Dashboard/DashboardHeader";
+// import DashboardHeader from "@/components/Dashboard/DashboardHeader";
 
 import type { Equipment, Parameter } from "@/types";
+import { parameterValueApi } from "@/services/api";
 
 const Dashboard = () => {
   // Pull clinic data + loading state from Redux
@@ -25,6 +26,10 @@ const Dashboard = () => {
   const [departmentId, setDepartmentId] = useState<number | null>(null);
   const [equipmentId, setEquipmentId] = useState<number | null>(null);
   const [parameterId, setParameterId] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
+  const [parameterValues, setParameterValues] = useState<any[]>([]);
+  const [valuesLoading, setValuesLoading] = useState(false);
+
 
   // Get All Departments
   const departments = clinic?.department ?? [];
@@ -42,27 +47,37 @@ const Dashboard = () => {
     [departments, departmentId]
   );
 
-  // When department changes, auto select first ones for equipment, parameter
-  useEffect(() => {
-    if (!department) {
-      setEquipmentId(null);
-      setParameterId(null);
-      return;
-    }
-
-    const firstEquipment = department.equipments?.[0] ?? null;
-
-    setEquipmentId(firstEquipment?.id ?? null);
-    setParameterId(firstEquipment?.parameters?.[0]?.id ?? null);
-  }, [department]);
-
   // Get All Equipments
-  const equipments = department?.equipments ?? [];
+  const equipments = useMemo(() => {
+    if (!department) return [];
+  
+    if (!search.trim()) return department.equipments ?? [];
+  
+    return (department.equipments ?? []).filter((eq) =>
+      eq.equipment_name.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [department, search]);  
 
   const equipment: Equipment | null = useMemo(
     () => equipments.find((e) => e.id === equipmentId) ?? null,
     [equipments, equipmentId]
   );
+
+  useEffect(() => {
+    if (!equipments.length) {
+      setEquipmentId(null);
+      setParameterId(null);
+      return;
+    }
+  
+    // if currently selected equipment is NOT in filtered list
+    const exists = equipments.some(eq => eq.id === equipmentId);
+  
+    if (!exists) {
+      setEquipmentId(equipments[0].id);
+      setParameterId(equipments[0].parameters?.[0]?.id ?? null);
+    }
+  }, [equipments, equipmentId]);  
 
   // Get All parameters
   const parameters = equipment?.parameters ?? [];
@@ -84,17 +99,38 @@ const Dashboard = () => {
     [parameters, parameterId]
   );
 
+  useEffect(() => {
+    if (!parameterId) {
+      setParameterValues([]);
+      return;
+    }
+  
+    const loadValues = async () => {
+      setValuesLoading(true);
+      try {
+        const { data = [] } =
+          await parameterValueApi.listByParameter(parameterId);
+        setParameterValues(data);
+      } finally {
+        setValuesLoading(false);
+      }
+    };
+  
+    loadValues();
+  }, [parameterId]);  
+
   const equipmentDetails = equipment?.equipment_details ?? [];
   const activeValue = parameter?.config;
 
   return (
-    <Container maxWidth={false} sx={{ py: 2 }}>
-      <DashboardHeader />
+    <Container maxWidth={false} disableGutters>
+      {/* <DashboardHeader /> */}
 
       <DepartmentTabs
         departments={departments}
         selected={departmentId}
         onChange={setDepartmentId}
+        onSearch={(val) => setSearch(val)}
       />
 
       <Box sx={{ overflowX: "auto", pb: 1 }}>
@@ -127,24 +163,33 @@ const Dashboard = () => {
             <Grid container spacing={3}>
               <Grid item xs={12} md={8}>
                 <ParameterChart
-                  equipmentId={equipment.id}
+                  equipmentDetails={equipmentDetails}
                   parameterId={parameter.id}
                   parameterName={parameter.parameter_name}
                   unit={activeValue?.unit || ""}
+                  values={parameterValues}
+                  loading={valuesLoading}
                 />
               </Grid>
 
               <Grid item xs={12} md={4}>
-                <RecentActivity parameterName={parameter.parameter_name} />
+                <RecentActivity
+                  parameterId={parameter.id}
+                  parameterName={parameter.parameter_name}
+                  unit={activeValue?.unit || ""}
+                  equipmentDetails={equipmentDetails}
+                  values={parameterValues}
+                />
               </Grid>
             </Grid>
 
             <Grid container spacing={3} sx={{ mt: 1 }}>
               <Grid item xs={12} md={4}>
-                <IncidentsChart
-                  equipmentId={equipment.id}
-                  equipmentDetails={equipmentDetails}
-                />
+              <IncidentsChart
+                equipmentDetails={equipmentDetails}
+                values={parameterValues}
+                parameterConfig={parameter?.config || {}}
+              />
               </Grid>
 
               <Grid item xs={12} md={4}>

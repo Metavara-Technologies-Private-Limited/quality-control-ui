@@ -16,7 +16,8 @@ import {
   TextField,
   IconButton,
 } from "@mui/material";
-import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+// import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+import TurnLeftIcon from '@mui/icons-material/TurnLeft';
 import { useNavigate, useLocation } from "react-router-dom";
 import AddParameterPopup from "./AddParameterPopup";
 import { MoreHoriz } from "@mui/icons-material";
@@ -97,31 +98,36 @@ const AddParameterPage = () => {
 
   useEffect(() => {
     const passedEquipment = location.state?.equipment;
-    if (passedEquipment) {
+    const equipmentId = passedEquipment?.id;
+    const storeEquipment = clinic?.department
+      .flatMap((d) => d.equipments)
+      .find((e) => e.id === equipmentId);
+
+    if (storeEquipment) {
       setIsEditMode(true);
-      setOriginalEquipment(passedEquipment);
-      setEquipmentName(passedEquipment.equipment_name || "");
+      setOriginalEquipment(storeEquipment);
+      setEquipmentName(storeEquipment.equipment_name || "");
 
       const dept = clinic?.department.find((d) =>
-        d.equipments.some((e) => e.id === passedEquipment.id)
+        d.equipments.some((e) => e.id === storeEquipment.id)
       );
 
       setDepartmentName(dept?.name || "");
       setDepartmentId(dept?.id || null);
 
-      const loadedEquipmentTable = (
-        passedEquipment.equipment_details || []
-      ).map((detail: any, index: number) => {
-        const numMatch = detail.equipment_num?.match(/-(\d+)$/);
-        const srNo = numMatch ? parseInt(numMatch[1]) : index + 1;
-        return {
-          id: detail.id,
-          sr: srNo,
-          equipmentNum: srNo,
-          make: detail.make || "",
-          model: detail.model || "",
-        };
-      });
+      const loadedEquipmentTable = (storeEquipment.equipment_details || []).map(
+        (detail: any, index: number) => {
+          const numMatch = detail.equipment_num?.match(/-(\d+)$/);
+          const srNo = numMatch ? parseInt(numMatch[1]) : index + 1;
+          return {
+            id: detail.id,
+            sr: srNo,
+            equipmentNum: srNo,
+            make: detail.make || "",
+            model: detail.model || "",
+          };
+        }
+      );
 
       setEquipmentTable(loadedEquipmentTable);
 
@@ -134,17 +140,14 @@ const AddParameterPage = () => {
         setNextSrNo(maxSrNo + 1);
       }
 
-      // ✅ HANDLE BOTH CONFIG FORMATS
-      const loadedParams = passedEquipment.parameters.map((p: any) => {
+      // ✅ HANDLE BOTH CONFIG FORMATS (always from store)
+      console.log("cc:storeEquipment", storeEquipment);
+
+      const loadedParams = storeEquipment.parameters.map((p: any) => {
         let cfg = p.config || {};
 
-        // If config has history, get the latest entry
-        if (
-          cfg.history &&
-          Array.isArray(cfg.history) &&
-          cfg.history.length > 0
-        ) {
-          cfg = cfg.history[cfg.history.length - 1]; // Get latest config
+        if (cfg.history?.length) {
+          cfg = cfg.history[cfg.history.length - 1];
         }
 
         return {
@@ -167,7 +170,6 @@ const AddParameterPage = () => {
       setEquipmentName(location.state?.equipmentName || "");
       setDepartmentName(location.state?.departmentName || "");
 
-      // Get department ID from clinic data
       const dept = clinic?.department.find(
         (d) =>
           d.name.toLowerCase() === location.state?.departmentName?.toLowerCase()
@@ -176,7 +178,7 @@ const AddParameterPage = () => {
 
       setParameters(loadParametersFromLocalStorage());
     }
-  }, [location, clinic]);
+  }, [location, clinic]);  
 
   useEffect(() => {
     if (!isEditMode) {
@@ -266,9 +268,9 @@ const AddParameterPage = () => {
       setParameters((prev) => prev.filter((_, i) => i !== paramIndexToDelete));
       toast.info("Parameter deleted");
       dispatch(fetchClinic(1));
-      setTimeout(() => {
-        navigate("/configuration/equipment", { replace: true });
-      }, 500);
+      // setTimeout(() => {
+      //   navigate("/configuration/equipment", { replace: true });
+      // }, 2000);
     } catch (err) {
       toast.error("Failed to delete parameter");
       console.error(err);
@@ -521,9 +523,9 @@ const AddParameterPage = () => {
     <Box>
       <ToastContainer />
 
-      <Box sx={{ p: 1, background: "#FFFFFF", minHeight: "100vh" }}>
+      <Box sx={{ background: "#FFFFFF", minHeight: "100vh" }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <IconButton
+          {/* <IconButton
             onClick={() => navigate("/configuration/equipment")}
             sx={{
               width: "32px",
@@ -533,6 +535,22 @@ const AddParameterPage = () => {
             }}
           >
             <ArrowBackRoundedIcon sx={{ fontSize: "18px", color: "#4B5563" }} />
+          </IconButton> */}
+          <IconButton
+            onClick={() => navigate("/configuration/equipment")}
+            sx={{
+              width: 24,
+              height: 24,
+              padding: "10px",
+              opacity: 1,
+              color: "#374151",
+              borderRadius: 1,
+              mr: 1,
+              boxShadow: "3px 3px 6px rgba(0,0,0,0.2)",
+              backgroundColor: "#fff"
+            }}
+          >
+            <TurnLeftIcon sx={{ fontSize: 24, padding: "3px", }}/>
           </IconButton>
           <Typography sx={{ fontWeight: 700, fontSize: "20px" }}>
             {isEditMode ? "Edit Equipment" : "Add Equipment"}
@@ -553,11 +571,14 @@ const AddParameterPage = () => {
           {equipmentName}
           <Chip
             label={departmentName}
+            variant="outlined"
             sx={{
-              background: "#E0F1E6",
-              color: "#3D8B61",
+              borderColor: "#47B35F",
+              color: "#47B35F",
               fontWeight: 600,
-              height: "22px",
+              fontSize: "0.75rem",
+              borderRadius: "12px",
+              height: 22,
             }}
           />
         </Typography>
@@ -626,9 +647,10 @@ const AddParameterPage = () => {
                     size="small"
                     onClick={(e) => handleMenuOpen(e, index)}
                     sx={{
-                      padding: "4px",
+                      p: "3px",
                       borderRadius: "6px",
-                      backgroundColor: "#F3F4F6",
+                      border: "1px solid #E5E7EB",
+                      backgroundColor: "transaparent",
                     }}
                   >
                     <MoreHoriz sx={{ fontSize: "18px", color: "#6B7280" }} />
@@ -662,57 +684,38 @@ const AddParameterPage = () => {
             <Typography sx={{ fontSize: "14px", fontWeight: 600 }}>
               #No. of {equipmentName}s :
             </Typography>
-            <Button
-              variant="outlined"
-              onClick={() => setCount((c) => (c > 1 ? c - 1 : c))}
-              sx={{
-                minWidth: "38px",
-                height: "32px",
-                borderRadius: "8px",
-                color: "#565656",
-                borderColor: "#CFCFCF",
-                textTransform: "none",
-                fontSize: "20px",
-                fontWeight: 500,
-                px: 0,
-              }}
-            >
-              –
-            </Button>
             <Box
               sx={{
-                width: "48px",
-                height: "32px",
-                border: "1px solid #CFCFCF",
-                borderRadius: "8px",
                 display: "flex",
-                justifyContent: "center",
                 alignItems: "center",
-                fontWeight: 600,
-                color: "#565656",
-                background: "#FFFFFF",
-                fontSize: "14px",
+                gap: 1,
+                bgcolor: "#FAFAFA",
+                border: "1px solid #E2E3E5",
+                borderRadius: 1,
+                height: "30px",
+                width: "97px"
               }}
             >
-              {String(count).padStart(2, "0")}
+              <Button
+                variant="text"
+                onClick={() => setCount((c) => (c > 1 ? c - 1 : c))}
+                sx={{ flex: 1,fontWeight: 500, color: "#565656", fontSize: "20px", p:0,minWidth: 0 }}
+              >
+                –
+              </Button>
+
+              <Box sx={{ flex: 1,textAlign: "center",fontWeight: 600, color: "#565656", fontSize: "15px" }}>
+                {String(count).padStart(2, "0")}
+              </Box>
+
+              <Button
+                variant="text"
+                onClick={() => setCount((c) => c + 1)}
+                sx={{ flex: 1,fontWeight: 500, color: "#565656", fontSize: "20px", p:0,minWidth: 0 }}
+              >
+                +
+              </Button>
             </Box>
-            <Button
-              variant="outlined"
-              onClick={() => setCount((c) => c + 1)}
-              sx={{
-                minWidth: "38px",
-                height: "32px",
-                borderRadius: "8px",
-                color: "#565656",
-                borderColor: "#CFCFCF",
-                textTransform: "none",
-                fontSize: "20px",
-                fontWeight: 500,
-                px: 0,
-              }}
-            >
-              +
-            </Button>
           </Box>
         </Box>
 
@@ -820,8 +823,15 @@ const AddParameterPage = () => {
                 onClick={handleSaveEquipmentDetails}
                 sx={{
                   borderRadius: "8px",
-                  background: "#383838",
+                  backgroundColor: "#F3F3F3",
+                  color: "#111827",
+                  border: "1px solid #E5E7EB",
                   textTransform: "none",
+                  boxShadow: "none",
+                  "&:hover": {
+                    backgroundColor: "#EDEDED",
+                    boxShadow: "none",
+                  },
                 }}
               >
                 Save

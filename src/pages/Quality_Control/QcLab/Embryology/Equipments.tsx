@@ -13,6 +13,8 @@ import MicroscopesForm from "./MicroscopesForm";
 import CryopreservationForm from "./CryopreservationForm";
 import OvensWaterBathForm from "./OvensWaterBathForm";
 import PHMetersForm from "./PHMetersForm";
+import { IconButton } from "@mui/material";
+import TurnLeftIcon from '@mui/icons-material/TurnLeft';
 
 const formatCount = (value: number) => String(value).padStart(2, "0");
 
@@ -143,8 +145,7 @@ const EquipmentCard = ({ item, selected = false, onClick, assignees, onAddAssign
   const percentColor = activePercent === 100 ? "#16a34a" : "#f97316";
 
   return (
-    <div style={{ padding: "16px", borderRadius: "12px", cursor: "pointer", backgroundColor: selected ? "#FFFFFF" : "#F9FAFB",boxShadow: selected ? "0 6px 12px rgba(0,0,0,0.12)" : "none",
- border: selected ? "2px solid #f97316" : "none", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+    <div style={{ padding: "16px", borderRadius: "12px", cursor: "pointer", backgroundColor: selected ? "#fef3f2" : "#fff", border: selected ? "2px solid #f97316" : "1px solid #e5e7eb", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }} onClick={onClick}>
         <span style={{ fontSize: "13px", fontWeight: "700" }}>{item.detailName} : <span style={{ color: "#232323", fontWeight: "500" }}> {item.paramsCount}</span></span>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }} onClick={(e) => e.stopPropagation()}>
@@ -358,7 +359,24 @@ const Equipment = () => {
     <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#f9fafb", padding: "20px", gap: "20px", fontFamily: "'Montserrat', sans-serif" }}>
       <div style={{ width: "512px", height: "840px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "20px", borderBottom: "1px solid #e5e7eb" }}>
-          <button onClick={() => setView("list")} style={{ background: "none", border: "none", fontSize: "18px", fontWeight: "700", cursor: "pointer", color: "#232323", marginBottom: "16px" }}>← Equipments</button>
+          <IconButton
+            onClick={() => setView("list")}
+            sx={{
+              width: 24,
+              height: 24,
+              padding: "10px",
+              opacity: 1,
+              color: "#374151",
+              borderRadius: 1,
+              mr: 2,
+              mb: 1,
+              boxShadow: "3px 3px 6px rgba(0,0,0,0.2)",
+              backgroundColor: "#fff"
+            }}
+          >
+            <TurnLeftIcon sx={{ fontSize: 24, padding: "3px", }}/>
+          </IconButton>
+          <button style={{ background: "none", border: "none", fontSize: "18px", fontWeight: "700",color: "#232323", marginBottom: "16px" }}>Equipments</button>
           <div style={{ display: "inline-flex", backgroundColor: "#F2F2F2", padding: "4px", borderRadius: "12px", gap: "4px", width: "100%" }}>
             {["To-Do", "Plan"].map((tab) => (
               <button key={tab} onClick={() => setActiveTab(tab)} style={{ flex: 1, height: "36px", borderRadius: "10px", border: "none", cursor: "pointer", fontSize: "14px", fontWeight: "700", backgroundColor: activeTab === tab ? "#FFFFFF" : "transparent", color: activeTab === tab ? "#E17E61" : "#94a3b8" }}>{tab}</button>
