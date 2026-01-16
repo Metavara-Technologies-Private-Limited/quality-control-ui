@@ -2,6 +2,7 @@ import React, { useState, useRef, useMemo, useEffect } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { parameterValueApi } from "@/services/api";
+import Chart_activity from "@/assets/icons/Chart_activity.svg";
 import {
   BarChart,
   Bar,
@@ -10,6 +11,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  CartesianGrid,
+  LabelList,
 } from "recharts";
 import { Eye, ArrowLeft, Link2 } from "lucide-react";
 
@@ -40,7 +43,6 @@ const AutoclavesForm = ({
   const [logsData, setLogsData] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Get unique equipment numbers from equipmentDetails
   const availableEquipments =
     equipmentDetails?.map((ed: any) => ed.equipment_num) || [];
 
@@ -61,7 +63,6 @@ const AutoclavesForm = ({
     fileType: "",
   });
 
-  // --- CONFIGURATION: Map Form Keys to DB Parameter Names ---
   const fieldMapping = useMemo(
     () => [
       { key: "date", dbName: "Date" },
@@ -81,7 +82,6 @@ const AutoclavesForm = ({
     (ed) => ed.equipment_num === selectedRadio
   );
 
-  // --- MATCHING HELPER ---
   const getDbParam = (dbName: string) => {
     return currentEquipment?.parameters?.find(
       (p: any) =>
@@ -89,7 +89,6 @@ const AutoclavesForm = ({
     );
   };
 
-  // ✅ GET PARAMETER CONFIG - Handle both formats (config object and config.history array)
   const getParameterConfig = (parameterName: string) => {
     const param = currentEquipment?.parameters?.find(
       (p: any) =>
@@ -100,7 +99,6 @@ const AutoclavesForm = ({
 
     let config = param.config;
 
-    // If config has history array, get the latest entry
     if (
       config.history &&
       Array.isArray(config.history) &&
@@ -112,7 +110,6 @@ const AutoclavesForm = ({
     return config;
   };
 
-  // ✅ RENDER PARAMETER RANGE/VALUE TEXT
   const renderParameterInfo = (parameterName: string) => {
     const config = getParameterConfig(parameterName);
 
@@ -280,7 +277,6 @@ const AutoclavesForm = ({
     }
   };
 
-  // Fetch logs from database
   useEffect(() => {
     const fetchLogs = async () => {
       if (!currentEquipment?.equipment_id) return;
@@ -346,44 +342,41 @@ const AutoclavesForm = ({
     });
   };
 
-  // Styles
   const inputContainerStyle = (dbName: string) => ({
     position: "relative" as const,
-    marginBottom: "24px",
+    marginBottom: "20px",
     opacity: getDbParam(dbName) ? 1 : 0.4,
   });
 
   const inputStyle = (dbName: string) => ({
     width: "100%",
     height: "50px",
-    padding: "0 12px",
+    padding: "10px 12px",
     border: "1px solid #e5e7eb",
     borderRadius: "8px",
     outline: "none",
-    fontSize: "14px",
+    fontSize: "16px",
     backgroundColor: getDbParam(dbName) ? "#fff" : "#f1f5f9",
     cursor: getDbParam(dbName) ? "text" : "not-allowed",
-    color: getDbParam(dbName) ? "inherit" : "#94a3b8",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
+    color: "#9E9E9E",
+    boxSizing: "border-box" as const,
   });
 
-  const labelStyle = {
+  const labelOverlayStyle = {
     position: "absolute" as const,
     left: "12px",
     top: "-8px",
     backgroundColor: "#fff",
     padding: "0 4px",
-    fontSize: "12px",
-    color: "#64748b",
+    fontSize: "14px",
+    color: "#232323",
   };
 
   const rangeTextStyle = {
-    fontSize: "11px",
+    fontSize: "12px",
     marginTop: "4px",
-    color: "#94a3b8",
-    display: "block",
+    color: "#9E9E9E",
+    fontWeight: "500",
   };
 
   if (viewingFile) {
@@ -409,6 +402,7 @@ const AutoclavesForm = ({
             color: "#E17E61",
             fontWeight: "700",
             marginBottom: "20px",
+            fontSize: "14px",
           }}
         >
           <ArrowLeft size={18} /> Back
@@ -429,7 +423,7 @@ const AutoclavesForm = ({
               textAlign: "center",
             }}
           >
-            <span style={{ fontWeight: "600" }}>
+            <span style={{ fontWeight: "600", fontSize: "14px" }}>
               Viewing: {viewingFile.name}
             </span>
           </div>
@@ -467,7 +461,14 @@ const AutoclavesForm = ({
   }
 
   return (
-    <div style={{ maxWidth: "1200px" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "20px",
+        fontFamily: "'Montserrat', sans-serif",
+      }}
+    >
       <ToastContainer />
       <input
         type="file"
@@ -480,19 +481,18 @@ const AutoclavesForm = ({
         style={{
           backgroundColor: "#fff",
           borderRadius: "12px",
-          border: "1px solid #e5e7eb",
+          border: "2px solid #e5e7eb",
           padding: "24px",
-          marginBottom: "16px",
         }}
       >
-        {/* Unit Selector - Dynamic based on available equipments */}
+        {/* Unit Selector */}
         {availableEquipments.length > 0 && (
           <div
             style={{
               display: "flex",
               gap: "24px",
-              paddingBottom: "24px",
-              borderBottom: "1px solid #f1f5f9",
+              paddingBottom: "20px",
+              borderBottom: "2px solid #f1f5f9",
               marginBottom: "24px",
               flexWrap: "wrap",
             }}
@@ -505,8 +505,8 @@ const AutoclavesForm = ({
                   alignItems: "center",
                   gap: "8px",
                   fontSize: "13px",
-                  fontWeight: selectedRadio === equipment ? "700" : "500",
-                  color: selectedRadio === equipment ? "#f97316" : "#0f172a",
+                  fontWeight: selectedRadio === equipment ? "600" : "500",
+                  color: selectedRadio === equipment ? "#232323" : "#E17E61",
                   cursor: "pointer",
                 }}
               >
@@ -533,9 +533,21 @@ const AutoclavesForm = ({
                     });
                   }}
                   style={{
-                    accentColor: "#f97316",
+                    appearance: "none",
+                    WebkitAppearance: "none",
                     width: "16px",
                     height: "16px",
+                    borderRadius: "50%",
+                    cursor: "pointer",
+                    border: `2px solid ${
+                      selectedRadio === equipment ? "#232323" : "#d1d5db"
+                    }`,
+                    backgroundColor: "#fff",
+                    boxShadow:
+                      selectedRadio === equipment
+                        ? "inset 0 0 0 2px #fff, inset 0 0 0 14px #E17E61"
+                        : "none",
+                    outline: "none",
                   }}
                 />
                 {equipment}
@@ -545,7 +557,13 @@ const AutoclavesForm = ({
         )}
 
         {/* Tabs */}
-        <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            marginBottom: "24px",
+          }}
+        >
           {["Details", "Logs"].map((tab) => (
             <button
               key={tab}
@@ -553,12 +571,15 @@ const AutoclavesForm = ({
               style={{
                 padding: "8px 32px",
                 borderRadius: "8px",
-                border: "1px solid #e5e7eb",
+                border: "none",
                 cursor: "pointer",
                 backgroundColor:
                   activeSubTab === tab ? "#FFFFFF" : "transparent",
                 color: activeSubTab === tab ? "#E17E61" : "#94a3b8",
-                fontWeight: "600",
+                fontWeight: activeSubTab === tab ? "700" : "600",
+                fontSize: "14px",
+                borderBottom:
+                  activeSubTab === tab ? "2px solid #E17E61" : "none",
               }}
             >
               {tab}
@@ -572,7 +593,7 @@ const AutoclavesForm = ({
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(3, 1fr)",
-                gap: "24px",
+                gap: "20px",
                 marginBottom: "24px",
               }}
             >
@@ -584,12 +605,12 @@ const AutoclavesForm = ({
                   value={formData.date}
                   onChange={handleChange}
                   disabled={!getDbParam("Date")}
-                  style={{ ...(inputStyle("Date") as any), display: "block" }}
+                  style={{ ...inputStyle("Date"), display: "block" }}
                 />
-                <label style={labelStyle}>Date</label>
-                <span style={rangeTextStyle}>
+                <label style={labelOverlayStyle}>Date</label>
+                <div style={rangeTextStyle}>
                   {renderParameterInfo("Date")}
-                </span>
+                </div>
               </div>
 
               {/* Time */}
@@ -600,12 +621,12 @@ const AutoclavesForm = ({
                   value={formData.time}
                   onChange={handleChange}
                   disabled={!getDbParam("Time")}
-                  style={{ ...(inputStyle("Time") as any), display: "block" }}
+                  style={{ ...inputStyle("Time"), display: "block" }}
                 />
-                <label style={labelStyle}>Time</label>
-                <span style={rangeTextStyle}>
+                <label style={labelOverlayStyle}>Time</label>
+                <div style={rangeTextStyle}>
                   {renderParameterInfo("Time")}
-                </span>
+                </div>
               </div>
 
               {/* Temperature */}
@@ -617,19 +638,12 @@ const AutoclavesForm = ({
                   disabled={!getDbParam("Temperature")}
                   value={formData.temperature}
                   onChange={handleChange}
-                  style={{
-                    ...(inputStyle("Temperature") as any),
-                    display: "block",
-                  }}
+                  style={{ ...inputStyle("Temperature"), display: "block" }}
                 />
-                <label style={labelStyle}>Temperature (°C)</label>
-                <span style={rangeTextStyle}>
-                  {renderParameterInfo("Temperature") || (
-                    <span style={{ color: "#94a3b8" }}>
-                      Range: 121 °C - 134 °C
-                    </span>
-                  )}
-                </span>
+                <label style={labelOverlayStyle}>Temperature (°C)</label>
+                <div style={rangeTextStyle}>
+                  {renderParameterInfo("Temperature")}
+                </div>
               </div>
 
               {/* Pressure */}
@@ -641,20 +655,19 @@ const AutoclavesForm = ({
                   disabled={!getDbParam("Pressure")}
                   value={formData.pressure}
                   onChange={handleChange}
-                  style={{
-                    ...(inputStyle("Pressure") as any),
-                    display: "block",
-                  }}
+                  style={{ ...inputStyle("Pressure"), display: "block" }}
                 />
-                <label style={labelStyle}>Pressure (kPa)</label>
-                <span style={rangeTextStyle}>
+                <label style={labelOverlayStyle}>Pressure (kPa)</label>
+                <div style={rangeTextStyle}>
                   {renderParameterInfo("Pressure")}
-                </span>
+                </div>
               </div>
 
               {/* Sterilization Cycle */}
               <div
-                style={inputContainerStyle("Sterilization Cycle Validation")}
+                style={inputContainerStyle(
+                  "Sterilization Cycle Validation"
+                )}
               >
                 <select
                   name="sterilizationCycle"
@@ -662,17 +675,17 @@ const AutoclavesForm = ({
                   value={formData.sterilizationCycle}
                   onChange={handleChange}
                   style={{
-                    ...(inputStyle("Sterilization Cycle Validation") as any),
-                    display: "block",
+                    ...inputStyle("Sterilization Cycle Validation"),
+                    cursor: "pointer",
                   }}
                 >
                   <option value="Valid">Valid</option>
                   <option value="Invalid">Invalid</option>
                 </select>
-                <label style={labelStyle}>Sterilization Cycle Validation</label>
-                <span style={rangeTextStyle}>
+                <label style={labelOverlayStyle}>Sterilization Cycle</label>
+                <div style={rangeTextStyle}>
                   {renderParameterInfo("Sterilization Cycle Validation")}
-                </span>
+                </div>
               </div>
 
               {/* Maintenance Logs */}
@@ -685,14 +698,14 @@ const AutoclavesForm = ({
                   value={formData.maintenanceLogs}
                   onChange={handleChange}
                   style={{
-                    ...(inputStyle("Maintenance Logs") as any),
+                    ...inputStyle("Maintenance Logs"),
                     display: "block",
                   }}
                 />
-                <label style={labelStyle}>Maintenance Logs</label>
-                <span style={rangeTextStyle}>
+                <label style={labelOverlayStyle}>Maintenance Logs</label>
+                <div style={rangeTextStyle}>
                   {renderParameterInfo("Maintenance Logs")}
-                </span>
+                </div>
               </div>
 
               {/* Uploads Section */}
@@ -702,6 +715,7 @@ const AutoclavesForm = ({
                   alignItems: "center",
                   gap: "12px",
                   opacity: getDbParam("Uploads") ? 1 : 0.4,
+                  marginBottom: "20px",
                 }}
               >
                 <div
@@ -750,7 +764,7 @@ const AutoclavesForm = ({
                       {formData.fileName}
                     </span>
                   </div>
-                  <label style={labelStyle}>Uploads</label>
+                  <label style={labelOverlayStyle}>Uploads</label>
                 </div>
                 <div
                   onClick={() =>
@@ -799,15 +813,18 @@ const AutoclavesForm = ({
                   disabled={!getDbParam("Status")}
                   value={formData.status}
                   onChange={handleChange}
-                  style={{ ...(inputStyle("Status") as any), display: "block" }}
+                  style={{
+                    ...inputStyle("Status"),
+                    cursor: "pointer",
+                  }}
                 >
                   <option value="Pass">Pass</option>
                   <option value="Fail">Fail</option>
                 </select>
-                <label style={labelStyle}>Status</label>
-                <span style={rangeTextStyle}>
+                <label style={labelOverlayStyle}>Status</label>
+                <div style={rangeTextStyle}>
                   {renderParameterInfo("Status")}
-                </span>
+                </div>
               </div>
 
               {/* Comments */}
@@ -819,15 +836,12 @@ const AutoclavesForm = ({
                   disabled={!getDbParam("Comments")}
                   value={formData.comments}
                   onChange={handleChange}
-                  style={{
-                    ...(inputStyle("Comments") as any),
-                    display: "block",
-                  }}
+                  style={{ ...inputStyle("Comments"), display: "block" }}
                 />
-                <label style={labelStyle}>Comments</label>
-                <span style={rangeTextStyle}>
+                <label style={labelOverlayStyle}>Comments</label>
+                <div style={rangeTextStyle}>
                   {renderParameterInfo("Comments")}
-                </span>
+                </div>
               </div>
             </div>
 
@@ -841,11 +855,11 @@ const AutoclavesForm = ({
                 fontSize: "14px",
               }}
             >
-              <div style={{ display: "flex", gap: "8px" }}>
-                <span style={{ color: "#94a3b8" }}>Make :</span>
-                <span style={{ fontWeight: "600", color: "#0f172a" }}>
+              <div>
+                <span style={{ color: "#94a3b8" }}>Make :</span>{" "}
+                <b style={{ color: "#232323" }}>
                   {currentEquipment?.make || "N/A"}
-                </span>
+                </b>
               </div>
               <div
                 style={{
@@ -854,23 +868,26 @@ const AutoclavesForm = ({
                   backgroundColor: "#e5e7eb",
                 }}
               ></div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <span style={{ color: "#94a3b8" }}>Model :</span>
-                <span style={{ fontWeight: "600", color: "#0f172a" }}>
+              <div>
+                <span style={{ color: "#94a3b8" }}>Model :</span>{" "}
+                <b style={{ color: "#232323" }}>
                   {currentEquipment?.model || "N/A"}
-                </span>
+                </b>
               </div>
 
               <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
                 <button
                   onClick={handleClear}
+                  disabled={isSaving}
                   style={{
-                    padding: "10px 40px",
+                    padding: "10px 24px",
+                    fontSize: "14px",
+                    fontWeight: "700",
                     backgroundColor: "#fff",
-                    border: "1px solid #e5e7eb",
+                    border: "2px solid #505050",
                     borderRadius: "8px",
-                    cursor: "pointer",
-                    fontWeight: "600",
+                    cursor: isSaving ? "not-allowed" : "pointer",
+                    opacity: isSaving ? 0.6 : 1,
                   }}
                 >
                   Clear
@@ -879,13 +896,14 @@ const AutoclavesForm = ({
                   onClick={handleSave}
                   disabled={isSaving}
                   style={{
-                    padding: "10px 40px",
-                    backgroundColor: "#1e293b",
-                    color: "#fff",
+                    padding: "10px 24px",
+                    fontSize: "14px",
+                    fontWeight: "700",
+                    backgroundColor: "#505050",
+                    color: "#FFFFFF",
                     border: "none",
                     borderRadius: "8px",
-                    cursor: "pointer",
-                    fontWeight: "600",
+                    cursor: isSaving ? "not-allowed" : "pointer",
                     opacity: isSaving ? 0.7 : 1,
                   }}
                 >
@@ -901,6 +919,7 @@ const AutoclavesForm = ({
                 width: "100%",
                 borderCollapse: "collapse",
                 fontSize: "13px",
+                fontFamily: "'Montserrat', sans-serif",
               }}
             >
               <thead>
@@ -911,9 +930,13 @@ const AutoclavesForm = ({
                     color: "#64748b",
                   }}
                 >
-                  <th style={{ padding: "12px" }}>Date & Time</th>
-                  <th style={{ padding: "12px" }}>Parameter</th>
-                  <th style={{ padding: "12px" }}>Value</th>
+                  <th style={{ padding: "12px", fontWeight: "600" }}>
+                    Date & Time
+                  </th>
+                  <th style={{ padding: "12px", fontWeight: "600" }}>
+                    Parameter
+                  </th>
+                  <th style={{ padding: "12px", fontWeight: "600" }}>Value</th>
                 </tr>
               </thead>
               <tbody>
@@ -956,53 +979,174 @@ const AutoclavesForm = ({
           backgroundColor: "#fff",
           borderRadius: "12px",
           border: "1px solid #e5e7eb",
-          padding: "24px",
+          padding: "12px",
+          overflow: "hidden",
         }}
       >
-        <h3
-          style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px" }}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "30px",
+            padding: "12px",
+          }}
         >
-          Activity
-        </h3>
+          {/* Left Side: Icon and Title */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "32px",
+                height: "32px",
+                borderRadius: "8px",
+              }}
+            >
+              <img
+                src={Chart_activity}
+                alt="chart icon"
+                style={{ width: "25px", height: "25px" }}
+              />
+            </div>
+            <h3
+              style={{
+                fontSize: "16px",
+                fontWeight: "700",
+                color: "#0f172a",
+                margin: 0,
+              }}
+            >
+              Activity
+            </h3>
+          </div>
+
+          {/* Right Side: Legend Indicators */}
+          <div style={{ display: "flex", gap: "20px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div
+                style={{
+                  width: "10px",
+                  height: "10px",
+                  borderRadius: "50%",
+                  backgroundColor: "#6c6c6c",
+                }}
+              ></div>
+              <span style={{ fontSize: "12px", color: "#949494" }}>
+                Compliant
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div
+                style={{
+                  width: "10px",
+                  height: "10px",
+                  borderRadius: "50%",
+                  backgroundColor: "#EF9685",
+                }}
+              ></div>
+              <span style={{ fontSize: "12px", color: "#949494" }}>
+                Non - Compliant
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <hr
+          style={{
+            border: "none",
+            borderTop: "1px solid #E2E3E5",
+            margin: "-20px -24px 16px -24px",
+            width: "auto",
+          }}
+        />
+
         <div style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={[
-                { day: "Mon", compliant: 34, nonCompliant: -23 },
-                { day: "Tue", compliant: 28, nonCompliant: -22 },
-                { day: "Wed", compliant: 22, nonCompliant: -36 },
-                { day: "Thu", compliant: 34, nonCompliant: -12 },
-                { day: "Fri", compliant: 29, nonCompliant: -28 },
-                { day: "Sat", compliant: 15, nonCompliant: -33 },
-                { day: "Sun", compliant: 25, nonCompliant: -25 },
+                { day: "Monday", compliant: 34, nonCompliant: -23 },
+                { day: "Tuesday", compliant: 28, nonCompliant: -22 },
+                { day: "Wednesday", compliant: 22, nonCompliant: -36 },
+                { day: "Thursday", compliant: 34, nonCompliant: -12 },
+                { day: "Friday", compliant: 29, nonCompliant: -28 },
+                { day: "Saturday", compliant: 15, nonCompliant: -33 },
+                { day: "Sunday", compliant: 25, nonCompliant: -25 },
               ]}
               stackOffset="sign"
+              barGap={-25}
+              margin={{ top: 20, right: 30, left: 45, bottom: 20 }}
             >
-              <ReferenceLine y={0} stroke="#E0E0E0" />
+              <CartesianGrid vertical={false} stroke="#f1f5f9" />
               <XAxis
                 dataKey="day"
-                axisLine={false}
+                tick={{ fontSize: 12, fill: "#8c8c8c" }}
+                axisLine={{ stroke: "#E0E0E0" }}
                 tickLine={false}
-                tick={{ fontSize: 12, fill: "#9e9e9e" }}
+                label={{
+                  value: "Month",
+                  position: "bottom",
+                  offset: 10,
+                  style: { fill: "#9e9e9e", fontSize: 12 },
+                }}
               />
               <YAxis
-                axisLine={false}
-                tickLine={false}
+                domain={["auto", "auto"]}
+                tickCount={9}
                 tick={{ fontSize: 12, fill: "#9e9e9e" }}
+                axisLine={{ stroke: "#E0E0E0" }}
+                tickLine={false}
+                tickFormatter={(value) => (value === 0 ? "" : value)}
+                label={{
+                  value: "No of parameters",
+                  angle: -90,
+                  position: "insideLeft",
+                  offset: -35,
+                  dy: 40,
+                  style: { fill: "#9e9e9e", fontSize: 12 },
+                }}
               />
-              <Tooltip cursor={{ fill: "transparent" }} />
+              <Tooltip
+                cursor={{ fill: "transparent" }}
+                formatter={(value: number, name: string) => {
+                  const absoluteValue = Math.abs(value);
+                  const label =
+                    name === "compliant" ? "Compliant" : "Non-Compliant";
+                  return [`${absoluteValue}`, label];
+                }}
+              />
+              <ReferenceLine y={0} stroke="#E0E0E0" strokeDasharray="3 3" />
+
               <Bar
                 dataKey="compliant"
                 fill="#6c6c6c"
                 radius={[4, 4, 0, 0]}
-                barSize={12}
-              />
+                barSize={25}
+              >
+                <LabelList
+                  dataKey="compliant"
+                  position="top"
+                  formatter={(value: number) => (value === 0 ? "" : value)}
+                  style={{ fill: "#6c6c6c", fontSize: 12, fontWeight: 600 }}
+                />
+              </Bar>
+
               <Bar
                 dataKey="nonCompliant"
                 fill="#EF9685"
-                radius={[0, 0, 4, 4]}
-                barSize={12}
-              />
+                radius={[4, 4, 0, 0]}
+                barSize={25}
+              >
+                <LabelList
+                  dataKey="nonCompliant"
+                  position="top"
+                  formatter={(value: number) =>
+                    value === 0 ? "" : Math.abs(value)
+                  }
+                  style={{ fill: "#EF9685", fontSize: 12, fontWeight: 600 }}
+                />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>

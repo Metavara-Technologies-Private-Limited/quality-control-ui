@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { parameterValueApi } from "@/services/api";
+import Chart_activity from "@/assets/icons/Chart_activity.svg";
 import {
   BarChart,
   Bar,
@@ -10,6 +11,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  CartesianGrid,
+  LabelList,
 } from "recharts";
 
 interface GasAnalyzersFormProps {
@@ -51,7 +54,6 @@ const GasAnalyzersForm = ({
 
   const [formData, setFormData] = useState(initialFormState);
 
-  // --- CONFIGURATION: Map Form Keys to EXACT DB Parameter Names ---
   const fieldMapping = useMemo(
     () => [
       { key: "date", dbName: "Date" },
@@ -69,7 +71,6 @@ const GasAnalyzersForm = ({
     (ed) => ed.equipment_num === selectedRadio
   );
 
-  // --- MATCHING HELPER ---
   const getDbParam = (dbName: string) => {
     if (!currentEquipment?.parameters) return null;
     return currentEquipment.parameters.find((p: any) => {
@@ -78,7 +79,6 @@ const GasAnalyzersForm = ({
     });
   };
 
-  // ✅ GET PARAMETER CONFIG (Handles history array logic)
   const getParameterConfig = (parameterName: string) => {
     const param = getDbParam(parameterName);
     if (!param || !param.config) return null;
@@ -94,7 +94,6 @@ const GasAnalyzersForm = ({
     return config;
   };
 
-  // ✅ RENDER PARAMETER INFO (Displays Ranges/Options below fields)
   const renderParameterInfo = (parameterName: string) => {
     const config = getParameterConfig(parameterName);
     if (!config) return null;
@@ -208,7 +207,7 @@ const GasAnalyzersForm = ({
         toast.warn("No matching parameters found to save.");
       } else {
         await Promise.all(requests);
-        toast.success("Successfully Saved!", { theme: "colored" });
+        toast.success("Successfully Saved!");
         setFormData(initialFormState);
         fetchLogs();
       }
@@ -231,10 +230,9 @@ const GasAnalyzersForm = ({
 
   const handleClear = () => setFormData(initialFormState);
 
-  // Styles
   const inputContainerStyle = (dbName: string): React.CSSProperties => ({
     position: "relative",
-    marginBottom: "24px",
+    marginBottom: "20px",
     opacity: getDbParam(dbName) ? 1 : 0.4,
   });
 
@@ -244,38 +242,48 @@ const GasAnalyzersForm = ({
     padding: "10px 12px",
     border: "1px solid #e5e7eb",
     borderRadius: "8px",
-    fontSize: "14px",
+    fontSize: "16px",
     outline: "none",
-    backgroundColor: getDbParam(dbName) ? "#fff" : "#f8fafc",
+    backgroundColor: getDbParam(dbName) ? "#fff" : "#f1f5f9",
     cursor: getDbParam(dbName) ? "text" : "not-allowed",
-    color: getDbParam(dbName) ? "inherit" : "#94a3b8",
+    color: "#9E9E9E",
+    boxSizing: "border-box" as const,
   });
 
-  const labelStyle: React.CSSProperties = {
+  const labelOverlayStyle: React.CSSProperties = {
     position: "absolute",
     left: "12px",
     top: "-8px",
     backgroundColor: "#fff",
     padding: "0 4px",
-    fontSize: "12px",
-    color: "#64748b",
+    fontSize: "14px",
+    color: "#232323",
   };
-  const infoTextStyle: React.CSSProperties = {
-    display: "block",
+
+  const rangeTextStyle: React.CSSProperties = {
+    fontSize: "12px",
     marginTop: "4px",
+    color: "#9E9E9E",
+    fontWeight: "500",
   };
 
   return (
-    <div style={{ maxWidth: "1200px" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "20px",
+        fontFamily: "'Montserrat', sans-serif",
+      }}
+    >
       <ToastContainer />
 
       <div
         style={{
           backgroundColor: "#fff",
           borderRadius: "12px",
-          border: "1px solid #e5e7eb",
+          border: "2px solid #e5e7eb",
           padding: "24px",
-          marginBottom: "16px",
         }}
       >
         {/* Unit Selector */}
@@ -284,8 +292,8 @@ const GasAnalyzersForm = ({
             style={{
               display: "flex",
               gap: "24px",
-              paddingBottom: "24px",
-              borderBottom: "1px solid #f1f5f9",
+              paddingBottom: "20px",
+              borderBottom: "2px solid #f1f5f9",
               marginBottom: "24px",
               flexWrap: "wrap",
             }}
@@ -298,9 +306,9 @@ const GasAnalyzersForm = ({
                   alignItems: "center",
                   gap: "8px",
                   fontSize: "13px",
-                  fontWeight: selectedRadio === equipment ? 700 : 500,
+                  fontWeight: selectedRadio === equipment ? "600" : "500",
+                  color: selectedRadio === equipment ? "#232323" : "#E17E61",
                   cursor: "pointer",
-                  color: selectedRadio === equipment ? "#f97316" : "#0f172a",
                 }}
               >
                 <input
@@ -308,9 +316,21 @@ const GasAnalyzersForm = ({
                   checked={selectedRadio === equipment}
                   onChange={() => setSelectedRadio(equipment)}
                   style={{
-                    accentColor: "#f97316",
+                    appearance: "none",
+                    WebkitAppearance: "none",
                     width: "16px",
                     height: "16px",
+                    borderRadius: "50%",
+                    cursor: "pointer",
+                    border: `2px solid ${
+                      selectedRadio === equipment ? "#232323" : "#d1d5db"
+                    }`,
+                    backgroundColor: "#fff",
+                    boxShadow:
+                      selectedRadio === equipment
+                        ? "inset 0 0 0 2px #fff, inset 0 0 0 14px #E17E61"
+                        : "none",
+                    outline: "none",
                   }}
                 />
                 {equipment}
@@ -319,6 +339,7 @@ const GasAnalyzersForm = ({
           </div>
         )}
 
+        {/* Tabs */}
         <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
           {["Details", "Logs"].map((tab) => (
             <button
@@ -326,15 +347,17 @@ const GasAnalyzersForm = ({
               type="button"
               onClick={() => setActiveSubTab(tab)}
               style={{
-                padding: "6px 24px",
+                padding: "8px 32px",
                 borderRadius: "8px",
-                border: "1px solid #e5e7eb",
-                fontSize: "13px",
+                border: "none",
+                fontSize: "14px",
                 cursor: "pointer",
                 backgroundColor:
                   activeSubTab === tab ? "#FFFFFF" : "transparent",
                 color: activeSubTab === tab ? "#E17E61" : "#94a3b8",
-                fontWeight: 600,
+                fontWeight: activeSubTab === tab ? "700" : "600",
+                borderBottom:
+                  activeSubTab === tab ? "2px solid #E17E61" : "none",
               }}
             >
               {tab}
@@ -347,39 +370,41 @@ const GasAnalyzersForm = ({
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
+                gridTemplateColumns: "repeat(3, 1fr)",
                 gap: "20px",
-                marginBottom: "20px",
+                marginBottom: "24px",
               }}
             >
+              {/* Date */}
               <div style={inputContainerStyle("Date")}>
-                <label style={labelStyle}>Date</label>
                 <input
                   type="date"
                   name="date"
                   value={formData.date}
                   onChange={handleChange}
                   disabled={!getDbParam("Date")}
-                  style={inputStyle("Date")}
+                  style={{ ...inputStyle("Date"), display: "block" }}
                 />
-                <div style={infoTextStyle}>{renderParameterInfo("Date")}</div>
+                <label style={labelOverlayStyle}>Date</label>
+                <div style={rangeTextStyle}>{renderParameterInfo("Date")}</div>
               </div>
 
+              {/* Time */}
               <div style={inputContainerStyle("Time")}>
-                <label style={labelStyle}>Time</label>
                 <input
                   type="time"
                   name="time"
                   value={formData.time}
                   onChange={handleChange}
                   disabled={!getDbParam("Time")}
-                  style={inputStyle("Time")}
+                  style={{ ...inputStyle("Time"), display: "block" }}
                 />
-                <div style={infoTextStyle}>{renderParameterInfo("Time")}</div>
+                <label style={labelOverlayStyle}>Time</label>
+                <div style={rangeTextStyle}>{renderParameterInfo("Time")}</div>
               </div>
 
+              {/* Gas Mixture */}
               <div style={inputContainerStyle("Gas Mixture")}>
-                <label style={labelStyle}>Gas Mixture (% O2, CO2)</label>
                 <input
                   type="text"
                   name="gasMixture"
@@ -387,75 +412,70 @@ const GasAnalyzersForm = ({
                   value={formData.gasMixture}
                   onChange={handleChange}
                   disabled={!getDbParam("Gas Mixture")}
-                  style={inputStyle("Gas Mixture")}
+                  style={{ ...inputStyle("Gas Mixture"), display: "block" }}
                 />
-                <div style={infoTextStyle}>
+                <label style={labelOverlayStyle}>Gas Mixture (% O2, CO2)</label>
+                <div style={rangeTextStyle}>
                   {renderParameterInfo("Gas Mixture")}
                 </div>
               </div>
-            </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
-                gap: "20px",
-                marginBottom: "20px",
-              }}
-            >
+              {/* Calibration Checks */}
               <div style={inputContainerStyle("Calibration Checks")}>
-                <label style={labelStyle}>Calibration Checks</label>
                 <select
                   name="calibrationChecks"
                   value={formData.calibrationChecks}
                   onChange={handleChange}
                   disabled={!getDbParam("Calibration Checks")}
-                  style={inputStyle("Calibration Checks")}
+                  style={{ ...inputStyle("Calibration Checks"), cursor: "pointer" }}
                 >
                   <option value="Accurate">Accurate</option>
                   <option value="Needs Adjustment">Needs Adjustment</option>
                 </select>
-                <div style={infoTextStyle}>
+                <label style={labelOverlayStyle}>Calibration Checks</label>
+                <div style={rangeTextStyle}>
                   {renderParameterInfo("Calibration Checks")}
                 </div>
               </div>
 
+              {/* Sensor Condition */}
               <div style={inputContainerStyle("Sensor Condition")}>
-                <label style={labelStyle}>Sensor Condition</label>
                 <select
                   name="sensorCondition"
                   value={formData.sensorCondition}
                   onChange={handleChange}
                   disabled={!getDbParam("Sensor Condition")}
-                  style={inputStyle("Sensor Condition")}
+                  style={{ ...inputStyle("Sensor Condition"), cursor: "pointer" }}
                 >
                   <option value="Good">Good</option>
                   <option value="Needs Cleaning">Needs Cleaning</option>
                 </select>
-                <div style={infoTextStyle}>
+                <label style={labelOverlayStyle}>Sensor Condition</label>
+                <div style={rangeTextStyle}>
                   {renderParameterInfo("Sensor Condition")}
                 </div>
               </div>
 
+              {/* Status */}
               <div style={inputContainerStyle("Status")}>
-                <label style={labelStyle}>Status</label>
                 <select
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
                   disabled={!getDbParam("Status")}
-                  style={inputStyle("Status")}
+                  style={{ ...inputStyle("Status"), cursor: "pointer" }}
                 >
                   <option value="Pass">Pass</option>
                   <option value="Fail">Fail</option>
                 </select>
-                <div style={infoTextStyle}>{renderParameterInfo("Status")}</div>
+                <label style={labelOverlayStyle}>Status</label>
+                <div style={rangeTextStyle}>
+                  {renderParameterInfo("Status")}
+                </div>
               </div>
-            </div>
 
-            <div style={{ marginBottom: "32px" }}>
+              {/* Comments */}
               <div style={inputContainerStyle("Comments")}>
-                <label style={labelStyle}>Comments</label>
                 <input
                   type="text"
                   name="comments"
@@ -463,28 +483,30 @@ const GasAnalyzersForm = ({
                   value={formData.comments}
                   onChange={handleChange}
                   disabled={!getDbParam("Comments")}
-                  style={inputStyle("Comments")}
+                  style={{ ...inputStyle("Comments"), display: "block" }}
                 />
-                <div style={infoTextStyle}>
+                <label style={labelOverlayStyle}>Comments</label>
+                <div style={rangeTextStyle}>
                   {renderParameterInfo("Comments")}
                 </div>
               </div>
             </div>
 
-            {/* Footer */}
+            {/* Make and Model Footer */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: "24px",
+                marginTop: "20px",
                 fontSize: "14px",
               }}
             >
-              <div style={{ display: "flex", gap: "8px" }}>
-                <span style={{ color: "#94a3b8" }}>Make :</span>
-                <span style={{ fontWeight: "600" }}>
+              <div>
+                <span style={{ color: "#94a3b8" }}>Make :</span>{" "}
+                <b style={{ color: "#232323" }}>
                   {currentEquipment?.make || "N/A"}
-                </span>
+                </b>
               </div>
               <div
                 style={{
@@ -493,22 +515,27 @@ const GasAnalyzersForm = ({
                   backgroundColor: "#e5e7eb",
                 }}
               ></div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <span style={{ color: "#94a3b8" }}>Model :</span>
-                <span style={{ fontWeight: "600" }}>
+              <div>
+                <span style={{ color: "#94a3b8" }}>Model :</span>{" "}
+                <b style={{ color: "#232323" }}>
                   {currentEquipment?.model || "N/A"}
-                </span>
+                </b>
               </div>
+
               <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
                 <button
                   type="button"
                   onClick={handleClear}
+                  disabled={isSaving}
                   style={{
                     padding: "10px 24px",
+                    fontSize: "14px",
+                    fontWeight: "700",
                     backgroundColor: "#fff",
-                    border: "1px solid #e5e7eb",
+                    border: "2px solid #505050",
                     borderRadius: "8px",
-                    fontWeight: 600,
+                    cursor: isSaving ? "not-allowed" : "pointer",
+                    opacity: isSaving ? 0.6 : 1,
                   }}
                 >
                   Clear
@@ -519,11 +546,13 @@ const GasAnalyzersForm = ({
                   disabled={isSaving}
                   style={{
                     padding: "10px 24px",
-                    backgroundColor: "#1e293b",
-                    color: "#fff",
+                    fontSize: "14px",
+                    fontWeight: "700",
+                    backgroundColor: "#505050",
+                    color: "#FFFFFF",
                     border: "none",
                     borderRadius: "8px",
-                    fontWeight: 600,
+                    cursor: isSaving ? "not-allowed" : "pointer",
                     opacity: isSaving ? 0.7 : 1,
                   }}
                 >
@@ -539,19 +568,24 @@ const GasAnalyzersForm = ({
                 width: "100%",
                 borderCollapse: "collapse",
                 fontSize: "13px",
-                textAlign: "left",
+                fontFamily: "'Montserrat', sans-serif",
               }}
             >
               <thead>
                 <tr
                   style={{
-                    color: "#64748b",
                     borderBottom: "1px solid #f1f5f9",
+                    textAlign: "left",
+                    color: "#64748b",
                   }}
                 >
-                  <th style={{ padding: "12px 8px" }}>Date & Time</th>
-                  <th style={{ padding: "12px 8px" }}>Parameter</th>
-                  <th style={{ padding: "12px 8px" }}>Value</th>
+                  <th style={{ padding: "12px", fontWeight: "600" }}>
+                    Date & Time
+                  </th>
+                  <th style={{ padding: "12px", fontWeight: "600" }}>
+                    Parameter
+                  </th>
+                  <th style={{ padding: "12px", fontWeight: "600" }}>Value</th>
                 </tr>
               </thead>
               <tbody>
@@ -561,21 +595,11 @@ const GasAnalyzersForm = ({
                       key={log.id}
                       style={{ borderBottom: "1px solid #f1f5f9" }}
                     >
-                      <td
-                        style={{
-                          padding: "16px 8px",
-                          color: "#0f172a",
-                          fontWeight: "600",
-                        }}
-                      >
+                      <td style={{ padding: "12px", fontWeight: "600" }}>
                         {log.dateTime}
                       </td>
-                      <td style={{ padding: "16px 8px", color: "#64748b" }}>
-                        {log.paramName}
-                      </td>
-                      <td style={{ padding: "16px 8px", color: "#64748b" }}>
-                        {log.content}
-                      </td>
+                      <td style={{ padding: "12px" }}>{log.paramName}</td>
+                      <td style={{ padding: "12px" }}>{log.content}</td>
                     </tr>
                   ))
                 ) : (
@@ -583,8 +607,8 @@ const GasAnalyzersForm = ({
                     <td
                       colSpan={3}
                       style={{
-                        padding: "40px",
                         textAlign: "center",
+                        padding: "40px",
                         color: "#94a3b8",
                       }}
                     >
@@ -598,59 +622,180 @@ const GasAnalyzersForm = ({
         )}
       </div>
 
-      {/* Activity Chart Section */}
+      {/* Activity Graph Section */}
       <div
         style={{
           backgroundColor: "#fff",
           borderRadius: "12px",
           border: "1px solid #e5e7eb",
-          padding: "24px",
+          padding: "12px",
+          overflow: "hidden",
         }}
       >
-        <h3
-          style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px" }}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "30px",
+            padding: "12px",
+          }}
         >
-          Activity
-        </h3>
+          {/* Left Side: Icon and Title */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "32px",
+                height: "32px",
+                borderRadius: "8px",
+              }}
+            >
+              <img
+                src={Chart_activity}
+                alt="chart icon"
+                style={{ width: "25px", height: "25px" }}
+              />
+            </div>
+            <h3
+              style={{
+                fontSize: "16px",
+                fontWeight: "700",
+                color: "#0f172a",
+                margin: 0,
+              }}
+            >
+              Activity
+            </h3>
+          </div>
+
+          {/* Right Side: Legend Indicators */}
+          <div style={{ display: "flex", gap: "20px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div
+                style={{
+                  width: "10px",
+                  height: "10px",
+                  borderRadius: "50%",
+                  backgroundColor: "#6c6c6c",
+                }}
+              ></div>
+              <span style={{ fontSize: "12px", color: "#949494" }}>
+                Compliant
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div
+                style={{
+                  width: "10px",
+                  height: "10px",
+                  borderRadius: "50%",
+                  backgroundColor: "#EF9685",
+                }}
+              ></div>
+              <span style={{ fontSize: "12px", color: "#949494" }}>
+                Non - Compliant
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <hr
+          style={{
+            border: "none",
+            borderTop: "1px solid #E2E3E5",
+            margin: "-20px -24px 16px -24px",
+            width: "auto",
+          }}
+        />
+
         <div style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={[
-                { day: "Mon", compliant: 34, nonCompliant: -23 },
-                { day: "Tue", compliant: 28, nonCompliant: -22 },
-                { day: "Wed", compliant: 22, nonCompliant: -36 },
-                { day: "Thu", compliant: 34, nonCompliant: -12 },
-                { day: "Fri", compliant: 29, nonCompliant: -28 },
-                { day: "Sat", compliant: 15, nonCompliant: -33 },
-                { day: "Sun", compliant: 25, nonCompliant: -25 },
+                { day: "Monday", compliant: 34, nonCompliant: -23 },
+                { day: "Tuesday", compliant: 28, nonCompliant: -22 },
+                { day: "Wednesday", compliant: 22, nonCompliant: -36 },
+                { day: "Thursday", compliant: 34, nonCompliant: -12 },
+                { day: "Friday", compliant: 29, nonCompliant: -28 },
+                { day: "Saturday", compliant: 15, nonCompliant: -33 },
+                { day: "Sunday", compliant: 25, nonCompliant: -25 },
               ]}
               stackOffset="sign"
+              barGap={-25}
+              margin={{ top: 20, right: 30, left: 45, bottom: 20 }}
             >
-              <ReferenceLine y={0} stroke="#E0E0E0" />
+              <CartesianGrid vertical={false} stroke="#f1f5f9" />
               <XAxis
                 dataKey="day"
-                axisLine={false}
+                tick={{ fontSize: 12, fill: "#8c8c8c" }}
+                axisLine={{ stroke: "#E0E0E0" }}
                 tickLine={false}
-                tick={{ fontSize: 12, fill: "#9e9e9e" }}
+                label={{
+                  value: "Month",
+                  position: "bottom",
+                  offset: 10,
+                  style: { fill: "#9e9e9e", fontSize: 12 },
+                }}
               />
               <YAxis
-                axisLine={false}
-                tickLine={false}
+                domain={["auto", "auto"]}
+                tickCount={9}
                 tick={{ fontSize: 12, fill: "#9e9e9e" }}
+                axisLine={{ stroke: "#E0E0E0" }}
+                tickLine={false}
+                tickFormatter={(value) => (value === 0 ? "" : value)}
+                label={{
+                  value: "No of parameters",
+                  angle: -90,
+                  position: "insideLeft",
+                  offset: -35,
+                  dy: 40,
+                  style: { fill: "#9e9e9e", fontSize: 12 },
+                }}
               />
-              <Tooltip cursor={{ fill: "transparent" }} />
+              <Tooltip
+                cursor={{ fill: "transparent" }}
+                formatter={(value: number, name: string) => {
+                  const absoluteValue = Math.abs(value);
+                  const label =
+                    name === "compliant" ? "Compliant" : "Non-Compliant";
+                  return [`${absoluteValue}`, label];
+                }}
+              />
+              <ReferenceLine y={0} stroke="#E0E0E0" strokeDasharray="3 3" />
+
               <Bar
                 dataKey="compliant"
                 fill="#6c6c6c"
                 radius={[4, 4, 0, 0]}
-                barSize={12}
-              />
+                barSize={25}
+              >
+                <LabelList
+                  dataKey="compliant"
+                  position="top"
+                  formatter={(value: number) => (value === 0 ? "" : value)}
+                  style={{ fill: "#6c6c6c", fontSize: 12, fontWeight: 600 }}
+                />
+              </Bar>
+
               <Bar
                 dataKey="nonCompliant"
                 fill="#EF9685"
-                radius={[0, 0, 4, 4]}
-                barSize={12}
-              />
+                radius={[4, 4, 0, 0]}
+                barSize={25}
+              >
+                <LabelList
+                  dataKey="nonCompliant"
+                  position="top"
+                  formatter={(value: number) =>
+                    value === 0 ? "" : Math.abs(value)
+                  }
+                  style={{ fill: "#EF9685", fontSize: 12, fontWeight: 600 }}
+                />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
