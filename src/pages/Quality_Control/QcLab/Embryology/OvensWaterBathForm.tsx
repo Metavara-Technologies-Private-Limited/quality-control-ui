@@ -1,6 +1,6 @@
 import { parameterValueApi } from "@/services/api";
 import { useEffect, useState } from "react";
-import Chart_activity from "@/assets/icons/Chart_activity.svg";
+// ✅ Import toast and ToastContainer
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
@@ -10,9 +10,7 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,  
-  LabelList,
-  CartesianGrid
+  ReferenceLine,
 } from "recharts";
 
 interface OvensWaterBathFormProps {
@@ -246,12 +244,33 @@ const OvensWaterBathForm = ({
     }
   }, [equipmentDetails, selectedRadio, setSelectedRadio]);
 
-  const inputContainerStyle = { position: "relative" as const, marginBottom: "20px" };
-  const inputStyle = { width: "100%", height: "50px", padding: "10px 12px", border: "2px solid #e5e7eb", borderRadius: "8px", fontSize: "16px", color:"#9E9E9E", fontWeight: "500", outline: "none" };
-
-  const labelStyle = { position: "absolute" as const, left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "14px",  color: "#232323" };
-
-  const rangeTextStyle = { fontSize: "12px", marginTop: "4px", color: "#9E9E9E", fontWeight: "500" };
+  const inputContainerStyle = {
+    position: "relative" as const,
+    marginBottom: "20px",
+  };
+  const inputStyle = {
+    width: "100%",
+    height: "50px",
+    padding: "10px 12px",
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+    fontSize: "14px",
+    outline: "none",
+  };
+  const labelStyle = {
+    position: "absolute" as const,
+    left: "12px",
+    top: "-8px",
+    backgroundColor: "#fff",
+    padding: "0 4px",
+    fontSize: "12px",
+    color: "#64748b",
+  };
+  const rangeTextStyle = {
+    fontSize: "11px",
+    marginTop: "4px",
+    color: "#94a3b8",
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -295,34 +314,52 @@ const OvensWaterBathForm = ({
         </div>
 
         {/* Dynamic Unit Selector */}
-        <div style={{ display: "flex", gap: "24px", marginBottom: "24px", borderBottom: "2px solid #f1f5f9", paddingBottom: "20px" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "24px",
+            marginBottom: "24px",
+            borderBottom: "1px solid #f1f5f9",
+            paddingBottom: "20px",
+          }}
+        >
           {filteredEquipment.map((ed) => (
-            <label key={ed.equipment_id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: selectedRadio === ed.equipment_num ? "600" : "500", color: selectedRadio === ed.equipment_num ? "#232323": "#E17E61" , cursor: "pointer" }}>
-
+            <label
+              key={ed.equipment_id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                fontSize: "13px",
+                fontWeight: selectedRadio === ed.equipment_num ? "700" : "500",
+                color:
+                  selectedRadio === ed.equipment_num ? "#f97316" : "#0f172a",
+                cursor: "pointer",
+              }}
+            >
               <input
-  type="radio"
-  checked={selectedRadio === ed.equipment_num}
-  onChange={() => setSelectedRadio(ed.equipment_num)}
-  style={{
-    appearance: "none",
-    WebkitAppearance: "none",
-    width: "16px",
-    height: "16px",
-    borderRadius: "50%",
-    cursor: "pointer",
-    border: `2px solid ${selectedRadio === ed.equipment_num ? "#232323" : "#d1d5db"}`,
-    backgroundColor: "#fff",
-    boxShadow: selectedRadio === ed.equipment_num ? "inset 0 0 0 2px #fff, inset 0 0 0 14px #E17E61" : "none",
-    outline: "none"
-  }}
-/> 
- {ed.equipment_num}
+                type="radio"
+                checked={selectedRadio === ed.equipment_num}
+                onChange={() => setSelectedRadio(ed.equipment_num)}
+                style={{
+                  accentColor: "#f97316",
+                  width: "16px",
+                  height: "16px",
+                }}
+              />
+              {ed.equipment_num}
             </label>
           ))}
         </div>
 
         {/* Form Fields */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "20px" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "20px",
+          }}
+        >
           <div style={inputContainerStyle}>
             <input
               style={inputStyle}
@@ -434,80 +471,134 @@ const OvensWaterBathForm = ({
           </div>
 
           <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
-            <button onClick={handleClear} disabled={isSaving} style={{ padding: "10px 24px", backgroundColor: "#fff", border: "1px solid #505050", borderRadius: "8px", cursor: "pointer", fontSize: "14px", fontWeight: "700" }}>Clear</button>
-            <button onClick={handleSaveLogs} disabled={isSaving} style={{ padding: "10px 24px", backgroundColor: "#505050", color: "#fff", border: "none", borderRadius: "8px", cursor: isSaving ? "not-allowed" : "pointer", fontSize: "14px", fontWeight: "600", opacity: isSaving ? 0.6 : 1 }}>{isSaving ? "Saving..." : "Save"}</button>
+            <button
+              onClick={handleClear}
+              disabled={isSaving}
+              style={{
+                padding: "10px 24px",
+                backgroundColor: "#fff",
+                border: "1px solid #e5e7eb",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "600",
+              }}
+            >
+              Clear
+            </button>
+            <button
+              onClick={handleSaveLogs}
+              disabled={isSaving}
+              style={{
+                padding: "10px 24px",
+                backgroundColor: "#1e293b",
+                color: "#fff",
+                border: "none",
+                borderRadius: "8px",
+                cursor: isSaving ? "not-allowed" : "pointer",
+                fontSize: "14px",
+                fontWeight: "600",
+                opacity: isSaving ? 0.6 : 1,
+              }}
+            >
+              {isSaving ? "Saving..." : "Save"}
+            </button>
           </div>
         </div>
       </div>
 
-  {/* Activity Graph Section Starts Here */}
-      <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "12px",overflow: "hidden" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
-          
-          {/* Left Side: Icon and Title */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "32px", height: "32px", borderRadius: "8px" }}>
-              <img src={Chart_activity} alt="chart icon" style={{ width: "25px", height: "25px" }} />
+      <div
+        style={{
+          backgroundColor: "#fff",
+          borderRadius: "12px",
+          border: "1px solid #e5e7eb",
+          padding: "24px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "16px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "8px",
+                border: "1px solid #E0E0E0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#505050"
+                strokeWidth="2"
+              >
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
             </div>
-            <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#0f172a", margin: 0 }}>Activity</h3>
+            <h3
+              style={{
+                fontSize: "16px",
+                fontWeight: "600",
+                margin: 0,
+                color: "#0f172a",
+              }}
+            >
+              Activity
+            </h3>
           </div>
-
-          {/* Right Side: Legend Indicators */}
-          <div style={{ display: "flex", gap: "20px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#6c6c6c" }}></div>
-              <span style={{ fontSize: "12px", color: "#949494" }}>Compliant</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#EF9685" }}></div>
-              <span style={{ fontSize: "12px", color: "#949494" }}>Non - Compliant</span>
-            </div>
-          </div>
-        </div>        
-        
-<hr 
-  style={{ 
-    border: "none", 
-    borderTop: "1px solid #E2E3E5", 
-    margin: "-20px -24px 16px -24px",
-    width: "auto"
-  }} 
-/>        
+        </div>
         <div style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={activityData} stackOffset="sign" barGap={-25} margin={{ top: 20, right: 30, left: 45, bottom: 20 }}>
-              <CartesianGrid vertical={false} stroke="#f1f5f9" />
-              
-              <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#8c8c8c" }} axisLine={{ stroke: "#E0E0E0" }} tickLine={false} label={{ value: "Month", position: "bottom", offset: 10, style: { fill: "#9e9e9e", fontSize: 12 } }}/>
-              <YAxis domain={['auto', 'auto']} tickCount={9} tick={{ fontSize: 12, fill: "#9e9e9e" }} axisLine={{ stroke: "#E0E0E0" }} tickLine={false} tickFormatter={(value) => (value === 0 ? "" : value)} label={{ value: "No of parameters", angle: -90, position: "insideLeft", offset: -35, dy:40, style: { fill: "#9e9e9e", fontSize: 12 } }} />
-              
-              <Tooltip 
-                cursor={{ fill: "transparent" }} 
-                formatter={(value: number, name: string) => {
-                  const absoluteValue = Math.abs(value);
-                  const label = name === "compliant" ? "Compliant" : "Non-Compliant";
-                  return [ `${absoluteValue} m/s`, label ]; // Use m/s for LFH
-                }}
-              /> 
-              <ReferenceLine y={0} stroke="#E0E0E0" strokeDasharray="3 3"/>
-
-              <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={25}>
-                <LabelList dataKey="compliant" position="top" formatter={(value: number) => (value === 0 ? "" : value)} style={{ fill: "#6c6c6c", fontSize: 12, fontWeight: 600 }} />
-              </Bar>
-              
-              <Bar dataKey="nonCompliant" fill="#EF9685" radius={[4, 4, 0, 0]} barSize={25}>
-                <LabelList 
-                  dataKey="nonCompliant" 
-                  position="top" 
-                  formatter={(value: number) => (value === 0 ? "" : Math.abs(value))} 
-                  style={{ fill: "#EF9685", fontSize: 12, fontWeight: 600 }} 
-                />
-              </Bar>
+            <BarChart
+              data={activityData}
+              stackOffset="sign"
+              margin={{ top: 20, right: 30, left: 45, bottom: 20 }}
+            >
+              <XAxis
+                dataKey="day"
+                tick={{ fontSize: 12, fill: "#9e9e9e" }}
+                axisLine={{ stroke: "#E0E0E0" }}
+                tickLine={false}
+              />
+              <YAxis
+                domain={[-40, 40]}
+                ticks={[-40, -20, 0, 20, 40]}
+                tick={{ fontSize: 12, fill: "#9e9e9e" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip
+                cursor={{ fill: "transparent" }}
+                contentStyle={{ borderRadius: "4px" }}
+              />
+              <ReferenceLine y={0} stroke="#E0E0E0" />
+              <Bar
+                dataKey="compliant"
+                fill="#6c6c6c"
+                radius={[4, 4, 0, 0]}
+                barSize={15}
+              />
+              <Bar
+                dataKey="nonCompliant"
+                fill="#EF9685"
+                radius={[0, 0, 4, 4]}
+                barSize={15}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
-      {/* END OF ACTIVITY SECTION */}
     </div>
   );
 };

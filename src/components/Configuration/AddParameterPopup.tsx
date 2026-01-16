@@ -11,6 +11,9 @@ import {
   IconButton,
   Checkbox,
   FormControlLabel,
+  FormControl,
+  RadioGroup,
+  Radio,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
@@ -21,123 +24,233 @@ interface Props {
   initialData?: any;
 }
 
+const UNIT_OPTIONS = [
+  "°C",
+  "°F",
+  "µg/m³",
+  "%",
+  "ppm",
+  "pH",
+  "mg/L",
+  "ml",
+  "l",
+  "kg",
+  "g",
+  "m",
+  "cm",
+];
+
+const FIELD_TYPES = [
+  "Integer",
+  "Decimal",
+  "Text",
+  "Boolean",
+  "Dropdown",
+];
+
 const AddParameterPopup: React.FC<Props> = ({
   open,
   onClose,
   onAdd,
   initialData,
 }) => {
-  const [name, setName] = useState("");
-  const [dataType, setDataType] = useState("");
-  const [minValue, setMinValue] = useState("");
-  const [maxValue, setMaxValue] = useState("");
+  // Common fields
+  const [title, setTitle] = useState("");
+  const [mandatory, setMandatory] = useState(false);
+  const [fieldType, setFieldType] = useState("");
 
-  const [dropdownValue, setDropdownValue] = useState("");
-  const [text, setText] = useState("");
-  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-  const [percentage, setPercentage] = useState("");
-  const [integerValue, setIntegerValue] = useState("");
+  // Integer fields
+  const [integerDefault, setIntegerDefault] = useState("");
+  const [integerUnit, setIntegerUnit] = useState("");
+  const [integerMin, setIntegerMin] = useState("");
+  const [integerMax, setIntegerMax] = useState("");
+
+  // Decimal fields
+  const [decimalDefault, setDecimalDefault] = useState("");
+  const [decimalUnit, setDecimalUnit] = useState("");
+  const [decimalMin, setDecimalMin] = useState("");
+  const [decimalMax, setDecimalMax] = useState("");
+
+  // Text fields
+  const [textType, setTextType] = useState("single");
+  const [textValue, setTextValue] = useState("");
+
+  // Boolean fields
+  const [booleanType, setBooleanType] = useState("yesno");
+
+  // Dropdown fields
+  const [dropdownMode, setDropdownMode] = useState<"single" | "multi">("single");
+  const [dropdownOptions, setDropdownOptions] = useState<string[]>(["Option 1", "Option 2"]);
+  const [selectedDropdownValues, setSelectedDropdownValues] = useState<string[]>([]);
 
   useEffect(() => {
     if (open) {
       if (initialData) {
-        setName(initialData.name || "");
-        setDataType(initialData.data_type || "");
-        setMinValue(initialData.min_value || "");
-        setMaxValue(initialData.max_value || "");
-        setText(initialData.text || "");
-        setPercentage(initialData.percentage || "");
-        setIntegerValue(initialData.integer_value || "");
-
-        // Handle dropdown - can be array or single value
-        if (Array.isArray(initialData.dropdown)) {
-          setSelectedOptions(initialData.dropdown);
-          setDropdownValue("");
-        } else if (initialData.dropdown) {
-          setDropdownValue(initialData.dropdown);
-          setSelectedOptions([]);
-        } else {
-          setSelectedOptions([]);
-          setDropdownValue("");
-        }
+        loadInitialData();
       } else {
         resetForm();
       }
     }
   }, [open, initialData]);
 
+  const loadInitialData = () => {
+    if (!initialData) return;
+
+    setTitle(initialData.title || initialData.name || "");
+    setMandatory(initialData.mandatory || false);
+    setFieldType(initialData.field_type || initialData.data_type || "");
+
+    if (initialData.data_type === "Integer") {
+      setIntegerDefault(initialData.default_value || "");
+      setIntegerUnit(initialData.unit || "");
+      setIntegerMin(initialData.min_value || "");
+      setIntegerMax(initialData.max_value || "");
+    }
+
+    if (initialData.data_type === "Decimal") {
+      setDecimalDefault(initialData.default_value || "");
+      setDecimalUnit(initialData.unit || "");
+      setDecimalMin(initialData.min_value || "");
+      setDecimalMax(initialData.max_value || "");
+    }
+
+    if (initialData.data_type === "Text") {
+      setTextType(initialData.text_type || "single");
+      setTextValue(initialData.text || "");
+    }
+
+    if (initialData.data_type === "Boolean") {
+      setBooleanType(initialData.boolean_type || "yesno");
+    }
+
+    if (initialData.data_type === "Dropdown") {
+      if (initialData.dropdown && Array.isArray(initialData.dropdown)) {
+        setDropdownOptions(initialData.dropdown);
+      }
+      if (initialData.selection_type) {
+        setDropdownMode(initialData.selection_type);
+      }
+    }
+  };
+
   const resetForm = () => {
-    setName("");
-    setDataType("");
-    setMinValue("");
-    setMaxValue("");
-    setDropdownValue("");
-    setText("");
-    setSelectedOptions([]);
-    setPercentage("");
-    setIntegerValue("");
+    setTitle("");
+    setMandatory(false);
+    setFieldType("");
+    setIntegerDefault("");
+    setIntegerUnit("");
+    setIntegerMin("");
+    setIntegerMax("");
+    setDecimalDefault("");
+    setDecimalUnit("");
+    setDecimalMin("");
+    setDecimalMax("");
+    setTextType("single");
+    setTextValue("");
+    setBooleanType("yesno");
+    setDropdownMode("single");
+    setDropdownOptions(["Option 1", "Option 2"]);
+    setSelectedDropdownValues([]);
   };
 
-  const resetTypeValues = () => {
-    setMinValue("");
-    setMaxValue("");
-    setDropdownValue("");
-    setText("");
-    setSelectedOptions([]);
-    setPercentage("");
-    setIntegerValue("");
+  const validateForm = () => {
+    if (!title.trim()) {
+      toast.error("Please enter Title");
+      return false;
+    }
+
+    if (!fieldType) {
+      toast.error("Please select Field Type");
+      return false;
+    }
+
+    if (fieldType === "Integer") {
+      if (!integerDefault.trim()) {
+        toast.error("Please enter Default Value");
+        return false;
+      }
+    }
+
+    if (fieldType === "Decimal") {
+      if (!decimalDefault.trim() || !decimalMin.trim() || !decimalMax.trim()) {
+        toast.error("Please fill all Decimal fields");
+        return false;
+      }
+    }
+
+    if (fieldType === "Text" && !textValue.trim()) {
+      toast.error("Please enter Text value");
+      return false;
+    }
+
+    return true;
   };
 
-  const handleAdd = () => {
-    if (!name.trim()) {
-      toast.error("Please enter Parameter Name");
-      return;
-    }
+  const handleSave = () => {
+    if (!validateForm()) return;
 
-    if (!dataType) {
-      toast.error("Please select Data Type");
-      return;
-    }
-
-    if (dataType === "Integer" && !integerValue.trim()) {
-      toast.error("Please enter Integer Value");
-      return;
-    }
-
-    // ✅ Use snake_case to match backend
     const payload: any = {
-      name,
-      data_type: dataType,
+      title,
+      name: title,
+      mandatory,
+      field_type: fieldType,
+      data_type: fieldType,
     };
 
-    if (dataType === "Decimal") {
-      payload.min_value = minValue;
-      payload.max_value = maxValue;
+    if (fieldType === "Integer") {
+      payload.default_value = integerDefault;
+      payload.unit = integerUnit;
+      payload.min_value = integerMin;
+      payload.max_value = integerMax;
     }
 
-    if (dataType === "Select") {
-      payload.dropdown = selectedOptions;
+    if (fieldType === "Decimal") {
+      payload.default_value = decimalDefault;
+      payload.unit = decimalUnit;
+      payload.min_value = decimalMin;
+      payload.max_value = decimalMax;
     }
 
-    if (dataType === "Dropdown") {
-      payload.dropdown = [dropdownValue];
+    if (fieldType === "Text") {
+      payload.text_type = textType;
+      payload.text = textValue;
     }
 
-    if (dataType === "Text") {
-      payload.text = text;
+    if (fieldType === "Boolean") {
+      payload.boolean_type = booleanType;
     }
 
-    if (dataType === "Percentage") {
-      payload.percentage = percentage;
-    }
-
-    if (dataType === "Integer") {
-      payload.integer_value = integerValue;
+    if (fieldType === "Dropdown") {
+      payload.dropdown = dropdownOptions;
+      payload.selection_type = dropdownMode;
     }
 
     onAdd(payload);
+    resetForm();
     onClose();
   };
+
+  const commonFieldSX = {
+    width: "380px",
+    "& .MuiInputLabel-root.Mui-focused": {
+      color: "#232323 !important",
+    },
+    "& .MuiInputLabel-root": {
+      color: "#828282 !important",
+    },
+    "& .MuiOutlinedInput-root": {
+      height: textType === "single" ? "50px" : "auto",
+      paddingTop: textType === "multi" ? "12px" : "0",
+      paddingBottom: textType === "multi" ? "12px" : "0",
+      "& fieldset": { borderColor: "#CFD1D4" },
+      "&:hover fieldset": { borderColor: "#CFD1D4" },
+      "&.Mui-focused fieldset": { borderColor: "#CFD1D4 !important" },
+    },
+  };
+  const halfFieldSX = {
+  ...commonFieldSX,
+  width: "182px",  
+};
 
   return (
     <Dialog
@@ -171,12 +284,13 @@ const AddParameterPopup: React.FC<Props> = ({
       <DialogContent
         sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
       >
+        {/* Title Field */}
         <TextField
-          label="Name"
+          label="Title"
           fullWidth
           size="small"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
           InputLabelProps={{ shrink: true }}
           sx={{
             width: "380px",
@@ -195,15 +309,35 @@ const AddParameterPopup: React.FC<Props> = ({
           }}
         />
 
+        {/* Mandatory Checkbox */}
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={mandatory}
+              onChange={(e) => setMandatory(e.target.checked)}
+              color="success"
+            />
+          }
+          label="Mandatory"
+          sx={{
+            color: "#828282",
+            fontFamily: "Roboto, Helvetica, Arial, sans-serif",
+            mt: -2,
+          }}
+        />
+
+        {/* Field Type Dropdown */}
         <TextField
-          label="Data Type"
+          label="Field Type"
           select
           fullWidth
           size="small"
-          value={dataType}
+          value={fieldType}
           onChange={(e) => {
-            setDataType(e.target.value);
-            if (!initialData) resetTypeValues();
+            const newType = e.target.value;
+            setFieldType(newType);
+            setIntegerUnit("");
+            setDecimalUnit("");
           }}
           InputLabelProps={{ shrink: true }}
           sx={{
@@ -211,7 +345,7 @@ const AddParameterPopup: React.FC<Props> = ({
             "& .MuiInputLabel-root.Mui-focused": {
               color: "#232323 !important",
             },
-            "& .MuiInputLabel-root": { color: "#5F646F !important" },
+            "& .MuiInputLabel-root": { color: "#828282 !important" },
             "& .MuiOutlinedInput-root": {
               height: "50px",
               paddingTop: "0",
@@ -222,171 +356,337 @@ const AddParameterPopup: React.FC<Props> = ({
             },
           }}
         >
-          <MenuItem value="Decimal">Decimal</MenuItem>
-          <MenuItem value="Select">Multiple Selection</MenuItem>
-          <MenuItem value="Text">Text</MenuItem>
-          <MenuItem value="Dropdown">Dropdown</MenuItem>
-          <MenuItem value="Percentage">Percentage</MenuItem>
-          <MenuItem value="Integer">Integer</MenuItem>
+          {FIELD_TYPES.map((type) => (
+            <MenuItem key={type} value={type}>
+              {type}
+            </MenuItem>
+          ))}
         </TextField>
 
-        {dataType === "Decimal" && (
-          <Box sx={{ display: "flex", gap: "16px" }}>
-            <TextField
-              label="Min °C"
-              size="small"
-              value={minValue}
-              onChange={(e) => setMinValue(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              sx={{
-                width: "182px",
-                "& .MuiInputLabel-root": { color: "#5F646F !important" },
-                "& .MuiInputLabel-root.Mui-focused": {
-                  color: "#5F646F !important",
-                },
-                "& .MuiOutlinedInput-root": {
-                  height: "50px",
-                  borderRadius: "10px",
-                  "& fieldset": { borderColor: "#CFD1D4" },
-                },
-              }}
-            />
-            <TextField
-              label="Max °C"
-              size="small"
-              value={maxValue}
-              onChange={(e) => setMaxValue(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              sx={{
-                width: "182px",
-                "& .MuiInputLabel-root": { color: "#5F646F !important" },
-                "& .MuiInputLabel-root.Mui-focused": {
-                  color: "#5F646F !important",
-                },
-                "& .MuiOutlinedInput-root": {
-                  height: "50px",
-                  borderRadius: "10px",
-                  "& fieldset": { borderColor: "#CFD1D4" },
-                },
-              }}
-            />
-          </Box>
-        )}
-
-        {dataType === "Select" && (
-          <Box sx={{ display: "flex", flexDirection: "row", gap: 3, ml: 1 }}>
-            {["Option 1", "Option 2", "Option 3"].map((opt) => (
-              <FormControlLabel
-                key={opt}
-                control={
-                  <Checkbox
-                    color="default"
-                    checked={selectedOptions.includes(opt)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedOptions([...selectedOptions, opt]);
-                      } else {
-                        setSelectedOptions(
-                          selectedOptions.filter((o) => o !== opt)
-                        );
-                      }
-                    }}
-                  />
-                }
-                label={opt}
-                sx={{ color: "#5F646F" }}
+        {/* ============ INTEGER FIELD TYPE ============ */}
+        {fieldType === "Integer" && (
+          <>
+            <Box sx={{ display: "flex", gap: "16px" }}>
+              <TextField
+                label="Default Value"
+                size="small"
+                value={integerDefault}
+                onChange={(e) => setIntegerDefault(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                sx={halfFieldSX}
               />
-            ))}
-          </Box>
+
+              <TextField
+                label="Unit"
+                select
+                size="small"
+                value={integerUnit}
+                onChange={(e) => setIntegerUnit(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                sx={halfFieldSX}
+              >
+                {UNIT_OPTIONS.map((opt) => (
+                  <MenuItem key={opt} value={opt}>
+                    {opt}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Box>
+
+            <Box sx={{ display: "flex", gap: "16px" }}>
+              <TextField
+                label="Minimum Value"
+                size="small"
+                value={integerMin}
+                onChange={(e) => setIntegerMin(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                sx={{ ...commonFieldSX, 
+                  width: "182px",
+                  height:"50px"
+                }}
+              />
+
+              <TextField
+                label="Maximum Value"
+                size="small"
+                value={integerMax}
+                onChange={(e) => setIntegerMax(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                sx={{ ...commonFieldSX, 
+                  width: "182px",
+                   height:"50px"
+                 }}
+              />
+            </Box>
+          </>
         )}
 
-        {dataType === "Dropdown" && (
-          <TextField
-            label="Select Option"
-            select
-            fullWidth
-            value={dropdownValue}
-            onChange={(e) => setDropdownValue(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            sx={{
-              width: "380px",
-              "& .MuiOutlinedInput-root": {
-                height: "50px",
-                "& fieldset": { borderColor: "#CFD1D4" },
-              },
-            }}
+        {/* ============ DECIMAL FIELD TYPE ============ */}
+        {fieldType === "Decimal" && (
+          <>
+            <Box sx={{ display: "flex", gap: "16px" }}>
+              <TextField
+                label="Default Value"
+                size="small"
+                value={decimalDefault}
+                onChange={(e) => setDecimalDefault(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                sx={halfFieldSX}
+              />
+
+              <TextField
+                label="Unit"
+                select
+                size="small"
+                value={decimalUnit}
+                onChange={(e) => setDecimalUnit(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                sx={halfFieldSX}
+              >
+                {UNIT_OPTIONS.map((opt) => (
+                  <MenuItem key={opt} value={opt}>
+                    {opt}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Box>
+
+            <Box sx={{ display: "flex", gap: "16px" }}>
+              <TextField
+                label="Minimum Value"
+                size="small"
+                value={decimalMin}
+                onChange={(e) => setDecimalMin(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                sx={{ ...commonFieldSX, width: "182px" }}
+              />
+
+              <TextField
+                label="Maximum Value"
+                size="small"
+                value={decimalMax}
+                onChange={(e) => setDecimalMax(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                sx={{ ...commonFieldSX, width: "182px" }}
+              />
+            </Box>
+          </>
+        )}
+
+        {/* ============ TEXT FIELD TYPE ============ */}
+        {fieldType === "Text" && (
+          <>
+            <Box sx={{ display: "flex", gap: 3, alignItems: "center", ml: 1 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <input
+                  type="radio"
+                  checked={textType === "single"}
+                  onChange={() => setTextType("single")}
+                  style={{
+                    appearance: "none",
+                    WebkitAppearance: "none",
+                    width: "16px",
+                    height: "16px",
+                    borderRadius: "50%",
+                    cursor: "pointer",
+                    border: `2px solid ${textType === "single" ? "#232323" : "#d1d5db"}`,
+                    backgroundColor: "#fff",
+                    boxShadow:
+                      textType === "single"
+                        ? "inset 0 0 0 2px #fff, inset 0 0 0 14px #E17E61"
+                        : "none",
+                    outline: "none",
+                  }}
+                />
+                Single Line
+              </label>
+
+              <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <input
+                  type="radio"
+                  checked={textType === "multi"}
+                  onChange={() => setTextType("multi")}
+                  style={{
+                    appearance: "none",
+                    WebkitAppearance: "none",
+                    width: "16px",
+                    height: "16px",
+                    borderRadius: "50%",
+                    cursor: "pointer",
+                    border: `2px solid ${textType === "multi" ? "#232323" : "#d1d5db"}`,
+                    backgroundColor: "#fff",
+                    boxShadow:
+                      textType === "multi"
+                        ? "inset 0 0 0 2px #fff, inset 0 0 0 14px #E17E61"
+                        : "none",
+                    outline: "none",
+                  }}
+                />
+                Multi Line
+              </label>
+            </Box>
+
+            <TextField
+              value={textValue}
+              onChange={(e) => setTextValue(e.target.value)}
+              fullWidth
+              multiline={textType === "multi"}
+              rows={textType === "multi" ? 4 : 1}
+              sx={commonFieldSX}
+            />
+          </>
+        )}
+
+        {/* ============ BOOLEAN FIELD TYPE ============ */}
+        {fieldType === "Boolean" && (
+          <RadioGroup
+            row
+            value={booleanType}
+            onChange={(e) => setBooleanType(e.target.value as "yesno" | "truefalse")}
+            sx={{ ml: 1 }}
           >
-            <MenuItem value="Lasted">Lasted</MenuItem>
-            <MenuItem value="Popular">Popular</MenuItem>
-            <MenuItem value="Recommended">Recommended</MenuItem>
-          </TextField>
+            <FormControlLabel
+              value="yesno"
+              control={<Radio />}
+              label="Yes/No"
+            />
+            <FormControlLabel
+              value="truefalse"
+              control={<Radio />}
+              label="True/False"
+            />
+          </RadioGroup>
         )}
 
-        {dataType === "Text" && (
-          <TextField
-            label="Add Text Here"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            fullWidth
-            InputLabelProps={{ shrink: true }}
-            sx={{
-              width: "380px",
-              "& .MuiOutlinedInput-root": {
-                height: "50px",
-                borderRadius: "10px",
-                "& fieldset": { borderColor: "#CFD1D4" },
-              },
-            }}
-          />
+        {/* ============ DROPDOWN FIELD TYPE - NEW LOGIC ============ */}
+        {fieldType === "Dropdown" && (
+          <>
+            {/* Selection Type */}
+            <RadioGroup
+              row
+              value={dropdownMode}
+              onChange={(e) =>
+                setDropdownMode(e.target.value as "single" | "multi")
+              }
+              sx={{ ml: 1 }}
+            >
+              <FormControlLabel
+                value="single"
+                control={<Radio />}
+                label="Single Selection"
+              />
+              <FormControlLabel
+                value="multi"
+                control={<Radio />}
+                label="Multi Selection"
+              />
+            </RadioGroup>
+
+            {/* OPTIONS */}
+            {dropdownOptions.map((opt, idx) => (
+              <Box
+                key={idx}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  width: "100%",
+                }}
+              >
+                {/* RADIO / CHECKBOX */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    minWidth: "18px",
+                  }}
+                >
+                  {dropdownMode === "single" ? (
+                    <input
+                      type="radio"
+                      name="dropdown-single"
+                      checked={selectedDropdownValues[0] === opt}
+                      onChange={() => setSelectedDropdownValues([opt])}
+                      style={{ margin: 0 }}
+                    />
+                  ) : (
+                    <input
+                      type="checkbox"
+                      checked={selectedDropdownValues.includes(opt)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedDropdownValues([
+                            ...selectedDropdownValues,
+                            opt,
+                          ]);
+                        } else {
+                          setSelectedDropdownValues(
+                            selectedDropdownValues.filter((v) => v !== opt)
+                          );
+                        }
+                      }}
+                      style={{ margin: 0 }}
+                    />
+                  )}
+                </Box>
+
+                {/* OPTION INPUT */}
+                <TextField
+                  value={opt}
+                  onChange={(e) => {
+                    const updated = [...dropdownOptions];
+                    updated[idx] = e.target.value;
+                    setDropdownOptions(updated);
+                  }}
+                  size="small"
+                  sx={{ flex: 1 }}
+                />
+
+                {/* ADD */}
+                <IconButton
+                  onClick={() => setDropdownOptions([...dropdownOptions, ""])}
+                  size="small"
+                >
+                  +
+                </IconButton>
+
+                {/* DELETE */}
+                {dropdownOptions.length > 1 && (
+                  <IconButton
+                    onClick={() =>
+                      setDropdownOptions(
+                        dropdownOptions.filter((_, i) => i !== idx)
+                      )
+                    }
+                    size="small"
+                  >
+                    🗑
+                  </IconButton>
+                )}
+              </Box>
+            ))}
+          </>
         )}
 
-        {dataType === "Percentage" && (
-          <TextField
-            label="Percentage"
-            fullWidth
-            value={percentage}
-            onChange={(e) => setPercentage(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            sx={{
-              width: "380px",
-              "& .MuiOutlinedInput-root": {
-                height: "50px",
-                "& fieldset": { borderColor: "#CFD1D4" },
-              },
-            }}
-          />
-        )}
-
-        {dataType === "Integer" && (
-          <TextField
-            label="Integer Value"
-            fullWidth
-            value={integerValue}
-            onChange={(e) => setIntegerValue(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            sx={{
-              width: "380px",
-              "& .MuiOutlinedInput-root": {
-                height: "50px",
-                "& fieldset": { borderColor: "#CFD1D4" },
-              },
-            }}
-          />
-        )}
-
-        <Box
-          sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mr: 2 }}
-        >
+        {/* Action Buttons */}
+        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, px: 2, mr: 2 }}>
           <Button
-            variant="outlined"
+            variant="contained"
             onClick={onClose}
             sx={{
-              width: "120px",
-              borderRadius: "10px",
-              borderColor: "#505050",
-              "&:hover": { borderColor: "#505050", backgroundColor: "white" },
+              flex: 1,
+              height: "48px",
+              borderRadius: "12px",
+              backgroundColor: "#F2F2F2",
               color: "#505050",
               textTransform: "none",
+              fontWeight: 600,
+              fontSize: "16px",
+              boxShadow: "none",
+              "&:hover": {
+                backgroundColor: "#F2F2F2",
+                boxShadow: "none",
+              },
             }}
           >
             Cancel
@@ -394,16 +694,24 @@ const AddParameterPopup: React.FC<Props> = ({
 
           <Button
             variant="contained"
-            onClick={handleAdd}
+            onClick={handleSave}
             sx={{
-              width: "120px",
-              borderRadius: "10px",
-              background: "#383838",
+              flex: 1,
+              height: "48px",
+              borderRadius: "12px",
+              backgroundColor: "#4A4A4A",
+              color: "#FFFFFF",
               textTransform: "none",
-              "&:hover": { background: "#2f2f2f" },
+              fontWeight: 600,
+              fontSize: "16px",
+              boxShadow: "none",
+              "&:hover": {
+                backgroundColor: "#3A3A3A",
+                boxShadow: "none",
+              },
             }}
           >
-            {initialData ? "Update" : "Add"}
+            {initialData ? "Update" : "Save"}
           </Button>
         </Box>
       </DialogContent>
