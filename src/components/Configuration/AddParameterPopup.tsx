@@ -11,7 +11,6 @@ import {
   IconButton,
   Checkbox,
   FormControlLabel,
-  FormControl,
   RadioGroup,
   Radio,
 } from "@mui/material";
@@ -230,6 +229,12 @@ const AddParameterPopup: React.FC<Props> = ({
     onClose();
   };
 
+  // ✅ Handle selection mode change - clear selections when switching modes
+  const handleDropdownModeChange = (newMode: "single" | "multi") => {
+    setDropdownMode(newMode);
+    setSelectedDropdownValues([]); // Clear selections when switching modes
+  };
+
   const commonFieldSX = {
     width: "380px",
     "& .MuiInputLabel-root.Mui-focused": {
@@ -247,10 +252,11 @@ const AddParameterPopup: React.FC<Props> = ({
       "&.Mui-focused fieldset": { borderColor: "#CFD1D4 !important" },
     },
   };
+  
   const halfFieldSX = {
-  ...commonFieldSX,
-  width: "182px",  
-};
+    ...commonFieldSX,
+    width: "182px",  
+  };
 
   return (
     <Dialog
@@ -558,7 +564,7 @@ const AddParameterPopup: React.FC<Props> = ({
           </RadioGroup>
         )}
 
-        {/* ============ DROPDOWN FIELD TYPE - NEW LOGIC ============ */}
+        {/* ============ DROPDOWN FIELD TYPE - FIXED SELECTION LOGIC ============ */}
         {fieldType === "Dropdown" && (
           <>
             {/* Selection Type */}
@@ -566,7 +572,7 @@ const AddParameterPopup: React.FC<Props> = ({
               row
               value={dropdownMode}
               onChange={(e) =>
-                setDropdownMode(e.target.value as "single" | "multi")
+                handleDropdownModeChange(e.target.value as "single" | "multi")
               }
               sx={{ ml: 1 }}
             >
@@ -593,7 +599,7 @@ const AddParameterPopup: React.FC<Props> = ({
                   width: "100%",
                 }}
               >
-                {/* RADIO / CHECKBOX */}
+                {/* RADIO / CHECKBOX - Now functional */}
                 <Box
                   sx={{
                     display: "flex",
@@ -604,10 +610,15 @@ const AddParameterPopup: React.FC<Props> = ({
                   {dropdownMode === "single" ? (
                     <input
                       type="radio"
-                      name="dropdown-single"
-                      checked={selectedDropdownValues[0] === opt}
+                      name="dropdown-single-selection"
+                      checked={selectedDropdownValues.includes(opt)}
                       onChange={() => setSelectedDropdownValues([opt])}
-                      style={{ margin: 0 }}
+                      style={{ 
+                        margin: 0,
+                        cursor: "pointer",
+                        width: "16px",
+                        height: "16px"
+                      }}
                     />
                   ) : (
                     <input
@@ -625,7 +636,12 @@ const AddParameterPopup: React.FC<Props> = ({
                           );
                         }
                       }}
-                      style={{ margin: 0 }}
+                      style={{ 
+                        margin: 0,
+                        cursor: "pointer",
+                        width: "16px",
+                        height: "16px"
+                      }}
                     />
                   )}
                 </Box>
@@ -635,8 +651,16 @@ const AddParameterPopup: React.FC<Props> = ({
                   value={opt}
                   onChange={(e) => {
                     const updated = [...dropdownOptions];
+                    const oldValue = updated[idx];
                     updated[idx] = e.target.value;
                     setDropdownOptions(updated);
+                    
+                    // Update selected values if this option was selected
+                    if (selectedDropdownValues.includes(oldValue)) {
+                      setSelectedDropdownValues(
+                        selectedDropdownValues.map(v => v === oldValue ? e.target.value : v)
+                      );
+                    }
                   }}
                   size="small"
                   sx={{ flex: 1 }}
@@ -646,6 +670,7 @@ const AddParameterPopup: React.FC<Props> = ({
                 <IconButton
                   onClick={() => setDropdownOptions([...dropdownOptions, ""])}
                   size="small"
+                  sx={{ color: "#4A4A4A" }}
                 >
                   +
                 </IconButton>
@@ -653,12 +678,18 @@ const AddParameterPopup: React.FC<Props> = ({
                 {/* DELETE */}
                 {dropdownOptions.length > 1 && (
                   <IconButton
-                    onClick={() =>
+                    onClick={() => {
+                      const removedOption = dropdownOptions[idx];
                       setDropdownOptions(
                         dropdownOptions.filter((_, i) => i !== idx)
-                      )
-                    }
+                      );
+                      // Remove from selections if it was selected
+                      setSelectedDropdownValues(
+                        selectedDropdownValues.filter(v => v !== removedOption)
+                      );
+                    }}
                     size="small"
+                    sx={{ color: "#4A4A4A" }}
                   >
                     🗑
                   </IconButton>

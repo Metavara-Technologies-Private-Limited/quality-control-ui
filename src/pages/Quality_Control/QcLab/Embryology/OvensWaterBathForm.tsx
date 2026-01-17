@@ -1,6 +1,5 @@
 import { parameterValueApi } from "@/services/api";
 import { useEffect, useState } from "react";
-// ✅ Import toast and ToastContainer
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
@@ -105,12 +104,13 @@ const OvensWaterBathForm = ({
     const dataType = config.data_type;
 
     switch (dataType) {
+      case "Integer":
       case "Decimal":
       case "Min/Max":
         if (config.min_value != null && config.max_value != null) {
           return (
             <span style={{ color: "#94a3b8", fontSize: "11px" }}>
-              Range: {config.min_value} - {config.max_value} °C
+              Range: {config.min_value} - {config.max_value}
             </span>
           );
         }
@@ -121,6 +121,18 @@ const OvensWaterBathForm = ({
             Range: 0% - {config.percentage}%
           </span>
         ) : null;
+      case "Boolean":
+        return (
+          <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+            Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
+          </span>
+        );
+      case "Text":
+        return (
+          <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+            Type: {config.text_type === "single" ? "Single Line" : "Multi Line"} Text
+          </span>
+        );
       case "Select":
       case "Dropdown":
         return config.dropdown && Array.isArray(config.dropdown) ? (
@@ -196,7 +208,6 @@ const OvensWaterBathForm = ({
       });
 
       await Promise.all(requests);
-      // ✅ Success Notification
       toast.update(toastId, {
         render: "Parameter logs saved successfully!",
         type: "success",
@@ -213,7 +224,6 @@ const OvensWaterBathForm = ({
         comments: "",
       });
     } catch (err) {
-      // ✅ Error Notification
       toast.update(toastId, {
         render: "Failed to save logs. Check connection.",
         type: "error",
@@ -274,7 +284,6 @@ const OvensWaterBathForm = ({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      {/* ✅ Added ToastContainer */}
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -417,18 +426,18 @@ const OvensWaterBathForm = ({
             </div>
           </div>
 
-            <div style={inputContainerStyle}>
-              <input
-                style={inputStyle}
-                value={logValues["comments"] || ""}
-                onChange={(e) => setValue("comments", e.target.value)}
-                placeholder="Type Here"
-              />
-              <label style={labelStyle}>Comments</label>
-              <div style={rangeTextStyle}>
-                {renderParameterInfo("Comments")}
-              </div>
+          <div style={inputContainerStyle}>
+            <input
+              style={inputStyle}
+              value={logValues["comments"] || ""}
+              onChange={(e) => setValue("comments", e.target.value)}
+              placeholder="Type Here"
+            />
+            <label style={labelStyle}>Comments</label>
+            <div style={rangeTextStyle}>
+              {renderParameterInfo("Comments")}
             </div>
+          </div>
 
           <div style={inputContainerStyle}>
             <select

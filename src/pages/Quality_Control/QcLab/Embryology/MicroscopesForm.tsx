@@ -69,17 +69,19 @@ const MicroscopesForm = ({
     return config;
   };
 
+  // ✅ UPDATED: Now supports Boolean and Text types
   const renderParameterInfo = (parameterName: string) => {
     const config = getParameterConfig(parameterName);
     if (!config) return null;
     const dataType = config.data_type;
 
     switch (dataType) {
+      case "Integer":
       case "Decimal":
       case "Min/Max":
         if (config.min_value != null && config.max_value != null) {
           return (
-            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
               Range: {config.min_value} - {config.max_value}
             </span>
           );
@@ -88,36 +90,30 @@ const MicroscopesForm = ({
       case "Percentage":
         if (config.percentage != null) {
           return (
-            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
               Range: 0% - {config.percentage}%
             </span>
           );
         }
         break;
+      case "Boolean":
+        return (
+          <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
+            Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
+          </span>
+        );
+      case "Text":
+        return (
+          <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
+            Type: {config.text_type === "single" ? "Single Line" : "Multi Line"} Text
+          </span>
+        );
       case "Select":
       case "Dropdown":
         if (config.dropdown && Array.isArray(config.dropdown) && config.dropdown.length > 0) {
           return (
-            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
               Options: {config.dropdown.join(", ")}
-            </span>
-          );
-        }
-        break;
-      case "Text":
-        if (config.text) {
-          return (
-            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
-              Value: {config.text}
-            </span>
-          );
-        }
-        break;
-      case "Integer":
-        if (config.integer_value != null) {
-          return (
-            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
-              Value: {config.integer_value}
             </span>
           );
         }
@@ -179,11 +175,9 @@ const MicroscopesForm = ({
       });
 
       await Promise.all(requests);
-      // ✅ Success Notification
       toast.update(id, { render: "Parameter logs saved successfully!", type: "success", isLoading: false, autoClose: 3000 });
       setLogValues({});
     } catch (err) {
-      // ✅ Error Notification
       toast.update(id, { render: "Failed to save logs. Please check console.", type: "error", isLoading: false, autoClose: 3000 });
       console.error(err);
     } finally {
@@ -204,40 +198,36 @@ const MicroscopesForm = ({
 
   const inputContainerStyle = { position: "relative" as const, marginBottom: "20px" };
   const inputStyle = { width: "100%", height: "50px", padding: "10px 12px", border: "2px solid #e5e7eb", borderRadius: "8px", fontSize: "16px", color:"#9E9E9E", fontWeight: "500", outline: "none" };
-
   const labelStyle = { position: "absolute" as const, left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "14px",  color: "#232323" };
-
   const rangeTextStyle = { fontSize: "12px", marginTop: "4px", color: "#9E9E9E", fontWeight: "500" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      {/* ✅ Add ToastContainer here to enable popups */}
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
 
       <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "24px" }}>
         {/* Unit Selector */}
         <div style={{ display: "flex", gap: "24px", marginBottom: "24px", borderBottom: "2px solid #f1f5f9", paddingBottom: "20px" }}>
           {equipmentDetails.map((ed) => (
-            <label key={ed.equipment_id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: selectedRadio === ed.equipment_num ? "600" : "500", color: selectedRadio === ed.equipment_num ? "#232323": "#E17E61" , cursor: "pointer" }}>
-
+            <label key={ed.equipment_id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: selectedRadio === ed.equipment_num ? "600" : "500", color: "#232323", cursor: "pointer" }}>
               <input
-  type="radio"
-  checked={selectedRadio === ed.equipment_num}
-  onChange={() => setSelectedRadio(ed.equipment_num)}
-  style={{
-    appearance: "none",
-    WebkitAppearance: "none",
-    width: "16px",
-    height: "16px",
-    borderRadius: "50%",
-    cursor: "pointer",
-    border: `2px solid ${selectedRadio === ed.equipment_num ? "#232323" : "#d1d5db"}`,
-    backgroundColor: "#fff",
-    boxShadow: selectedRadio === ed.equipment_num ? "inset 0 0 0 2px #fff, inset 0 0 0 14px #E17E61" : "none",
-    outline: "none"
-  }}
-/> 
-{ed.equipment_num}
+                type="radio"
+                checked={selectedRadio === ed.equipment_num}
+                onChange={() => setSelectedRadio(ed.equipment_num)}
+                style={{
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  width: "16px",
+                  height: "16px",
+                  borderRadius: "50%",
+                  cursor: "pointer",
+                  border: `2px solid ${selectedRadio === ed.equipment_num ? "#232323" : "#d1d5db"}`,
+                  backgroundColor: "#fff",
+                  boxShadow: selectedRadio === ed.equipment_num ? "inset 0 0 0 2px #fff, inset 0 0 0 14px #E17E61" : "none",
+                  outline: "none"
+                }}
+              /> 
+              {ed.equipment_num}
             </label>
           ))}
         </div>
@@ -309,19 +299,16 @@ const MicroscopesForm = ({
         </div>
       </div>
 
-      {/* Activity Graph Section Starts Here */}
+      {/* Activity Graph Section */}
       <div style={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "12px",overflow: "hidden" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
-          
-          {/* Left Side: Icon and Title */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "32px", height: "32px", borderRadius: "8px" }}>
               <img src={Chart_activity} alt="chart icon" style={{ width: "25px", height: "25px" }} />
             </div>
-            <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#0f172a", margin: 0 }}>Activity</h3>
+            <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#232323", margin: 0 }}>Activity</h3>
           </div>
 
-          {/* Right Side: Legend Indicators */}
           <div style={{ display: "flex", gap: "20px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <div style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#6c6c6c" }}></div>
@@ -334,14 +321,15 @@ const MicroscopesForm = ({
           </div>
         </div>        
         
-<hr 
-  style={{ 
-    border: "none", 
-    borderTop: "1px solid #E2E3E5", 
-    margin: "-20px -24px 16px -24px",
-    width: "auto"
-  }} 
-/>        
+        <hr 
+          style={{ 
+            border: "none", 
+            borderTop: "1px solid #E2E3E5", 
+            margin: "-20px -24px 16px -24px",
+            width: "auto"
+          }} 
+        />        
+        
         <div style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={activityData} stackOffset="sign" barGap={-25} margin={{ top: 20, right: 30, left: 45, bottom: 20 }}>
@@ -355,7 +343,7 @@ const MicroscopesForm = ({
                 formatter={(value: number, name: string) => {
                   const absoluteValue = Math.abs(value);
                   const label = name === "compliant" ? "Compliant" : "Non-Compliant";
-                  return [ `${absoluteValue} m/s`, label ]; // Use m/s for LFH
+                  return [ absoluteValue, label ];
                 }}
               /> 
               <ReferenceLine y={0} stroke="#E0E0E0" strokeDasharray="3 3"/>
@@ -376,7 +364,6 @@ const MicroscopesForm = ({
           </ResponsiveContainer>
         </div>
       </div>
-      {/* END OF ACTIVITY SECTION */}
     </div>
   );
 };

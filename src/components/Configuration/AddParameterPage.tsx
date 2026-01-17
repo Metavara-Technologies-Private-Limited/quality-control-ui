@@ -16,7 +16,6 @@ import {
   TextField,
   IconButton,
 } from "@mui/material";
-// import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import TurnLeftIcon from '@mui/icons-material/TurnLeft';
 import { useNavigate, useLocation } from "react-router-dom";
 import AddParameterPopup from "./AddParameterPopup";
@@ -115,10 +114,12 @@ const AddParameterPage = () => {
       setDepartmentName(dept?.name || "");
       setDepartmentId(dept?.id || null);
 
+      // ✅ FIXED: Load equipment details with make and model
       const loadedEquipmentTable = (storeEquipment.equipment_details || []).map(
         (detail: any, index: number) => {
           const numMatch = detail.equipment_num?.match(/-(\d+)$/);
           const srNo = numMatch ? parseInt(numMatch[1]) : index + 1;
+          
           return {
             id: detail.id,
             sr: srNo,
@@ -140,9 +141,7 @@ const AddParameterPage = () => {
         setNextSrNo(maxSrNo + 1);
       }
 
-      // ✅ HANDLE BOTH CONFIG FORMATS (always from store)
-      console.log("cc:storeEquipment", storeEquipment);
-
+      // ✅ FIXED PARAMETER LOADING WITH ALL REQUIRED FIELDS
       const loadedParams = storeEquipment.parameters.map((p: any) => {
         let cfg = p.config || {};
 
@@ -150,17 +149,56 @@ const AddParameterPage = () => {
           cfg = cfg.history[cfg.history.length - 1];
         }
 
-        return {
+        // Create the base parameter object
+        const param: any = {
           id: p.id,
           name: p.parameter_name,
+          title: p.parameter_name,
           data_type: cfg.data_type,
-          min_value: cfg.min_value,
-          max_value: cfg.max_value,
-          integer_value: cfg.integer_value,
-          percentage: cfg.percentage,
-          text: cfg.text,
-          dropdown: normalizeDropdownValue(cfg.dropdown),
+          field_type: cfg.data_type,
+          mandatory: p.mandatory || false,
         };
+
+        // Handle different data types
+        switch (cfg.data_type) {
+          case "Integer":
+            param.default_value = cfg.integer_value || cfg.default_value || "";
+            param.unit = cfg.unit || "";
+            param.min_value = cfg.min_value || "";
+            param.max_value = cfg.max_value || "";
+            break;
+
+          case "Decimal":
+            param.default_value = cfg.default_value || "";
+            param.unit = cfg.unit || "";
+            param.min_value = cfg.min_value || "";
+            param.max_value = cfg.max_value || "";
+            break;
+
+          case "Text":
+            param.text_type = cfg.text_type || "single";
+            param.text = cfg.text || "";
+            break;
+
+          case "Boolean":
+            param.boolean_type = cfg.boolean_type || "yesno";
+            break;
+
+          case "Dropdown":
+            param.dropdown = normalizeDropdownValue(cfg.dropdown);
+            param.selection_type = cfg.selection_type || "single";
+            break;
+        }
+
+        // Keep original values for display
+        param.integer_value = cfg.integer_value;
+        param.percentage = cfg.percentage;
+        param.min_value = param.min_value || cfg.min_value;
+        param.max_value = param.max_value || cfg.max_value;
+        param.text = param.text || cfg.text;
+        param.dropdown = param.dropdown || normalizeDropdownValue(cfg.dropdown);
+
+        return param;
       });
 
       setParameters(loadedParams);
@@ -178,7 +216,7 @@ const AddParameterPage = () => {
 
       setParameters(loadParametersFromLocalStorage());
     }
-  }, [location, clinic]);  
+  }, [location, clinic]);
 
   useEffect(() => {
     if (!isEditMode) {
@@ -268,9 +306,6 @@ const AddParameterPage = () => {
       setParameters((prev) => prev.filter((_, i) => i !== paramIndexToDelete));
       toast.info("Parameter deleted");
       dispatch(fetchClinic(1));
-      // setTimeout(() => {
-      //   navigate("/configuration/equipment", { replace: true });
-      // }, 2000);
     } catch (err) {
       toast.error("Failed to delete parameter");
       console.error(err);
@@ -400,22 +435,25 @@ const AddParameterPage = () => {
         })),
         parameters: parameters.map((p) => ({
           id: p.id ?? undefined,
-          parameter_name: p.name || "",
+          parameter_name: p.name || p.title || "",
           is_active: true,
           config: {
-            data_type: p.data_type || "",
+            data_type: p.data_type || p.field_type || "",
             min_value: p.min_value ?? null,
             max_value: p.max_value ?? null,
-            integer_value: p.integer_value ?? null,
+            integer_value: p.integer_value ?? p.default_value ?? null,
+            unit: p.unit ?? null,
             percentage: p.percentage ?? null,
             text: p.text ?? null,
+            text_type: p.text_type ?? null,
+            boolean_type: p.boolean_type ?? null,
             dropdown: p.dropdown ?? [],
+            selection_type: p.selection_type ?? null,
           },
         })),
       };
 
       if (isEditMode && originalEquipment?.id) {
-        // Update existing equipment
         await equipmentApi.update(
           departmentId,
           originalEquipment.id,
@@ -426,7 +464,6 @@ const AddParameterPage = () => {
           autoClose: 2000,
         });
       } else {
-        // Create new equipment
         await equipmentApi.create(departmentId, equipmentPayload);
         toast.success("Equipment created successfully!", {
           position: "top-right",
@@ -447,31 +484,23 @@ const AddParameterPage = () => {
   };
 
   const renderParameterContent = (p: any) => {
-    let data_type = p.data_type;
+    let data_type = p.data_type || p.field_type;
     let config = p;
 
-    // ✅ Handle history format - get latest config
     if (p.history && Array.isArray(p.history) && p.history.length > 0) {
       config = p.history[p.history.length - 1];
       data_type = config.data_type;
     }
 
     switch (data_type) {
+      case "Integer":
       case "Min/Max":
       case "Decimal":
         return (
           <Typography
             sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
           >
-            Min {config.min_value} °C – Max {config.max_value} °C
-          </Typography>
-        );
-      case "Integer":
-        return (
-          <Typography
-            sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
-          >
-            {config.integer_value}
+            Min {config.min_value || "-"} – Max {config.max_value || "-"}
           </Typography>
         );
       case "Percentage":
@@ -488,6 +517,14 @@ const AddParameterPage = () => {
             sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
           >
             {config.text}
+          </Typography>
+        );
+      case "Boolean":
+        return (
+          <Typography
+            sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
+          >
+            {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
           </Typography>
         );
       case "Dropdown":
@@ -525,17 +562,6 @@ const AddParameterPage = () => {
 
       <Box sx={{ background: "#FFFFFF", minHeight: "100vh" }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          {/* <IconButton
-            onClick={() => navigate("/configuration/equipment")}
-            sx={{
-              width: "32px",
-              height: "32px",
-              border: "1px solid #E5E7EB",
-              borderRadius: "8px",
-            }}
-          >
-            <ArrowBackRoundedIcon sx={{ fontSize: "18px", color: "#4B5563" }} />
-          </IconButton> */}
           <IconButton
             onClick={() => navigate("/configuration/equipment")}
             sx={{
@@ -641,7 +667,7 @@ const AddParameterPage = () => {
                   }}
                 >
                   <Typography sx={{ fontWeight: 600, fontSize: "15px" }}>
-                    {p.name || p.parameter_name}
+                    {p.name || p.title || p.parameter_name}
                   </Typography>
                   <IconButton
                     size="small"
@@ -659,7 +685,7 @@ const AddParameterPage = () => {
                 <Typography
                   sx={{ fontSize: "12px", color: "#6B7280", mt: 0.5 }}
                 >
-                  Data Type : {p.data_type}
+                  Data Type : {p.data_type || p.field_type}
                 </Typography>
                 <Box
                   sx={{
@@ -993,4 +1019,4 @@ const headerStyle: CSSProperties = {
 };
 const cellStyle = { padding: "10px", fontSize: "14px", color: "#4B5563" };
 
-export default AddParameterPage;
+export default AddParameterPage; 
