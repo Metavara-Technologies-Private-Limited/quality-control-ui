@@ -25,9 +25,9 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store";
-import { eventApi } from "@/services/api";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/store";
+import { fetchEventsByClinic, selectUIEvents } from "@/store/eventSlice";
 
 const COLORS = {
   textPrimary: "#000000",
@@ -345,8 +345,12 @@ const mapEventToRow = (e: any) => ({
 /* ---------------- MAIN COMPONENT ---------------- */
 const Events = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+
+const events = useSelector(selectUIEvents);
+const eventLoading = useSelector((s: RootState) => s.events.loading);
+
   const { data: clinic } = useSelector((s: RootState) => s.clinic);
-  const [events, setEvents] = useState<any[]>([]);
   const [viewingEvent, setViewingEvent] = useState<any>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -358,17 +362,14 @@ const Events = () => {
   };
 
   useEffect(() => {
-    if (!clinic?.id) return;
-
-    eventApi.listByClinic(clinic.id).then((res) => {
-      const raw = res.data.results ?? res.data ?? [];
-      setEvents(raw.map(mapEventToRow));
-    });
-  }, [clinic?.id]);
+    if (clinic?.id) {
+      dispatch(fetchEventsByClinic(clinic.id));
+    }
+  }, [clinic?.id, dispatch]);  
 
   const filteredEvents = events.filter((e) =>
     e.name.toLowerCase().includes(search.toLowerCase())
-  );
+  );  
 
   const paginatedEvents = filteredEvents.slice(
     page * rowsPerPage,
@@ -389,14 +390,30 @@ const Events = () => {
             onSearch={handleSearch}
           />
 
-          <EventsTable
-            data={paginatedEvents}
-            page={page}
-            rowsPerPage={rowsPerPage}
-            total={filteredEvents.length}
-            onPageChange={setPage}
-            onRowClick={setViewingEvent}
-          />
+          {eventLoading ? (
+            <Card
+              sx={{
+                borderRadius: "12px",
+                border: `1px solid ${COLORS.border}`,
+                boxShadow: "none",
+                p: 4,
+                textAlign: "center",
+              }}
+            >
+              <Typography fontSize={14} color={COLORS.textMuted}>
+                Loading events...
+              </Typography>
+            </Card>
+          ) : (
+            <EventsTable
+              data={paginatedEvents}
+              page={page}
+              rowsPerPage={rowsPerPage}
+              total={filteredEvents.length}
+              onPageChange={setPage}
+              onRowClick={setViewingEvent}
+            />
+          )}
         </>
       )}
     </Box>

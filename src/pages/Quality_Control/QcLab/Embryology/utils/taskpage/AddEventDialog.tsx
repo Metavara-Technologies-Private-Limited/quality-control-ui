@@ -2,21 +2,20 @@ import { Button, Dialog, DialogContent, Divider, IconButton, Stack, TextField, T
 import CloseIcon from "@mui/icons-material/Close";
 
 
+// AddEventDialog.tsx
 interface AddEventDialogProps {
-    openAddEvent: boolean;
-    setOpenAddEvent: (open: boolean) => void;   
-    newEventName: string;
-    setNewEventName: (name: string) => void;
-    eventError: string;
-    setEventError: (error: string) => void;
-    setEvents: (events: any[]) => void;
-    setTasksByEvent: (tasksByEvent: any) => void;
-    setSelectedEvent: (event: string) => void;
-    setSelectedEventId?: (id: number) => void;
-
+  openAddEvent: boolean;
+  setOpenAddEvent: (v: boolean) => void;
+  newEventName: string;
+  setNewEventName: (v: string) => void;
+  eventError: string;
+  setEventError: (v: string) => void;
+  // setEvents: React.Dispatch<React.SetStateAction<any[]>>;
+  setSelectedEventId: React.Dispatch<React.SetStateAction<number | null>>;
 }
 
-export const AddEventDialog = ({ openAddEvent, setOpenAddEvent, newEventName, setNewEventName, eventError, setEventError, setEvents, setTasksByEvent, setSelectedEvent }: AddEventDialogProps) => {
+
+export const AddEventDialog = ({ openAddEvent, setOpenAddEvent, newEventName, setNewEventName, eventError, setEventError }: AddEventDialogProps) => {
     return (
     
         <div> <Dialog open={openAddEvent} onClose={() => setOpenAddEvent(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: "16px", p: 1 } }}>

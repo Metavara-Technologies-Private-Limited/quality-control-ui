@@ -8,6 +8,6 @@ import { COLORS } from "./data/colors";
     const today = dayjs().startOf('day');
     const tomorrow = today.add(1, 'day');
     if (date.isSame(today)) return { text: "Today", color: COLORS.danger };
-    if (date.isSame(tomorrow)) return { text: "Tomorrow", color: COLORS.tomorrow };
+    if (date.isSame(tomorrow)) return { text: "Tomorrow" };
     return { text: date.format("DD MMM, YYYY"), color: "#111" };
   };

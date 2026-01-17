@@ -17,6 +17,7 @@ import type {
   CreateParameterPayload,
   EquipmentCreatePayload,
   Task,
+  TaskUpdatePayload,
 } from "@/types";
 
 // APIs related to clinic level operations
@@ -174,23 +175,20 @@ export const eventApi = {
 
 export const taskApi = {
   listByEvent: (eventId: number) =>
-    http.get<Task[]>("/tasks/", { params: { event_id: eventId } }),
+    http.get<Task[]>(`/tasks/event/${eventId}`),
 
-  getById: (id: number) => http.get<Task>(`/tasks/${id}/`),
+  listByClinic: (clinicId: number) =>
+    http.get<Task[]>(`/clinics/${clinicId}/tasks/`), // ✅ NEW
+
+  getById: (id: number) => http.get<Task>(`/tasks/${id}`),
 
   create: (data: Partial<Task>) => http.post<Task>("/tasks", data),
 
-  update: (id: number, data: Partial<Task>) =>
-    http.put<Task>(`/tasks/${id}/`, data),
+  update: (id: number, data: TaskUpdatePayload) =>
+    http.put(`/tasks/${id}`, data),
 
   updateStatus: (id: number, status: Task["status"]) =>
     http.patch(`/tasks/${id}/status/`, { status }),
-
-  uploadAttachment: (id: number, file: File) => {
-    const form = new FormData();
-    form.append("file", file);
-    return http.post(`/tasks/${id}/attachments/`, form);
-  },
 };
 
 // APIs related to parameter values (logs)

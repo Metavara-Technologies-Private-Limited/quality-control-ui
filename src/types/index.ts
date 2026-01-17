@@ -240,6 +240,9 @@ export interface Task {
   status: TaskStatus;         // ✅ numeric enum
   due_date: string;           // ISO string
   time?: string;
+  timer_status?: "IDLE" | "RUNNING" | "PAUSED" | "STOPPED";
+  total_tracked_sec?: number;
+  timer_started_at?: string | null;
 
   event: number;              // ✅ event ID
   assignment?: number | null; // ✅ employee ID
@@ -260,4 +263,39 @@ export interface Attachment {
   id: number;
   file: string;
   file_name: string;
+}
+
+export const TASK_STATUS_MAP: Record<
+  number,
+  "To Do" | "In Progress" | "Completed"
+> = {
+  0: "To Do",
+  1: "In Progress",
+  2: "Completed",
+};
+
+export type UITask = Task & {
+  name: string;
+  status_label: "To Do" | "In Progress" | "Completed";
+  due?: string;
+};
+
+// api-types.ts (or near taskApi)
+
+export interface SubTaskUpdatePayload {
+  id?: number;
+  name: string;
+  status: TaskStatus;
+  due_date: string;
+  assignment: number | null;
+}
+
+export interface TaskUpdatePayload {
+  event: number;
+  assignment: number | null;
+  name: string;
+  description: string;
+  due_date: string;
+  status: TaskStatus;
+  sub_tasks: SubTaskUpdatePayload[];
 }

@@ -301,17 +301,17 @@ const handleSaveTask = async () => {
         onClose={onClose}
         maxWidth="md"
         fullWidth
-        PaperProps={{ sx: { borderRadius: '24px', p: 2 } }}
+        PaperProps={{ sx: { borderRadius: '24px', p: 0 } }}
       >
-        <DialogContent sx={{ p: 2 }}>
+        <DialogContent sx={{ p: 0 }}>
           {/* Header */}
           <Stack
             direction="row"
             justifyContent="space-between"
             alignItems="center"
-            mb={2}
+            m={3}
           >
-            <Typography fontSize={24} fontWeight={800} color="#111">
+            <Typography fontSize={24} fontWeight={700} color="#111">
               Add New Task
             </Typography>
             <IconButton
@@ -327,12 +327,13 @@ const handleSaveTask = async () => {
               <CloseIcon sx={{ fontSize: 18, color: 'white' }} />
             </IconButton>
           </Stack>
+          <Divider sx={{ width: "100%", mx: 0, my: 1 }} />
 
           <CustomStepIndicator addTaskStep={step} />
 
           {/* Step 1 */}
           {step === 1 && (
-            <Stack spacing={3}>
+            <Stack spacing={3} m={3}>
               <Stack direction="row" spacing={3}>
                 <Box sx={{ flex: 1 }}>
                   <Typography sx={{ mb: 1, fontSize: 14, color: '#666' }}>
@@ -871,7 +872,7 @@ const handleSaveTask = async () => {
           )}
 
           {/* Navigation Buttons */}
-          <Stack direction="row" spacing={2} mt={4}>
+          <Stack direction="row" spacing={2} mt={4} m={3}>
             <Button
               fullWidth
               onClick={onClose}

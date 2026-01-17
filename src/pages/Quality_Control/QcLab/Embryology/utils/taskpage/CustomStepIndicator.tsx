@@ -9,7 +9,9 @@ export   const CustomStepIndicator = ({addTaskStep}) => (
         bgcolor: "#FFFFFF",
         py: 1.5,
         px: 3,
+        mt: 3,
         mb: 4,
+        mx: 3
       }}
     >
       <Stack direction="row" alignItems="center" justifyContent="center">
