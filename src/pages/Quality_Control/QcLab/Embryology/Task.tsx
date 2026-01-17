@@ -36,7 +36,13 @@ function Task() {
   const { data: clinic } = useSelector((s: RootState) => s.clinic);
   const allTasks = useSelector(selectUITasks);
   const taskLoading = useSelector((s: RootState) => s.tasks.loading);
-  const events = useSelector((s: RootState) => s.events.data);
+  const events = useSelector((s: RootState) =>
+    [...s.events.data].sort((a, b) =>
+      (a.event_name ?? "").localeCompare(b.event_name ?? "", undefined, {
+        sensitivity: "base",
+      })
+    )
+  );  
   const eventLoading = useSelector((s: RootState) => s.events.loading);
   const assignees = useSelector((state: RootState) => state.assignees.data);
 
@@ -169,7 +175,7 @@ function Task() {
   const filteredTasks = useMemo(() => {
     if (activeFilter === "All") return tasks;
     if (activeFilter === "To-Do")
-      return tasks.filter((t) => t.status_label === "To Do");
+      return tasks.filter((t) => t.status_label === "To - Do");
     if (activeFilter === "In-Progress")
       return tasks.filter((t) => t.status_label === "In Progress");
     if (activeFilter === "Complete")
@@ -452,7 +458,7 @@ function Task() {
                   </Box>
                 ) : (
                   filteredTasks.map((t, i) => {
-                    const dueInfo = formatDueDateDisplay(t.due ?? "");
+                    const dueInfo = formatDueDateDisplay(t.due_date ?? "");
                     return (
                       <Stack
                         key={i}
@@ -520,7 +526,7 @@ function Task() {
                               onClick={(e) => handleStatusClick(e, i)}
                             >
                               <Typography
-                                sx={{ px: 1.2, fontSize: 12, fontWeight: 500 }}
+                                sx={{ px: 1.2, fontSize: 12, fontWeight: 500,color: "#fff", }}
                               >
                                 {t.status_label}
                               </Typography>
@@ -599,7 +605,11 @@ function Task() {
             onClose={() => setOpenAddTask(false)}
             events={events}
             initialSelectedEvent={selectedEvent}
-            onTaskCreated={() => {}}
+            onTaskCreated={() => {
+              if (clinic?.id) {
+                dispatch(fetchTasksByClinic(clinic.id)); // 🔄 reload tasks
+              }
+            }}
           />
           <TaskDetailsDialog
             open={openTaskDetails}

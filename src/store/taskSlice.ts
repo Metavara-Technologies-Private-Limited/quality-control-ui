@@ -1,16 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { taskApi } from "@/services/api";
-import type { Task } from "@/types";
+import { TASK_STATUS_MAP, type Task } from "@/types";
 import { RootState } from ".";
-
-export const TASK_STATUS_MAP: Record<
-  number,
-  "To Do" | "In Progress" | "Completed"
-> = {
-  0: "To Do",
-  1: "In Progress",
-  2: "Completed",
-};
 
 type TaskState = {
   data: Task[];
@@ -63,6 +54,6 @@ export default taskSlice.reducer;
 export const selectUITasks = (state: RootState) =>
   state.tasks.data.map((t) => ({
     ...t,
-    status_label: TASK_STATUS_MAP[t.status] ?? "To Do",
+    status_label: TASK_STATUS_MAP[t.status] ?? "To - Do",
     due: t.due_date,
   }));

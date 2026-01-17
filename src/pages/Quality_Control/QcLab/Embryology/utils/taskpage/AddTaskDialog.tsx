@@ -14,6 +14,7 @@ import {
   Dialog,
   DialogContent,
   Avatar,
+  InputLabel,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import FormatBoldIcon from '@mui/icons-material/FormatBold';
@@ -35,18 +36,13 @@ import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
 
 import { CustomStepIndicator } from './CustomStepIndicator';
-import { STATUS_OPTIONS } from './data/data';
+// import { STATUS_OPTIONS } from './data/data';
 import { COLORS } from './data/colors';
 import { eventApi, taskApi } from '@/services/api';
-import { Task } from '@/types';
+import { Task, TASK_STATUS_MAP, TaskStatus } from '@/types';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
-
-const STATUS_MAP: Record<string, number> = {
-  'To Do': 0,
-  'In Progress': 1,
-  'Completed': 2,
-};
+import { formatDueDateDisplay } from './formatDueDateDisplay';
 
 interface AddTaskDialogProps {
   open: boolean;
@@ -63,6 +59,8 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   initialSelectedEvent,
   onTaskCreated,
 }) => {
+  
+  const assignees = useSelector((state: RootState) => state.assignees.data);
   const [step, setStep] = useState(1);
 
   // Step 1 fields
@@ -70,7 +68,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   // const [selectedEvent, setSelectedEvent] = useState(initialSelectedEvent);
   const [assignee, setAssignee] = useState<number | ''>('');
   const [dueDate, setDueDate] = useState<dayjs.Dayjs | null>(null);
-  const [status] = useState('To Do'); // fixed for new task
+  // const status = TaskStatus.TODO;
 
   // Step 2 - rich text editor
   const editorRef = useRef<HTMLDivElement>(null);
@@ -97,11 +95,11 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   // Step 3 - sub tasks
   const [subTasks, setSubTasks] = useState<any[]>([]);
   const [newSubTask, setNewSubTask] = useState({
-    name: '',
-    status: 'To Do',
-    due: null as dayjs.Dayjs | null,
-    assignee: '' as number | '',
-  });
+    name: "",
+    status: TaskStatus.TODO,
+    due_date: null as dayjs.Dayjs | null,
+    assignee: "" as number | "",
+  });  
 
   // Errors
   const INITIAL_ERRORS = {
@@ -120,14 +118,14 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
-      setStep(1);
+      setStep(3);
       setName('');
       // setSelectedEvent(initialSelectedEvent);
       setAssignee('');
       setDueDate(null);
       setDescriptionHtml('');
       setSubTasks([]);
-      setNewSubTask({ name: '', status: 'To Do', due: null, assignee: '' });
+      setNewSubTask({ name: '', status: TaskStatus.TODO, due_date: null, assignee: '' });
       setErrors(INITIAL_ERRORS);
       if (editorRef.current) {
         editorRef.current.innerHTML = '';
@@ -226,9 +224,12 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
 
   const validateSubTask = () => {
     const newErrors = {
-      subName: !newSubTask.name.trim() ? 'Sub-task name is required' : '',
-      subStatus: !newSubTask.status ? 'Status is required' : '',
-      subDue: !newSubTask.due ? 'Due date is required' : '',
+      subName: !newSubTask.name.trim() ? 'Sub-Task name is required' : '',
+      subStatus:
+        newSubTask.status === undefined || newSubTask.status === null
+          ? 'Status is required'
+          : '',
+      subDue: !newSubTask.due_date ? 'Due date is required' : '',
       subAssignee: !newSubTask.assignee ? 'Assignee is required' : '',
     };
     setErrors((prev) => ({ ...prev, ...newErrors }));
@@ -238,36 +239,39 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   // Save new sub-task
   const handleAddSubTask = () => {
     if (!validateSubTask()) return;
-
+  
     setSubTasks([
       ...subTasks,
       {
-        ...newSubTask,
-        due: newSubTask.due ? newSubTask.due.format('DD/MM/YYYY') : '',
+        name: newSubTask.name,
+        status: newSubTask.status,
+        due_date: newSubTask.due_date!.toISOString(),
+        assignment:
+          newSubTask.assignee === "" ? null : newSubTask.assignee,
       },
     ]);
-
-    setNewSubTask({ name: '', status: 'To Do', due: null, assignee: '' });
-    toast.success('Sub-task added');
-  };
+  
+    setNewSubTask({
+      name: "",
+      status: TaskStatus.TODO,
+      due_date: null,
+      assignee: "",
+    });
+  
+    toast.success("Sub-task added");
+  };  
 
   // Final save
 const handleSaveTask = async () => {
   try {
     const payload: Partial<Task> = {
-      event: Number(selectedEventId),            // number
-      assignment: Number(assignee),       // employee ID
+      event: Number(selectedEventId),
+      assignment: assignee === "" ? null : assignee,
       name: name.trim(),
-      description: descriptionHtml
-        .replace(/<[^>]*>/g, "")
-        .slice(0, 500),
-      due_date: dueDate?.toISOString(),
-      status: STATUS_MAP[status],
-      sub_tasks: subTasks.map(st => ({
-        name: st.name,
-        due_date: dayjs(st.due, "DD/MM/YYYY").toISOString(),
-        status: STATUS_MAP[st.status],
-      })),
+      description: descriptionHtml, // keep HTML
+      due_date: dueDate!.toISOString(),
+      status: TaskStatus.TODO,
+      sub_tasks: subTasks,
     };
 
     if (!payload.event || !payload.assignment) {
@@ -278,8 +282,10 @@ const handleSaveTask = async () => {
     const createdTask = await taskApi.create(payload);
 
     toast.success("Task created successfully");
-    onTaskCreated(createdTask, JSON.stringify(selectedEventId));
-    onClose();
+    onTaskCreated(createdTask, String(selectedEventId));
+    setTimeout(() => {
+      onClose();
+    }, 2000);
   } catch (err) {
     console.error(err);
     toast.error("Failed to create task");
@@ -336,30 +342,35 @@ const handleSaveTask = async () => {
             <Stack spacing={3} m={3}>
               <Stack direction="row" spacing={3}>
                 <Box sx={{ flex: 1 }}>
-                  <Typography sx={{ mb: 1, fontSize: 14, color: '#666' }}>
+                  {/* <Typography sx={{ mb: 1, fontSize: 14, color: '#666' }}>
                     Name
-                  </Typography>
+                  </Typography> */}
                   <TextField
                     fullWidth
+                    label="Name"
                     placeholder="Calibrate & Maintain Equipment"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     error={!!errors.name}
                     helperText={errors.name}
                     sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                    InputLabelProps={{ shrink: true }}
                   />
                 </Box>
 
                 <Box sx={{ flex: 1 }}>
-                  <Typography sx={{ mb: 1, fontSize: 14, color: '#666' }}>
+                  {/* <Typography sx={{ mb: 1, fontSize: 14, color: '#666' }}>
                     Maintenance
-                  </Typography>
+                  </Typography> */}
                   <FormControl fullWidth error={!!errors.event}>
+                    <InputLabel shrink>Maintenance</InputLabel>
                     <Select
                       value={selectedEventId}
                       onChange={(e) => setSelectedEventId(e.target.value as number)}
                       displayEmpty
                       sx={{ borderRadius: "12px" }}
+                      label="Maintenance"
+                      notched
                     >
                       <MenuItem value="" disabled>
                         Select Event
@@ -377,10 +388,11 @@ const handleSaveTask = async () => {
 
               <Stack direction="row" spacing={3}>
                 <Box sx={{ flex: 1 }}>
-                  <Typography sx={{ mb: 1, fontSize: 14, color: '#666' }}>
+                  {/* <Typography sx={{ mb: 1, fontSize: 14, color: '#666' }}>
                     Assignee
-                  </Typography>
+                  </Typography> */}
                   <FormControl fullWidth error={!!errors.assignee}>
+                  <InputLabel shrink>Assignee</InputLabel>
                   <Select
                       value={assignee}
                       onChange={(e) =>
@@ -388,9 +400,11 @@ const handleSaveTask = async () => {
                       }
                       displayEmpty
                       sx={{ borderRadius: '12px' }}
+                      label="Assignee"
+                      notched
                     >
                       <MenuItem value="" disabled>
-                        Select assignee
+                        Select Assignee
                       </MenuItem>
                       {assigneeOptions.map((a) => (
                         <MenuItem key={a.id} value={a.id}>
@@ -402,13 +416,14 @@ const handleSaveTask = async () => {
                 </Box>
 
                 <Box sx={{ flex: 1 }}>
-                  <Typography sx={{ mb: 1, fontSize: 14, color: '#666' }}>
+                  {/* <Typography sx={{ mb: 1, fontSize: 14, color: '#666' }}>
                     Due Date
-                  </Typography>
+                  </Typography> */}
                   <DatePicker
                     value={dueDate}
                     onChange={setDueDate}
                     format="DD/MM/YYYY"
+                    label="Due Date"
                     slotProps={{
                       textField: {
                         fullWidth: true,
@@ -422,6 +437,7 @@ const handleSaveTask = async () => {
                             </InputAdornment>
                           ),
                         },
+                        InputLabelProps: { shrink: true }
                       },
                     }}
                   />
@@ -432,7 +448,7 @@ const handleSaveTask = async () => {
 
           {/* Step 2 - Rich Text */}
           {step === 2 && (
-            <Stack spacing={3}>
+            <Stack spacing={3} m={3}>
               <Box>
                 <Typography sx={{ mb: 1, fontSize: 14, color: '#666' }}>
                   Details
@@ -681,19 +697,20 @@ const handleSaveTask = async () => {
 
           {/* Step 3 - Sub Tasks */}
           {step === 3 && (
-            <Stack spacing={3}>
+            <Stack spacing={3} m={3}>
               {/* Add new sub-task form */}
               <Box sx={{ border: '1px solid #E0E0E0', borderRadius: '16px', p: 3 }}>
-                <Typography mb={2} fontWeight={500} color="#666">
+                <Typography mb={3} fontWeight={500} color="#666">
                   Add New Sub-Task
                 </Typography>
 
                 <Stack direction="row" spacing={3} mb={2}>
                   <Box flex={1}>
-                    <Typography fontSize={12} color="#999" mb={0.5}>
+                    {/* <Typography fontSize={12} color="#999" mb={0.5}>
                       Name
-                    </Typography>
+                    </Typography> */}
                     <TextField
+                      label="Name"
                       fullWidth
                       size="small"
                       value={newSubTask.name}
@@ -703,26 +720,31 @@ const handleSaveTask = async () => {
                       error={!!errors.subName}
                       helperText={errors.subName}
                       sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                      InputLabelProps={{shrink: true}}
                     />
                   </Box>
 
                   <Box flex={1}>
-                    <Typography fontSize={12} color="#999" mb={0.5}>
+                    {/* <Typography fontSize={12} color="#999" mb={0.5}>
                       Status
-                    </Typography>
+                    </Typography> */}
                     <FormControl fullWidth size="small" error={!!errors.subStatus}>
+                      <InputLabel shrink>Status</InputLabel>
                       <Select
                         value={newSubTask.status}
                         onChange={(e) =>
-                          setNewSubTask({ ...newSubTask, status: e.target.value })
+                          setNewSubTask({
+                            ...newSubTask,
+                            status: Number(e.target.value) as TaskStatus,
+                          })
                         }
                         sx={{ borderRadius: '8px' }}
+                        label="Status"
+                        notched
                       >
-                        {STATUS_OPTIONS.map((s) => (
-                          <MenuItem key={s} value={s}>
-                            {s}
-                          </MenuItem>
-                        ))}
+                        <MenuItem value={TaskStatus.TODO}>To - Do</MenuItem>
+                        <MenuItem value={TaskStatus.IN_PROGRESS}>In Progress</MenuItem>
+                        <MenuItem value={TaskStatus.COMPLETED}>Completed</MenuItem>
                       </Select>
                     </FormControl>
                   </Box>
@@ -730,13 +752,14 @@ const handleSaveTask = async () => {
 
                 <Stack direction="row" spacing={3} mb={3}>
                   <Box flex={1}>
-                    <Typography fontSize={12} color="#999" mb={0.5}>
+                    {/* <Typography fontSize={12} color="#999" mb={0.5}>
                       Due Date
-                    </Typography>
+                    </Typography> */}
                     <DatePicker
-                      value={newSubTask.due}
+                      label="Due Date"
+                      value={newSubTask.due_date}
                       onChange={(val) =>
-                        setNewSubTask({ ...newSubTask, due: val })
+                        setNewSubTask({ ...newSubTask, due_date: val })
                       }
                       format="DD/MM/YYYY"
                       slotProps={{
@@ -753,17 +776,20 @@ const handleSaveTask = async () => {
                               </InputAdornment>
                             ),
                           },
+                          InputLabelProps: { shrink: true }
                         },
                       }}
                     />
                   </Box>
 
                   <Box flex={1}>
-                    <Typography fontSize={12} color="#999" mb={0.5}>
+                    {/* <Typography fontSize={12} color="#999" mb={0.5}>
                       Assignee
-                    </Typography>
+                    </Typography> */}
                     <FormControl fullWidth size="small" error={!!errors.subAssignee}>
+                      <InputLabel shrink>Assignee</InputLabel>
                       <Select
+                        label="Assignee"
                         value={newSubTask.assignee}
                         onChange={(e) =>
                           setNewSubTask({
@@ -773,6 +799,7 @@ const handleSaveTask = async () => {
                         }                                                
                         displayEmpty
                         sx={{ borderRadius: '8px' }}
+                        notched
                       >
                         <MenuItem value="" disabled>
                           Select Assignee
@@ -805,7 +832,7 @@ const handleSaveTask = async () => {
               </Box>
 
               {/* Sub-tasks list */}
-              <Stack spacing={2}>
+              <Stack spacing={1} m={3}>
                 <Stack direction="row" px={2}>
                   <Typography width="40%" fontSize={12} color="#999">
                     Name
@@ -842,20 +869,20 @@ const handleSaveTask = async () => {
                           py: 0.5,
                           borderRadius: 8,
                           bgcolor:
-                            st.status === 'Completed'
+                            st.status === TaskStatus.COMPLETED
                               ? COLORS.complete
-                              : st.status === 'In Progress'
+                              : st.status === TaskStatus.IN_PROGRESS
                               ? COLORS.progress
                               : COLORS.todo,
                           color: '#fff',
                           fontSize: 12,
                         }}
                       >
-                        {st.status}
+                        {TASK_STATUS_MAP[st.status]}
                       </Box>
                     </Box>
                     <Typography width="25%" fontSize={14}>
-                      {st.due || '—'}
+                      {formatDueDateDisplay(st.due_date ?? "").text}
                     </Typography>
                     <Stack
                       direction="row"
@@ -863,7 +890,10 @@ const handleSaveTask = async () => {
                       width="15%"
                       justifyContent="flex-end"
                     >
-                      <Avatar sx={{ width: 24, height: 24 }} />
+                      <Avatar sx={{ width: 28, height: 28 }}>
+                      {assignees.find((u) => u.id === st.assignment)
+                        ?.emp_name?.[0] || "?"}
+                      </Avatar>
                     </Stack>
                   </Box>
                 ))}

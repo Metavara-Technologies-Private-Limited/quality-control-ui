@@ -267,16 +267,16 @@ export interface Attachment {
 
 export const TASK_STATUS_MAP: Record<
   number,
-  "To Do" | "In Progress" | "Completed"
+  "To - Do" | "In Progress" | "Completed"
 > = {
-  0: "To Do",
+  0: "To - Do",
   1: "In Progress",
   2: "Completed",
 };
 
 export type UITask = Task & {
   name: string;
-  status_label: "To Do" | "In Progress" | "Completed";
+  status_label: "To - Do" | "In Progress" | "Completed";
   due?: string;
 };
 
