@@ -8,10 +8,8 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  IconButton,
 } from "@mui/material";
-// import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import TurnLeftIcon from '@mui/icons-material/TurnLeft';
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate, useLocation } from "react-router-dom";
 import { EquipmentDetail, Parameter } from "@/types";
 import { useSelector } from "react-redux";
@@ -31,6 +29,7 @@ const renderParameterDetails = (p: Parameter) => {
   }
 
   switch (content.data_type) {
+    case "Integer":
     case "Min/Max":
     case "Decimal":
       return (
@@ -38,17 +37,7 @@ const renderParameterDetails = (p: Parameter) => {
           component="span"
           sx={{ fontSize: 13, color: "#374151", fontWeight: 500 }}
         >
-          Min {content.min_value ?? "-"} °C – Max {content.max_value ?? "-"} °C
-        </Typography>
-      );
-
-    case "Integer":
-      return (
-        <Typography
-          component="span"
-          sx={{ fontSize: 13, color: "#374151", fontWeight: 500 }}
-        >
-          {content.integer_value ?? "-"}
+          Min {content.min_value ?? "-"} – Max {content.max_value ?? "-"}
         </Typography>
       );
 
@@ -69,6 +58,16 @@ const renderParameterDetails = (p: Parameter) => {
           sx={{ fontSize: 13, color: "#374151", fontWeight: 500 }}
         >
           {content.text ?? "-"}
+        </Typography>
+      );
+
+    case "Boolean":
+      return (
+        <Typography
+          component="span"
+          sx={{ fontSize: 13, color: "#374151", fontWeight: 500 }}
+        >
+          {content.boolean_type === "yesno" ? "Yes/No" : "True/False"}
         </Typography>
       );
 
@@ -138,16 +137,14 @@ const ViewEquipment = () => {
   return (
     <Box
       sx={{
-        // p: 3,
-        // opacity: isInactive ? 0.4 : 1,
-        // pointerEvents: isInactive ? "none" : "auto",
+        p: 3,
         background: "#FFFFFF",
         minHeight: "100vh",
       }}
     >
       {/* Header */}
       <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-        {/* <ArrowBackIcon
+        <ArrowBackIcon
           onClick={() => navigate("/configuration/equipment")}
           sx={{
             mr: 1,
@@ -156,29 +153,11 @@ const ViewEquipment = () => {
             borderRadius: "8px",
             padding: "4px",
           }}
-        /> */}
-        <IconButton
-          onClick={() => navigate("/configuration/equipment")}
-          sx={{
-            width: 24,
-            height: 24,
-            padding: "10px",
-            opacity: 1,
-            color: "#374151",
-            borderRadius: 1,
-            mr: 2,
-            boxShadow: "3px 3px 6px rgba(0,0,0,0.2)",
-            backgroundColor: "#fff"
-          }}
-        >
-          <TurnLeftIcon sx={{ fontSize: 24, padding: "3px", }}/>
-        </IconButton>
+        />
         <Typography sx={{ fontWeight: 700, fontSize: 20 }}>
           Equipments
         </Typography>
       </Box>
-
-      <Box sx={{ height: "1px", background: "#E5E7EB", mt: 2, mb:2 }}></Box>
 
       {/* Title */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}>
@@ -187,14 +166,12 @@ const ViewEquipment = () => {
         </Typography>
         <Chip
           label={departmentName}
-          variant="outlined"
+          size="small"
           sx={{
-            borderColor: "#47B35F",
-            color: "#47B35F",
+            background: "#E0F1E6",
+            color: "#3D8B61",
             fontWeight: 600,
-            fontSize: "0.75rem",
-            borderRadius: "12px",
-            height: 22,
+            height: "22px",
           }}
         />
       </Box>

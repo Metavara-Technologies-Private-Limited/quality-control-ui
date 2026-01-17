@@ -15,30 +15,33 @@ import {
   LabelList,
 } from "recharts";
 
-interface RefrigeratorFreezerFormProps {
-  selectedRadio: string;
-  setSelectedRadio: (name: string) => void;
-  equipmentDetails: {
-    equipment_num: string;
-    equipment_id: number;
-    parameters: any[];
-    make: string;
-    model: string;
-  }[];
-}
+// MUI and Dayjs Imports
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import dayjs from 'dayjs';
 
 const RefrigeratorFreezerForm = ({
   selectedRadio,
   setSelectedRadio,
   equipmentDetails,
-}: RefrigeratorFreezerFormProps) => {
+}: any) => {
   const [activeCategory, setActiveCategory] = useState("Refrigerators");
   const [activeSubTab, setActiveSubTab] = useState("Details");
+  
+  // Initializing with dayjs objects
+  const [logValues, setLogValues] = useState<Record<string, any>>({
+    date: dayjs(),
+    time: dayjs(),
+  });
+  
   const [isSaving, setIsSaving] = useState(false);
   const [logsData, setLogsData] = useState<any[]>([]);
 
   const availableEquipments =
     equipmentDetails?.map((ed: any) => ed.equipment_num) || [];
+
   const currentEquipment = equipmentDetails?.find(
     (ed: any) => ed.equipment_num === selectedRadio
   );
@@ -56,29 +59,12 @@ const RefrigeratorFreezerForm = ({
     []
   );
 
-  const initialFormState = {
-    date: new Date().toISOString().split("T")[0],
-    time: new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-    temperature: "",
-    alarmSystem: "Functional",
-    defrostCycle: "Valid",
-    status: "Pass",
-    comments: "",
-  };
-
-  const [formData, setFormData] = useState(initialFormState);
-
   const getDbParam = (dbName: string) => {
     return currentEquipment?.parameters?.find(
       (p: any) =>
         p.parameter_name.toLowerCase().trim() === dbName.toLowerCase().trim()
     );
   };
-
-  const isFieldEnabled = (dbName: string) => !!getDbParam(dbName);
 
   const getParameterConfig = (parameterName: string) => {
     const param = getDbParam(parameterName);
@@ -100,7 +86,7 @@ const RefrigeratorFreezerForm = ({
     if (!config) {
       if (parameterName === "Temperature") {
         return (
-          <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+          <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
             Range:{" "}
             {activeCategory === "Refrigerators"
               ? "2°C to 8°C"
@@ -112,52 +98,134 @@ const RefrigeratorFreezerForm = ({
     }
 
     const dataType = config.data_type;
+
     switch (dataType) {
+      case "Integer":
       case "Decimal":
       case "Min/Max":
         if (config.min_value != null && config.max_value != null) {
           return (
-            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
               Range: {config.min_value} - {config.max_value}
             </span>
           );
         }
         break;
       case "Percentage":
+        if (config.percentage != null) {
+          return (
+            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
+              Range: 0% - {config.percentage}%
+            </span>
+          );
+        }
+        break;
+      case "Boolean":
         return (
-          <span style={{ color: "#94a3b8", fontSize: "11px" }}>
-            Range: 0% - {config.percentage}%
+          <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
+            Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
+          </span>
+        );
+      case "Text":
+        return (
+          <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
+            Type: {config.text_type === "single" ? "Single Line" : "Multi Line"} Text
           </span>
         );
       case "Select":
       case "Dropdown":
-        if (config.dropdown && Array.isArray(config.dropdown)) {
+        if (
+          config.dropdown &&
+          Array.isArray(config.dropdown) &&
+          config.dropdown.length > 0
+        ) {
           return (
-            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
+            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
               Options: {config.dropdown.join(", ")}
             </span>
           );
         }
         break;
-      case "Text":
-        return config.text ? (
-          <span style={{ color: "#94a3b8", fontSize: "11px" }}>
-            Value: {config.text}
-          </span>
-        ) : null;
       default:
         return null;
     }
   };
 
+  const setValue = (key: string, value: any) => {
+    setLogValues((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveLogs = async () => {
+    if (!currentEquipment) {
+      toast.error("Please select an equipment first");
+      return;
+    }
+
+    const hasData = Object.values(logValues).some(
+        (val) => val && (typeof val === 'string' ? val.trim() !== "" : true)
+    );
+    if (!hasData) {
+      toast.error("Please fill at least one field before saving");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const requests: Promise<any>[] = [];
+
+      fieldMapping.forEach((item) => {
+        const dbParam = getDbParam(item.dbName);
+        let val = logValues[item.key];
+
+        // Format dates and times using dayjs before saving
+        if (item.key === "date" && val) val = val.format("YYYY-MM-DD");
+        if (item.key === "time" && val) val = val.format("HH:mm");
+
+        if (dbParam && val && val.toString().trim() !== "") {
+          requests.push(
+            parameterValueApi.create({
+              parameter: dbParam.id,
+              equipment_details: currentEquipment.equipment_id,
+              content: val.toString(),
+            })
+          );
+        }
+      });
+
+      if (requests.length === 0) {
+        toast.warn("No matching parameters found to save.");
+        setIsSaving(false);
+        return;
+      }
+
+      await Promise.all(requests);
+      toast.success("Parameter logs saved successfully!");
+      setLogValues({ date: dayjs(), time: dayjs() });
+      setActiveSubTab("Logs");
+      await fetchLogs();
+    } catch (err) {
+      console.error("Failed to save:", err);
+      toast.error("Failed to save parameter logs.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleClear = () => {
+    setLogValues({ date: dayjs(), time: dayjs() });
+  };
+
   const fetchLogs = async () => {
     if (!currentEquipment?.equipment_id) return;
+
     try {
       const response = await parameterValueApi.list({
         equipment_details: currentEquipment.equipment_id,
       });
+
       if (response && response.results) {
         const logsByParam: Record<string, any> = {};
+
         response.results.forEach((log: any) => {
           const paramId = log.parameter;
           if (
@@ -167,6 +235,7 @@ const RefrigeratorFreezerForm = ({
             logsByParam[paramId] = log;
           }
         });
+
         const formattedLogs = Object.values(logsByParam).map((log: any) => {
           const param = currentEquipment.parameters.find(
             (p: any) => p.id === log.parameter
@@ -178,6 +247,7 @@ const RefrigeratorFreezerForm = ({
             content: log.content || "N/A",
           };
         });
+
         setLogsData(formattedLogs);
       }
     } catch (err) {
@@ -187,53 +257,27 @@ const RefrigeratorFreezerForm = ({
 
   useEffect(() => {
     fetchLogs();
-  }, [currentEquipment?.equipment_id]);
+  }, [currentEquipment?.equipment_id, currentEquipment?.parameters]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  useEffect(() => {
+    if (!selectedRadio && equipmentDetails?.length > 0) {
+      setSelectedRadio(equipmentDetails[0].equipment_num);
+    }
+  }, [equipmentDetails, selectedRadio, setSelectedRadio]);
+
+  const sectionStyle: React.CSSProperties = {
+    backgroundColor: "#fff",
+    borderRadius: "12px",
+    border: "2px solid #e5e7eb",
+    padding: "24px",
+    marginBottom: "20px",
   };
 
-  const handleSave = async () => {
-    if (!currentEquipment) {
-      toast.error("Please select equipment");
-      return;
-    }
-    setIsSaving(true);
-    try {
-      const requests = fieldMapping
-        .filter(
-          (field) =>
-            formData[field.key as keyof typeof formData] &&
-            getDbParam(field.dbName)
-        )
-        .map((field) =>
-          parameterValueApi.create({
-            parameter: getDbParam(field.dbName).id,
-            equipment_details: currentEquipment.equipment_id,
-            content: formData[field.key as keyof typeof formData],
-          })
-        );
-
-      if (requests.length === 0) {
-        toast.warn("No matching parameters found to save.");
-      } else {
-        await Promise.all(requests);
-        toast.success("Successfully Saved!");
-        setFormData(initialFormState);
-        fetchLogs();
-        setActiveSubTab("Logs");
-      }
-    } catch (err) {
-      toast.error("Failed to save logs.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleClear = () => setFormData(initialFormState);
+  const inputContainerStyle = (dbName: string): React.CSSProperties => ({
+    position: "relative",
+    marginBottom: "20px",
+    opacity: getDbParam(dbName) ? 1 : 0.4,
+  });
 
   const getInputStyle = (dbName: string): React.CSSProperties => ({
     width: "100%",
@@ -243,11 +287,31 @@ const RefrigeratorFreezerForm = ({
     borderRadius: "8px",
     fontSize: "16px",
     outline: "none",
-    backgroundColor: isFieldEnabled(dbName) ? "#fff" : "#f1f5f9",
-    cursor: isFieldEnabled(dbName) ? "text" : "not-allowed",
+    backgroundColor: getDbParam(dbName) ? "#fff" : "#f1f5f9",
+    cursor: getDbParam(dbName) ? "text" : "not-allowed",
     color: "#9E9E9E",
     boxSizing: "border-box" as const,
   });
+
+  // MUI input specific styling - removed focus and hover highlight effects
+  const muiInputStyle = {
+    '& .MuiOutlinedInput-root': {
+      height: '50px',
+      borderRadius: '8px',
+      fontFamily: "'Montserrat', sans-serif",
+      '& fieldset': { borderColor: '#e5e7eb' },
+      '&:hover fieldset': { borderColor: '#e5e7eb' }, // No change on hover
+      '&.Mui-focused fieldset': { borderColor: '#e5e7eb', borderWidth: '1px' }, // No change on focus
+    },
+    '& .MuiInputBase-input': {
+      fontSize: '16px',
+      color: '#9E9E9E',
+    },
+    '& .Mui-disabled': {
+        backgroundColor: "#f1f5f9",
+        cursor: "not-allowed"
+    }
+  };
 
   const labelOverlayStyle: React.CSSProperties = {
     position: "absolute",
@@ -257,6 +321,7 @@ const RefrigeratorFreezerForm = ({
     padding: "0 4px",
     fontSize: "14px",
     color: "#232323",
+    zIndex: 1,
   };
 
   const rangeTextStyle: React.CSSProperties = {
@@ -264,596 +329,600 @@ const RefrigeratorFreezerForm = ({
     marginTop: "4px",
     color: "#9E9E9E",
     fontWeight: "500",
+    display: "block",
   };
 
-  const inputContainerStyle = (dbName: string): React.CSSProperties => ({
-    position: "relative",
-    marginBottom: "20px",
-    opacity: isFieldEnabled(dbName) ? 1 : 0.4,
-  });
-
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "20px",
-        fontFamily: "'Montserrat', sans-serif",
-      }}
-    >
-      <ToastContainer />
-
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
       <div
         style={{
-          backgroundColor: "#fff",
-          borderRadius: "12px",
-          border: "2px solid #e5e7eb",
-          padding: "24px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "20px",
+          fontFamily: "'Montserrat', sans-serif",
         }}
       >
-        {/* Category Tabs */}
-        <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
-          {["Refrigerators", "Freezers"].map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
+        <ToastContainer />
+
+        <div style={sectionStyle}>
+          {/* Category Tabs */}
+          <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
+            {["Refrigerators", "Freezers"].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                style={{
+                  padding: "8px 24px",
+                  borderRadius: "8px",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  border:
+                    activeCategory === cat
+                      ? "2px solid #E17E61"
+                      : "1px solid #e5e7eb",
+                  backgroundColor:
+                    activeCategory === cat ? "#FFF5F2" : "#fff",
+                  color: activeCategory === cat ? "#E17E61" : "#94a3b8",
+                  fontSize: "14px",
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Unit Selector Radios */}
+          {availableEquipments.length > 0 && (
+            <div
               style={{
-                padding: "8px 24px",
-                borderRadius: "8px",
-                fontWeight: "700",
-                cursor: "pointer",
-                border:
-                  activeCategory === cat
-                    ? "2px solid #E17E61"
-                    : "1px solid #e5e7eb",
-                backgroundColor:
-                  activeCategory === cat ? "#FFF5F2" : "#fff",
-                color: activeCategory === cat ? "#E17E61" : "#94a3b8",
-                fontSize: "14px",
+                display: "flex",
+                gap: "24px",
+                paddingBottom: "20px",
+                borderBottom: "2px solid #f1f5f9",
+                marginBottom: "24px",
+                flexWrap: "wrap",
               }}
             >
-              {cat}
-            </button>
-          ))}
-        </div>
+              {availableEquipments.map((equipment: string) => (
+                <label
+                  key={equipment}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontSize: "13px",
+                    fontWeight: selectedRadio === equipment ? "600" : "500",
+                    color: selectedRadio === equipment ? "#232323" : "#E17E61",
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="radio"
+                    checked={selectedRadio === equipment}
+                    onChange={() => {
+                      setSelectedRadio(equipment);
+                      setLogValues({ date: dayjs(), time: dayjs() });
+                    }}
+                    style={{
+                      appearance: "none",
+                      WebkitAppearance: "none",
+                      width: "16px",
+                      height: "16px",
+                      borderRadius: "50%",
+                      cursor: "pointer",
+                      border: `2px solid ${
+                        selectedRadio === equipment ? "#232323" : "#d1d5db"
+                      }`,
+                      backgroundColor: "#fff",
+                      boxShadow:
+                        selectedRadio === equipment
+                          ? "inset 0 0 0 2px #fff, inset 0 0 0 14px #E17E61"
+                          : "none",
+                      outline: "none",
+                    }}
+                  />
+                  {equipment}
+                </label>
+              ))}
+            </div>
+          )}
 
-        {/* Unit Selector */}
-        {availableEquipments.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              gap: "24px",
-              paddingBottom: "20px",
-              borderBottom: "2px solid #f1f5f9",
-              marginBottom: "24px",
-              flexWrap: "wrap",
-            }}
-          >
-            {availableEquipments.map((equipment: string) => (
-              <label
-                key={equipment}
+          {/* Sub-Tabs Toggle */}
+          <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
+            {["Details", "Logs"].map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveSubTab(tab)}
+                style={{
+                  padding: "8px 32px",
+                  borderRadius: "8px",
+                  border: "none",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  backgroundColor:
+                    activeSubTab === tab ? "#FFFFFF" : "transparent",
+                  color: activeSubTab === tab ? "#E17E61" : "#94a3b8",
+                  fontWeight: activeSubTab === tab ? "700" : "600",
+                  borderBottom:
+                    activeSubTab === tab ? "2px solid #E17E61" : "none",
+                }}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {activeSubTab === "Details" ? (
+            <>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: "20px",
+                  marginBottom: "24px",
+                }}
+              >
+                {/* MUI Date Picker */}
+                <div style={inputContainerStyle("Date")}>
+                  <DatePicker
+                    value={logValues["date"]}
+                    onChange={(newValue) => setValue("date", newValue)}
+                    disabled={!getDbParam("Date")}
+                    slotProps={{ 
+                      textField: { 
+                        fullWidth: true, 
+                        sx: muiInputStyle 
+                      } 
+                    }}
+                  />
+                  <label style={labelOverlayStyle}>Date</label>
+                  <span style={rangeTextStyle}>
+                    {renderParameterInfo("Date")}
+                  </span>
+                </div>
+
+                {/* MUI Time Picker */}
+                <div style={inputContainerStyle("Time")}>
+                  <TimePicker
+                    value={logValues["time"]}
+                    onChange={(newValue) => setValue("time", newValue)}
+                    disabled={!getDbParam("Time")}
+                    slotProps={{ 
+                      textField: { 
+                        fullWidth: true, 
+                        sx: muiInputStyle 
+                      } 
+                    }}
+                  />
+                  <label style={labelOverlayStyle}>Time</label>
+                  <span style={rangeTextStyle}>
+                    {renderParameterInfo("Time")}
+                  </span>
+                </div>
+
+                {/* Temperature */}
+                <div style={inputContainerStyle("Temperature")}>
+                  <input
+                    type="text"
+                    name="temperature"
+                    placeholder="Type Here"
+                    value={logValues["temperature"] || ""}
+                    onChange={(e) => setValue("temperature", e.target.value)}
+                    disabled={!getDbParam("Temperature")}
+                    style={{
+                      ...getInputStyle("Temperature"),
+                      display: "block",
+                    }}
+                  />
+                  <label style={labelOverlayStyle}>Temperature (°C)</label>
+                  <span style={rangeTextStyle}>
+                    {renderParameterInfo("Temperature")}
+                  </span>
+                </div>
+
+                {/* Alarm System Checks */}
+                <div style={inputContainerStyle("Alarm System Checks")}>
+                  <select
+                    name="alarmSystem"
+                    value={logValues["alarmSystem"] || "Functional"}
+                    onChange={(e) => setValue("alarmSystem", e.target.value)}
+                    disabled={!getDbParam("Alarm System Checks")}
+                    style={{
+                      ...getInputStyle("Alarm System Checks"),
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="Functional">Functional</option>
+                    <option value="Maintenance Required">
+                      Maintenance Required
+                    </option>
+                  </select>
+                  <label style={labelOverlayStyle}>Alarm System Checks</label>
+                  <span style={rangeTextStyle}>
+                    {renderParameterInfo("Alarm System Checks")}
+                  </span>
+                </div>
+
+                {/* Defrost Cycle Verification */}
+                <div style={inputContainerStyle("Defrost Cycle Verification")}>
+                  <select
+                    name="defrostCycle"
+                    value={logValues["defrostCycle"] || "Valid"}
+                    onChange={(e) => setValue("defrostCycle", e.target.value)}
+                    disabled={!getDbParam("Defrost Cycle Verification")}
+                    style={{
+                      ...getInputStyle("Defrost Cycle Verification"),
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="Valid">Valid</option>
+                    <option value="Invalid">Invalid</option>
+                  </select>
+                  <label style={labelOverlayStyle}>Defrost Cycle Verification</label>
+                  <span style={rangeTextStyle}>
+                    {renderParameterInfo("Defrost Cycle Verification")}
+                  </span>
+                </div>
+
+                {/* Status */}
+                <div style={inputContainerStyle("Status")}>
+                  <select
+                    name="status"
+                    value={logValues["status"] || "Pass"}
+                    onChange={(e) => setValue("status", e.target.value)}
+                    disabled={!getDbParam("Status")}
+                    style={{
+                      ...getInputStyle("Status"),
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="Pass">Pass</option>
+                    <option value="Fail">Fail</option>
+                  </select>
+                  <label style={labelOverlayStyle}>Status</label>
+                  <span style={rangeTextStyle}>
+                    {renderParameterInfo("Status")}
+                  </span>
+                </div>
+
+                {/* Comments */}
+                <div style={{ ...inputContainerStyle("Comments"), gridColumn: "span 2" }}>
+                  <input
+                    type="text"
+                    name="comments"
+                    placeholder="Type Here"
+                    value={logValues["comments"] || ""}
+                    onChange={(e) => setValue("comments", e.target.value)}
+                    disabled={!getDbParam("Comments")}
+                    style={{
+                      ...getInputStyle("Comments"),
+                      display: "block",
+                    }}
+                  />
+                  <label style={labelOverlayStyle}>Comments</label>
+                  <span style={rangeTextStyle}>
+                    {renderParameterInfo("Comments")}
+                  </span>
+                </div>
+              </div>
+
+              {/* Make and Model Info */}
+              <div
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "8px",
-                  fontSize: "13px",
-                  fontWeight:
-                    selectedRadio === equipment ? "600" : "500",
-                  color:
-                    selectedRadio === equipment ? "#232323" : "#E17E61",
-                  cursor: "pointer",
+                  gap: "24px",
+                  marginTop: "20px",
+                  fontSize: "14px",
                 }}
               >
-                <input
-                  type="radio"
-                  checked={selectedRadio === equipment}
-                  onChange={() => setSelectedRadio(equipment)}
+                <div>
+                  <span style={{ color: "#94a3b8" }}>Make :</span>{" "}
+                  <b style={{ color: "#232323" }}>
+                    {currentEquipment?.make || "N/A"}
+                  </b>
+                </div>
+                <div
                   style={{
-                    appearance: "none",
-                    WebkitAppearance: "none",
-                    width: "16px",
-                    height: "16px",
-                    borderRadius: "50%",
-                    cursor: "pointer",
-                    border: `2px solid ${
-                      selectedRadio === equipment ? "#232323" : "#d1d5db"
-                    }`,
-                    backgroundColor: "#fff",
-                    boxShadow:
-                      selectedRadio === equipment
-                        ? "inset 0 0 0 2px #fff, inset 0 0 0 14px #E17E61"
-                        : "none",
-                    outline: "none",
+                    width: "1px",
+                    height: "14px",
+                    backgroundColor: "#e5e7eb",
                   }}
-                />
-                {equipment}
-              </label>
-            ))}
-          </div>
-        )}
+                ></div>
+                <div>
+                  <span style={{ color: "#94a3b8" }}>Model :</span>{" "}
+                  <b style={{ color: "#232323" }}>
+                    {currentEquipment?.model || "N/A"}
+                  </b>
+                </div>
 
-        {/* Tabs */}
-        <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
-          {["Details", "Logs"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveSubTab(tab)}
-              style={{
-                padding: "8px 32px",
-                borderRadius: "8px",
-                border: "none",
-                fontSize: "14px",
-                cursor: "pointer",
-                backgroundColor:
-                  activeSubTab === tab ? "#FFFFFF" : "transparent",
-                color: activeSubTab === tab ? "#E17E61" : "#94a3b8",
-                fontWeight: activeSubTab === tab ? "700" : "600",
-                borderBottom:
-                  activeSubTab === tab ? "2px solid #E17E61" : "none",
-              }}
-            >
-              {tab}
-            </button>
-          ))}
+                <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
+                  <button
+                    type="button"
+                    onClick={handleClear}
+                    disabled={isSaving}
+                    style={{
+                      padding: "10px 24px",
+                      fontSize: "14px",
+                      fontWeight: "700",
+                      backgroundColor: "#fff",
+                      border: "2px solid #505050",
+                      borderRadius: "8px",
+                      cursor: isSaving ? "not-allowed" : "pointer",
+                      opacity: isSaving ? 0.6 : 1,
+                    }}
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveLogs}
+                    disabled={isSaving}
+                    style={{
+                      padding: "10px 24px",
+                      fontSize: "14px",
+                      fontWeight: "700",
+                      backgroundColor: "#505050",
+                      color: "#FFFFFF",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: isSaving ? "not-allowed" : "pointer",
+                      opacity: isSaving ? 0.7 : 1,
+                    }}
+                  >
+                    {isSaving ? "Saving..." : "Save"}
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: "13px",
+                  fontFamily: "'Montserrat', sans-serif",
+                }}
+              >
+                <thead>
+                  <tr
+                    style={{
+                      color: "#64748b",
+                      borderBottom: "1px solid #f1f5f9",
+                    }}
+                  >
+                    <th style={{ padding: "12px", fontWeight: "600" }}>
+                      Date & Time
+                    </th>
+                    <th style={{ padding: "12px", fontWeight: "600" }}>
+                      Parameter
+                    </th>
+                    <th style={{ padding: "12px", fontWeight: "600" }}>Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logsData.length > 0 ? (
+                    logsData.map((log) => (
+                      <tr
+                        key={log.id}
+                        style={{ borderBottom: "1px solid #f1f5f9" }}
+                      >
+                        <td
+                          style={{
+                            padding: "12px",
+                            fontWeight: "600",
+                            color: "#0f172a",
+                          }}
+                        >
+                          {log.dateTime}
+                        </td>
+                        <td
+                          style={{
+                            padding: "12px",
+                            color: "#64748b",
+                          }}
+                        >
+                          {log.paramName}
+                        </td>
+                        <td
+                          style={{
+                            padding: "12px",
+                            color: "#64748b",
+                          }}
+                        >
+                          {log.content}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={3}
+                        style={{
+                          textAlign: "center",
+                          padding: "40px",
+                          color: "#94a3b8",
+                        }}
+                      >
+                        No logs recorded yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
-        {activeSubTab === "Details" ? (
-          <>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: "20px",
-                marginBottom: "24px",
-              }}
-            >
-              {/* Date */}
-              <div style={inputContainerStyle("Date")}>
-                <input
-                  type="date"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleChange}
-                  disabled={!isFieldEnabled("Date")}
-                  style={{ ...getInputStyle("Date"), display: "block" }}
-                />
-                <label style={labelOverlayStyle}>Date</label>
-                <div style={rangeTextStyle}>
-                  {renderParameterInfo("Date")}
-                </div>
-              </div>
-
-              {/* Time */}
-              <div style={inputContainerStyle("Time")}>
-                <input
-                  type="time"
-                  name="time"
-                  value={formData.time}
-                  onChange={handleChange}
-                  disabled={!isFieldEnabled("Time")}
-                  style={{ ...getInputStyle("Time"), display: "block" }}
-                />
-                <label style={labelOverlayStyle}>Time</label>
-                <div style={rangeTextStyle}>
-                  {renderParameterInfo("Time")}
-                </div>
-              </div>
-
-              {/* Temperature */}
-              <div style={inputContainerStyle("Temperature")}>
-                <input
-                  type="text"
-                  name="temperature"
-                  placeholder="Type Here"
-                  value={formData.temperature}
-                  onChange={handleChange}
-                  disabled={!isFieldEnabled("Temperature")}
-                  style={{
-                    ...getInputStyle("Temperature"),
-                    display: "block",
-                  }}
-                />
-                <label style={labelOverlayStyle}>Temperature (°C)</label>
-                <div style={rangeTextStyle}>
-                  {renderParameterInfo("Temperature")}
-                </div>
-              </div>
-
-              {/* Alarm System Checks */}
-              <div style={inputContainerStyle("Alarm System Checks")}>
-                <select
-                  name="alarmSystem"
-                  value={formData.alarmSystem}
-                  onChange={handleChange}
-                  disabled={!isFieldEnabled("Alarm System Checks")}
-                  style={{
-                    ...getInputStyle("Alarm System Checks"),
-                    cursor: "pointer",
-                  }}
-                >
-                  <option value="Functional">Functional</option>
-                  <option value="Maintenance Required">
-                    Maintenance Required
-                  </option>
-                </select>
-                <label style={labelOverlayStyle}>Alarm System Checks</label>
-                <div style={rangeTextStyle}>
-                  {renderParameterInfo("Alarm System Checks")}
-                </div>
-              </div>
-
-              {/* Defrost Cycle Verification */}
-              <div style={inputContainerStyle("Defrost Cycle Verification")}>
-                <select
-                  name="defrostCycle"
-                  value={formData.defrostCycle}
-                  onChange={handleChange}
-                  disabled={!isFieldEnabled("Defrost Cycle Verification")}
-                  style={{
-                    ...getInputStyle("Defrost Cycle Verification"),
-                    cursor: "pointer",
-                  }}
-                >
-                  <option value="Valid">Valid</option>
-                  <option value="Invalid">Invalid</option>
-                </select>
-                <label style={labelOverlayStyle}>Defrost Cycle Verification</label>
-                <div style={rangeTextStyle}>
-                  {renderParameterInfo("Defrost Cycle Verification")}
-                </div>
-              </div>
-
-              {/* Status */}
-              <div style={inputContainerStyle("Status")}>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  disabled={!isFieldEnabled("Status")}
-                  style={{
-                    ...getInputStyle("Status"),
-                    cursor: "pointer",
-                  }}
-                >
-                  <option value="Pass">Pass</option>
-                  <option value="Fail">Fail</option>
-                </select>
-                <label style={labelOverlayStyle}>Status</label>
-                <div style={rangeTextStyle}>
-                  {renderParameterInfo("Status")}
-                </div>
-              </div>
-
-              {/* Comments */}
-              <div style={{ ...inputContainerStyle("Comments"), gridColumn: "span 2" }}>
-                <input
-                  type="text"
-                  name="comments"
-                  placeholder="Type Here"
-                  value={formData.comments}
-                  onChange={handleChange}
-                  disabled={!isFieldEnabled("Comments")}
-                  style={{
-                    ...getInputStyle("Comments"),
-                    display: "block",
-                  }}
-                />
-                <label style={labelOverlayStyle}>Comments</label>
-                <div style={rangeTextStyle}>
-                  {renderParameterInfo("Comments")}
-                </div>
-              </div>
-            </div>
-
-            {/* Make and Model Footer */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "24px",
-                marginTop: "20px",
-                fontSize: "14px",
-              }}
-            >
-              <div>
-                <span style={{ color: "#94a3b8" }}>Make :</span>{" "}
-                <b style={{ color: "#232323" }}>
-                  {currentEquipment?.make || "N/A"}
-                </b>
-              </div>
-              <div
-                style={{
-                  width: "1px",
-                  height: "14px",
-                  backgroundColor: "#e5e7eb",
-                }}
-              ></div>
-              <div>
-                <span style={{ color: "#94a3b8" }}>Model :</span>{" "}
-                <b style={{ color: "#232323" }}>
-                  {currentEquipment?.model || "N/A"}
-                </b>
-              </div>
-
-              <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
-                <button
-                  type="button"
-                  onClick={handleClear}
-                  disabled={isSaving}
-                  style={{
-                    padding: "10px 24px",
-                    fontSize: "14px",
-                    fontWeight: "700",
-                    backgroundColor: "#fff",
-                    border: "2px solid #505050",
-                    borderRadius: "8px",
-                    cursor: isSaving ? "not-allowed" : "pointer",
-                    opacity: isSaving ? 0.6 : 1,
-                  }}
-                >
-                  Clear
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  style={{
-                    padding: "10px 24px",
-                    fontSize: "14px",
-                    fontWeight: "700",
-                    backgroundColor: "#505050",
-                    color: "#FFFFFF",
-                    border: "none",
-                    borderRadius: "8px",
-                    cursor: isSaving ? "not-allowed" : "pointer",
-                    opacity: isSaving ? 0.7 : 1,
-                  }}
-                >
-                  {isSaving ? "Saving..." : "Save"}
-                </button>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                fontSize: "13px",
-                fontFamily: "'Montserrat', sans-serif",
-              }}
-            >
-              <thead>
-                <tr
-                  style={{
-                    borderBottom: "1px solid #f1f5f9",
-                    textAlign: "left",
-                    color: "#64748b",
-                  }}
-                >
-                  <th style={{ padding: "12px", fontWeight: "600" }}>
-                    Date & Time
-                  </th>
-                  <th style={{ padding: "12px", fontWeight: "600" }}>
-                    Parameter
-                  </th>
-                  <th style={{ padding: "12px", fontWeight: "600" }}>Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logsData.length > 0 ? (
-                  logsData.map((log) => (
-                    <tr
-                      key={log.id}
-                      style={{ borderBottom: "1px solid #f1f5f9" }}
-                    >
-                      <td style={{ padding: "12px", fontWeight: "600" }}>
-                        {log.dateTime}
-                      </td>
-                      <td style={{ padding: "12px" }}>{log.paramName}</td>
-                      <td style={{ padding: "12px" }}>{log.content}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={3}
-                      style={{
-                        textAlign: "center",
-                        padding: "40px",
-                        color: "#94a3b8",
-                      }}
-                    >
-                      No logs recorded yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* Activity Graph Section */}
-      <div
-        style={{
-          backgroundColor: "#fff",
-          borderRadius: "12px",
-          border: "1px solid #e5e7eb",
-          padding: "12px",
-          overflow: "hidden",
-        }}
-      >
+        {/* Activity Graph Section */}
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "30px",
+            backgroundColor: "#fff",
+            borderRadius: "12px",
+            border: "1px solid #e5e7eb",
             padding: "12px",
+            overflow: "hidden",
           }}
         >
-          {/* Left Side: Icon and Title */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "32px",
-                height: "32px",
-                borderRadius: "8px",
-              }}
-            >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "30px",
+              padding: "12px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <img
                 src={Chart_activity}
                 alt="chart icon"
                 style={{ width: "25px", height: "25px" }}
               />
-            </div>
-            <h3
-              style={{
-                fontSize: "16px",
-                fontWeight: "700",
-                color: "#0f172a",
-                margin: 0,
-              }}
-            >
-              Activity
-            </h3>
-          </div>
-
-          {/* Right Side: Legend Indicators */}
-          <div style={{ display: "flex", gap: "20px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div
+              <h3
                 style={{
-                  width: "10px",
-                  height: "10px",
-                  borderRadius: "50%",
-                  backgroundColor: "#6c6c6c",
+                  fontSize: "16px",
+                  fontWeight: "700",
+                  color: "#0f172a",
+                  margin: 0,
                 }}
-              ></div>
-              <span style={{ fontSize: "12px", color: "#949494" }}>
-                Compliant
-              </span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div
-                style={{
-                  width: "10px",
-                  height: "10px",
-                  borderRadius: "50%",
-                  backgroundColor: "#EF9685",
-                }}
-              ></div>
-              <span style={{ fontSize: "12px", color: "#949494" }}>
-                Non - Compliant
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <hr
-          style={{
-            border: "none",
-            borderTop: "1px solid #E2E3E5",
-            margin: "-20px -24px 16px -24px",
-            width: "auto",
-          }}
-        />
-
-        <div style={{ width: "100%", height: 300 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={[
-                { day: "Monday", compliant: 34, nonCompliant: -23 },
-                { day: "Tuesday", compliant: 28, nonCompliant: -22 },
-                { day: "Wednesday", compliant: 22, nonCompliant: -36 },
-                { day: "Thursday", compliant: 34, nonCompliant: -12 },
-                { day: "Friday", compliant: 29, nonCompliant: -28 },
-                { day: "Saturday", compliant: 15, nonCompliant: -33 },
-                { day: "Sunday", compliant: 25, nonCompliant: -25 },
-              ]}
-              stackOffset="sign"
-              barGap={-25}
-              margin={{ top: 20, right: 30, left: 45, bottom: 20 }}
-            >
-              <CartesianGrid vertical={false} stroke="#f1f5f9" />
-              <XAxis
-                dataKey="day"
-                tick={{ fontSize: 12, fill: "#8c8c8c" }}
-                axisLine={{ stroke: "#E0E0E0" }}
-                tickLine={false}
-                label={{
-                  value: "Month",
-                  position: "bottom",
-                  offset: 10,
-                  style: { fill: "#9e9e9e", fontSize: 12 },
-                }}
-              />
-              <YAxis
-                domain={["auto", "auto"]}
-                tickCount={9}
-                tick={{ fontSize: 12, fill: "#9e9e9e" }}
-                axisLine={{ stroke: "#E0E0E0" }}
-                tickLine={false}
-                tickFormatter={(value) => (value === 0 ? "" : value)}
-                label={{
-                  value: "No of parameters",
-                  angle: -90,
-                  position: "insideLeft",
-                  offset: -35,
-                  dy: 40,
-                  style: { fill: "#9e9e9e", fontSize: 12 },
-                }}
-              />
-              <Tooltip
-                cursor={{ fill: "transparent" }}
-                formatter={(value: number, name: string) => {
-                  const absoluteValue = Math.abs(value);
-                  const label =
-                    name === "compliant" ? "Compliant" : "Non-Compliant";
-                  return [`${absoluteValue}`, label];
-                }}
-              />
-              <ReferenceLine y={0} stroke="#E0E0E0" strokeDasharray="3 3" />
-
-              <Bar
-                dataKey="compliant"
-                fill="#6c6c6c"
-                radius={[4, 4, 0, 0]}
-                barSize={25}
               >
-                <LabelList
+                Activity
+              </h3>
+            </div>
+
+            <div style={{ display: "flex", gap: "20px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div
+                  style={{
+                    width: "10px",
+                    height: "10px",
+                    borderRadius: "50%",
+                    backgroundColor: "#6c6c6c",
+                  }}
+                ></div>
+                <span style={{ fontSize: "12px", color: "#949494" }}>
+                  Compliant
+                </span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div
+                  style={{
+                    width: "10px",
+                    height: "10px",
+                    borderRadius: "50%",
+                    backgroundColor: "#EF9685",
+                  }}
+                ></div>
+                <span style={{ fontSize: "12px", color: "#949494" }}>
+                  Non - Compliant
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <hr
+            style={{
+              border: "none",
+              borderTop: "1px solid #E2E3E5",
+              margin: "-20px -24px 16px -24px",
+              width: "auto",
+            }}
+          />
+
+          <div style={{ width: "100%", height: 300 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={[
+                  { day: "Monday", compliant: 34, nonCompliant: -23 },
+                  { day: "Tuesday", compliant: 28, nonCompliant: -22 },
+                  { day: "Wednesday", compliant: 22, nonCompliant: -36 },
+                  { day: "Thursday", compliant: 34, nonCompliant: -12 },
+                  { day: "Friday", compliant: 29, nonCompliant: -28 },
+                  { day: "Saturday", compliant: 15, nonCompliant: -33 },
+                  { day: "Sunday", compliant: 25, nonCompliant: -25 },
+                ]}
+                stackOffset="sign"
+                barGap={-25}
+                margin={{ top: 20, right: 30, left: 45, bottom: 20 }}
+              >
+                <CartesianGrid vertical={false} stroke="#f1f5f9" />
+                <XAxis
+                  dataKey="day"
+                  tick={{ fontSize: 12, fill: "#8c8c8c" }}
+                  axisLine={{ stroke: "#E0E0E0" }}
+                  tickLine={false}
+                  label={{
+                    value: "Month",
+                    position: "bottom",
+                    offset: 10,
+                    style: { fill: "#9e9e9e", fontSize: 12 },
+                  }}
+                />
+                <YAxis
+                  domain={["auto", "auto"]}
+                  tickCount={9}
+                  tick={{ fontSize: 12, fill: "#9e9e9e" }}
+                  axisLine={{ stroke: "#E0E0E0" }}
+                  tickLine={false}
+                  tickFormatter={(value) => (value === 0 ? "" : value)}
+                  label={{
+                    value: "No of parameters",
+                    angle: -90,
+                    position: "insideLeft",
+                    offset: -35,
+                    dy: 40,
+                    style: { fill: "#9e9e9e", fontSize: 12 },
+                  }}
+                />
+                <Tooltip
+                  cursor={{ fill: "transparent" }}
+                  formatter={(value: number, name: string) => {
+                    const absoluteValue = Math.abs(value);
+                    const label =
+                      name === "compliant" ? "Compliant" : "Non-Compliant";
+                    return [`${absoluteValue}`, label];
+                  }}
+                />
+                <ReferenceLine y={0} stroke="#E0E0E0" strokeDasharray="3 3" />
+
+                <Bar
                   dataKey="compliant"
-                  position="top"
-                  formatter={(value: number) => (value === 0 ? "" : value)}
-                  style={{ fill: "#6c6c6c", fontSize: 12, fontWeight: 600 }}
-                />
-              </Bar>
+                  fill="#6c6c6c"
+                  radius={[4, 4, 0, 0]}
+                  barSize={25}
+                >
+                  <LabelList
+                    dataKey="compliant"
+                    position="top"
+                    formatter={(value: number) => (value === 0 ? "" : value)}
+                    style={{ fill: "#6c6c6c", fontSize: 12, fontWeight: 600 }}
+                  />
+                </Bar>
 
-              <Bar
-                dataKey="nonCompliant"
-                fill="#EF9685"
-                radius={[4, 4, 0, 0]}
-                barSize={25}
-              >
-                <LabelList
+                <Bar
                   dataKey="nonCompliant"
-                  position="top"
-                  formatter={(value: number) =>
-                    value === 0 ? "" : Math.abs(value)
-                  }
-                  style={{ fill: "#EF9685", fontSize: 12, fontWeight: 600 }}
-                />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+                  fill="#EF9685"
+                  radius={[4, 4, 0, 0]}
+                  barSize={25}
+                >
+                  <LabelList
+                    dataKey="nonCompliant"
+                    position="top"
+                    formatter={(value: number) =>
+                      value === 0 ? "" : Math.abs(value)
+                    }
+                    style={{ fill: "#EF9685", fontSize: 12, fontWeight: 600 }}
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
-    </div>
+    </LocalizationProvider>
   );
 };
 
