@@ -25,6 +25,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import { fetchClinic } from "@/store/clinicSlice";
 import { equipmentApi } from "@/services/api";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const EquipmentPage = () => {
   const navigate = useNavigate();
@@ -80,10 +82,15 @@ const EquipmentPage = () => {
   
     const { id, department } = selectedEquipment;
   
-    await equipmentApi.delete(department.id, id);
-  
-    dispatch(fetchClinic(1));
-    setDialogs({ delete: false, inactive: false, active: false });
+    try {
+      await equipmentApi.delete(department.id, id);
+      dispatch(fetchClinic(1));
+      setDialogs({ delete: false, inactive: false, active: false });
+      toast.success("Equipment deleted successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete equipment.");
+    }
   };  
 
   const toggleEquipment = async (active: boolean) => {
@@ -91,18 +98,28 @@ const EquipmentPage = () => {
 
     const { id, department } = selectedEquipment;
 
-    if (active) {
-      await equipmentApi.activate(id);
-    } else {
-      await equipmentApi.inactive(department.id, id);
-    }
+    try {
+      if (active) {
+        await equipmentApi.activate(id);
+        toast.success("Equipment activated successfully!");
+      } else {
+        await equipmentApi.inactive(department.id, id);
+        toast.success("Equipment inactivated successfully!");
+      }
 
-    dispatch(fetchClinic(1));
-    setDialogs({ delete: false, inactive: false, active: false });
+      dispatch(fetchClinic(1));
+      setDialogs({ delete: false, inactive: false, active: false });
+    } catch (err) {
+      console.error(err);
+      toast.error(`Failed to ${active ? "activate" : "inactivate"} equipment.`);
+    }
   };
 
   return (
     <Box>
+      {/* Toast Container */}
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
+
       {/* Header */}
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
         <Typography sx={{ fontWeight: 700, fontSize: 20 }}>
@@ -306,17 +323,26 @@ const EquipmentPage = () => {
         onClose={() => setAnchorEl(null)}
       >
         {selectedEquipment?.is_active ? (
-          <MenuItem onClick={() => setDialogs({ ...dialogs, inactive: true })}>
+          <MenuItem onClick={() => {
+            setDialogs({ ...dialogs, inactive: true });
+            setAnchorEl(null);
+          }}>
             Inactivate
           </MenuItem>
         ) : (
-          <MenuItem onClick={() => setDialogs({ ...dialogs, active: true })}>
+          <MenuItem onClick={() => {
+            setDialogs({ ...dialogs, active: true });
+            setAnchorEl(null);
+          }}>
             Activate
           </MenuItem>
         )}
         <MenuItem
           sx={{ color: "error.main" }}
-          onClick={() => setDialogs({ ...dialogs, delete: true })}
+          onClick={() => {
+            setDialogs({ ...dialogs, delete: true });
+            setAnchorEl(null);
+          }}
         >
           Delete
         </MenuItem>
