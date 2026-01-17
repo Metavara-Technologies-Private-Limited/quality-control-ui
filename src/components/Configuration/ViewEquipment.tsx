@@ -285,10 +285,10 @@ const ViewEquipment = () => {
           }
           sx={{
             borderRadius: "10px",
-            background: "#383838",
+            background: "#505050",
             textTransform: "none",
             "&:hover": {
-              background: "#2f2f2f",
+              background: "#232323",
             },
           }}
         >

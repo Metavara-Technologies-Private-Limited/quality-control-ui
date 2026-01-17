@@ -699,14 +699,14 @@ const AddParameterPopup: React.FC<Props> = ({
               flex: 1,
               height: "48px",
               borderRadius: "12px",
-              backgroundColor: "#4A4A4A",
+              backgroundColor: "#505050",
               color: "#FFFFFF",
               textTransform: "none",
               fontWeight: 600,
               fontSize: "16px",
               boxShadow: "none",
               "&:hover": {
-                backgroundColor: "#3A3A3A",
+                backgroundColor: "#232323",
                 boxShadow: "none",
               },
             }}
