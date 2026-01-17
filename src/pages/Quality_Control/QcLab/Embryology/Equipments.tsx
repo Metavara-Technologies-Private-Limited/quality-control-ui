@@ -133,7 +133,28 @@ const AssigneeDialog = ({ open, onClose, availableAssignees, currentAssignees, o
         </div>
         <div style={{ padding: "16px 24px", borderTop: "1px solid #E5E7EB", display: "flex", justifyContent: "flex-end", gap: "12px" }}>
           <button onClick={onClose} style={{ padding: "10px 24px", borderRadius: "10px", border: "2px solid #505050", backgroundColor: "#fff", cursor: "pointer", fontWeight: 500, fontSize: "14px" }}>Cancel</button>
-          <button onClick={handleAdd} disabled={selected.length === 0} style={{ padding: "10px 24px", borderRadius: "10px", border: "none", backgroundColor: selected.length === 0 ? "#D1D5DB" : "#505050", color: "#fff", cursor: selected.length === 0 ? "not-allowed" : "pointer", fontWeight: 500, fontSize: "14px" }}>Add ({selected.length})</button>
+<button
+  onClick={handleAdd}
+  disabled={selected.length === 0}
+  style={{
+    padding: "10px 24px",
+    borderRadius: "10px",
+    border: "none",
+    backgroundColor: selected.length === 0 ? "#D1D5DB" : "#505050",
+    color: "#fff",
+    cursor: selected.length === 0 ? "not-allowed" : "pointer",
+    fontWeight: 500,
+    fontSize: "14px",
+  }}
+  onMouseEnter={(e) => {
+    if (selected.length !== 0) e.currentTarget.style.backgroundColor = "#232323";
+  }}
+  onMouseLeave={(e) => {
+    if (selected.length !== 0) e.currentTarget.style.backgroundColor = "#505050";
+  }}
+>
+  Add ({selected.length})
+</button>
         </div>
       </div>
     </div>

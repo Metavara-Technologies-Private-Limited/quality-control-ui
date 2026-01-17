@@ -128,20 +128,30 @@ const EquipmentPage = () => {
 
         <Box sx={{ display: "flex", gap: 2 }}>
           <TextField
-            size="small"
-            variant="outlined"
-            InputLabelProps={{ shrink: true }}
-            placeholder="Search Equipments"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ width: 260, background: "#fff" }}
-          />
+  size="small"
+  variant="outlined"
+  InputLabelProps={{ shrink: true }}
+  placeholder="Search Equipments"
+  value={searchQuery}
+  onChange={(e) => setSearchQuery(e.target.value)}
+  sx={{
+    width: 260,
+    background: "#fff",
+    "& .MuiOutlinedInput-root fieldset": {
+      borderColor: "#505050", // normal
+    },
+    "& .MuiOutlinedInput-root.Mui-focused fieldset": {
+      borderColor: "#232323", // only on tap/focus
+    },
+  }}
+/>
+
 
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setOpenAddEquipmentPopup(true)}
-            sx={{ background: "#505050", "&:hover": { background: "#505050" } }}
+            sx={{ background: "#505050", "&:hover": { background: "#232323" } }}
           >
             Add Equipment
           </Button>
@@ -287,12 +297,12 @@ const EquipmentPage = () => {
                         width: 32,
                         height: 32,
                         border: isInactive
-                          ? "2px solid #ffffffff"
+                          ? "2px solid #ffffff"
                           : "1px solid #E5E7EB",
                         borderRadius: "8px",
                         backgroundColor: isInactive
                           ? "#505050"
-                          : "2px solid #000000ff",
+                          : "2px solid #232323",
                         "&:hover": {
                           backgroundColor: isInactive
                             ? "#000000ff"
@@ -303,7 +313,7 @@ const EquipmentPage = () => {
                       <MoreHoriz
                         fontSize="small"
                         sx={{
-                          color: isInactive ? "#ffffffff" : "inherit",
+                          color: isInactive ? "#ffffff" : "inherit",
                           fontWeight: isInactive ? 700 : 400,
                         }}
                       />
@@ -342,6 +352,7 @@ const EquipmentPage = () => {
           onClick={() => {
             setDialogs({ ...dialogs, delete: true });
             setAnchorEl(null);
+            
           }}
         >
           Delete
@@ -352,6 +363,7 @@ const EquipmentPage = () => {
       <Dialog
         open={dialogs.delete}
         onClose={() => setDialogs({ ...dialogs, delete: false })}
+        
       >
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
@@ -360,10 +372,18 @@ const EquipmentPage = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogs({ ...dialogs, delete: false })}>
+          <Button onClick={() => setDialogs({ ...dialogs, delete: false })}
+          sx={{
+    color: "#232323",
+    border: "1px solid #505050",
+    "&:hover": {
+      border: "1px solid #232323",
+    }
+  }}
+            >
             Cancel
           </Button>
-          <Button onClick={confirmDelete} variant="contained" color="error">
+          <Button onClick={confirmDelete} variant="contained" color="error" sx={{ background: "#505050", "&:hover": { background: "#232323" } }}>
             Delete
           </Button>
         </DialogActions>
@@ -381,13 +401,23 @@ const EquipmentPage = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogs({ ...dialogs, inactive: false })}>
-            Cancel
-          </Button>
+          <Button
+  onClick={() => setDialogs({ ...dialogs, inactive: false })}
+  sx={{
+    color: "#232323",
+    border: "1px solid #505050",
+    "&:hover": {
+      border: "1px solid #232323",
+    },
+  }}
+>
+  Cancel
+</Button>
+
           <Button
             onClick={() => toggleEquipment(false)}
             variant="contained"
-            sx={{ background: "red", "&:hover": { background: "#c42323ff" } }}
+            sx={{ background: "#505050", "&:hover": { background: "#232323" } }}
           >
             Inactivate
           </Button>
@@ -407,16 +437,22 @@ const EquipmentPage = () => {
         </DialogContent>
         <DialogActions>
           <Button
-            onClick={() => setDialogs({ ...dialogs, active: false })}
-            variant="outlined"
-            sx={{ color: "black", border: "1px solid #000" }}
-          >
-            Cancel
-          </Button>
+  onClick={() => setDialogs({ ...dialogs, active: false })}
+  variant="outlined"
+  sx={{
+    color: "#232323",
+    border: "1px solid #505050",
+    "&:hover": {
+      border: "1px solid #232323",
+    },
+  }}
+>
+  Cancel
+</Button>
           <Button
             onClick={() => toggleEquipment(true)}
             variant="contained"
-            sx={{ background: "#505050", "&:hover": { background: "#505050" } }}
+            sx={{ background: "#505050", "&:hover": { background: "#232323" } }}
           >
             Activate
           </Button>

@@ -824,12 +824,17 @@ const AddParameterPage = () => {
                 sx={{
                   borderRadius: "8px",
                   backgroundColor: "#F3F3F3",
-                  color: "#111827",
+                  color: "#505050",
                   border: "1px solid #E5E7EB",
+                  px: 4,        
+                  py: 1.2,
+                  fontSize: "16px",
+                  fontWeight: 700,
                   textTransform: "none",
                   boxShadow: "none",
                   "&:hover": {
                     backgroundColor: "#EDEDED",
+                    color:"#232323",
                     boxShadow: "none",
                   },
                 }}
@@ -883,28 +888,40 @@ const AddParameterPage = () => {
           sx={{ mt: 10, display: "flex", justifyContent: "flex-end", gap: 2 }}
         >
           <Button
-            variant="outlined"
-            onClick={handleClearAll}
-            sx={{
-              borderRadius: "10px",
-              borderColor: "#505050",
-              color: "#505050",
-              textTransform: "none",
-            }}
-          >
-            Clear All
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleFinalSave}
-            sx={{
-              borderRadius: "10px",
-              background: "#383838",
-              textTransform: "none",
-            }}
-          >
-            Save
-          </Button>
+  variant="outlined"
+  onClick={handleClearAll}
+  sx={{
+    borderRadius: "10px",
+    borderColor: "#505050",
+    color: "#232323",
+    textTransform: "none",
+    "&:hover": {
+      borderColor: "#232323",
+    },
+  }}
+>
+  Clear All
+</Button>
+
+<Button
+  variant="contained"
+  onClick={handleFinalSave}
+  sx={{
+    borderRadius: "10px",
+    background: "#505050",
+    color: "#FFFFFF",
+    textTransform: "none",
+    px: 4,       
+    py: 1.2,      
+    fontSize: "16px",
+    "&:hover": {
+      backgroundColor: "#232323",
+    },
+  }}
+>
+  Save
+</Button>
+
         </Box>
       </Box>
 
