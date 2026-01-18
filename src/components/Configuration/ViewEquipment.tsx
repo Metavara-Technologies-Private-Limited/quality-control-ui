@@ -37,7 +37,7 @@ const renderParameterDetails = (p: Parameter) => {
           component="span"
           sx={{ fontSize: 13, color: "#374151", fontWeight: 500 }}
         >
-          Min {content.min_value ?? "-"} – Max {content.max_value ?? "-"}
+          Min {content.min_value ?? "-"} {content.unit || ""} – Max {content.max_value ?? "-"} {content.unit || ""}
         </Typography>
       );
 

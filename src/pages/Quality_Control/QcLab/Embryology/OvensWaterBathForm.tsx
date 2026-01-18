@@ -82,10 +82,20 @@ const OvensWaterBathForm = ({
   );
 
   const getParameterConfig = (parameterName: string) => {
-    const param = currentEquipment?.parameters?.find(
-      (p: any) =>
-        p.parameter_name?.toLowerCase() === parameterName.toLowerCase()
+    if (!currentEquipment?.parameters) return null;
+    let param = currentEquipment.parameters.find(
+      (p: any) => p.parameter_name?.toLowerCase().trim() === parameterName.toLowerCase().trim()
     );
+    if (!param) {
+      param = currentEquipment.parameters.find(
+        (p: any) => p.parameter_name?.toLowerCase().includes(parameterName.toLowerCase())
+      );
+    }
+    if (!param) {
+      param = currentEquipment.parameters.find(
+        (p: any) => parameterName.toLowerCase().includes(p.parameter_name?.toLowerCase())
+      );
+    }
     if (!param || !param.config) return null;
     let config = param.config;
     if (
@@ -98,53 +108,111 @@ const OvensWaterBathForm = ({
     return config;
   };
 
-  const renderParameterInfo = (parameterName: string) => {
+  // ✅ NEW: Get range status color based on input value
+  const getRangeStatusColor = (parameterName: string) => {
     const config = getParameterConfig(parameterName);
-    if (!config) return null;
-    const dataType = config.data_type;
+    
+    const stateMapping: Record<string, string> = {
+      "Temperature Consistency": "tempConsistency",
+      "Cleanliness & Decontamination Log": "decontaminationLog",
+    };
 
-    switch (dataType) {
-      case "Integer":
-      case "Decimal":
-      case "Min/Max":
-        if (config.min_value != null && config.max_value != null) {
-          return (
-            <span style={{ color: "#94a3b8", fontSize: "11px" }}>
-              Range: {config.min_value} - {config.max_value}
-            </span>
-          );
-        }
-        break;
-      case "Percentage":
-        return config.percentage != null ? (
-          <span style={{ color: "#94a3b8", fontSize: "11px" }}>
-            Range: 0% - {config.percentage}%
-          </span>
-        ) : null;
-      case "Boolean":
-        return (
-          <span style={{ color: "#94a3b8", fontSize: "11px" }}>
-            Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
-          </span>
-        );
-      case "Text":
-        return (
-          <span style={{ color: "#94a3b8", fontSize: "11px" }}>
-            Type: {config.text_type === "single" ? "Single Line" : "Multi Line"} Text
-          </span>
-        );
-      case "Select":
-      case "Dropdown":
-        return config.dropdown && Array.isArray(config.dropdown) ? (
-          <span style={{ color: "#94a3b8", fontSize: "11px" }}>
-            Options: {config.dropdown.join(", ")}
-          </span>
-        ) : null;
-      default:
-        return null;
+    const stateKey = stateMapping[parameterName];
+    const rawValue = stateKey ? logValues[stateKey] : null;
+
+    // If empty, stay grey
+    if (!rawValue || !config || config.min_value == null || config.max_value == null) {
+      return "#94a3b8";
     }
+
+    const inputValue = parseFloat(rawValue);
+    if (isNaN(inputValue)) return "#94a3b8";
+
+    // Only change color if value is outside range
+    if (inputValue < Number(config.min_value)) return "#D6BA18"; // Below range
+    if (inputValue > Number(config.max_value)) return "#F25B5B"; // Above range
+    
+    return "#94a3b8"; // In range or valid input
   };
 
+ const renderParameterInfo = (parameterName: string) => {
+  const config = getParameterConfig(parameterName);
+  if (!config) return null;
+
+  // This color is dynamic (Grey, Yellow, or Red) based on input
+  const dynamicColor = getRangeStatusColor(parameterName);
+  
+  // Style for the dynamic "Range" part
+  const dynamicStyle = {
+    color: dynamicColor,
+    fontSize: "12px",
+    fontWeight: "500",
+    transition: "color 0.2s ease",
+  };
+
+  // Style for the "Recommended" prefix (Always Grey)
+  const defaultGreyStyle = {
+    color: "#9E9E9E",
+    fontSize: "12px",
+    fontWeight: "500"
+  };
+
+  const isTemperature = parameterName.toLowerCase().includes("temperature");
+  const dataType = config.data_type;
+
+  switch (dataType) {
+    case "Decimal":
+    case "Min/Max":
+    case "Integer":
+      if (config.min_value != null && config.max_value != null) {
+        return (
+          <span>
+            
+            {isTemperature && (
+              <span style={defaultGreyStyle}>
+                Recommended: {config.min_value}{config.unit || ""} | {" "}
+              </span>
+            )}
+             
+            <span style={dynamicStyle}>
+              Range: {config.min_value}{config.unit || ""} - {config.max_value}{config.unit || ""}
+            </span>
+          </span>
+        );
+      }
+      break;
+
+    case "Percentage":
+      if (config.percentage != null) {
+        return (
+          <span style={dynamicStyle}>
+            Range: 0% - {config.percentage}%
+          </span>
+        );
+      }
+      break;
+
+    case "Text":
+      const textValue = config.text || config.recommendation || "";
+      return (
+        <span style={defaultGreyStyle}>
+          Text: {textValue}
+        </span>
+      );
+
+    case "Select":
+    case "Dropdown":
+      const dropdownOptions = config.dropdown || config.options || [];
+      return (
+        <span style={defaultGreyStyle}>
+          Options: {dropdownOptions.join(", ")}
+        </span>
+      );
+
+    default:
+      return null;
+  }
+};
   const handleSaveLogs = async () => {
     if (!currentEquipment || !currentEquipmentDetail) {
       toast.error("Please select an equipment first");
@@ -185,27 +253,48 @@ const OvensWaterBathForm = ({
         return;
       }
 
-      const formValuesList = [
-        { key: "tempConsistency", value: logValues["tempConsistency"] },
-        { key: "waterLevel", value: logValues["waterLevel"] },
-        { key: "alarmFunctionality", value: logValues["alarmFunctionality"] },
-        { key: "decontaminationLog", value: logValues["decontaminationLog"] },
-        { key: "comments", value: logValues["comments"] },
-        { key: "status", value: logValues["status"] },
-      ].filter((item) => item.value && item.value.trim() !== "");
+      const parameterMapping: Record<string, string> = {
+        tempConsistency: "Temperature Consistency",
+        waterLevel: "Water Level Monitoring",
+        alarmFunctionality: "Alarm Functionality",
+        decontaminationLog: "Cleanliness & Decontamination Log",
+        comments: "Comments",
+        status: "Status"
+      };
 
-      formValuesList.forEach((formItem, index) => {
-        if (index < currentEquipment.parameters.length) {
-          const param = currentEquipment.parameters[index];
+      Object.entries(logValues).forEach(([key, value]) => {
+        if (!value || value.trim() === '') return;
+
+        const expectedParamName = parameterMapping[key];
+        if (!expectedParamName) return;
+
+        const matchingParam = currentEquipment.parameters.find((p: any) => {
+          const pName = p.parameter_name?.toLowerCase().trim();
+          const expectedName = expectedParamName?.toLowerCase().trim();
+          return pName === expectedName || pName?.includes(expectedName) || expectedName?.includes(pName);
+        });
+
+        if (matchingParam) {
           requests.push(
             parameterValueApi.create({
-              parameter: param.id,
+              parameter: matchingParam.id,
               equipment_details: currentEquipmentDetail.equipment_id,
-              content: formItem.value,
+              content: value,
             })
           );
         }
       });
+
+      if (requests.length === 0) {
+        toast.update(toastId, {
+          render: "No matching parameters found",
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
+        setIsSaving(false);
+        return;
+      }
 
       await Promise.all(requests);
       toast.update(toastId, {
@@ -264,6 +353,7 @@ const OvensWaterBathForm = ({
     padding: "10px 12px",
     border: "1px solid #e5e7eb",
     borderRadius: "8px",
+    color:"#232323",
     fontSize: "14px",
     outline: "none",
   };
@@ -491,6 +581,7 @@ const OvensWaterBathForm = ({
                 cursor: "pointer",
                 fontSize: "14px",
                 fontWeight: "600",
+                opacity: isSaving ? 0.6 : 1,
               }}
             >
               Clear

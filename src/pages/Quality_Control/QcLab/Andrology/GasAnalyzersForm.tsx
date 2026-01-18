@@ -28,7 +28,6 @@ const GasAnalyzersForm = ({
   equipmentDetails,
 }: any) => {
   const [activeSubTab, setActiveSubTab] = useState("Details");
-  // Updated state to handle dayjs objects for date/time
   const [logValues, setLogValues] = useState<Record<string, any>>({
     date: dayjs(),
     time: dayjs(),
@@ -78,11 +77,55 @@ const GasAnalyzersForm = ({
     return config;
   };
 
-  const renderParameterInfo = (parameterName: string) => {
+  // ✅ NEW: Get range status color based on input value
+  const getRangeStatusColor = (parameterName: string) => {
+    const config = getParameterConfig(parameterName);
+    
+    const stateMapping: Record<string, string> = {
+      "Gas Mixture": "gasMixture",
+    };
+
+    const stateKey = stateMapping[parameterName];
+    const rawValue = stateKey ? logValues[stateKey] : null;
+
+    // If empty, stay grey
+    if (!rawValue || !config || config.min_value == null || config.max_value == null) {
+      return "#9E9E9E";
+    }
+
+    const inputValue = parseFloat(rawValue);
+    if (isNaN(inputValue)) return "#9E9E9E";
+
+    // Only change color if value is outside range
+    if (inputValue < Number(config.min_value)) return "#D6BA18"; // Below range
+    if (inputValue > Number(config.max_value)) return "#F25B5B"; // Above range
+    
+    return "#9E9E9E"; // In range or valid input
+  };
+
+ const renderParameterInfo = (parameterName: string) => {
     const config = getParameterConfig(parameterName);
     if (!config) return null;
 
+    // Get dynamic color based on user input (Grey/Yellow/Red)
+    const dynamicColor = getRangeStatusColor(parameterName);
+
+    const rangeStyle = { 
+      color: dynamicColor, 
+      fontSize: "12px", 
+      fontWeight: "500",
+      transition: "color 0.2s ease"
+    };
+
+    const defaultGreyStyle = {
+      color: "#9E9E9E",
+      fontSize: "12px",
+      fontWeight: "500"
+    };
+
     const dataType = config.data_type;
+    // Check if it's the Gas Mixture field to add the prefix
+    const isGasMixture = parameterName.toLowerCase().includes("gas mixture");
 
     switch (dataType) {
       case "Integer":
@@ -90,52 +133,63 @@ const GasAnalyzersForm = ({
       case "Min/Max":
         if (config.min_value != null && config.max_value != null) {
           return (
-            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
-              Range: {config.min_value} - {config.max_value}
+            <span>
+              {/* Prefix stays grey regardless of input status */}
+              {isGasMixture && (
+                <span style={defaultGreyStyle}>
+                  Recommended: {config.min_value}{config.unit || ""} |{" "}
+                </span>
+              )}
+              {/* Range text follows the color-coding logic */}
+              <span style={rangeStyle}>
+                Range: {config.min_value}{config.unit || ""} - {config.max_value}{config.unit || ""}
+              </span>
             </span>
           );
         }
         break;
+
       case "Percentage":
         if (config.percentage != null) {
           return (
-            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
+            <span style={rangeStyle}>
               Range: 0% - {config.percentage}%
             </span>
           );
         }
         break;
+
       case "Boolean":
         return (
-          <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
+          <span style={defaultGreyStyle}>
             Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
           </span>
         );
+
+      // ✅ UPDATED: Calls the actual text content (like "test done") instead of data type label
       case "Text":
+        const displayValue = config.text || config.recommendation || "";
         return (
-          <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
-            Type: {config.text_type === "single" ? "Single Line" : "Multi Line"} Text
+          <span style={defaultGreyStyle}>
+            Text: {displayValue}
           </span>
         );
+
       case "Select":
       case "Dropdown":
-        if (
-          config.dropdown &&
-          Array.isArray(config.dropdown) &&
-          config.dropdown.length > 0
-        ) {
+        if (config.dropdown && Array.isArray(config.dropdown)) {
           return (
-            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
+            <span style={defaultGreyStyle}>
               Options: {config.dropdown.join(", ")}
             </span>
           );
         }
         break;
+
       default:
         return null;
     }
   };
-
   const setValue = (key: string, value: any) => {
     setLogValues((prev) => ({ ...prev, [key]: value }));
   };
@@ -273,11 +327,10 @@ const GasAnalyzersForm = ({
     outline: "none",
     backgroundColor: getDbParam(dbName) ? "#fff" : "#f1f5f9",
     cursor: getDbParam(dbName) ? "text" : "not-allowed",
-    color: "#9E9E9E",
+    color: "#232323",
     boxSizing: "border-box" as const,
   });
 
-  // MUI input specific styling
   const muiInputStyle = {
     '& .MuiOutlinedInput-root': {
       height: '50px',
@@ -299,7 +352,8 @@ const GasAnalyzersForm = ({
 
   const labelOverlayStyle: React.CSSProperties = {
     position: "absolute",
-    left: "12px",
+    left: "14px",
+    fontWeight:"400",
     top: "-8px",
     backgroundColor: "#fff",
     padding: "0 4px",
@@ -795,15 +849,6 @@ const GasAnalyzersForm = ({
                 <Bar dataKey="compliant" fill="#6c6c6c" radius={[4, 4, 0, 0]} barSize={25}>
                   <LabelList
                     dataKey="compliant"
-                    position="top"
-                    formatter={(value: number) => (value === 0 ? "" : value)}
-                    style={{ fill: "#6c6c6c", fontSize: 12, fontWeight: 600 }}
-                  />
-                </Bar>
-
-                <Bar dataKey="nonCompliant" fill="#EF9685" radius={[4, 4, 0, 0]} barSize={25}>
-                  <LabelList
-                    dataKey="nonCompliant"
                     position="top"
                     formatter={(value: number) => value === 0 ? "" : Math.abs(value)}
                     style={{ fill: "#EF9685", fontSize: 12, fontWeight: 600 }}

@@ -92,45 +92,69 @@ const AddParameterPopup: React.FC<Props> = ({
     }
   }, [open, initialData]);
 
-  const loadInitialData = () => {
-    if (!initialData) return;
+const loadInitialData = () => {
+  if (!initialData) return;
 
-    setTitle(initialData.title || initialData.name || "");
-    setMandatory(initialData.mandatory || false);
-    setFieldType(initialData.field_type || initialData.data_type || "");
+  // Extract the actual data type
+  const dataType = initialData.field_type || initialData.data_type;
 
-    if (initialData.data_type === "Integer") {
-      setIntegerDefault(initialData.default_value || "");
-      setIntegerUnit(initialData.unit || "");
-      setIntegerMin(initialData.min_value || "");
-      setIntegerMax(initialData.max_value || "");
+  setTitle(initialData.title || initialData.name || "");
+  setMandatory(initialData.mandatory || false);
+  setFieldType(dataType);
+
+  // Debug log to see what data we're receiving
+  console.log("Loading initial data:", initialData);
+
+  // Load type-specific data
+  if (dataType === "Integer") {
+    // Try multiple possible field names for default value
+    const defaultVal = 
+      initialData.default_value || 
+      initialData.integer_value || 
+      initialData.int_value || 
+      "";
+    
+    setIntegerDefault(String(defaultVal));
+    setIntegerUnit(initialData.unit || "");
+    setIntegerMin(String(initialData.min_value || ""));
+    setIntegerMax(String(initialData.max_value || ""));
+  } 
+  else if (dataType === "Decimal") {
+    // Try multiple possible field names for default value
+    const defaultVal = 
+      initialData.default_value || 
+      initialData.decimal_value || 
+      "";
+    
+    setDecimalDefault(String(defaultVal));
+    setDecimalUnit(initialData.unit || "");
+    setDecimalMin(String(initialData.min_value || ""));
+    setDecimalMax(String(initialData.max_value || ""));
+  } 
+  else if (dataType === "Text") {
+    setTextType(initialData.text_type || "single");
+    setTextValue(initialData.text || "");
+  } 
+  else if (dataType === "Boolean") {
+    setBooleanType(initialData.boolean_type || "yesno");
+  } 
+  else if (dataType === "Dropdown") {
+    // Normalize dropdown options
+    let dropdownArray: string[] = [];
+    
+    if (Array.isArray(initialData.dropdown)) {
+      dropdownArray = initialData.dropdown.map((d: any) => String(d)).filter(Boolean);
+    } else if (typeof initialData.dropdown === "string") {
+      dropdownArray = initialData.dropdown
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
     }
-
-    if (initialData.data_type === "Decimal") {
-      setDecimalDefault(initialData.default_value || "");
-      setDecimalUnit(initialData.unit || "");
-      setDecimalMin(initialData.min_value || "");
-      setDecimalMax(initialData.max_value || "");
-    }
-
-    if (initialData.data_type === "Text") {
-      setTextType(initialData.text_type || "single");
-      setTextValue(initialData.text || "");
-    }
-
-    if (initialData.data_type === "Boolean") {
-      setBooleanType(initialData.boolean_type || "yesno");
-    }
-
-    if (initialData.data_type === "Dropdown") {
-      if (initialData.dropdown && Array.isArray(initialData.dropdown)) {
-        setDropdownOptions(initialData.dropdown);
-      }
-      if (initialData.selection_type) {
-        setDropdownMode(initialData.selection_type);
-      }
-    }
-  };
+    
+    setDropdownOptions(dropdownArray.length > 0 ? dropdownArray : ["Option 1", "Option 2"]);
+    setDropdownMode(initialData.selection_type || "single");
+  }
+};
 
   const resetForm = () => {
     setTitle("");

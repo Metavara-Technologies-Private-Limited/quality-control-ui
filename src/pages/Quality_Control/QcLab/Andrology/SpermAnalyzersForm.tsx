@@ -80,60 +80,97 @@ const SpermAnalyzersForm = ({
     return config;
   };
 
-  const renderParameterInfo = (dbName: string) => {
+const getRangeStatusColor = (dbName: string) => {
     const config = getParameterConfig(dbName);
-    if (!config) return null;
+    
+     
+    const fieldEntry = fieldMapping.find(f => f.dbName === dbName);
+    const rawValue = fieldEntry ? logValues[fieldEntry.key] : null;
 
-    const dataType = config.data_type;
-
-    switch (dataType) {
-      case "Integer":
-      case "Decimal":
-      case "Min/Max":
-        if (config.min_value != null && config.max_value != null) {
-          return (
-            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
-              Range: {config.min_value} - {config.max_value}
-            </span>
-          );
-        }
-        break;
-      case "Percentage":
-        if (config.percentage != null) {
-          return (
-            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
-              Range: 0% - {config.percentage}%
-            </span>
-          );
-        }
-        break;
-      case "Boolean":
-        return (
-          <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
-            Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
-          </span>
-        );
-      case "Text":
-        return (
-          <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
-            Type: {config.text_type === "single" ? "Single Line" : "Multi Line"} Text
-          </span>
-        );
-      case "Select":
-      case "Dropdown":
-        if (config.dropdown && Array.isArray(config.dropdown)) {
-          return (
-            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
-              Options: {config.dropdown.join(", ")}
-            </span>
-          );
-        }
-        break;
-      default:
-        return null;
+     
+    if (!rawValue || !config || config.min_value == null || config.max_value == null) {
+      return "#9E9E9E";
     }
+
+    const inputValue = parseFloat(rawValue);
+    if (isNaN(inputValue)) return "#9E9E9E";
+
+    if (inputValue < Number(config.min_value)) return "#D6BA18"; 
+    if (inputValue > Number(config.max_value)) return "#F25B5B"; 
+    
+    return "#9E9E9E";  
   };
 
+                  const renderParameterInfo = (dbName: string) => {
+                        const config = getParameterConfig(dbName);
+                      if (!config) return null;
+
+                      const dataType = config.data_type;
+                      // Get real-time color feedback based on logValues input
+                      const dynamicColor = getRangeStatusColor(dbName);
+
+                      const rangeStyle = {
+                        color: dynamicColor,
+                        fontSize: "12px",
+                        fontWeight: "500",
+                        transition: "color 0.2s ease"
+                      };
+
+                      const defaultGreyStyle = {
+                        color: "#9E9E9E",
+                        fontSize: "12px",
+                        fontWeight: "500"
+                      };
+
+                      switch (dataType) {
+                        case "Integer":
+                        case "Decimal":
+                        case "Min/Max":
+                          if (config.min_value != null && config.max_value != null) {
+                            return (
+                              <span style={rangeStyle}>
+                                Range: {config.min_value} - {config.max_value}
+                              </span>
+                            );
+                          }
+                          break;
+                        case "Percentage":
+                          if (config.percentage != null) {
+                            return (
+                              <span style={rangeStyle}>
+                                Range: 0% - {config.percentage}%
+                              </span>
+                            );
+                          }
+                          break;
+                        case "Boolean":
+                          return (
+                            <span style={defaultGreyStyle}>
+                              Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
+                            </span>
+                          );
+                        // ✅ UPDATED: Now displays the actual text recommendation instead of the data type
+                        case "Text":
+                          const textValue = config.text || config.recommendation || "";
+                          return (
+                            <span style={defaultGreyStyle}>
+                              Text: {textValue}
+                            </span>
+                          );
+                        case "Select":
+                        case "Dropdown":
+                          if (config.dropdown && Array.isArray(config.dropdown)) {
+                      return (
+                    <span style={defaultGreyStyle}>
+                                Options: {config.dropdown.join(", ")}
+                  </span>
+                    );
+                    }
+                    break;
+                    default:
+                  return null;
+                  }
+                  };
   const setValue = (key: string, value: any) => {
     setLogValues((prev) => ({ ...prev, [key]: value }));
   };
