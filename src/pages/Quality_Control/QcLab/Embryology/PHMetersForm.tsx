@@ -108,9 +108,10 @@ const PHMetersForm = ({
           </span>
         );
       case "Text":
+        const textValue = config.text || config.recommendation || "";
         return (
-          <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
-            Type: {config.text_type === "single" ? "Single Line" : "Multi Line"} Text
+          <span style={{ color: "#9E9E9E", fontSize: "11px", fontWeight: "500" }}>
+           Text: {textValue}
           </span>
         );
       case "Select":
@@ -212,7 +213,7 @@ const PHMetersForm = ({
 
   // Styles synced with MicroscopesForm
   const inputContainerStyle = { position: "relative" as const, marginBottom: "20px" };
-  const inputStyle = { width: "100%", height: "50px", padding: "10px 12px", border: "2px solid #e5e7eb", borderRadius: "8px", fontSize: "16px", color: "#9E9E9E", fontWeight: "500", outline: "none", backgroundColor: "#fff" };
+  const inputStyle = { width: "100%", height: "50px", padding: "10px 12px", border: "2px solid #e5e7eb", borderRadius: "8px", fontSize: "16px", color: "#232323", fontWeight: "500", outline: "none", backgroundColor: "#fff" };
   const labelStyle = { position: "absolute" as const, left: "12px", top: "-8px", backgroundColor: "#fff", padding: "0 4px", fontSize: "14px", color: "#232323" };
   const rangeTextStyle = { fontSize: "12px", marginTop: "4px", color: "#9E9E9E", fontWeight: "500" };
 

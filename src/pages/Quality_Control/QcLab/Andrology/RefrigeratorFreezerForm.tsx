@@ -66,7 +66,7 @@ const RefrigeratorFreezerForm = ({
     );
   };
 
-  const getParameterConfig = (parameterName: string) => {
+ const getParameterConfig = (parameterName: string) => {
     const param = getDbParam(parameterName);
     if (!param || !param.config) return null;
 
@@ -81,23 +81,65 @@ const RefrigeratorFreezerForm = ({
     return config;
   };
 
-  const renderParameterInfo = (parameterName: string) => {
+  // ✅ Get range status color based on input value
+  const getRangeStatusColor = (parameterName: string) => {
     const config = getParameterConfig(parameterName);
+    
+    const stateMapping: Record<string, string> = {
+      "Temperature": "temperature",
+    };
+
+    const stateKey = stateMapping[parameterName];
+    const rawValue = stateKey ? logValues[stateKey] : null;
+
+    // If empty, stay grey
+    if (!rawValue || !config || config.min_value == null || config.max_value == null) {
+      return "#9E9E9E";
+    }
+
+    const inputValue = parseFloat(rawValue);
+    if (isNaN(inputValue)) return "#9E9E9E";
+
+    // Below min = yellow warning, above max = red error
+    if (inputValue < Number(config.min_value)) return "#D6BA18";  
+    if (inputValue > Number(config.max_value)) return "#F25B5B";  
+    
+    return "#9E9E9E"; 
+  };
+
+ const renderParameterInfo = (parameterName: string) => {
+    const config = getParameterConfig(parameterName);
+    
+    // Default fallback if no config exists for Temperature
     if (!config) {
       if (parameterName === "Temperature") {
         return (
           <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
-            Range:{" "}
-            {activeCategory === "Refrigerators"
-              ? "2°C to 8°C"
-              : "-15°C to -25°C"}
+            Range: {activeCategory === "Refrigerators" ? "2°C to 8°C" : "-15°C to -25°C"}
           </span>
         );
       }
       return null;
     }
 
+    // Dynamic color for Range based on input (Grey/Yellow/Red)
+    const dynamicColor = getRangeStatusColor(parameterName);
+    
+    const rangeStyle = { 
+      color: dynamicColor, 
+      fontSize: "12px", 
+      fontWeight: "500",
+      transition: "color 0.2s ease"
+    };
+
+    const defaultGreyStyle = {
+      color: "#9E9E9E",
+      fontSize: "12px",
+      fontWeight: "500"
+    };
+
     const dataType = config.data_type;
+    const isTemperature = parameterName.toLowerCase().includes("temperature");
 
     switch (dataType) {
       case "Integer":
@@ -105,47 +147,59 @@ const RefrigeratorFreezerForm = ({
       case "Min/Max":
         if (config.min_value != null && config.max_value != null) {
           return (
-            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
-              Range: {config.min_value} - {config.max_value}
+            <span>
+              {/* "Recommended" prefix stays Grey only for Temperature */}
+              {isTemperature && (
+                <span style={defaultGreyStyle}>
+                  Recommended: {config.min_value}{config.unit || ""} |{" "}
+                </span>
+              )}
+              {/* "Range" text changes color based on user input */}
+              <span style={rangeStyle}>
+                Range: {config.min_value}{config.unit || ""} - {config.max_value}{config.unit || ""}
+              </span>
             </span>
           );
         }
         break;
+
       case "Percentage":
         if (config.percentage != null) {
           return (
-            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
+            <span style={rangeStyle}>
               Range: 0% - {config.percentage}%
             </span>
           );
         }
         break;
+
       case "Boolean":
         return (
-          <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
+          <span style={defaultGreyStyle}>
             Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
           </span>
         );
+
+      // ✅ UPDATED: Display actual text content instead of data type label
       case "Text":
+        const displayValue = config.text || config.recommendation || "";
         return (
-          <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
-            Type: {config.text_type === "single" ? "Single Line" : "Multi Line"} Text
+          <span style={defaultGreyStyle}>
+            Text: {displayValue}
           </span>
         );
+
       case "Select":
       case "Dropdown":
-        if (
-          config.dropdown &&
-          Array.isArray(config.dropdown) &&
-          config.dropdown.length > 0
-        ) {
+        if (config.dropdown && Array.isArray(config.dropdown)) {
           return (
-            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
+            <span style={defaultGreyStyle}>
               Options: {config.dropdown.join(", ")}
             </span>
           );
         }
         break;
+
       default:
         return null;
     }
@@ -289,7 +343,7 @@ const RefrigeratorFreezerForm = ({
     outline: "none",
     backgroundColor: getDbParam(dbName) ? "#fff" : "#f1f5f9",
     cursor: getDbParam(dbName) ? "text" : "not-allowed",
-    color: "#9E9E9E",
+    color: "#232323",
     boxSizing: "border-box" as const,
   });
 
@@ -316,6 +370,7 @@ const RefrigeratorFreezerForm = ({
   const labelOverlayStyle: React.CSSProperties = {
     position: "absolute",
     left: "12px",
+    fontWeight:"400",
     top: "-8px",
     backgroundColor: "#fff",
     padding: "0 4px",

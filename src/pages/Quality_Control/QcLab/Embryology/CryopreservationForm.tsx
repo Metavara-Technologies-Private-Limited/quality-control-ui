@@ -94,82 +94,96 @@ const CryopreservationForm = ({
     return config;
   };
 
-  // ✅ UPDATED: Now supports Boolean, Text, Integer, and improved styling
-  const renderParameterInfo = (dbName: string) => {
+  const getRangeStatusColor = (dbName: string) => {
     const config = getParameterConfig(dbName);
+    
+    const stateMapping: Record<string, string> = {
+      "Liquid Nitrogen Levels": "liquidNitrogenLevels",
+      "Temperature": "temperature",
+    };
 
+    const stateKey = stateMapping[dbName];
+    const rawValue = stateKey ? formData[stateKey] : null;
+
+    // If empty, stay grey
+    if (!rawValue || !config || config.min_value == null || config.max_value == null) {
+      return "#9E9E9E";
+    }
+
+    const inputValue = parseFloat(rawValue);
+    if (isNaN(inputValue)) return "#9E9E9E";
+
+     
+    if (inputValue < Number(config.min_value)) return "#D6BA18";  
+    if (inputValue > Number(config.max_value)) return "#F25B5B"; 
+    
+    return "#9E9E9E"; 
+  };
+
+  // ✅ UPDATED: renderParameterInfo with dynamic colors
+  const renderParameterInfo = (parameterName: string) => {
+    const config = getParameterConfig(parameterName);
     if (!config) return null;
+    
+    const dynamicColor = getRangeStatusColor(parameterName);
+    const labelStyle = { 
+      color: dynamicColor, 
+      fontSize: "12px", 
+      fontWeight: "500",
+      transition: "color 0.2s ease"
+    };
 
     const dataType = config.data_type;
-
+    
     switch (dataType) {
       case "Integer":
       case "Decimal":
       case "Min/Max":
         if (config.min_value != null && config.max_value != null) {
           return (
-            <span
-              style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}
-            >
-              Range: {config.min_value} - {config.max_value}
+            <span style={labelStyle}>
+              Range: {config.min_value} {config.unit || ""} - {config.max_value} {config.unit || ""}
             </span>
           );
         }
         break;
-
       case "Percentage":
         if (config.percentage != null) {
           return (
-            <span
-              style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}
-            >
+            <span style={labelStyle}>
               Range: 0% - {config.percentage}%
             </span>
           );
         }
         break;
-
+      // ✅ UPDATED: Fetching the actual text/content instead of data type description
+      case "Text":
+        const textValue = config.text || config.recommendation || "";
+        return (
+          <span style={{ color: "#9E9E9E", fontSize: "11px", fontWeight: "500" }}>
+            Text: {textValue}
+          </span>
+        );
       case "Boolean":
         return (
-          <span
-            style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}
-          >
+          <span style={{ color: "#9E9E9E", fontSize: "11px", fontWeight: "500" }}>
             Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
           </span>
         );
-
-      case "Text":
-        return (
-          <span
-            style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}
-          >
-            Type: {config.text_type === "single" ? "Single Line" : "Multi Line"}{" "}
-            Text
-          </span>
-        );
-
       case "Select":
       case "Dropdown":
-        if (
-          config.dropdown &&
-          Array.isArray(config.dropdown) &&
-          config.dropdown.length > 0
-        ) {
+        if (config.dropdown && Array.isArray(config.dropdown) && config.dropdown.length > 0) {
           return (
-            <span
-              style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}
-            >
+            <span style={{ color: "#9E9E9E", fontSize: "11px", fontWeight: "500" }}>
               Options: {config.dropdown.join(", ")}
             </span>
           );
         }
         break;
-
       default:
         return null;
     }
   };
-
   const setValue = (key: string, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
@@ -284,7 +298,7 @@ const CryopreservationForm = ({
     padding: "10px 12px",
     fontSize: "16px",
     outline: "none",
-    color: "#9E9E9E",
+    color: "#232323",
     backgroundColor: getDbParam(dbName) ? "#fff" : "#f1f5f9",
     cursor: getDbParam(dbName) ? "text" : "not-allowed",
     boxSizing: "border-box" as const,

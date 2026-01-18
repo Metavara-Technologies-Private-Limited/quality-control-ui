@@ -60,9 +60,20 @@ const LFHForm = ({
   );
 
   const getParameterConfig = (parameterName: string) => {
-    const param = currentEquipment?.parameters?.find(
-      (p: any) => p.parameter_name?.toLowerCase() === parameterName.toLowerCase()
+    if (!currentEquipment?.parameters) return null;
+    let param = currentEquipment.parameters.find(
+      (p: any) => p.parameter_name?.toLowerCase().trim() === parameterName.toLowerCase().trim()
     );
+    if (!param) {
+      param = currentEquipment.parameters.find(
+        (p: any) => p.parameter_name?.toLowerCase().includes(parameterName.toLowerCase())
+      );
+    }
+    if (!param) {
+      param = currentEquipment.parameters.find(
+        (p: any) => parameterName.toLowerCase().includes(p.parameter_name?.toLowerCase())
+      );
+    }
     if (!param || !param.config) return null;
     let config = param.config;
     if (config.history && Array.isArray(config.history) && config.history.length > 0) {
@@ -71,10 +82,61 @@ const LFHForm = ({
     return config;
   };
 
-  // ✅ UPDATED: Now supports Boolean and Text types
-  const renderParameterInfo = (parameterName: string) => {
+  // ✅ NEW: Get color based on unit
+  const getColorByUnit = (parameterName: string): string => {
+    const config = getParameterConfig(parameterName);
+    
+    if (config?.unit === "%" || config?.unit === "ppm") {
+      return "#D6BA18";
+    } else if (config?.unit === "°C" || config?.unit === "°F") {
+      return "#F25B5B";
+    }
+    
+    return "#505050";
+  };
+
+  // ✅ NEW: Get range status color based on input value
+  const getRangeStatusColor = (parameterName: string) => {
+    const config = getParameterConfig(parameterName);
+    
+    const stateMapping: Record<string, string> = {
+      "Airflow Velocity": "airflowVelocity",
+      "HEPA Filter Integrity": "hepaFilter",
+      "UV Light Functionality": "uvLight",
+      "Cleanliness & Decontamination Log": "cleanlinessLog",
+    };
+
+    const stateKey = stateMapping[parameterName];
+    const rawValue = logValues[stateKey];
+
+    // If empty, stay grey
+    if (!rawValue || !config || config.min_value == null || config.max_value == null) {
+      return "#9E9E9E";
+    }
+
+    const inputValue = parseFloat(rawValue);
+    if (isNaN(inputValue)) return "#9E9E9E";
+
+    // Only change color if value is outside range
+    if (inputValue < Number(config.min_value)) return "#D6BA18"; // Below range
+    if (inputValue > Number(config.max_value)) return "#F25B5B"; // Above range
+    
+    return "#9E9E9E"; // In range or valid input
+  };
+
+  // ✅ UPDATED: renderParameterInfo to use dynamic colors
+const renderParameterInfo = (parameterName: string) => {
     const config = getParameterConfig(parameterName);
     if (!config) return null;
+    
+    const dynamicColor = getRangeStatusColor(parameterName);
+    const labelStyle = { 
+      color: dynamicColor, 
+      fontSize: "12px", 
+      fontWeight: "500",
+      transition: "color 0.2s ease"
+    };
+
     const dataType = config.data_type;
     
     switch (dataType) {
@@ -83,8 +145,8 @@ const LFHForm = ({
       case "Min/Max":
         if (config.min_value != null && config.max_value != null) {
           return (
-            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
-              Range: {config.min_value} - {config.max_value}
+            <span style={labelStyle}>
+              Range: {config.min_value} {config.unit || ""} - {config.max_value} {config.unit || ""}
             </span>
           );
         }
@@ -92,29 +154,31 @@ const LFHForm = ({
       case "Percentage":
         if (config.percentage != null) {
           return (
-            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
+            <span style={labelStyle}>
               Range: 0% - {config.percentage}%
             </span>
           );
         }
         break;
-      case "Boolean":
+      // ✅ UPDATED: Fetching the actual text/content instead of data type description
+      case "Text":
+        const textValue = config.text || config.recommendation || "";
         return (
-          <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
-            Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
+          <span style={{ color: "#9E9E9E", fontSize: "11px", fontWeight: "500" }}>
+           Text : {textValue}
           </span>
         );
-      case "Text":
+      case "Boolean":
         return (
-          <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
-            Type: {config.text_type === "single" ? "Single Line" : "Multi Line"} Text
+          <span style={{ color: "#9E9E9E", fontSize: "11px", fontWeight: "500" }}>
+            Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
           </span>
         );
       case "Select":
       case "Dropdown":
         if (config.dropdown && Array.isArray(config.dropdown) && config.dropdown.length > 0) {
           return (
-            <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
+            <span style={{ color: "#9E9E9E", fontSize: "11px", fontWeight: "500" }}>
               Options: {config.dropdown.join(", ")}
             </span>
           );
@@ -124,7 +188,6 @@ const LFHForm = ({
         return null;
     }
   };
-
   const handleLinkClick = () => {
     fileInputRef.current?.click();
   };
@@ -179,30 +242,39 @@ const LFHForm = ({
         logValues["uploadedFileName"] = uploadedFile.name;
       }
 
-      const formValuesList = [
-        { key: "airflowVelocity", value: logValues["airflowVelocity"] },
-        { key: "hepaFilter", value: logValues["hepaFilter"] },
-        { key: "uvLight", value: logValues["uvLight"] },
-        { key: "cleanlinessLog", value: logValues["cleanlinessLog"] },
-        { key: "uploadedFileName", value: logValues["uploadedFileName"] },
-        { key: "comments", value: logValues["comments"] },
-        { key: "status", value: logValues["status"] },
-      ].filter((item) => item.value && item.value.trim() !== "");
+      const parameterMapping: Record<string, string> = {
+        airflowVelocity: "Airflow Velocity",
+        hepaFilter: "HEPA Filter Integrity",
+        uvLight: "UV Light Functionality",
+        cleanlinessLog: "Cleanliness & Decontamination Log",
+        comments: "Comments",
+        status: "Status"
+      };
 
-      formValuesList.forEach((formItem, index) => {
-        if (index < currentEquipment.parameters.length) {
-          const param = currentEquipment.parameters[index];
+      Object.entries(logValues).forEach(([key, value]) => {
+        if (!value || value.trim() === '') return;
+
+        const expectedParamName = parameterMapping[key];
+        if (!expectedParamName) return;
+
+        const matchingParam = currentEquipment.parameters.find((p: any) => {
+          const pName = p.parameter_name?.toLowerCase().trim();
+          const expectedName = expectedParamName?.toLowerCase().trim();
+          return pName === expectedName || pName?.includes(expectedName) || expectedName?.includes(pName);
+        });
+
+        if (matchingParam) {
           const payload = {
-            parameter: param.id,
+            parameter: matchingParam.id,
             equipment_details: currentEquipmentDetail.equipment_id,
-            content: formItem.value,
+            content: value,
           };
           requests.push(parameterValueApi.create(payload));
         }
       });
 
       if (requests.length === 0) {
-        toast.warn("No valid parameters found to match your input.");
+        toast.warn("No matching parameters found to save.");
         setIsSaving(false);
         return;
       }
@@ -244,7 +316,7 @@ const LFHForm = ({
     border: "2px solid #e5e7eb", 
     borderRadius: "8px", 
     fontSize: "16px", 
-    color:"#9E9E9E", 
+    color:"#232323", 
     fontWeight: "500", 
     outline: "none" 
   };

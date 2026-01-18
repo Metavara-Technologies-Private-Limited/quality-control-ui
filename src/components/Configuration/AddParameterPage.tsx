@@ -140,66 +140,65 @@ const AddParameterPage = () => {
         setSelected([]);
         setNextSrNo(maxSrNo + 1);
       }
+ const loadedParams = storeEquipment.parameters.map((p: any) => {
+  let cfg = p.config || {};
 
-      // ✅ FIXED PARAMETER LOADING WITH ALL REQUIRED FIELDS
-      const loadedParams = storeEquipment.parameters.map((p: any) => {
-        let cfg = p.config || {};
+  // Get the latest config from history if it exists
+  if (cfg.history?.length) {
+    cfg = cfg.history[cfg.history.length - 1];
+  }
 
-        if (cfg.history?.length) {
-          cfg = cfg.history[cfg.history.length - 1];
-        }
+  // Create the base parameter object
+  const param: any = {
+    id: p.id,
+    name: p.parameter_name,
+    title: p.parameter_name,
+    data_type: cfg.data_type,
+    field_type: cfg.data_type,
+    mandatory: p.mandatory || false,
+  };
 
-        // Create the base parameter object
-        const param: any = {
-          id: p.id,
-          name: p.parameter_name,
-          title: p.parameter_name,
-          data_type: cfg.data_type,
-          field_type: cfg.data_type,
-          mandatory: p.mandatory || false,
-        };
+  // Handle different data types
+  switch (cfg.data_type) {
+    case "Integer":
+      param.default_value = cfg.default_value || cfg.integer_value || "";
+      param.integer_value = cfg.integer_value || cfg.default_value || "";
+      param.unit = cfg.unit || "";
+      param.min_value = cfg.min_value || "";
+      param.max_value = cfg.max_value || "";
+      break;
 
-        // Handle different data types
-        switch (cfg.data_type) {
-          case "Integer":
-            param.default_value = cfg.integer_value || cfg.default_value || "";
-            param.unit = cfg.unit || "";
-            param.min_value = cfg.min_value || "";
-            param.max_value = cfg.max_value || "";
-            break;
+    case "Decimal":
+      param.default_value = cfg.default_value || "";
+      param.unit = cfg.unit || "";
+      param.min_value = cfg.min_value || "";
+      param.max_value = cfg.max_value || "";
+      break;
 
-          case "Decimal":
-            param.default_value = cfg.default_value || "";
-            param.unit = cfg.unit || "";
-            param.min_value = cfg.min_value || "";
-            param.max_value = cfg.max_value || "";
-            break;
+    case "Text":
+      param.text_type = cfg.text_type || "single";
+      param.text = cfg.text || "";
+      break;
 
-          case "Text":
-            param.text_type = cfg.text_type || "single";
-            param.text = cfg.text || "";
-            break;
+    case "Boolean":
+      param.boolean_type = cfg.boolean_type || "yesno";
+      break;
 
-          case "Boolean":
-            param.boolean_type = cfg.boolean_type || "yesno";
-            break;
+    case "Dropdown":
+      // Ensure dropdown is properly formatted as array
+      param.dropdown = normalizeDropdownValue(cfg.dropdown);
+      param.selection_type = cfg.selection_type || "single";
+      break;
+  }
 
-          case "Dropdown":
-            param.dropdown = normalizeDropdownValue(cfg.dropdown);
-            param.selection_type = cfg.selection_type || "single";
-            break;
-        }
+  // Keep original values for display
+  param.percentage = cfg.percentage || null;
 
-        // Keep original values for display
-        param.integer_value = cfg.integer_value;
-        param.percentage = cfg.percentage;
-        param.min_value = param.min_value || cfg.min_value;
-        param.max_value = param.max_value || cfg.max_value;
-        param.text = param.text || cfg.text;
-        param.dropdown = param.dropdown || normalizeDropdownValue(cfg.dropdown);
+  return param;
+});
 
-        return param;
-      });
+setParameters(loadedParams);
+localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
 
       setParameters(loadedParams);
       localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
@@ -280,14 +279,48 @@ const AddParameterPage = () => {
   };
 
   const handleEditParameter = () => {
-    if (menuParamIndex !== null) {
-      const param = parameters[menuParamIndex];
-      setParamToEdit({ ...param });
-      setEditingParamIndex(menuParamIndex);
-      setOpenParamPopup(true);
-    }
-    handleClose();
-  };
+  if (menuParamIndex !== null) {
+    const param = parameters[menuParamIndex];
+    
+    // Create a complete copy with all necessary fields
+    const paramToEditData = {
+      id: param.id,
+      name: param.name || param.title,
+      title: param.title || param.name,
+      mandatory: param.mandatory || false,
+      field_type: param.field_type || param.data_type,
+      data_type: param.data_type || param.field_type,
+      
+      // Integer
+      default_value: param.default_value || param.integer_value || "",
+      unit: param.unit || "",
+      min_value: param.min_value || "",
+      max_value: param.max_value || "",
+      integer_value: param.integer_value || "",
+      
+      // Decimal (same structure as integer)
+      
+      // Text
+      text_type: param.text_type || "single",
+      text: param.text || "",
+      
+      // Boolean
+      boolean_type: param.boolean_type || "yesno",
+      
+      // Dropdown
+      dropdown: param.dropdown || [],
+      selection_type: param.selection_type || "single",
+      
+      // Other
+      percentage: param.percentage || null,
+    };
+    
+    setParamToEdit(paramToEditData);
+    setEditingParamIndex(menuParamIndex);
+    setOpenParamPopup(true);
+  }
+  handleClose();
+};
 
   const handleDeleteParameter = () => {
     setParamIndexToDelete(menuParamIndex);
@@ -483,78 +516,94 @@ const AddParameterPage = () => {
     }
   };
 
-  const renderParameterContent = (p: any) => {
-    let data_type = p.data_type || p.field_type;
-    let config = p;
+  // In AddParameterPage.tsx - Update the renderParameterContent function:
 
-    if (p.history && Array.isArray(p.history) && p.history.length > 0) {
-      config = p.history[p.history.length - 1];
-      data_type = config.data_type;
-    }
+const renderParameterContent = (p: any) => {
+  let data_type = p.data_type || p.field_type;
+  let config = p;
 
-    switch (data_type) {
-      case "Integer":
-      case "Min/Max":
-      case "Decimal":
-        return (
-          <Typography
-            sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
-          >
-            Min {config.min_value || "-"} – Max {config.max_value || "-"}
-          </Typography>
-        );
-      case "Percentage":
-        return (
-          <Typography
-            sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
-          >
-            {config.percentage}
-          </Typography>
-        );
-      case "Text":
-        return (
-          <Typography
-            sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
-          >
-            {config.text}
-          </Typography>
-        );
-      case "Boolean":
-        return (
-          <Typography
-            sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
-          >
-            {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
-          </Typography>
-        );
-      case "Dropdown":
-      case "Select":
-        let options = normalizeDropdownValue(config.dropdown);
-        if (options.length === 0) return null;
-        return (
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              flexWrap: "wrap",
-              mt: 0.5,
-            }}
-          >
-            {options.map((val: any, i: number) => (
-              <Chip
-                key={i}
-                label={String(val)}
-                size="small"
-                sx={{ background: "transparent" }}
-              />
-            ))}
-          </Box>
-        );
-      default:
-        return null;
-    }
-  };
+  if (p.history && Array.isArray(p.history) && p.history.length > 0) {
+    config = p.history[p.history.length - 1];
+    data_type = config.data_type;
+  }
+
+  switch (data_type) {
+    case "Integer":
+      return (
+        <Typography
+          sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
+        >
+          Min {config.min_value || "-"} {config.unit || ""} – Max {config.max_value || "-"} {config.unit || ""}
+        </Typography>
+      );
+    case "Decimal":
+      return (
+        <Typography
+          sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
+        >
+          Min {config.min_value || "-"} {config.unit || ""} – Max {config.max_value || "-"} {config.unit || ""}
+        </Typography>
+      );
+    case "Min/Max":
+      return (
+        <Typography
+          sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
+        >
+          Min {config.min_value || "-"} – Max {config.max_value || "-"} {config.unit ? config.unit : ""}
+        </Typography>
+      );
+    case "Percentage":
+      return (
+        <Typography
+          sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
+        >
+          {config.percentage}%
+        </Typography>
+      );
+    case "Text":
+      return (
+        <Typography
+          sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
+        >
+          {config.text}
+        </Typography>
+      );
+    case "Boolean":
+      return (
+        <Typography
+          sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
+        >
+          {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
+        </Typography>
+      );
+    case "Dropdown":
+    case "Select":
+      let options = normalizeDropdownValue(config.dropdown);
+      if (options.length === 0) return null;
+      return (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            flexWrap: "wrap",
+            mt: 0.5,
+          }}
+        >
+          {options.map((val: any, i: number) => (
+            <Chip
+              key={i}
+              label={String(val)}
+              size="small"
+              sx={{ background: "transparent" }}
+            />
+          ))}
+        </Box>
+      );
+    default:
+      return null;
+  }
+};
 
   return (
     <Box>

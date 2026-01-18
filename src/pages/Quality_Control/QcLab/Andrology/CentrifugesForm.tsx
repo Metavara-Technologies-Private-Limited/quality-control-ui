@@ -28,7 +28,6 @@ const CentrifugesForm = ({
   equipmentDetails,
 }: any) => {
   const [activeSubTab, setActiveSubTab] = useState("Details");
-  // Updated logValues to handle dayjs objects for date/time keys
   const [logValues, setLogValues] = useState<Record<string, any>>({
     date: dayjs(),
     time: dayjs(),
@@ -78,11 +77,55 @@ const CentrifugesForm = ({
     return config;
   };
 
-  const renderParameterInfo = (parameterName: string) => {
+  // ✅ NEW: Get range status color based on input value
+  const getRangeStatusColor = (parameterName: string) => {
+    const config = getParameterConfig(parameterName);
+    
+    const stateMapping: Record<string, string> = {
+      "RPM Calibration": "rpmCalibration",
+    };
+
+    const stateKey = stateMapping[parameterName];
+    const rawValue = stateKey ? logValues[stateKey] : null;
+
+    // If empty, stay grey
+    if (!rawValue || !config || config.min_value == null || config.max_value == null) {
+      return "#9E9E9E";
+    }
+
+    const inputValue = parseFloat(rawValue);
+    if (isNaN(inputValue)) return "#9E9E9E";
+
+   
+    if (inputValue < Number(config.min_value)) return "#D6BA18";  
+    if (inputValue > Number(config.max_value)) return "#F25B5B";  
+    
+    return "#9E9E9E"; 
+  };
+
+ const renderParameterInfo = (parameterName: string) => {
     const config = getParameterConfig(parameterName);
     if (!config) return null;
 
+    // Get dynamic color based on user input (Grey/Yellow/Red)
+    const dynamicColor = getRangeStatusColor(parameterName);
+
+    const rangeStyle = { 
+      color: dynamicColor, 
+      fontSize: "12px", 
+      fontWeight: "500",
+      transition: "color 0.2s ease"
+    };
+
+    const defaultGreyStyle = {
+      color: "#9E9E9E",
+      fontSize: "12px",
+      fontWeight: "500"
+    };
+
     const dataType = config.data_type;
+    // Check if it's the RPM Calibration field to add the prefix
+    const isRPM = parameterName.toLowerCase().includes("rpm calibration");
 
     switch (dataType) {
       case "Integer":
@@ -90,63 +133,63 @@ const CentrifugesForm = ({
       case "Min/Max":
         if (config.min_value != null && config.max_value != null) {
           return (
-            <span
-              style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}
-            >
-              Range: {config.min_value} - {config.max_value}
+            <span>
+              {/* "Recommended" prefix stays Grey regardless of input */}
+              {isRPM && (
+                <span style={defaultGreyStyle}>
+                  Recommended: {config.min_value}{config.unit || ""} |{" "}
+                </span>
+              )}
+              {/* "Range" text changes color based on user input */}
+              <span style={rangeStyle}>
+                Range: {config.min_value}{config.unit || ""} - {config.max_value}{config.unit || ""}
+              </span>
             </span>
           );
         }
         break;
+
       case "Percentage":
         if (config.percentage != null) {
           return (
-            <span
-              style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}
-            >
+            <span style={rangeStyle}>
               Range: 0% - {config.percentage}%
             </span>
           );
         }
         break;
+
       case "Boolean":
         return (
-          <span
-            style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}
-          >
+          <span style={defaultGreyStyle}>
             Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
           </span>
         );
+
+      // ✅ UPDATED: Calls the actual text content instead of the data type label
       case "Text":
+        const displayValue = config.text || config.recommendation || "";
         return (
-          <span
-            style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}
-          >
-            Type: {config.text_type === "single" ? "Single Line" : "Multi Line"}{" "}
-            Text
+          <span style={defaultGreyStyle}>
+            Text: {displayValue}
           </span>
         );
+
       case "Select":
       case "Dropdown":
-        if (
-          config.dropdown &&
-          Array.isArray(config.dropdown) &&
-          config.dropdown.length > 0
-        ) {
+        if (config.dropdown && Array.isArray(config.dropdown)) {
           return (
-            <span
-              style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}
-            >
+            <span style={defaultGreyStyle}>
               Options: {config.dropdown.join(", ")}
             </span>
           );
         }
         break;
+
       default:
         return null;
     }
   };
-
   const setValue = (key: string, value: any) => {
     setLogValues((prev) => ({ ...prev, [key]: value }));
   };
@@ -285,11 +328,10 @@ const CentrifugesForm = ({
     outline: "none",
     backgroundColor: getDbParam(dbName) ? "#fff" : "#f1f5f9",
     cursor: getDbParam(dbName) ? "text" : "not-allowed",
-    color: "#9E9E9E",
+    color: "#232323",
     boxSizing: "border-box" as const,
   });
 
-  // MUI input specific styling to match your look
   const muiInputStyle = {
     '& .MuiOutlinedInput-root': {
       height: '50px',
@@ -317,7 +359,7 @@ const CentrifugesForm = ({
     padding: "0 4px",
     fontSize: "14px",
     color: "#232323",
-    zIndex: 1, // Ensures label stays above MUI border
+    zIndex: 1,
   };
 
   const rangeTextStyle: React.CSSProperties = {
