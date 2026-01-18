@@ -100,6 +100,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
   const [showSubTaskForm, setShowSubTaskForm] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [subTaskToDelete, setSubTaskToDelete] = useState<SubTask | null>(null);
+  const [, forceTick] = useState(0);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const savedRangeRef = useRef<Range | null>(null);
@@ -147,23 +148,31 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
   //   checkFormats();
   // }, [open, detailsTab, taskDetails]);
 
+  useEffect(() => {
+    if (task?.timer_status !== "RUNNING") return;
+  
+    const i = setInterval(() => {
+      forceTick(t => t + 1);
+    }, 1000);
+  
+    return () => clearInterval(i);
+  }, [task?.timer_status]);  
+
   const hydratedTaskIdRef = useRef<number | null>(null);
 
-useLayoutEffect(() => {
-  if (!open || detailsTab !== 0 || !editorRef.current || !task) return;
+  useLayoutEffect(() => {
+    if (!open || detailsTab !== 0 || !editorRef.current || !task) return;
 
-  if (hydratedTaskIdRef.current === task.id) return;
+    if (hydratedTaskIdRef.current === task.id) return;
 
-  const editor = editorRef.current;
+    const editor = editorRef.current;
 
-  editor.innerHTML =
-    taskDetails?.trim()
+    editor.innerHTML = taskDetails?.trim()
       ? taskDetails
       : '<p style="color:#aaa;font-style:italic;">No description yet. Click to edit…</p>';
 
-  hydratedTaskIdRef.current = task.id;
-}, [open, detailsTab, task?.id]); // 👈 NOT taskDetails
-
+    hydratedTaskIdRef.current = task.id;
+  }, [open, detailsTab, task?.id]); // 👈 NOT taskDetails
 
   const getTaskTime = (task: UITask) => {
     let tracked = task.total_tracked_sec ?? 0;
@@ -281,8 +290,8 @@ useLayoutEffect(() => {
         taskStatus === TaskStatus.COMPLETED
           ? 2
           : taskStatus === TaskStatus.IN_PROGRESS
-          ? 1
-          : 0,
+            ? 1
+            : 0,
 
       // ✅ SAFE DATE
       due_date: toISO(task.due_date)!,
@@ -352,7 +361,7 @@ useLayoutEffect(() => {
   };
 
   const [statusAnchorEl, setStatusAnchorEl] = useState<null | HTMLElement>(
-    null
+    null,
   );
 
   const handleStatusClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -365,11 +374,29 @@ useLayoutEffect(() => {
       label === "Completed"
         ? TaskStatus.COMPLETED
         : label === "In Progress"
-        ? TaskStatus.IN_PROGRESS
-        : TaskStatus.TODO;
+          ? TaskStatus.IN_PROGRESS
+          : TaskStatus.TODO;
 
     setTaskStatus(status);
     setStatusAnchorEl(null);
+  };
+
+  const handleTimerStart = async () => {
+    if (!task) return;
+    await taskApi.startTimer(task.id);
+    onUpdated();
+  };
+
+  const handleTimerPause = async () => {
+    if (!task) return;
+    await taskApi.pauseTimer(task.id);
+    onUpdated();
+  };
+
+  const handleTimerStop = async () => {
+    if (!task) return;
+    await taskApi.stopTimer(task.id);
+    onUpdated();
   };
 
   if (!open || !task) return null;
@@ -471,8 +498,8 @@ useLayoutEffect(() => {
                           taskStatus === TaskStatus.COMPLETED
                             ? COLORS.complete
                             : taskStatus === TaskStatus.IN_PROGRESS
-                            ? COLORS.progress
-                            : COLORS.todo,
+                              ? COLORS.progress
+                              : COLORS.todo,
                         color: "#fff",
                         overflow: "hidden",
                       }}
@@ -533,7 +560,12 @@ useLayoutEffect(() => {
                     Track Time :
                   </Typography>
                   <Stack direction="row" spacing={1} alignItems="center">
-                    {trackIcons(task.timer_status || "")}
+                    {trackIcons(task.timer_status ?? "IDLE", {
+                      onStart: handleTimerStart,
+                      onPause: handleTimerPause,
+                      onStop: handleTimerStop,
+                    })}
+
                     <Typography fontSize={13}>
                       {formatSeconds(getTaskTime(task))}
                     </Typography>
@@ -891,8 +923,8 @@ useLayoutEffect(() => {
                               st.status === TaskStatus.COMPLETED
                                 ? COLORS.complete
                                 : st.status === TaskStatus.IN_PROGRESS
-                                ? COLORS.progress
-                                : COLORS.todo,
+                                  ? COLORS.progress
+                                  : COLORS.todo,
                             color: "#fff",
                             fontSize: 12,
                           }}

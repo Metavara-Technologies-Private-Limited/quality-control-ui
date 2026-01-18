@@ -189,6 +189,15 @@ export const taskApi = {
 
   updateStatus: (id: number, status: Task["status"]) =>
     http.patch(`/tasks/${id}/status/`, { status }),
+
+  startTimer: (taskId: number) =>
+    http.post(`/tasks/${taskId}/timer/start`),
+
+  pauseTimer: (taskId: number) =>
+    http.post(`/tasks/${taskId}/timer/pause`),
+
+  stopTimer: (taskId: number) =>
+    http.post(`/tasks/${taskId}/timer/stop`),
 };
 
 // APIs related to parameter values (logs)

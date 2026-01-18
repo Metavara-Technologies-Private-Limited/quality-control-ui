@@ -61,7 +61,16 @@ function Task() {
   const [detailsTab, setDetailsTab] = useState(0);
   const [taskDetails, setTaskDetails] = useState("");
   const [eventError, setEventError] = useState("");
+  const [_now, setNow] = useState(Date.now());
 
+  useEffect(() => {
+    const id = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+  
+    return () => clearInterval(id);
+  }, []);
+  
   useEffect(() => {
     if (clinic?.id)
       if (!events.length) dispatch(fetchEventsByClinic(clinic.id));
@@ -500,7 +509,7 @@ function Task() {
                           width="20%"
                           alignItems="center"
                         >
-                          {trackIcons(t.timer_status || "")}
+                          {trackIcons(t.timer_status || "IDLE")}
                           <Typography fontSize={13}>
                             {formatSeconds(getTaskTime(t))}
                           </Typography>
