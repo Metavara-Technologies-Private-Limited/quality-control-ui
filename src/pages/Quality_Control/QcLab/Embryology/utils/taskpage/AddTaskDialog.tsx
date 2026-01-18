@@ -118,7 +118,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
-      setStep(3);
+      setStep(1);
       setName('');
       // setSelectedEvent(initialSelectedEvent);
       setAssignee('');
