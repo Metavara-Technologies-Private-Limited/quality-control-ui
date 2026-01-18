@@ -46,7 +46,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { eventApi } from "@/services/api";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import TurnLeftIcon from '@mui/icons-material/TurnLeft';
+import TurnLeftIcon from "@mui/icons-material/TurnLeft";
 import { useNavigate } from "react-router-dom";
 
 /* ================= COLORS ================= */
@@ -83,8 +83,8 @@ type ScheduleType = "one" | "daily" | "weekly" | "monthly";
 const scheduleTypeMap: Record<ScheduleType, number> = {
   one: 1,
   daily: 2,
-  weekly: 2,
-  monthly: 3,
+  weekly: 3,
+  monthly: 4,
 };
 
 /* ================= COMPONENT ================= */
@@ -115,8 +115,12 @@ const CreateEvent = () => {
   const [equipmentDialogOpen, setEquipmentDialogOpen] = useState(false);
 
   // Updated type to use SelectedEquipmentData from dialog
-  const [addedEquipments, setAddedEquipments] = useState<SelectedEquipmentData[]>([]);
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null);
+  const [addedEquipments, setAddedEquipments] = useState<
+    SelectedEquipmentData[]
+  >([]);
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<
+    number | null
+  >(null);
 
   const { data: clinic } = useSelector((state: RootState) => state.clinic);
   const departments = clinic ? clinic.department : [];
@@ -227,8 +231,8 @@ const CreateEvent = () => {
 
       toast.success("Event created successfully");
       setTimeout(() => {
-          navigate("/configuration/events", { replace: true });
-        }, 2000);
+        navigate("/configuration/events", { replace: true });
+      }, 2000);
     } catch (err) {
       console.error(err);
       toast.error("Failed to create event");
@@ -253,65 +257,160 @@ const CreateEvent = () => {
                 color: "#374151",
                 borderRadius: 1,
                 boxShadow: "3px 3px 6px rgba(0,0,0,0.2)",
-                backgroundColor: "#fff"
+                backgroundColor: "#fff",
               }}
             >
-              <TurnLeftIcon sx={{ fontSize: 24, padding: "3px", }}/>
+              <TurnLeftIcon sx={{ fontSize: 24, padding: "3px" }} />
             </IconButton>
 
             <Divider />
 
-            <Typography fontWeight={700} fontSize={20} color="#111827">
+            <Typography
+              sx={{
+                fontFamily: "Montserrat",
+                fontWeight: 700,
+                fontStyle: "normal", // Bold is controlled by fontWeight
+                fontSize: "20px",
+                lineHeight: "145%",
+                letterSpacing: "0%",
+                color: "#111827",
+              }}
+            >
               Create Event
             </Typography>
           </Box>
         </Box>
 
-        <Typography fontWeight={700} fontSize={16} mb={3}>
-          Event
+        <Typography
+          sx={{
+            fontFamily: "Montserrat",
+            fontWeight: 700,
+            fontStyle: "normal", // Bold handled by fontWeight
+            fontSize: "16px",
+            lineHeight: "100%",
+            letterSpacing: "0%",
+            mb: 3,
+            color: "#111827", // optional, remove if not needed
+          }}
+        >
+          Event Name
         </Typography>
 
         {/* EVENT INFO */}
-        <Grid container spacing={2} mb={3}>
-          <Grid item xs={6}>
+        <Grid container columnGap="24px" mb={3}>
+          <Grid item>
             <TextField
-              fullWidth
               label="Name"
               size="small"
               value={eventName}
               onChange={(e) => setEventName(e.target.value)}
-              InputLabelProps={{ shrink: true }}
+              InputLabelProps={{
+                shrink: true,
+                sx: {
+                  color: "#111827",
+                  "&.Mui-focused": {
+                    color: "#111827",
+                  },
+                },
+              }}
+              sx={{
+                width: "380px",
+
+                "& .MuiOutlinedInput-root": {
+                  height: "50px",
+                  backgroundColor: "#FFFFFF",
+
+                  "& fieldset": {
+                    borderColor: "#D1D5DB",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "#D1D5DB", // no hover
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#D1D5DB", // no focus
+                  },
+                },
+              }}
             />
           </Grid>
-          <Grid item xs={6}>
+
+          <Grid item>
             <TextField
-              fullWidth
               label="Description"
               size="small"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              InputLabelProps={{ shrink: true }}
+              InputLabelProps={{
+                shrink: true,
+                sx: {
+                  color: "#111827",
+                  "&.Mui-focused": {
+                    color: "#111827",
+                  },
+                },
+              }}
+              sx={{
+                width: "380px",
+
+                "& .MuiOutlinedInput-root": {
+                  height: "50px",
+                  backgroundColor: "#FFFFFF",
+
+                  "& fieldset": {
+                    borderColor: "#D1D5DB",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "#D1D5DB",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#D1D5DB",
+                  },
+                },
+              }}
             />
           </Grid>
         </Grid>
+
         <Grid container spacing={2} mb={3}>
-          <Grid item xs={6}>
+          <Grid item xs={6} sx={{ maxWidth: "380px" }}>
             <TextField
-              fullWidth
               select
               size="small"
               label="Department"
               value={selectedDepartmentId}
-              InputLabelProps={{ shrink: true }}
+              InputLabelProps={{
+                shrink: true,
+                sx: { color: "#111827", "&.Mui-focused": { color: "#111827" } },
+              }}
               onChange={(e) => {
                 setSelectedDepartmentId(Number(e.target.value));
                 setAddedEquipments([]);
                 setAddedAssignee(null);
               }}
+              SelectProps={{
+                MenuProps: {
+                  PaperProps: {
+                    sx: {
+                      "& .MuiMenuItem-root": {
+                        color: "#111827",
+                        "&:hover": { backgroundColor: "transparent" },
+                      },
+                    },
+                  },
+                },
+              }}
+              sx={{
+                width: "380px", // match Name/Description
+                "& .MuiOutlinedInput-root": {
+                  color: "#111827",
+                  "& fieldset": { borderColor: "#D1D5DB" },
+                  "&:hover fieldset": { borderColor: "#D1D5DB" },
+                  "&.Mui-focused fieldset": { borderColor: "#D1D5DB" },
+                },
+              }}
             >
-              {/* <MenuItem value="">Select Department</MenuItem> */}
               {departments.map((dep) => (
-                <MenuItem key={dep.id} value={dep.id}>
+                <MenuItem key={dep.id} value={dep.id} disableRipple>
                   {dep.name}
                 </MenuItem>
               ))}
@@ -421,7 +520,12 @@ const CreateEvent = () => {
                   />
                 </Grid>
                 <Grid item xs={4}>
-                  <TextField fullWidth size="medium" label="Recur Day" InputLabelProps={{ shrink: true }} />
+                  <TextField
+                    fullWidth
+                    size="medium"
+                    label="Recur Day"
+                    InputLabelProps={{ shrink: true }}
+                  />
                 </Grid>
               </Grid>
             </>
@@ -588,8 +692,9 @@ const CreateEvent = () => {
 
           <Button
             onClick={() => setEquipmentDialogOpen(true)}
+            disabled={!selectedDepartmentId}
             sx={{
-              color: "#2563EB",
+              color: selectedDepartmentId ? "#2563EB" : "#9CA3AF",
               fontWeight: 500,
               textTransform: "none",
               padding: 0,
@@ -598,9 +703,10 @@ const CreateEvent = () => {
               display: "flex",
               alignItems: "center",
               gap: "4px",
+              cursor: selectedDepartmentId ? "pointer" : "not-allowed",
               "&:hover": {
                 backgroundColor: "transparent",
-                textDecoration: "underline",
+                textDecoration: selectedDepartmentId ? "underline" : "none",
               },
             }}
           >
@@ -746,14 +852,15 @@ const CreateEvent = () => {
           alignItems="center"
           mt={3}
         >
-          <Typography fontWeight={700} color="#111827">
+          <Typography fontWeight={700} color="#000000">
             Assignee
           </Typography>
 
           <Button
             onClick={() => setAssigneeDialogOpen(true)}
+            disabled={!selectedDepartmentId}
             sx={{
-              color: "#2563EB",
+              color: selectedDepartmentId ? "#2563EB" : "#9CA3AF",
               fontWeight: 500,
               textTransform: "none",
               padding: 0,
@@ -762,9 +869,10 @@ const CreateEvent = () => {
               display: "flex",
               alignItems: "center",
               gap: "4px",
+              cursor: selectedDepartmentId ? "pointer" : "not-allowed",
               "&:hover": {
                 backgroundColor: "transparent",
-                textDecoration: "underline",
+                textDecoration: selectedDepartmentId ? "underline" : "none",
               },
             }}
           >
@@ -779,7 +887,7 @@ const CreateEvent = () => {
               onDelete={() => setAddedAssignee(null)}
               sx={{
                 backgroundColor: "#F5F7FA",
-                color: "#111827",
+                color: "#000000",
                 fontWeight: 500,
               }}
             />
@@ -795,13 +903,13 @@ const CreateEvent = () => {
               textTransform: "none",
               borderRadius: "10px",
               borderColor: "#D1D5DB",
-              color: "#374151",
+              color: "#000000",
               fontWeight: 500,
               px: 3,
               height: "44px",
               "&:hover": {
-                borderColor: "#9CA3AF",
-                backgroundColor: "#F9FAFB",
+                borderColor: "#D1D5DB", // no hover effect
+                backgroundColor: "#FFFFFF", // keep white background
               },
             }}
           >
@@ -821,7 +929,7 @@ const CreateEvent = () => {
               height: "44px",
               boxShadow: "none",
               "&:hover": {
-                backgroundColor: "#3F3F3F",
+                backgroundColor: "#4B4B4B", // no hover effect
                 boxShadow: "none",
               },
             }}
@@ -835,10 +943,7 @@ const CreateEvent = () => {
           open={assigneeDialogOpen}
           onClose={() => setAssigneeDialogOpen(false)}
           PaperProps={{
-            sx: {
-              borderRadius: "16px",
-              width: 520,
-            },
+            sx: { borderRadius: "16px", width: 520 },
           }}
         >
           <Box
@@ -858,16 +963,13 @@ const CreateEvent = () => {
                   borderRadius: "8px",
                   width: 32,
                   height: 32,
-                  "&:hover": {
-                    backgroundColor: "#F3F4F6",
-                  },
+                  "&:hover": { backgroundColor: "#F3F4F6" }, // optional hover
                 }}
               >
                 <ArrowBackIcon fontSize="small" />
-                
               </IconButton>
 
-              <Typography fontSize={18} fontWeight={600} color="#111827">
+              <Typography fontSize={18} fontWeight={600} color="#000000">
                 Select Assignee
               </Typography>
             </Box>
@@ -896,7 +998,11 @@ const CreateEvent = () => {
                     "& .MuiOutlinedInput-root": {
                       borderRadius: "12px",
                       minHeight: 52,
+                      color: "#000000",
+                      "&:hover fieldset": { borderColor: "#D1D5DB" }, // no hover effect
+                      "&.Mui-focused fieldset": { borderColor: "#D1D5DB" }, // keep focused border
                     },
+                    "& .MuiInputLabel-root": { color: "#000000" },
                   }}
                   InputLabelProps={{ shrink: true }}
                 />
@@ -905,12 +1011,7 @@ const CreateEvent = () => {
           </DialogContent>
 
           <DialogActions
-            sx={{
-              px: 3,
-              pb: 3,
-              gap: 2,
-              justifyContent: "flex-end",
-            }}
+            sx={{ px: 3, pb: 3, gap: 2, justifyContent: "flex-end" }}
           >
             <Button
               onClick={() => setAssigneeDialogOpen(false)}
@@ -918,10 +1019,12 @@ const CreateEvent = () => {
                 textTransform: "none",
                 borderRadius: "10px",
                 border: "1px solid #D1D5DB",
-                color: "#374151",
+                color: "#000000",
                 px: 3,
                 height: 44,
                 fontWeight: 500,
+                backgroundColor: "#FFFFFF", // static background
+                "&:hover": { backgroundColor: "#FFFFFF" }, // no hover
               }}
             >
               Cancel
@@ -933,14 +1036,12 @@ const CreateEvent = () => {
               sx={{
                 textTransform: "none",
                 borderRadius: "10px",
-                backgroundColor: "#4B4B4B",
+                backgroundColor: "#000000",
                 color: "#FFFFFF",
                 px: 4,
                 height: 44,
                 fontWeight: 500,
-                "&:hover": {
-                  backgroundColor: "#3F3F3F",
-                },
+                "&:hover": { backgroundColor: "#000000" }, // no hover
                 "&:disabled": {
                   backgroundColor: "#E5E7EB",
                   color: "#9CA3AF",
