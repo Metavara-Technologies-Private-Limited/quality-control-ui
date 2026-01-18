@@ -3,6 +3,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
   Box,
   Typography,
   Grid,
@@ -14,14 +15,12 @@ import {
 } from "@mui/material";
 
 /* ================= COLORS ================= */
-
 const GREEN = "#47B35F";
 const LIGHT_GREEN = "#EAF6EE";
 const BORDER = "#E5E7EB";
 const TEXT_GRAY = "#6B7280";
 
 /* ================= TYPES ================= */
-
 interface EquipmentUnit {
   id: number;
   name: string;
@@ -61,7 +60,6 @@ interface Props {
 }
 
 /* ================= COMPONENT ================= */
-
 export default function AddEquipmentDialog({
   open,
   onClose,
@@ -100,26 +98,21 @@ export default function AddEquipmentDialog({
           id: p.id,
           name: p.parameter_name,
           fieldType,
-
           value:
             fieldType === "integer"
               ? toNumber(content.value ?? content.default)
               : fieldType === "percentage"
               ? toNumber(content.percentage)
               : undefined,
-
           min:
             fieldType === "decimal"
               ? toNumber(content.min_value ?? content.min)
               : undefined,
-
           max:
             fieldType === "decimal"
               ? toNumber(content.max_value ?? content.max)
               : undefined,
-
           unit: content.unit,
-
           options: Array.isArray(content.dropdown)
             ? content.dropdown
             : content.dropdown
@@ -143,21 +136,18 @@ export default function AddEquipmentDialog({
             Range: N/A
           </Typography>
         );
-
       case "integer":
         return (
           <Typography fontSize={11} color={TEXT_GRAY}>
             Value: {p.value != null ? p.value : "N/A"}
           </Typography>
         );
-
       case "percentage":
         return (
           <Typography fontSize={11} color={TEXT_GRAY}>
             Value: {p.value != null ? `${p.value}%` : "N/A"}
           </Typography>
         );
-
       case "dropdown":
       case "select":
         return (
@@ -165,21 +155,18 @@ export default function AddEquipmentDialog({
             Options: {p.options?.length ? p.options.join(", ") : "N/A"}
           </Typography>
         );
-
       case "boolean":
         return (
           <Typography fontSize={11} color={TEXT_GRAY}>
             Values: Yes / No
           </Typography>
         );
-
       case "text":
         return (
           <Typography fontSize={11} color={TEXT_GRAY}>
             Text input
           </Typography>
         );
-
       default:
         return (
           <Typography fontSize={11} color={TEXT_GRAY}>
@@ -192,11 +179,13 @@ export default function AddEquipmentDialog({
   /* ===== STATE ===== */
   const [selected, setSelected] = useState<SelectedEquipmentData[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
+  const [popupOpen, setPopupOpen] = useState(false); // 🔴 popup state
 
   useEffect(() => {
     if (open) {
       setSelected([]);
       setActiveId(null);
+      setPopupOpen(false);
     }
   }, [open]);
 
@@ -206,30 +195,20 @@ export default function AddEquipmentDialog({
   const toggleEquipment = (eq: Equipment) => {
     setSelected((prev) => {
       const exists = prev.find((p) => p.equipment.id === eq.id);
-
       if (exists) {
-        if (activeId === eq.id) {
-          setActiveId(null);
-        }
+        if (activeId === eq.id) setActiveId(null);
         return prev.filter((p) => p.equipment.id !== eq.id);
       }
-
       setActiveId(eq.id);
-
       return [
         ...prev,
-        {
-          equipment: eq,
-          units: eq.units.map((u) => u.id),
-          parameters: [], // ✅ FIX: start empty, add only when checked
-        },
+        { equipment: eq, units: eq.units.map((u) => u.id), parameters: [] },
       ];
     });
   };
 
   const toggleUnit = (id: number) => {
     if (!active) return;
-
     setSelected((prev) =>
       prev
         .map((s) =>
@@ -248,7 +227,6 @@ export default function AddEquipmentDialog({
 
   const toggleParam = (id: number) => {
     if (!active) return;
-
     setSelected((prev) =>
       prev.map((s) =>
         s.equipment.id === active.equipment.id
@@ -263,176 +241,239 @@ export default function AddEquipmentDialog({
     );
   };
 
-  /* ================= UI ================= */
+  const handleAdd = () => {
+    const invalid = selected.some(
+      (s) => s.units.length > 0 && s.parameters.length === 0
+    );
+    if (invalid) {
+      setPopupOpen(true); // show popup
+      return;
+    }
+
+    const cleaned = selected.filter(
+      (s) => s.units.length > 0 && s.parameters.length > 0
+    );
+
+    onAdd(cleaned);
+    onClose();
+  };
+
   return (
-    <Dialog open={open} maxWidth="lg" fullWidth onClose={onClose}>
-      <DialogTitle fontWeight={600}>Add Equipment</DialogTitle>
-      <Divider />
-
-      <DialogContent sx={{ p: 3 }}>
-        <Grid container spacing={3} minHeight={520}>
-          {/* LEFT */}
-          <Grid item xs={3}>
-            <Box
-              sx={{
-                border: `1px solid ${BORDER}`,
-                borderRadius: 2,
-                p: 2,
-                height: "100%",
-              }}
-            >
-              <Typography fontWeight={600} mb={1}>
-                All Equipments
-              </Typography>
-
-              <Stack spacing={0.5}>
-                {normalized.map((eq) => {
-                  const checked = selected.some(
-                    (s) => s.equipment.id === eq.id
-                  );
-
-                  return (
-                    <Box
-                      key={eq.id}
-                      onClick={() => toggleEquipment(eq)}
-                      sx={{
-                        px: 1,
-                        py: 0.75,
-                        borderRadius: 1,
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        bgcolor: checked ? LIGHT_GREEN : "transparent",
-                      }}
-                    >
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Checkbox
-                          size="small"
-                          checked={checked}
-                          sx={{
-                            color: GREEN,
-                            "&.Mui-checked": { color: GREEN },
-                          }}
-                        />
-                        <Typography fontSize={13}>
-                          {eq.equipment_name}
-                        </Typography>
-                      </Box>
-                      <Typography color={TEXT_GRAY}>›</Typography>
-                    </Box>
-                  );
-                })}
-              </Stack>
-
-              <Stack direction="row" spacing={1} mt={3}>
-                <Button
-                  onClick={onClose}
+    <>
+      {/* MAIN DIALOG */}
+      <Dialog open={open} maxWidth="lg" fullWidth onClose={onClose}>
+        <DialogTitle fontWeight={600}>Add Equipment</DialogTitle>
+        <Divider />
+        <DialogContent sx={{ p: 3 }}>
+          <Grid container spacing={3} minHeight={520}>
+            {/* LEFT */}
+            <Grid item xs={3}>
+              <Box
+                sx={{
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 2,
+                  p: 2,
+                  height: "100%",
+                }}
+              >
+                <Typography
                   sx={{
-                    textTransform: "none",
-                    borderRadius: "10px",
-                    border: "1px solid #D1D5DB",
-                    color: "#374151",
-                    px: 3,
-                    height: 44,
+                    fontFamily: "Montserrat",
+                    fontWeight: 700,
+                    fontStyle: "bold",
+                    fontSize: "14px",
+                    lineHeight: "18px",
+                    letterSpacing: "0%",
+                    mb: 1,
                   }}
                 >
-                  Cancel
-                </Button>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  disabled={!selected.length}
-                  sx={{ backgroundColor: "#000", textTransform: "none" }}
-                  onClick={() => {
-                    const cleaned = selected
-                      .map((s) => ({
-                        ...s,
-                        units: s.units,
-                        parameters: s.parameters,
-                      }))
-                      .filter(
-                        (s) =>
-                          s.units.length > 0 && s.parameters.length > 0
-                      );
-
-                    onAdd(cleaned);
-                    onClose();
-                  }}
-                >
-                  Add
-                </Button>
-              </Stack>
-            </Box>
-          </Grid>
-
-          {/* RIGHT */}
-          <Grid item xs={9}>
-            {active && (
-              <Stack spacing={3}>
-                <Typography fontWeight={600}>
-                  {active.equipment.equipment_name}
+                  All Equipments
                 </Typography>
 
-                <Grid container spacing={2}>
-                  {active.equipment.units.map((u) => (
-                    <Grid item xs={3} key={u.id}>
-                      <Card
-                        onClick={() => toggleUnit(u.id)}
+                <Stack spacing={0.5}>
+                  {normalized.map((eq) => {
+                    const checked = selected.some(
+                      (s) => s.equipment.id === eq.id
+                    );
+                    return (
+                      <Box
+                        key={eq.id}
+                        onClick={() => toggleEquipment(eq)}
                         sx={{
-                          p: 1.5,
-                          borderRadius: 2,
-                          border: `1px solid ${BORDER}`,
+                          px: 1,
+                          py: 0.75,
+                          borderRadius: 1,
                           cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          bgcolor: checked ? "#F3F4F6" : "transparent", // ✅ mild/light grey
                         }}
                       >
                         <Box display="flex" alignItems="center" gap={1}>
                           <Checkbox
                             size="small"
-                            checked={active.units.includes(u.id)}
+                            checked={checked}
+                            sx={{
+                              color: GREEN,
+                              "&.Mui-checked": { color: GREEN },
+                            }}
                           />
-                          <Typography fontSize={13}>{u.name}</Typography>
+                          <Typography
+                            sx={{
+                              fontFamily: "Montserrat",
+                              fontWeight: 700,
+                              fontStyle: "bold",
+                              fontSize: "14px",
+                              lineHeight: "18px",
+                              letterSpacing: "0%",
+                            }}
+                          >
+                            {eq.equipment_name}
+                          </Typography>
                         </Box>
-                        <Typography fontSize={11} color={TEXT_GRAY}>
-                          Make : {u.make || "-"} | Model : {u.model || "-"}
-                        </Typography>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
+                        <Typography color={TEXT_GRAY}>›</Typography>
+                      </Box>
+                    );
+                  })}
+                </Stack>
 
-                <Typography fontWeight={600}>Parameters</Typography>
-                <Grid container spacing={2}>
-                  {active.equipment.parameters.map((p) => (
-                    <Grid item xs={3} key={p.id}>
-                      <Card
-                        onClick={() => toggleParam(p.id)}
-                        sx={{
-                          p: 1.5,
-                          borderRadius: 2,
-                          border: `1px solid ${BORDER}`,
-                          cursor: "pointer",
-                        }}
-                      >
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <Checkbox
-                            size="small"
-                            checked={active.parameters.some(
-                              (ap) => ap.id === p.id
-                            )}
-                          />
-                          <Typography fontSize={13}>{p.name}</Typography>
-                        </Box>
-                        {renderParameterInfo(p)}
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Stack>
-            )}
+                <Stack direction="row" spacing={1} mt={3}>
+                  <Button
+                    onClick={onClose}
+                    sx={{
+                      textTransform: "none",
+                      borderRadius: "10px",
+                      border: "1px solid #D1D5DB",
+                      color: "#374151",
+                      px: 3,
+                      height: 44,
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    disabled={!selected.length}
+                    sx={{
+                      backgroundColor: "#6B7280",
+                      textTransform: "none",
+                      "&:hover": { backgroundColor: "#6B7280" },
+                      "&:disabled": {
+                        backgroundColor: "#6B7280",
+                        opacity: 0.5,
+                      },
+                    }}
+                    onClick={handleAdd}
+                  >
+                    Add
+                  </Button>
+                </Stack>
+              </Box>
+            </Grid>
+
+            {/* RIGHT */}
+            {/* RIGHT */}
+            <Grid item xs={9}>
+              {active && (
+                <Stack spacing={3}>
+                  <Typography fontWeight={600}>
+                    {active.equipment.equipment_name}
+                  </Typography>
+
+                  <Grid container spacing={2}>
+                    {active.equipment.units.map((u) => (
+                      <Grid item xs={3} key={u.id}>
+                        <Card
+                          onClick={() => toggleUnit(u.id)}
+                          sx={{
+                            p: 1.5,
+                            borderRadius: 2,
+                            border: `1px solid ${BORDER}`,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Checkbox
+                              checked={active.units.includes(u.id)}
+                              sx={{
+                                width: 15,
+                                height: 15,
+                                padding: 0,
+                                color: GREEN,
+                                "&.Mui-checked": { color: GREEN },
+                                "& .MuiSvgIcon-root": { fontSize: 15 },
+                              }}
+                            />
+                            <Typography fontSize={13}>{u.name}</Typography>
+                          </Box>
+                          <Typography fontSize={11} color={TEXT_GRAY}>
+                            Make : {u.make || "-"} | Model : {u.model || "-"}
+                          </Typography>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+
+                  <Typography fontWeight={600}>Parameters</Typography>
+                  <Grid container spacing={2}>
+                    {active.equipment.parameters.map((p) => (
+                      <Grid item xs={3} key={p.id}>
+                        <Card
+                          onClick={() => toggleParam(p.id)}
+                          sx={{
+                            p: 1.5,
+                            borderRadius: 2,
+                            border: `1px solid ${BORDER}`,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Checkbox
+                              checked={active.parameters.some(
+                                (ap) => ap.id === p.id
+                              )}
+                              sx={{
+                                width: 15,
+                                height: 15,
+                                padding: 0,
+                                color: GREEN,
+                                "&.Mui-checked": { color: GREEN },
+                                "& .MuiSvgIcon-root": { fontSize: 15 },
+                              }}
+                            />
+                            <Typography fontSize={13}>{p.name}</Typography>
+                          </Box>
+                          {renderParameterInfo(p)}
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Stack>
+              )}
+            </Grid>
           </Grid>
-        </Grid>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {/* POPUP DIALOG */}
+      <Dialog open={popupOpen} onClose={() => setPopupOpen(false)}>
+        <DialogTitle fontWeight={600}>Alert</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Please select at least one parameter for the selected equipment.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setPopupOpen(false)}
+            sx={{ textTransform: "none", color: "#000" }}
+          >
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
