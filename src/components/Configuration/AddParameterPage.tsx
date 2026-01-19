@@ -438,40 +438,66 @@ localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
     }
     setOpenParamPopup(false);
   };
+// In AddParameterPage.tsx - Update the handleFinalSave function
 
-  const handleFinalSave = async () => {
-    if (parameters.length === 0) {
-      toast.error("Please add at least one parameter");
-      return;
-    }
+const handleFinalSave = async () => {
+  if (parameters.length === 0) {
+    toast.error("Please add at least one parameter");
+    return;
+  }
 
-    if (equipmentTable.length === 0) {
-      toast.error("Please add equipment details (Make and Model)");
-      return;
-    }
+  if (equipmentTable.length === 0) {
+    toast.error("Please add equipment details (Make and Model)");
+    return;
+  }
 
-    if (!departmentId) {
-      toast.error("Department not found");
-      return;
-    }
+  if (!departmentId) {
+    toast.error("Department not found");
+    return;
+  }
 
-    try {
-      const equipmentPayload = {
-        equipment_name: equipmentName,
+  try {
+    const equipmentPayload = {
+      equipment_name: equipmentName,
+      is_active: true,
+      equipment_details: equipmentTable.map((row) => ({
+        id: row.id ?? undefined,
+        equipment_num: `${equipmentName}-${row.equipmentNum}`,
+        make: row.make || "",
+        model: row.model || "",
         is_active: true,
-        equipment_details: equipmentTable.map((row) => ({
-          id: row.id ?? undefined,
-          equipment_num: `${equipmentName}-${row.equipmentNum}`,
-          make: row.make || "",
-          model: row.model || "",
-          is_active: true,
-        })),
-        parameters: parameters.map((p) => ({
+      })),
+      parameters: parameters.map((p) => {
+        // Determine the correct default value based on data type
+        let defaultValue = null;
+        
+        switch (p.data_type || p.field_type) {
+          case "Integer":
+            defaultValue = p.default_value || p.integer_value || null;
+            break;
+          case "Decimal":
+            defaultValue = p.default_value || null;
+            break;
+          case "Text":
+            defaultValue = p.text || null;
+            break;
+          case "Boolean":
+            defaultValue = null; // Booleans don't have default values
+            break;
+          case "Dropdown":
+            defaultValue = null; // Dropdowns don't have default values
+            break;
+          default:
+            defaultValue = null;
+        }
+
+        return {
           id: p.id ?? undefined,
           parameter_name: p.name || p.title || "",
           is_active: true,
           config: {
             data_type: p.data_type || p.field_type || "",
+            default_value: defaultValue, // ✅ EXPLICITLY INCLUDE DEFAULT VALUE
             min_value: p.min_value ?? null,
             max_value: p.max_value ?? null,
             integer_value: p.integer_value ?? p.default_value ?? null,
@@ -483,38 +509,39 @@ localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
             dropdown: p.dropdown ?? [],
             selection_type: p.selection_type ?? null,
           },
-        })),
-      };
+        };
+      }),
+    };
 
-      if (isEditMode && originalEquipment?.id) {
-        await equipmentApi.update(
-          departmentId,
-          originalEquipment.id,
-          equipmentPayload
-        );
-        toast.success("Equipment updated successfully!", {
-          position: "top-right",
-          autoClose: 2000,
-        });
-      } else {
-        await equipmentApi.create(departmentId, equipmentPayload);
-        toast.success("Equipment created successfully!", {
-          position: "top-right",
-          autoClose: 2000,
-          theme: "colored",
-        });
-      }
-      localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
-      dispatch(fetchClinic(1));
-
-      setTimeout(() => {
-        navigate("/configuration/equipment", { replace: true });
-      }, 2000);
-    } catch (error) {
-      console.error("Save failed:", error);
-      toast.error("Save failed! Please check console.");
+    if (isEditMode && originalEquipment?.id) {
+      await equipmentApi.update(
+        departmentId,
+        originalEquipment.id,
+        equipmentPayload
+      );
+      toast.success("Equipment updated successfully!", {
+        position: "top-right",
+        autoClose: 2000,
+      });
+    } else {
+      await equipmentApi.create(departmentId, equipmentPayload);
+      toast.success("Equipment created successfully!", {
+        position: "top-right",
+        autoClose: 2000,
+        theme: "colored",
+      });
     }
-  };
+    localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
+    dispatch(fetchClinic(1));
+
+    setTimeout(() => {
+      navigate("/configuration/equipment", { replace: true });
+    }, 2000);
+  } catch (error) {
+    console.error("Save failed:", error);
+    toast.error("Save failed! Please check console.");
+  }
+};
 
   // In AddParameterPage.tsx - Update the renderParameterContent function:
 

@@ -119,71 +119,122 @@ const CryopreservationForm = ({
     
     return "#9E9E9E"; 
   };
+const renderParameterInfo = (parameterName: string) => {
+  const config = getParameterConfig(parameterName);
+  if (!config) return null;
 
-  // ✅ UPDATED: renderParameterInfo with dynamic colors
-  const renderParameterInfo = (parameterName: string) => {
-    const config = getParameterConfig(parameterName);
-    if (!config) return null;
-    
-    const dynamicColor = getRangeStatusColor(parameterName);
-    const labelStyle = { 
-      color: dynamicColor, 
-      fontSize: "12px", 
-      fontWeight: "500",
-      transition: "color 0.2s ease"
-    };
+  // This color is dynamic (Grey, Yellow, or Red) based on input
+  const dynamicColor = getRangeStatusColor(parameterName);
+  
+  // Style for the dynamic "Range" part
+  const dynamicStyle = {
+    color: dynamicColor,
+    fontSize: "12px",
+    fontWeight: "500",
+    transition: "color 0.2s ease",
+  };
 
-    const dataType = config.data_type;
-    
-    switch (dataType) {
-      case "Integer":
-      case "Decimal":
-      case "Min/Max":
-        if (config.min_value != null && config.max_value != null) {
-          return (
-            <span style={labelStyle}>
-              Range: {config.min_value} {config.unit || ""} - {config.max_value} {config.unit || ""}
+  // Style for the "Recommended" prefix (Always Grey)
+  const defaultGreyStyle = {
+    color: "#9E9E9E",
+    fontSize: "12px",
+    fontWeight: "500"
+  };
+
+  const dataType = config.data_type;
+
+  switch (dataType) {
+    case "Decimal":
+    case "Min/Max":
+    case "Integer":
+      // Check if default_value exists in config
+      const hasDefaultValue = config.default_value != null && config.default_value !== "";
+      
+      if (config.min_value != null && config.max_value != null) {
+        return (
+          <span>
+            {/* Show Default Value if available */}
+            {hasDefaultValue && (
+              <span style={defaultGreyStyle}>
+                Recommended: {config.default_value}{config.unit || ""} | {" "}
+              </span>
+            )}
+            
+            {/* Show Range */}
+            <span style={dynamicStyle}>
+              Range: {config.min_value}{config.unit || ""} - {config.max_value}{config.unit || ""}
             </span>
-          );
-        }
-        break;
-      case "Percentage":
-        if (config.percentage != null) {
-          return (
-            <span style={labelStyle}>
+          </span>
+        );
+      }
+      break;
+
+    case "Percentage":
+      const hasDefaultPercentage = config.default_value != null && config.default_value !== "";
+      
+      if (config.percentage != null) {
+        return (
+          <span>
+            {hasDefaultPercentage && (
+              <span style={defaultGreyStyle}>
+                Default: {config.default_value}% | {" "}
+              </span>
+            )}
+            <span style={dynamicStyle}>
               Range: 0% - {config.percentage}%
             </span>
-          );
-        }
-        break;
-      // ✅ UPDATED: Fetching the actual text/content instead of data type description
-      case "Text":
-        const textValue = config.text || config.recommendation || "";
-        return (
-          <span style={{ color: "#9E9E9E", fontSize: "11px", fontWeight: "500" }}>
-            Text: {textValue}
           </span>
         );
-      case "Boolean":
-        return (
-          <span style={{ color: "#9E9E9E", fontSize: "11px", fontWeight: "500" }}>
-            Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
-          </span>
-        );
-      case "Select":
-      case "Dropdown":
-        if (config.dropdown && Array.isArray(config.dropdown) && config.dropdown.length > 0) {
-          return (
-            <span style={{ color: "#9E9E9E", fontSize: "11px", fontWeight: "500" }}>
-              Options: {config.dropdown.join(", ")}
-            </span>
-          );
-        }
-        break;
-      default:
-        return null;
-    }
-  };
+      }
+      break;
+
+    case "Text":
+      const textValue = config.text || config.recommendation || "";
+      const hasDefaultText = config.default_value || textValue;
+      
+      return (
+        <span style={defaultGreyStyle}>
+          {hasDefaultText ? `Text: ${config.default_value || textValue}` : "No default value"}
+        </span>
+      );
+
+    case "Select":
+    case "Dropdown":
+      const dropdownOptions = config.dropdown || config.options || [];
+      const hasDefaultDropdown = config.default_value != null && config.default_value !== "";
+      
+      return (
+        <span style={defaultGreyStyle}>
+          {hasDefaultDropdown && (
+            <>
+              Type: {config.default_value} | {" "}
+            </>
+          )}
+          Options: {dropdownOptions.join(", ")}
+        </span>
+      );
+
+    case "Boolean":
+      const hasDefaultBoolean = config.default_value != null && config.default_value !== "";
+      const booleanType = config.boolean_type || "yesno";
+      const booleanLabel = booleanType === "yesno" ? "Yes/No" : "True/False";
+      
+      return (
+        <span style={defaultGreyStyle}>
+          {hasDefaultBoolean && (
+            <>
+              Type: {config.default_value} | {" "}
+            </>
+          )}
+          Type: {booleanLabel}
+        </span>
+      );
+
+    default:
+      return null;
+  }
+};
+
   const setValue = (key: string, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };

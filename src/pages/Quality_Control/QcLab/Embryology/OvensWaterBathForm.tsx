@@ -108,7 +108,7 @@ const OvensWaterBathForm = ({
     return config;
   };
 
-  // ✅ NEW: Get range status color based on input value
+ 
   const getRangeStatusColor = (parameterName: string) => {
     const config = getParameterConfig(parameterName);
     
@@ -120,7 +120,7 @@ const OvensWaterBathForm = ({
     const stateKey = stateMapping[parameterName];
     const rawValue = stateKey ? logValues[stateKey] : null;
 
-    // If empty, stay grey
+    
     if (!rawValue || !config || config.min_value == null || config.max_value == null) {
       return "#94a3b8";
     }
@@ -128,21 +128,21 @@ const OvensWaterBathForm = ({
     const inputValue = parseFloat(rawValue);
     if (isNaN(inputValue)) return "#94a3b8";
 
-    // Only change color if value is outside range
-    if (inputValue < Number(config.min_value)) return "#D6BA18"; // Below range
-    if (inputValue > Number(config.max_value)) return "#F25B5B"; // Above range
+  
+    if (inputValue < Number(config.min_value)) return "#D6BA18";  
+    if (inputValue > Number(config.max_value)) return "#F25B5B"; 
     
-    return "#94a3b8"; // In range or valid input
+    return "#94a3b8";  
   };
 
- const renderParameterInfo = (parameterName: string) => {
+// In OvensWaterBathForm.tsx - Update the renderParameterInfo function
+
+const renderParameterInfo = (parameterName: string) => {
   const config = getParameterConfig(parameterName);
   if (!config) return null;
 
-  // This color is dynamic (Grey, Yellow, or Red) based on input
   const dynamicColor = getRangeStatusColor(parameterName);
   
-  // Style for the dynamic "Range" part
   const dynamicStyle = {
     color: dynamicColor,
     fontSize: "12px",
@@ -150,14 +150,13 @@ const OvensWaterBathForm = ({
     transition: "color 0.2s ease",
   };
 
-  // Style for the "Recommended" prefix (Always Grey)
   const defaultGreyStyle = {
     color: "#9E9E9E",
     fontSize: "12px",
     fontWeight: "500"
   };
 
-  const isTemperature = parameterName.toLowerCase().includes("temperature");
+  const hasDefaultValue = config.default_value != null && config.default_value !== "";
   const dataType = config.data_type;
 
   switch (dataType) {
@@ -167,13 +166,11 @@ const OvensWaterBathForm = ({
       if (config.min_value != null && config.max_value != null) {
         return (
           <span>
-            
-            {isTemperature && (
+            {hasDefaultValue && (
               <span style={defaultGreyStyle}>
-                Recommended: {config.min_value}{config.unit || ""} | {" "}
+                Recommended: {config.default_value}{config.unit || ""} | {" "}
               </span>
             )}
-             
             <span style={dynamicStyle}>
               Range: {config.min_value}{config.unit || ""} - {config.max_value}{config.unit || ""}
             </span>
@@ -185,8 +182,15 @@ const OvensWaterBathForm = ({
     case "Percentage":
       if (config.percentage != null) {
         return (
-          <span style={dynamicStyle}>
-            Range: 0% - {config.percentage}%
+          <span>
+            {hasDefaultValue && (
+              <span style={defaultGreyStyle}>
+                Recommended: {config.default_value}% | {" "}
+              </span>
+            )}
+            <span style={dynamicStyle}>
+              Range: 0% - {config.percentage}%
+            </span>
           </span>
         );
       }
@@ -194,9 +198,10 @@ const OvensWaterBathForm = ({
 
     case "Text":
       const textValue = config.text || config.recommendation || "";
+      const hasTextDefault = config.default_value || textValue;
       return (
         <span style={defaultGreyStyle}>
-          Text: {textValue}
+          {hasTextDefault ? `Text: ${config.default_value || textValue}` : "No recommended value"}
         </span>
       );
 
@@ -205,7 +210,26 @@ const OvensWaterBathForm = ({
       const dropdownOptions = config.dropdown || config.options || [];
       return (
         <span style={defaultGreyStyle}>
+          {hasDefaultValue && (
+            <>
+              Type: {config.default_value} | {" "}
+            </>
+          )}
           Options: {dropdownOptions.join(", ")}
+        </span>
+      );
+
+    case "Boolean":
+      const hasBoolDefault = config.default_value != null && config.default_value !== "";
+      const booleanType = config.boolean_type || "yesno";
+      return (
+        <span style={defaultGreyStyle}>
+          {hasBoolDefault && (
+            <>
+              Type: {config.default_value} | {" "}
+            </>
+          )}
+          Type: {booleanType === "yesno" ? "Yes/No" : "True/False"}
         </span>
       );
 
@@ -213,6 +237,7 @@ const OvensWaterBathForm = ({
       return null;
   }
 };
+
   const handleSaveLogs = async () => {
     if (!currentEquipment || !currentEquipmentDetail) {
       toast.error("Please select an equipment first");

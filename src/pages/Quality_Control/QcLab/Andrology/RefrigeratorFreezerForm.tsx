@@ -106,104 +106,124 @@ const RefrigeratorFreezerForm = ({
     
     return "#9E9E9E"; 
   };
+// In RefrigeratorFreezerForm.tsx - Update the renderParameterInfo function
 
- const renderParameterInfo = (parameterName: string) => {
-    const config = getParameterConfig(parameterName);
-    
-    // Default fallback if no config exists for Temperature
-    if (!config) {
-      if (parameterName === "Temperature") {
+const renderParameterInfo = (parameterName: string) => {
+  const config = getParameterConfig(parameterName);
+  
+  // Default fallback if no config exists for Temperature
+  if (!config) {
+    if (parameterName === "Temperature") {
+      return (
+        <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
+          Range: {activeCategory === "Refrigerators" ? "2°C to 8°C" : "-15°C to -25°C"}
+        </span>
+      );
+    }
+    return null;
+  }
+
+  // Dynamic color for Range based on input (Grey/Yellow/Red)
+  const dynamicColor = getRangeStatusColor(parameterName);
+  
+  const rangeStyle = { 
+    color: dynamicColor, 
+    fontSize: "12px", 
+    fontWeight: "500",
+    transition: "color 0.2s ease"
+  };
+
+  const defaultGreyStyle = {
+    color: "#9E9E9E",
+    fontSize: "12px",
+    fontWeight: "500"
+  };
+
+  const dataType = config.data_type;
+  const hasDefaultValue = config.default_value != null && config.default_value !== "";
+  const isTemperature = parameterName.toLowerCase().includes("temperature");
+
+  switch (dataType) {
+    case "Integer":
+    case "Decimal":
+    case "Min/Max":
+      if (config.min_value != null && config.max_value != null) {
         return (
-          <span style={{ color: "#9E9E9E", fontSize: "12px", fontWeight: "500" }}>
-            Range: {activeCategory === "Refrigerators" ? "2°C to 8°C" : "-15°C to -25°C"}
+          <span>
+            {/* Show Recommended if default value exists */}
+            {hasDefaultValue && (
+              <span style={defaultGreyStyle}>
+                Recommended: {config.default_value}{config.unit || ""} | {" "}
+              </span>
+            )}
+            {/* "Range" text changes color based on user input */}
+            <span style={rangeStyle}>
+              Range: {config.min_value}{config.unit || ""} - {config.max_value}{config.unit || ""}
+            </span>
           </span>
         );
       }
-      return null;
-    }
+      break;
 
-    // Dynamic color for Range based on input (Grey/Yellow/Red)
-    const dynamicColor = getRangeStatusColor(parameterName);
-    
-    const rangeStyle = { 
-      color: dynamicColor, 
-      fontSize: "12px", 
-      fontWeight: "500",
-      transition: "color 0.2s ease"
-    };
-
-    const defaultGreyStyle = {
-      color: "#9E9E9E",
-      fontSize: "12px",
-      fontWeight: "500"
-    };
-
-    const dataType = config.data_type;
-    const isTemperature = parameterName.toLowerCase().includes("temperature");
-
-    switch (dataType) {
-      case "Integer":
-      case "Decimal":
-      case "Min/Max":
-        if (config.min_value != null && config.max_value != null) {
-          return (
-            <span>
-              {/* "Recommended" prefix stays Grey only for Temperature */}
-              {isTemperature && (
-                <span style={defaultGreyStyle}>
-                  Recommended: {config.min_value}{config.unit || ""} |{" "}
-                </span>
-              )}
-              {/* "Range" text changes color based on user input */}
-              <span style={rangeStyle}>
-                Range: {config.min_value}{config.unit || ""} - {config.max_value}{config.unit || ""}
+    case "Percentage":
+      if (config.percentage != null) {
+        return (
+          <span>
+            {hasDefaultValue && (
+              <span style={defaultGreyStyle}>
+                Recommended: {config.default_value}% | {" "}
               </span>
-            </span>
-          );
-        }
-        break;
-
-      case "Percentage":
-        if (config.percentage != null) {
-          return (
+            )}
             <span style={rangeStyle}>
               Range: 0% - {config.percentage}%
             </span>
-          );
-        }
-        break;
-
-      case "Boolean":
-        return (
-          <span style={defaultGreyStyle}>
-            Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
           </span>
         );
+      }
+      break;
 
-      // ✅ UPDATED: Display actual text content instead of data type label
-      case "Text":
-        const displayValue = config.text || config.recommendation || "";
+    case "Boolean":
+      const hasBoolDefault = config.default_value != null && config.default_value !== "";
+      return (
+        <span style={defaultGreyStyle}>
+          {hasBoolDefault && (
+            <>
+              Type: {config.default_value} | {" "}
+            </>
+          )}
+          Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
+        </span>
+      );
+
+    case "Text":
+      const displayValue = config.text || config.recommendation || "";
+      const hasTextDefault = config.default_value || displayValue;
+      return (
+        <span style={defaultGreyStyle}>
+          {hasTextDefault ? `Text: ${config.default_value || displayValue}` : "No recommended value"}
+        </span>
+      );
+
+    case "Select":
+    case "Dropdown":
+      if (config.dropdown && Array.isArray(config.dropdown)) {
         return (
           <span style={defaultGreyStyle}>
-            Text: {displayValue}
+            {hasDefaultValue && (
+              <>
+                Type: {config.default_value} | {" "}
+              </>
+            )}
+            Options: {config.dropdown.join(", ")}
           </span>
         );
+      }
+      break;
 
-      case "Select":
-      case "Dropdown":
-        if (config.dropdown && Array.isArray(config.dropdown)) {
-          return (
-            <span style={defaultGreyStyle}>
-              Options: {config.dropdown.join(", ")}
-            </span>
-          );
-        }
-        break;
-
-      default:
-        return null;
-    }
-  };
+    default:
+      return null;
+  }
+};
 
   const setValue = (key: string, value: any) => {
     setLogValues((prev) => ({ ...prev, [key]: value }));

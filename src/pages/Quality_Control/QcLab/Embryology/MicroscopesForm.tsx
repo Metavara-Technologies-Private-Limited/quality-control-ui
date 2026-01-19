@@ -80,7 +80,6 @@ const MicroscopesForm = ({
     return config;
   };
 
-  // ✅ NEW: Get range status color based on input value
   const getRangeStatusColor = (parameterName: string) => {
     const config = getParameterConfig(parameterName);
     
@@ -93,7 +92,7 @@ const MicroscopesForm = ({
     const stateKey = stateMapping[parameterName];
     const rawValue = stateKey ? logValues[stateKey] : null;
 
-    // If empty, stay grey
+   
     if (!rawValue || !config || config.min_value == null || config.max_value == null) {
       return "#9E9E9E";
     }
@@ -101,77 +100,112 @@ const MicroscopesForm = ({
     const inputValue = parseFloat(rawValue);
     if (isNaN(inputValue)) return "#9E9E9E";
 
-    // Only change color if value is outside range
-    if (inputValue < Number(config.min_value)) return "#D6BA18"; // Below range
-    if (inputValue > Number(config.max_value)) return "#F25B5B"; // Above range
+  
+    if (inputValue < Number(config.min_value)) return "#D6BA18";  
+    if (inputValue > Number(config.max_value)) return "#F25B5B";  
     
-    return "#9E9E9E"; // In range or valid input
+    return "#9E9E9E"; 
   };
 
-  // ✅ UPDATED: Now supports Boolean, Text types with dynamic colors
-const renderParameterInfo = (parameterName: string) => {
-    const config = getParameterConfig(parameterName);
-    if (!config) return null;
-    
-    const dynamicColor = getRangeStatusColor(parameterName);
-    const labelStyle = { 
-      color: dynamicColor, 
-      fontSize: "12px", 
-      fontWeight: "500",
-      transition: "color 0.2s ease"
-    };
+   
 
-    const dataType = config.data_type;
-    
-    switch (dataType) {
-      case "Integer":
-      case "Decimal":
-      case "Min/Max":
-        if (config.min_value != null && config.max_value != null) {
-          return (
+const renderParameterInfo = (parameterName: string) => {
+  const config = getParameterConfig(parameterName);
+  if (!config) return null;
+  
+  const dynamicColor = getRangeStatusColor(parameterName);
+  const labelStyle = { 
+    color: dynamicColor, 
+    fontSize: "12px", 
+    fontWeight: "500",
+    transition: "color 0.2s ease"
+  };
+
+  const defaultGreyStyle = {
+    color: "#9E9E9E",
+    fontSize: "12px",
+    fontWeight: "500"
+  };
+
+  const hasDefaultValue = config.default_value != null && config.default_value !== "";
+  const dataType = config.data_type;
+  
+  switch (dataType) {
+    case "Integer":
+    case "Decimal":
+    case "Min/Max":
+      if (config.min_value != null && config.max_value != null) {
+        return (
+          <span>
+            {hasDefaultValue && (
+              <span style={defaultGreyStyle}>
+                Recommended: {config.default_value}{config.unit || ""} | {" "}
+              </span>
+            )}
             <span style={labelStyle}>
               Range: {config.min_value} {config.unit || ""} - {config.max_value} {config.unit || ""}
             </span>
-          );
-        }
-        break;
-      case "Percentage":
-        if (config.percentage != null) {
-          return (
+          </span>
+        );
+      }
+      break;
+    case "Percentage":
+      if (config.percentage != null) {
+        return (
+          <span>
+            {hasDefaultValue && (
+              <span style={defaultGreyStyle}>
+                Recommended: {config.default_value}% | {" "}
+              </span>
+            )}
             <span style={labelStyle}>
               Range: 0% - {config.percentage}%
             </span>
-          );
-        }
-        break;
-      
-      case "Text":
-        const textValue = config.text || config.recommendation || "";
-        return (
-          <span style={{ color: "#9E9E9E", fontSize: "11px", fontWeight: "500" }}>
-           Text:  {textValue}
           </span>
         );
-      case "Boolean":
+      }
+      break;
+    case "Text":
+      const textValue = config.text || config.recommendation || "";
+      const hasTextDefault = config.default_value || textValue;
+      return (
+        <span style={defaultGreyStyle}>
+          {hasTextDefault ? `Recommended: ${config.default_value || textValue}` : "No recommended value"}
+        </span>
+      );
+    case "Boolean":
+      const hasBoolDefault = config.default_value != null && config.default_value !== "";
+      const booleanType = config.boolean_type || "yesno";
+      return (
+        <span style={defaultGreyStyle}>
+          {hasBoolDefault && (
+            <>
+              Recommended: {config.default_value} | {" "}
+            </>
+          )}
+          Type: {booleanType === "yesno" ? "Yes/No" : "True/False"}
+        </span>
+      );
+    case "Select":
+    case "Dropdown":
+      if (config.dropdown && Array.isArray(config.dropdown) && config.dropdown.length > 0) {
         return (
-          <span style={{ color: "#9E9E9E", fontSize: "11px", fontWeight: "500" }}>
-            Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
+          <span style={defaultGreyStyle}>
+            {hasDefaultValue && (
+              <>
+                Recommended: {config.default_value} | {" "}
+              </>
+            )}
+            Options: {config.dropdown.join(", ")}
           </span>
         );
-      case "Select":
-      case "Dropdown":
-        if (config.dropdown && Array.isArray(config.dropdown) && config.dropdown.length > 0) {
-          return (
-            <span style={{ color: "#9E9E9E", fontSize: "11px", fontWeight: "500" }}>
-              Options: {config.dropdown.join(", ")}
-            </span>
-          );
-        }
-        break;
-      default:
-        return null;
-    }
-  };
+      }
+      break;
+    default:
+      return null;
+  }
+};
+
   const handleSaveLogs = async () => {
     if (!currentEquipment || !currentEquipmentDetail) {
       toast.error("Please select an equipment first");
