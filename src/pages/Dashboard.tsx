@@ -19,7 +19,7 @@ import { parameterValueApi } from "@/services/api";
 const Dashboard = () => {
   // Pull clinic data + loading state from Redux
   const { data: clinic, loading } = useSelector(
-    (state: RootState) => state.clinic
+    (state: RootState) => state.clinic,
   ) as RootState["clinic"];
   console.info("data:", clinic);
 
@@ -29,7 +29,6 @@ const Dashboard = () => {
   const [search, setSearch] = useState("");
   const [parameterValues, setParameterValues] = useState<any[]>([]);
   const [valuesLoading, setValuesLoading] = useState(false);
-
 
   // Get All Departments
   const departments = clinic?.department ?? [];
@@ -44,23 +43,23 @@ const Dashboard = () => {
 
   const department = useMemo(
     () => departments.find((d) => d.id === departmentId) ?? null,
-    [departments, departmentId]
+    [departments, departmentId],
   );
 
   // Get All Equipments
   const equipments = useMemo(() => {
     if (!department) return [];
-  
+
     if (!search.trim()) return department.equipments ?? [];
-  
+
     return (department.equipments ?? []).filter((eq) =>
-      eq.equipment_name.toLowerCase().includes(search.toLowerCase())
+      eq.equipment_name.toLowerCase().includes(search.toLowerCase()),
     );
-  }, [department, search]);  
+  }, [department, search]);
 
   const equipment: Equipment | null = useMemo(
     () => equipments.find((e) => e.id === equipmentId) ?? null,
-    [equipments, equipmentId]
+    [equipments, equipmentId],
   );
 
   useEffect(() => {
@@ -69,34 +68,34 @@ const Dashboard = () => {
       setParameterId(null);
       return;
     }
-  
+
     // if currently selected equipment is NOT in filtered list
-    const exists = equipments.some(eq => eq.id === equipmentId);
-  
+    const exists = equipments.some((eq) => eq.id === equipmentId);
+
     if (!exists) {
       setEquipmentId(equipments[0].id);
       setParameterId(equipments[0].parameters?.[0]?.id ?? null);
     }
-  }, [equipments, equipmentId]);  
+  }, [equipments, equipmentId]);
 
   // Get All parameters
   const parameters = equipment?.parameters ?? [];
-  
+
   useEffect(() => {
     if (!parameters.length) {
       setParameterId(null);
       return;
     }
-  
-    const exists = parameters.some(p => p.id === parameterId);
+
+    const exists = parameters.some((p) => p.id === parameterId);
     if (!exists) {
       setParameterId(parameters[0].id);
     }
-  }, [parameters]);  
+  }, [parameters]);
 
   const parameter: Parameter | null = useMemo(
     () => parameters.find((p) => p.id === parameterId) ?? null,
-    [parameters, parameterId]
+    [parameters, parameterId],
   );
 
   useEffect(() => {
@@ -104,7 +103,7 @@ const Dashboard = () => {
       setParameterValues([]);
       return;
     }
-  
+
     const loadValues = async () => {
       setValuesLoading(true);
       try {
@@ -115,9 +114,9 @@ const Dashboard = () => {
         setValuesLoading(false);
       }
     };
-  
+
     loadValues();
-  }, [parameterId]);  
+  }, [parameterId]);
 
   const equipmentDetails = equipment?.equipment_details ?? [];
   const activeValue = parameter?.config;
@@ -185,15 +184,20 @@ const Dashboard = () => {
 
             <Grid container spacing={3} sx={{ mt: 1 }}>
               <Grid item xs={12} md={4}>
-              <IncidentsChart
-                equipmentDetails={equipmentDetails}
-                values={parameterValues}
-                parameterConfig={parameter?.config || {}}
-              />
+                <IncidentsChart
+                  equipmentDetails={equipmentDetails}
+                  values={parameterValues}
+                  parameterConfig={parameter?.config || {}}
+                />
               </Grid>
 
               <Grid item xs={12} md={4}>
-                <AverageParameterCards equipmentId={equipment.id} />
+                <AverageParameterCards
+                  equipmentId={equipment.id}
+                  equipmentDetails={equipment.equipment_details}
+                  parameter={parameter}
+                  values={parameterValues}
+                />
               </Grid>
 
               <Grid item xs={12} md={4}>

@@ -8,82 +8,63 @@ import {
   Divider,
 } from "@mui/material";
 import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
-// import { getMockChartData } from "@/utils/mockData";
 
-interface AverageHumidityProps {
+import { EquipmentDetail, Parameter } from "@/types";
+
+interface AverageParameterCardsProps {
   equipmentId: number;
+  equipmentDetails: EquipmentDetail[];
+  parameter: Parameter;
+  values: any[];
 }
 
-/* ✅ Correct helper function */
-type HumidityItem = {
+type AvgItem = {
   name: string;
-  value: number | null;
+  avg: number | null;
 };
 
-const getHumidityByIncubator = (equipmentId: number): HumidityItem[] => {
-  const rawClinic = localStorage.getItem("clinic");
-  if (!rawClinic) return [];
+const AverageParameterCards: React.FC<AverageParameterCardsProps> = ({
+  equipmentDetails,
+  parameter,
+  values,
+}) => {
+  /* -----------------------------
+     COMPUTE AVERAGE PER EQUIPMENT_DETAIL
+  ----------------------------- */
+  const averages = useMemo<AvgItem[]>(() => {
+    const byDetail: Record<number, number[]> = {};
 
-  const clinic = JSON.parse(rawClinic);
-  const result: HumidityItem[] = [];
+    values
+      .filter((v) => !v.is_deleted)
+      .forEach((v) => {
+        const val = Number(v.content);
+        if (isNaN(val)) return;
 
-  clinic.department?.forEach((dept: any) => {
-    dept.equipments
-      ?.filter((e: any) => e.id === equipmentId)
-      .forEach((equipment: any) => {
-        const humidityParam = equipment.parameters?.find((p: any) =>
-          p.parameter_name?.toLowerCase().includes("humidity")
-        );
-
-        const pv = humidityParam?.parameter_values?.[0];
-        const readings = pv?.content?.readings ?? [];
-
-        // group readings by equipment_detail_id
-        const byDetail: Record<number, any[]> = {};
-        readings.forEach((r: any) => {
-          byDetail[r.equipment_detail_id] ??= [];
-          byDetail[r.equipment_detail_id].push(r);
-        });
-
-        equipment.equipment_details?.forEach((detail: any) => {
-          const list = byDetail[detail.id];
-
-          if (!list || list.length === 0) {
-            // ✅ humidity missing OR no readings
-            result.push({
-              name: detail.equipment_num,
-              value: null,
-            });
-            return;
-          }
-
-          const latest = list
-            .sort(
-              (a, b) =>
-                new Date(a.recorded_at).getTime() -
-                new Date(b.recorded_at).getTime()
-            )
-            .at(-1);
-
-          result.push({
-            name: detail.equipment_num,
-            value: latest ? Number(latest.value) : null,
-          });
-        });
+        byDetail[v.equipment_details_id] ??= [];
+        byDetail[v.equipment_details_id].push(val);
       });
-  });
 
-  return result;
-};
+    return equipmentDetails.map((ed) => {
+      const list = byDetail[ed.id ?? -1];
 
-const AverageHumidity: React.FC<AverageHumidityProps> = ({ equipmentId }) => {
-  const incubators = useMemo(
-    () => getHumidityByIncubator(equipmentId),
-    [equipmentId]
-  );
+      if (!list || list.length === 0) {
+        return { name: ed.equipment_num, avg: null };
+      }
+
+      const avg = list.reduce((sum, v) => sum + v, 0) / list.length;
+
+      return {
+        name: ed.equipment_num,
+        avg: Number(avg.toFixed(2)),
+      };
+    });
+  }, [equipmentDetails, values]);
+
+  const unit = parameter?.config?.unit ?? "";
 
   return (
     <Card sx={{ height: "100%", minHeight: 350, borderRadius: 3 }}>
+      {/* HEADER */}
       <CardContent
         sx={{
           height: 56,
@@ -92,7 +73,9 @@ const AverageHumidity: React.FC<AverageHumidityProps> = ({ equipmentId }) => {
           alignItems: "center",
         }}
       >
-        <Typography fontWeight={700}>Average Humidity</Typography>
+        <Typography fontWeight={700}>
+          Average {parameter.parameter_name}
+        </Typography>
         <IconButton size="small">
           <FilterAltOutlinedIcon fontSize="small" />
         </IconButton>
@@ -100,6 +83,7 @@ const AverageHumidity: React.FC<AverageHumidityProps> = ({ equipmentId }) => {
 
       <Divider />
 
+      {/* BODY */}
       <Box
         sx={{
           p: 2.5,
@@ -108,45 +92,41 @@ const AverageHumidity: React.FC<AverageHumidityProps> = ({ equipmentId }) => {
           gap: 2,
         }}
       >
-        {incubators.map((item) => {
-          const isHigh = item.value !== null && item.value >= 85;
+        {averages.map((item) => (
+          <Box
+            key={item.name}
+            sx={{
+              p: 2,
+              borderRadius: 3,
+              backgroundColor: "#F9FAFB",
+            }}
+          >
+            <Typography fontSize={14} color="text.secondary">
+              {item.name}
+            </Typography>
 
-          return (
-            <Box
-              key={item.name}
-              sx={{ p: 2, borderRadius: 3, backgroundColor: "#F9FAFB" }}
-            >
-              {/* 👇 Incubator label */}
-              <Typography fontSize={15} fontWeight={600} mb={0.5}>
-                {item.name}
+            {item.avg === null ? (
+              <Typography fontSize={14} color="text.secondary">
+                No data available
               </Typography>
+            ) : (
+              <>
+                <Typography fontSize={24} fontWeight={700}>
+                  {item.avg}
+                  {unit}
+                </Typography>
 
-              {/* 👇 Value / Empty */}
-              {item.value === null ? (
-                <Typography fontSize={14} color="text.secondary">
-                No humidity for this equipment
-              </Typography>
-              
-              ) : (
-                <>
-                  <Typography fontSize={26} fontWeight={700}>
-                    {item.value}%
-                  </Typography>
-
-                  <Typography
-                    fontSize={13}
-                    color={isHigh ? "#22c55e" : "#ef4444"}
-                  >
-                    {isHigh ? "▲" : "▼"} within range
-                  </Typography>
-                </>
-              )}
-            </Box>
-          );
-        })}
+                {/* Placeholder trend (wire later) */}
+                <Typography fontSize={13} color="#22c55e">
+                  ▲ 2.5% vs last week
+                </Typography>
+              </>
+            )}
+          </Box>
+        ))}
       </Box>
     </Card>
   );
 };
 
-export default AverageHumidity;
+export default AverageParameterCards;

@@ -8,10 +8,11 @@ import {
   IconButton,
 } from "@mui/material";
 import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
-import { PieChart, Pie, ResponsiveContainer, Cell } from "recharts";
+import { PieChart, Pie, ResponsiveContainer } from "recharts";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import RemoveIcon from "@mui/icons-material/Remove";
+
 import { EquipmentDetail, ParameterContent } from "@/types";
 
 interface IncidentsChartProps {
@@ -20,51 +21,89 @@ interface IncidentsChartProps {
   parameterConfig: ParameterContent;
 }
 
-const COLORS = ["#F25B5B", "#47B35F", "#9E9E9E"]; // high, normal, low
+/* -----------------------------
+   EQUIPMENT COLORS (FIGMA)
+----------------------------- */
+const EQUIPMENT_COLORS = [
+  "#6B7280", // Incubator A
+  "#9CA3AF", // Incubator B
+  "#FBCFE8", // Incubator C
+  "#FB7185", // Incubator D
+];
+
+/* -----------------------------
+   STATUS COLORS
+----------------------------- */
+const STATUS_COLORS = {
+  high: "#F25B5B",
+  normal: "#47B35F",
+  low: "#9E9E9E",
+};
 
 const IncidentsChart: React.FC<IncidentsChartProps> = ({
   equipmentDetails,
   values,
   parameterConfig,
 }) => {
-  const { high, normal, low } = useMemo(() => {
-    let highCount = 0,
-      normalCount = 0,
-      lowCount = 0;
+  const validEquipmentDetailIds = useMemo(
+    () => new Set(equipmentDetails.map((ed) => ed.id).filter(Boolean)),
+    [equipmentDetails],
+  );
 
-    const min = Number(parameterConfig?.min_value);
-    const max = Number(parameterConfig?.max_value);
+  /* -----------------------------
+     LOG-LEVEL INCIDENT SUMMARY
+     (THIS FIXES 4 vs 124 ISSUE)
+  ----------------------------- */
+  const summary = useMemo(() => {
+    let high = 0;
+    let normal = 0;
+    let low = 0;
 
-    equipmentDetails.forEach((ed) => {
-      // Filter values for this equipment detail
-      const edValues = values
-        .filter((v) => v.equipment_details_id === ed.id)
-        .sort(
-          (a, b) =>
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
+    const min =
+      parameterConfig?.min_value != null
+        ? Number(parameterConfig.min_value)
+        : null;
 
-        if (!edValues.length) {
-          normalCount++; // or lowCount / separate "No Data"
-          return;
-        }        
+    const max =
+      parameterConfig?.max_value != null
+        ? Number(parameterConfig.max_value)
+        : null;
 
-      const latest = edValues[edValues.length - 1];
-      const val = Number(latest.content);
-      if (isNaN(val)) return;
+    const thresholdApplicable =
+      (min !== null && !isNaN(min)) || (max !== null && !isNaN(max));
 
-      if (!isNaN(max) && val > max) highCount++;
-      else if (!isNaN(min) && val < min) lowCount++;
-      else normalCount++;
-    });
+    if (!thresholdApplicable) {
+      return { high: 0, normal: 0, low: 0, total: 0 };
+    }
 
-    return { high: highCount, normal: normalCount, low: lowCount };
-  }, [equipmentDetails, values, parameterConfig]);
+    values
+      .filter(
+        (v) =>
+          !v.is_deleted && validEquipmentDetailIds.has(v.equipment_details_id),
+      )
+      .forEach((v) => {
+        const val = Number(v.content);
+        if (isNaN(val)) return;
 
-  const total = high + normal + low;
+        if (max !== null && val > max) high++;
+        else if (min !== null && val < min) low++;
+        else normal++;
+      });
 
+    return {
+      high,
+      normal,
+      low,
+      total: high + normal + low,
+    };
+  }, [values, parameterConfig]);
+
+  /* -----------------------------
+     RENDER
+  ----------------------------- */
   return (
     <Card sx={{ height: "100%", minHeight: 350, borderRadius: 3 }}>
+      {/* HEADER */}
       <CardContent
         sx={{
           height: 56,
@@ -81,35 +120,41 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({
 
       <Divider />
 
+      {/* BODY */}
       <Box
         sx={{
           p: 2.5,
           display: "grid",
           gridTemplateColumns: "1.2fr 1fr",
           gap: 3,
+          alignItems: "center",
         }}
       >
+        {/* CONCENTRIC RINGS */}
         <Box sx={{ position: "relative", height: 220 }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie
-                data={[
-                  { name: "High", value: high },
-                  { name: "Normal", value: normal },
-                  { name: "Low", value: low },
-                ]}
-                dataKey="value"
-                innerRadius={60}  // make inner circle smaller
-                outerRadius={80}  // reduce outer radius to fit container
-                paddingAngle={2}  // optional: add small gaps between slices
-              >
-                {COLORS.map((color, idx) => (
-                  <Cell key={idx} fill={color} />
-                ))}
-              </Pie>
+              {equipmentDetails.map((ed, idx) => {
+                const outer = 80 - idx * 12;
+                const inner = outer - 8;
+
+                return (
+                  <Pie
+                    key={ed.id ?? idx}
+                    data={[{ value: 1 }]}
+                    dataKey="value"
+                    innerRadius={inner}
+                    outerRadius={outer}
+                    fill={EQUIPMENT_COLORS[idx % EQUIPMENT_COLORS.length]}
+                    stroke="none"
+                    isAnimationActive={false}
+                  />
+                );
+              })}
             </PieChart>
           </ResponsiveContainer>
 
+          {/* CENTER TEXT */}
           <Box
             sx={{
               position: "absolute",
@@ -120,7 +165,7 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({
             }}
           >
             <Typography fontSize={28} fontWeight={700}>
-              {total}
+              {summary.total}
             </Typography>
             <Typography fontSize={13} color="text.secondary">
               Total Logs
@@ -128,28 +173,57 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({
           </Box>
         </Box>
 
+        {/* RIGHT PANEL */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
           <SummaryRow
-            label={`High (${high})`}
-            color="#F25B5B"
+            label={`High (${summary.high} logs)`}
+            color={STATUS_COLORS.high}
             icon={<ArrowUpwardIcon />}
           />
           <SummaryRow
-            label={`Normal (${normal})`}
-            color="#47B35F"
+            label={`Normal (${summary.normal} logs)`}
+            color={STATUS_COLORS.normal}
             icon={<RemoveIcon />}
           />
           <SummaryRow
-            label={`Low (${low})`}
-            color="#9E9E9E"
+            label={`Low (${summary.low} logs)`}
+            color={STATUS_COLORS.low}
             icon={<ArrowDownwardIcon />}
           />
+
+          {/* EQUIPMENT LEGEND */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 1,
+              mt: 1,
+            }}
+          >
+            {equipmentDetails.map((ed, idx) => (
+              <Box key={ed.id ?? idx} sx={{ display: "flex", gap: 1 }}>
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    backgroundColor:
+                      EQUIPMENT_COLORS[idx % EQUIPMENT_COLORS.length],
+                  }}
+                />
+                <Typography fontSize={12}>{ed.equipment_num}</Typography>
+              </Box>
+            ))}
+          </Box>
         </Box>
       </Box>
     </Card>
   );
 };
 
+/* -----------------------------
+   SUMMARY ROW
+----------------------------- */
 const SummaryRow = ({
   label,
   color,
