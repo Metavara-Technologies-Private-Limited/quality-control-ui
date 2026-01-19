@@ -58,7 +58,42 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
   const [chartMenuAnchor, setChartMenuAnchor] = useState<null | HTMLElement>(
     null
   );
-
+  const yAxisProps = {
+    label: {
+      value: `${parameterName} (${unit})`,
+      angle: -90,
+      position: "insideLeft",
+      offset: 20,
+      style: {
+        textAnchor: "middle",
+        fill: "#374151",
+        opacity: 0.6,        // ✅ subtle, clean
+        fontSize: 12,
+        fontWeight: 600,
+      },
+    },
+  };
+  const xAxisProps = {
+    dataKey: "date",
+    label: {
+      value: "Time",
+      position: "insideBottom",
+      offset: -5,
+      style: {
+        fill: "#6B7280",
+        fontSize: 12,
+        fontWeight: 600,
+      },
+    },
+    tick: {
+      fontSize: 12,
+      fill: "#6B7280",
+    },
+    tickMargin: 8,
+    axisLine: { stroke: "#E5E7EB" },
+    tickLine: false,
+  };  
+  
   console.log("parameterId",parameterId)
   useEffect(() => {
     if (!values.length) {
@@ -95,7 +130,7 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
   
     const data = Object.values(dataMap)
       .sort((a, b) => dayjs(a.date, "HH:mm").diff(dayjs(b.date, "HH:mm")))
-      .reverse();
+      // .reverse();
   
     setChartData({
       chartType: "line",
@@ -294,8 +329,8 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
             {chartType === "bar" ? (
               <BarChart data={displayData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
+                <XAxis {...xAxisProps} />
+                <YAxis {...yAxisProps} />
                 <Tooltip />
                 {chartData?.equipment_names?.map((name, index) => (
                   <Bar
@@ -309,8 +344,8 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
             ) : (
               <LineChart data={displayData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
+                <XAxis {...xAxisProps} />
+                <YAxis {...yAxisProps} />
                 <Tooltip />
                 {chartData?.equipment_names?.map((name, index) => (
                   <Line

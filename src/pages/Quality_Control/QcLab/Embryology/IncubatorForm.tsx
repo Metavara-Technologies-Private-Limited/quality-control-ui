@@ -85,6 +85,18 @@ const IncubatorForm = ({
     return config;
   };
 
+  const getUnitForParameter = (parameterName: string) => {
+    const config = getParameterConfig(parameterName);
+    if (!config) return "";
+  
+    if (config.unit) return config.unit;
+  
+    if (config.data_type === "Percentage") return "%";
+  
+    return "";
+  };
+  
+
 const renderParameterInfo = (parameterName: string) => {
   const config = getParameterConfig(parameterName);
   if (!config) return null;
@@ -510,7 +522,7 @@ const renderParameterInfo = (parameterName: string) => {
               onChange={(e) => setValue("temperature", e.target.value)}
               placeholder="Type Here"
             />
-            <label style={labelStyle}>Temperature (°C)</label>
+            <label style={labelStyle}>Temperature ({getParameterConfig("Temperature")?.unit || "°C"})</label>
             <div style={rangeTextStyle}>
               {renderParameterInfo("Temperature")}
             </div>
@@ -523,7 +535,12 @@ const renderParameterInfo = (parameterName: string) => {
               onChange={(e) => setValue("co2", e.target.value)}
               placeholder="Type Here"
             />
-            <label style={labelStyle}>CO2 Concentration (%)</label>
+            <label style={labelStyle}>CO2 Concentration (
+  {getParameterConfig("CO2 Concentration")?.unit ??
+    (getParameterConfig("CO2 Concentration")?.data_type === "Percentage"
+      ? "%"
+      : "")}
+  )</label>
             <div style={rangeTextStyle}>
               {renderParameterInfo("CO2 Concentration")}
             </div>
@@ -535,7 +552,10 @@ const renderParameterInfo = (parameterName: string) => {
               onChange={(e) => setValue("humidity", e.target.value)}
               placeholder="Type Here"
             />
-            <label style={labelStyle}>Humidity Levels (%)</label>
+            <label style={labelStyle}>Humidity Levels (
+  {getParameterConfig("Humidity Levels")?.unit ||
+    (getParameterConfig("Humidity Levels")?.data_type === "Percentage" && "%")}
+  )</label>
             <div style={rangeTextStyle}>
               {renderParameterInfo("Humidity Levels")}
             </div>

@@ -452,7 +452,9 @@ const renderParameterInfo = (parameterName: string) => {
               onChange={(e) => setValue("airflowVelocity", e.target.value)}
               placeholder="Type Here"
             />
-            <label style={labelStyle}>Airflow Velocity (m/s)</label>
+            <label style={labelStyle}>Airflow Velocity (
+  {getParameterConfig("Airflow Velocity")?.unit || "m/s"}
+  )</label>
             <div style={rangeTextStyle}>
               {renderParameterInfo("Airflow Velocity")}
             </div>

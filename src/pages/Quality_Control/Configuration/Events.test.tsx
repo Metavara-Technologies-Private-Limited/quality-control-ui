@@ -14,37 +14,45 @@ vi.mock("react-redux", async () => {
         clinic: { data: { id: 1 } },
         events: {
           loading: false,
+          data: [
+            {
+              id: 1,
+              event_name: "Test Event",
+              description: "Test Desc",
+              created_at: "2024-01-01T10:00:00Z",
+              assignment: "Admin",
+              schedule: {
+                type: 1,
+                from_time: "2024-01-01T10:00:00Z",
+                to_time: "2024-01-01T12:00:00Z",
+                one_time_date: "2024-01-01T00:00:00Z",
+                days: [],
+              },
+              equipments: [],
+              parameters: [],
+            },
+          ],
         },
-        uiEvents: [
-          {
-            id: 1,
-            name: "Test Event",
-            createdBy: "Admin",
-            createdDate: "01/01/2024",
-            scheduleType: "One Time",
-            equipmentCount: 2,
-            parameterCount: 4,
-          },
-        ],
       }),
   };
 });
 
+
 /* ---------------- MOCK event slice ---------------- */
-vi.mock("@/store/eventSlice", () => ({
-  fetchEventsByClinic: vi.fn(),
-  selectUIEvents: () => [
-    {
-      id: 1,
-      name: "Test Event",
-      createdBy: "Admin",
-      createdDate: "01/01/2024",
-      scheduleType: "One Time",
-      equipmentCount: 2,
-      parameterCount: 4,
-    },
-  ],
-}));
+// vi.mock("@/store/eventSlice", () => ({
+//   fetchEventsByClinic: vi.fn(),
+//   selectUIEvents: () => [
+//     {
+//       id: 1,
+//       name: "Test Event",
+//       createdBy: "Admin",
+//       createdDate: "01/01/2024",
+//       scheduleType: "One Time",
+//       equipmentCount: 2,
+//       parameterCount: 4,
+//     },
+//   ],
+// }));
 
 /* ---------------- TESTS ---------------- */
 describe("Events Page", () => {

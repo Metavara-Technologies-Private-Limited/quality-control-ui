@@ -1059,7 +1059,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                       }}
                     >
                       <Typography mb={2} fontWeight={500} color="#666">
-                        Edit Sub-Task
+                        Add Sub-Task
                       </Typography>
 
                       <Stack direction="row" spacing={3} mb={2}>
