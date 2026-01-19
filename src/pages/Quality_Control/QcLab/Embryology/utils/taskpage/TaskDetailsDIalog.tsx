@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Typography,
@@ -115,7 +115,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
     setTaskStatus(task.status);
     setTaskDetails(task.description || "");
     setSubTasks(task.sub_tasks || []);
-    setDetailsTab(1);
+    setDetailsTab(0);
   }, [open, task?.id]); // 👈 important: task.id, not task object
 
   // // Editor content setup when tab changes to description
@@ -158,21 +158,24 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
     return () => clearInterval(i);
   }, [task?.timer_status]);  
 
-  const hydratedTaskIdRef = useRef<number | null>(null);
+  // const hydratedTaskIdRef = useRef<number | null>(null);
 
-  useLayoutEffect(() => {
-    if (!open || detailsTab !== 0 || !editorRef.current || !task) return;
-
-    if (hydratedTaskIdRef.current === task.id) return;
-
-    const editor = editorRef.current;
-
-    editor.innerHTML = taskDetails?.trim()
-      ? taskDetails
-      : '<p style="color:#aaa;font-style:italic;">No description yet. Click to edit…</p>';
-
-    hydratedTaskIdRef.current = task.id;
-  }, [open, detailsTab, task?.id]); // 👈 NOT taskDetails
+  useEffect(() => {
+    if (!open || !task) return;
+  
+    // defer until DOM is painted
+    requestAnimationFrame(() => {
+      if (!editorRef.current) return;
+  
+      editorRef.current.innerHTML =
+        task.description?.trim()
+          ? task.description
+          : '<p style="color:#aaa;font-style:italic;">No description yet. Click to edit…</p>';
+  
+      setTaskDetails(task.description || "");
+    });
+  }, [open, task?.id]);
+  
 
   const getTaskTime = (task: UITask) => {
     let tracked = task.total_tracked_sec ?? 0;

@@ -15,6 +15,7 @@ import {
   DialogContent,
   Avatar,
   InputLabel,
+  Chip,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import FormatBoldIcon from '@mui/icons-material/FormatBold';
@@ -25,10 +26,12 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import FormatAlignLeftIcon from '@mui/icons-material/FormatAlignLeft';
 import FormatAlignJustifyIcon from '@mui/icons-material/FormatAlignJustify';
 import InsertLinkIcon from '@mui/icons-material/InsertLink';
-import ImageIcon from '@mui/icons-material/Image';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+// import ImageIcon from '@mui/icons-material/Image';
+// import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+// import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -36,18 +39,17 @@ import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
 
 import { CustomStepIndicator } from './CustomStepIndicator';
-// import { STATUS_OPTIONS } from './data/data';
 import { COLORS } from './data/colors';
-import { eventApi, taskApi } from '@/services/api';
-import { Task, TASK_STATUS_MAP, TaskStatus } from '@/types';
+import { taskApi } from '@/services/api';
+import { TASK_STATUS_MAP, TaskStatus } from '@/types';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { formatDueDateDisplay } from './formatDueDateDisplay';
+import { useLocation } from 'react-router-dom';
 
 interface AddTaskDialogProps {
   open: boolean;
   onClose: () => void;
-  events: any[];
   initialSelectedEvent: string;
   onTaskCreated: (newTask: any, eventName: string) => void;
 }
@@ -55,22 +57,22 @@ interface AddTaskDialogProps {
 const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   open,
   onClose,
-  // events,
   initialSelectedEvent,
   onTaskCreated,
 }) => {
+  const location = useLocation();
+  const parts = location.pathname.split("/").filter(Boolean);
+  const deptName = parts[1].toString();
   
   const assignees = useSelector((state: RootState) => state.assignees.data);
   const [step, setStep] = useState(1);
 
   // Step 1 fields
   const [name, setName] = useState('');
-  // const [selectedEvent, setSelectedEvent] = useState(initialSelectedEvent);
   const [assignee, setAssignee] = useState<number | ''>('');
   const [dueDate, setDueDate] = useState<dayjs.Dayjs | null>(null);
-  // const status = TaskStatus.TODO;
 
-  // Step 2 - rich text editor
+  // Step 2 - rich text editor + files
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const savedRangeRef = useRef<Range | null>(null);
@@ -78,19 +80,22 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   const [activeFormats, setActiveFormats] = useState<string[]>([]);
   const [selectedColor, setSelectedColor] = useState('inherit');
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const clinic = useSelector((s: RootState) => s.clinic.data);
-  const [events, setEvents] = useState<any[]>([]);
+
+  // New: Files state
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+
+  // const clinic = useSelector((s: RootState) => s.clinic.data);
+  // const [events, setEvents] = useState<any[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<number | "">("");
 
-  useEffect(() => {
-    if (!clinic?.id) return;
-
-    eventApi.listByClinic(clinic.id).then((res) => {
-      const raw = res.data.results ?? res.data ?? [];
-      setEvents(raw);
-    });
-  }, [clinic?.id]);
-
+  const rawEvents = useSelector((s: RootState) =>
+    [...s.events.data].sort((a, b) =>
+      (a.event_name ?? "").localeCompare(b.event_name ?? "", undefined, {
+        sensitivity: "base",
+      })
+    )
+  );  
+const events = rawEvents.filter(item => item.department.toLowerCase() === deptName.toLowerCase());
 
   // Step 3 - sub tasks
   const [subTasks, setSubTasks] = useState<any[]>([]);
@@ -99,7 +104,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
     status: TaskStatus.TODO,
     due_date: null as dayjs.Dayjs | null,
     assignee: "" as number | "",
-  });  
+  });
 
   // Errors
   const INITIAL_ERRORS = {
@@ -112,7 +117,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
     subStatus: '',
     subDue: '',
     subAssignee: '',
-  }
+  };
   const [errors, setErrors] = useState(INITIAL_ERRORS);
 
   // Reset form when dialog opens
@@ -120,10 +125,10 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
     if (open) {
       setStep(1);
       setName('');
-      // setSelectedEvent(initialSelectedEvent);
       setAssignee('');
       setDueDate(null);
       setDescriptionHtml('');
+      setSelectedFiles([]);
       setSubTasks([]);
       setNewSubTask({ name: '', status: TaskStatus.TODO, due_date: null, assignee: '' });
       setErrors(INITIAL_ERRORS);
@@ -133,11 +138,9 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
     }
   }, [open, initialSelectedEvent]);
 
-  const assigneeOptions = useSelector(
-    (state: RootState) => state.assignees.data
-  );  
+  const assigneeOptions = useSelector((state: RootState) => state.assignees.data);
 
-  // Rich text editor format checking
+  // ── Rich text editor functions ───────────────────────────────────────
   const checkFormats = () => {
     const formats: string[] = [];
     if (document.queryCommandState('bold')) formats.push('bold');
@@ -178,6 +181,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
     if (url) document.execCommand('createLink', false, url);
   };
 
+  // Only insert images into editor (documents go to attachments)
   const insertImage = (file: File) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -189,16 +193,27 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      Array.from(e.target.files).forEach((file) => {
+      const newFiles = Array.from(e.target.files);
+
+      // Images → insert into editor
+      // Other files → only add to attachments list
+      newFiles.forEach((file) => {
         if (file.type.startsWith('image/')) {
           insertImage(file);
         }
       });
+
+      // Add all files to selectedFiles (for API)
+      setSelectedFiles((prev) => [...prev, ...newFiles]);
       e.target.value = '';
     }
   };
 
-  // Validation
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // ── Validation ────────────────────────────────────────────────────────
   const validateStep1 = () => {
     const newErrors = {
       name: !name.trim() ? "Task name is required" : "",
@@ -208,7 +223,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
     };
     setErrors((prev) => ({ ...prev, ...newErrors }));
     return Object.values(newErrors).every((v) => !v);
-  };  
+  };
 
   const validateStep2 = () => {
     const text = editorRef.current?.innerText?.trim() || '';
@@ -236,61 +251,78 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
     return Object.values(newErrors).every((v) => !v);
   };
 
-  // Save new sub-task
+  // ── Sub-task actions ──────────────────────────────────────────────────
   const handleAddSubTask = () => {
     if (!validateSubTask()) return;
-  
+
     setSubTasks([
       ...subTasks,
       {
         name: newSubTask.name,
         status: newSubTask.status,
         due_date: newSubTask.due_date!.toISOString(),
-        assignment:
-          newSubTask.assignee === "" ? null : newSubTask.assignee,
+        assignment: newSubTask.assignee === "" ? null : newSubTask.assignee,
       },
     ]);
-  
+
     setNewSubTask({
       name: "",
       status: TaskStatus.TODO,
       due_date: null,
       assignee: "",
     });
-  
+
     toast.success("Sub-task added");
-  };  
+  };
 
-  // Final save
-const handleSaveTask = async () => {
-  try {
-    const payload: Partial<Task> = {
-      event: Number(selectedEventId),
-      assignment: assignee === "" ? null : assignee,
-      name: name.trim(),
-      description: descriptionHtml, // keep HTML
-      due_date: dueDate!.toISOString(),
-      status: TaskStatus.TODO,
-      sub_tasks: subTasks,
-    };
+  const handleDeleteSubTask = (index: number) => {
+    setSubTasks(prev => prev.filter((_, i) => i !== index));
+    toast.info("Sub-task removed");
+  };
 
-    if (!payload.event || !payload.assignment) {
-      toast.error("Event or assignee missing");
-      return;
+  // Final save - now includes documents
+  const handleSaveTask = async () => {
+    try {
+      const payload: any = {
+        event: Number(selectedEventId),
+        assignment: assignee === "" ? null : assignee,
+        name: name.trim(),
+        description: descriptionHtml,
+        due_date: dueDate!.toISOString(),
+        status: TaskStatus.TODO,
+        sub_tasks: subTasks,
+        documents: selectedFiles.map(file => ({
+          document_name: file.name,
+          // Here you would normally convert to base64 or prepare for multipart
+          // For this example we just send the structure
+          // Real implementation depends on your backend (multipart/form-data recommended)
+          data: "BINARY_OR_BASE64_DATA_PLACEHOLDER" // ← Replace with actual conversion
+        })),
+      };
+
+      if (!payload.event || !payload.assignment) {
+        toast.error("Event or assignee missing");
+        return;
+      }
+
+      // Important: For real file upload you should use FormData + multipart
+      // Example:
+      // const formData = new FormData();
+      // formData.append('task', JSON.stringify(payload));
+      // selectedFiles.forEach(file => formData.append('files', file));
+
+      const createdTask = await taskApi.create(payload);
+
+      toast.success("Task created successfully");
+      onTaskCreated(createdTask, String(selectedEventId));
+      setTimeout(() => {
+        onClose();
+      }, 2000);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to create task");
     }
-
-    const createdTask = await taskApi.create(payload);
-
-    toast.success("Task created successfully");
-    onTaskCreated(createdTask, String(selectedEventId));
-    setTimeout(() => {
-      onClose();
-    }, 2000);
-  } catch (err) {
-    console.error(err);
-    toast.error("Failed to create task");
-  }
-};
+  };
 
   const handleNext = () => {
     if (step === 1) {
@@ -342,9 +374,6 @@ const handleSaveTask = async () => {
             <Stack spacing={3} m={3}>
               <Stack direction="row" spacing={3}>
                 <Box sx={{ flex: 1 }}>
-                  {/* <Typography sx={{ mb: 1, fontSize: 14, color: '#666' }}>
-                    Name
-                  </Typography> */}
                   <TextField
                     fullWidth
                     label="Name"
@@ -359,9 +388,6 @@ const handleSaveTask = async () => {
                 </Box>
 
                 <Box sx={{ flex: 1 }}>
-                  {/* <Typography sx={{ mb: 1, fontSize: 14, color: '#666' }}>
-                    Maintenance
-                  </Typography> */}
                   <FormControl fullWidth error={!!errors.event}>
                     <InputLabel shrink>Maintenance</InputLabel>
                     <Select
@@ -369,13 +395,12 @@ const handleSaveTask = async () => {
                       onChange={(e) => setSelectedEventId(e.target.value as number)}
                       displayEmpty
                       sx={{ borderRadius: "12px" }}
-                      label="Maintenance"
+                      label="Event"
                       notched
                     >
                       <MenuItem value="" disabled>
                         Select Event
                       </MenuItem>
-
                       {events.map((e) => (
                         <MenuItem key={e.id} value={e.id}>
                           {e.event_name}
@@ -388,12 +413,9 @@ const handleSaveTask = async () => {
 
               <Stack direction="row" spacing={3}>
                 <Box sx={{ flex: 1 }}>
-                  {/* <Typography sx={{ mb: 1, fontSize: 14, color: '#666' }}>
-                    Assignee
-                  </Typography> */}
                   <FormControl fullWidth error={!!errors.assignee}>
-                  <InputLabel shrink>Assignee</InputLabel>
-                  <Select
+                    <InputLabel shrink>Assignee</InputLabel>
+                    <Select
                       value={assignee}
                       onChange={(e) =>
                         setAssignee(e.target.value === '' ? '' : Number(e.target.value))
@@ -416,9 +438,6 @@ const handleSaveTask = async () => {
                 </Box>
 
                 <Box sx={{ flex: 1 }}>
-                  {/* <Typography sx={{ mb: 1, fontSize: 14, color: '#666' }}>
-                    Due Date
-                  </Typography> */}
                   <DatePicker
                     value={dueDate}
                     onChange={setDueDate}
@@ -446,7 +465,7 @@ const handleSaveTask = async () => {
             </Stack>
           )}
 
-          {/* Step 2 - Rich Text */}
+          {/* Step 2 - Rich Text + Attachments */}
           {step === 2 && (
             <Stack spacing={3} m={3}>
               <Box>
@@ -455,9 +474,7 @@ const handleSaveTask = async () => {
                 </Typography>
                 <Box
                   sx={{
-                    border: `1px solid ${
-                      errors.description ? '#d32f2f' : '#E0E0E0'
-                    }`,
+                    border: `1px solid ${errors.description ? '#d32f2f' : '#E0E0E0'}`,
                     borderRadius: '12px',
                     overflow: 'hidden',
                   }}
@@ -466,14 +483,8 @@ const handleSaveTask = async () => {
                     contentEditable
                     suppressContentEditableWarning
                     ref={editorRef}
-                    onMouseUp={() => {
-                      saveSelection();
-                      checkFormats();
-                    }}
-                    onKeyUp={() => {
-                      saveSelection();
-                      checkFormats();
-                    }}
+                    onMouseUp={() => { saveSelection(); checkFormats(); }}
+                    onKeyUp={() => { saveSelection(); checkFormats(); }}
                     sx={{
                       minHeight: 200,
                       p: 2,
@@ -492,17 +503,12 @@ const handleSaveTask = async () => {
                     p={1}
                     bgcolor="#FAFAFA"
                   >
-                    {/* Formatting tools */}
                     <Stack direction="row" spacing={1}>
                       <IconButton
                         size="small"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => toggleFormat('bold')}
-                        sx={{
-                          color: activeFormats.includes('bold')
-                            ? '#FF8A65'
-                            : 'inherit',
-                        }}
+                        sx={{ color: activeFormats.includes('bold') ? '#FF8A65' : 'inherit' }}
                       >
                         <FormatBoldIcon fontSize="small" />
                       </IconButton>
@@ -511,11 +517,7 @@ const handleSaveTask = async () => {
                         size="small"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => toggleFormat('italic')}
-                        sx={{
-                          color: activeFormats.includes('italic')
-                            ? '#FF8A65'
-                            : 'inherit',
-                        }}
+                        sx={{ color: activeFormats.includes('italic') ? '#FF8A65' : 'inherit' }}
                       >
                         <FormatItalicIcon fontSize="small" />
                       </IconButton>
@@ -524,11 +526,7 @@ const handleSaveTask = async () => {
                         size="small"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => toggleFormat('underline')}
-                        sx={{
-                          color: activeFormats.includes('underline')
-                            ? '#FF8A65'
-                            : 'inherit',
-                        }}
+                        sx={{ color: activeFormats.includes('underline') ? '#FF8A65' : 'inherit' }}
                       >
                         <FormatUnderlinedIcon fontSize="small" />
                       </IconButton>
@@ -537,9 +535,7 @@ const handleSaveTask = async () => {
                         size="small"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => setShowColorPicker(!showColorPicker)}
-                        sx={{
-                          color: selectedColor !== 'inherit' ? selectedColor : 'inherit',
-                        }}
+                        sx={{ color: selectedColor !== 'inherit' ? selectedColor : 'inherit' }}
                       >
                         <FormatColorTextIcon fontSize="small" />
                       </IconButton>
@@ -560,15 +556,7 @@ const handleSaveTask = async () => {
                             border: '1px solid #E0E0E0',
                           }}
                         >
-                          {[
-                            '#000000',
-                            '#FF0000',
-                            '#0000FF',
-                            '#008000',
-                            '#FFA500',
-                            '#800080',
-                            '#E57373',
-                          ].map((color) => (
+                          {['#000000','#FF0000','#0000FF','#008000','#FFA500','#800080','#E57373'].map(color => (
                             <Box
                               key={color}
                               onClick={() => applyColor(color)}
@@ -583,7 +571,6 @@ const handleSaveTask = async () => {
                               }}
                             />
                           ))}
-
                           <Box
                             onClick={() => applyColor('inherit')}
                             sx={{
@@ -606,22 +593,15 @@ const handleSaveTask = async () => {
                         </Box>
                       )}
 
-                      <IconButton
-                        size="small"
-                        onClick={() => toggleFormat('justifyLeft')}
-                      >
+                      <IconButton size="small" onClick={() => toggleFormat('justifyLeft')}>
                         <FormatAlignLeftIcon fontSize="small" />
                       </IconButton>
 
-                      <IconButton
-                        size="small"
-                        onClick={() => toggleFormat('justifyFull')}
-                      >
+                      <IconButton size="small" onClick={() => toggleFormat('justifyFull')}>
                         <FormatAlignJustifyIcon fontSize="small" />
                       </IconButton>
                     </Stack>
 
-                    {/* Right side tools */}
                     <Stack direction="row" spacing={1}>
                       <IconButton size="small" onClick={insertLink}>
                         <InsertLinkIcon fontSize="small" />
@@ -630,13 +610,7 @@ const handleSaveTask = async () => {
                         size="small"
                         onClick={() => fileInputRef.current?.click()}
                       >
-                        <ImageIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small">
-                        <InfoOutlinedIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small">
-                        <MoreHorizIcon fontSize="small" />
+                        <AttachFileIcon fontSize="small" />
                       </IconButton>
                     </Stack>
                   </Stack>
@@ -649,7 +623,30 @@ const handleSaveTask = async () => {
                 )}
               </Box>
 
-              {/* Drag & Drop area */}
+              {/* Selected Files Display */}
+              {selectedFiles.length > 0 && (
+                <Box>
+                  <Typography variant="subtitle2" sx={{ mb: 1, color: '#555' }}>
+                    Attached Files ({selectedFiles.length})
+                  </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {selectedFiles.map((file, index) => (
+                      <Chip
+                        key={index}
+                        icon={<AttachFileIcon />}
+                        label={file.name}
+                        onDelete={() => removeFile(index)}
+                        color="default"
+                        variant="outlined"
+                        size="small"
+                        sx={{ maxWidth: 240 }}
+                      />
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+
+              {/* Drag & Drop area - now for all files */}
               <Box
                 sx={{
                   border: '2px dashed #E0E0E0',
@@ -666,28 +663,26 @@ const handleSaveTask = async () => {
                 onDrop={(e) => {
                   e.preventDefault();
                   const files = Array.from(e.dataTransfer.files || []);
-                  files.forEach((file) => {
+                  files.forEach(file => {
                     if (file.type.startsWith('image/')) insertImage(file);
                   });
+                  setSelectedFiles(prev => [...prev, ...files]);
                 }}
                 onDragOver={(e) => e.preventDefault()}
               >
                 <CloudUploadOutlinedIcon sx={{ fontSize: 40, color: '#444', mb: 1 }} />
                 <Typography fontSize={14} color="#666">
-                  Drag & Drop or{' '}
-                  <span style={{ color: '#2196F3', fontWeight: 600 }}>
-                    Choose to Upload
-                  </span>
+                  Drag & Drop or <span style={{ color: '#2196F3', fontWeight: 600 }}>Choose Files</span>
                 </Typography>
                 <Typography fontSize={12} color="#999">
-                  File format png, jpeg, pdf, etc.
+                  Any file type • Multiple files supported
                 </Typography>
               </Box>
 
               <input
                 type="file"
                 ref={fileInputRef}
-                accept="image/*"
+                accept="*/*"
                 style={{ display: 'none' }}
                 onChange={handleFileUpload}
                 multiple
@@ -706,28 +701,20 @@ const handleSaveTask = async () => {
 
                 <Stack direction="row" spacing={3} mb={2}>
                   <Box flex={1}>
-                    {/* <Typography fontSize={12} color="#999" mb={0.5}>
-                      Name
-                    </Typography> */}
                     <TextField
                       label="Name"
                       fullWidth
                       size="small"
                       value={newSubTask.name}
-                      onChange={(e) =>
-                        setNewSubTask({ ...newSubTask, name: e.target.value })
-                      }
+                      onChange={(e) => setNewSubTask({ ...newSubTask, name: e.target.value })}
                       error={!!errors.subName}
                       helperText={errors.subName}
                       sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-                      InputLabelProps={{shrink: true}}
+                      InputLabelProps={{ shrink: true }}
                     />
                   </Box>
 
                   <Box flex={1}>
-                    {/* <Typography fontSize={12} color="#999" mb={0.5}>
-                      Status
-                    </Typography> */}
                     <FormControl fullWidth size="small" error={!!errors.subStatus}>
                       <InputLabel shrink>Status</InputLabel>
                       <Select
@@ -752,15 +739,10 @@ const handleSaveTask = async () => {
 
                 <Stack direction="row" spacing={3} mb={3}>
                   <Box flex={1}>
-                    {/* <Typography fontSize={12} color="#999" mb={0.5}>
-                      Due Date
-                    </Typography> */}
                     <DatePicker
                       label="Due Date"
                       value={newSubTask.due_date}
-                      onChange={(val) =>
-                        setNewSubTask({ ...newSubTask, due_date: val })
-                      }
+                      onChange={(val) => setNewSubTask({ ...newSubTask, due_date: val })}
                       format="DD/MM/YYYY"
                       slotProps={{
                         textField: {
@@ -783,9 +765,6 @@ const handleSaveTask = async () => {
                   </Box>
 
                   <Box flex={1}>
-                    {/* <Typography fontSize={12} color="#999" mb={0.5}>
-                      Assignee
-                    </Typography> */}
                     <FormControl fullWidth size="small" error={!!errors.subAssignee}>
                       <InputLabel shrink>Assignee</InputLabel>
                       <Select
@@ -796,7 +775,7 @@ const handleSaveTask = async () => {
                             ...newSubTask,
                             assignee: e.target.value === '' ? '' : Number(e.target.value),
                           })
-                        }                                                
+                        }
                         displayEmpty
                         sx={{ borderRadius: '8px' }}
                         notched
@@ -832,72 +811,93 @@ const handleSaveTask = async () => {
               </Box>
 
               {/* Sub-tasks list */}
-              <Stack spacing={1} m={3}>
-                <Stack direction="row" px={2}>
-                  <Typography width="40%" fontSize={12} color="#999">
-                    Name
-                  </Typography>
-                  <Typography width="20%" fontSize={12} color="#999">
-                    Status
-                  </Typography>
-                  <Typography width="25%" fontSize={12} color="#999">
-                    Due Date
-                  </Typography>
-                  <Typography width="15%" />
-                </Stack>
-
-                {subTasks.map((st, idx) => (
-                  <Box
-                    key={idx}
-                    sx={{
-                      bgcolor: '#F9FAFB',
-                      borderRadius: '12px',
-                      p: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Typography width="40%" fontWeight={600} fontSize={14}>
-                      {st.name}
+              {subTasks.length > 0 && (
+                <Stack spacing={1}>
+                  <Stack direction="row" px={2}>
+                    <Typography width="35%" fontSize={12} color="#999">
+                      Name
                     </Typography>
-                    <Box width="20%">
-                      {/* You can use statusPill here if you want */}
-                      <Box
+                    <Typography width="18%" fontSize={12} color="#999">
+                      Status
+                    </Typography>
+                    <Typography width="22%" fontSize={12} color="#999">
+                      Due Date
+                    </Typography>
+                    <Typography width="20%" fontSize={12} color="#999">
+                      Assignee
+                    </Typography>
+                    <Typography width="5%" />
+                  </Stack>
+
+                  {subTasks.map((st, idx) => (
+                    <Box
+                      key={idx}
+                      sx={{
+                        bgcolor: '#F9FAFB',
+                        borderRadius: '12px',
+                        p: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                      }}
+                    >
+                      <Typography width="35%" fontWeight={500} fontSize={14}>
+                        {st.name}
+                      </Typography>
+
+                      <Box width="18%">
+                        <Box
+                          sx={{
+                            display: 'inline-block',
+                            px: 1.5,
+                            py: 0.5,
+                            borderRadius: 8,
+                            bgcolor:
+                              st.status === TaskStatus.COMPLETED
+                                ? COLORS.complete
+                                : st.status === TaskStatus.IN_PROGRESS
+                                ? COLORS.progress
+                                : COLORS.todo,
+                            color: '#fff',
+                            fontSize: 12,
+                          }}
+                        >
+                          {TASK_STATUS_MAP[st.status]}
+                        </Box>
+                      </Box>
+
+                      <Typography width="22%" fontSize={14}>
+                        {formatDueDateDisplay(st.due_date ?? "").text}
+                      </Typography>
+
+                      <Box width="20%">
+                        <Avatar
                         sx={{
-                          display: 'inline-block',
-                          px: 1.5,
-                          py: 0.5,
-                          borderRadius: 8,
-                          bgcolor:
-                            st.status === TaskStatus.COMPLETED
-                              ? COLORS.complete
-                              : st.status === TaskStatus.IN_PROGRESS
-                              ? COLORS.progress
-                              : COLORS.todo,
-                          color: '#fff',
-                          fontSize: 12,
+                          width: 32,
+                          height: 32,
+                          fontSize: 14,
+                          bgcolor: '#757575',
                         }}
                       >
-                        {TASK_STATUS_MAP[st.status]}
+                        {assignees.find((u) => u.id === st.assignment)?.emp_name?.[0]?.toUpperCase() || "?"}
+                      </Avatar>
+                      </Box>
+                      <Box width="5%" textAlign="right">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDeleteSubTask(idx)}
+                          sx={{
+                            color: '#d32f2f',
+                            '&:hover': { bgcolor: '#ffebee' }
+                          }}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
                       </Box>
                     </Box>
-                    <Typography width="25%" fontSize={14}>
-                      {formatDueDateDisplay(st.due_date ?? "").text}
-                    </Typography>
-                    <Stack
-                      direction="row"
-                      spacing={2}
-                      width="15%"
-                      justifyContent="flex-end"
-                    >
-                      <Avatar sx={{ width: 28, height: 28 }}>
-                      {assignees.find((u) => u.id === st.assignment)
-                        ?.emp_name?.[0] || "?"}
-                      </Avatar>
-                    </Stack>
-                  </Box>
-                ))}
-              </Stack>
+                  ))}
+                </Stack>
+              )}
             </Stack>
           )}
 

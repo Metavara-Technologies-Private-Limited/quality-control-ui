@@ -86,7 +86,9 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
                 alignItems: "center",
                 backgroundColor: isSelected ? "#FFFFFF" : "#FAFAFA",
                 border: isSelected ? "1px solid #E5E7EB" : "none",
-                boxShadow: "none",
+                boxShadow: isSelected
+                ? "2px 2px 8px rgba(0, 0, 0, 0.12)"
+                : "none",
                 transition: "background-color 0.2s ease",
 
                 "&:hover": {

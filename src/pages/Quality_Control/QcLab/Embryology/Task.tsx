@@ -29,20 +29,26 @@ import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import LayersIcon from "@mui/icons-material/Layers";
 import { UITask } from "@/types";
+import { useLocation } from "react-router-dom";
 
 function Task() {
+  const location = useLocation();
+  const parts = location.pathname.split("/").filter(Boolean);
+  const deptName = parts[1].toString();
+
   const dispatch = useDispatch<AppDispatch>();
 
   const { data: clinic } = useSelector((s: RootState) => s.clinic);
   const allTasks = useSelector(selectUITasks);
   const taskLoading = useSelector((s: RootState) => s.tasks.loading);
-  const events = useSelector((s: RootState) =>
+  const rawEvents = useSelector((s: RootState) =>
     [...s.events.data].sort((a, b) =>
       (a.event_name ?? "").localeCompare(b.event_name ?? "", undefined, {
         sensitivity: "base",
       })
     )
   );  
+  const events = rawEvents.filter(item => item.department.toLowerCase() === deptName.toLowerCase());
   const eventLoading = useSelector((s: RootState) => s.events.loading);
   const assignees = useSelector((state: RootState) => state.assignees.data);
 
@@ -55,11 +61,11 @@ function Task() {
     null
   );
   const [openAddTask, setOpenAddTask] = useState(false);
-  const taskDetailsEditorRef = React.useRef<HTMLDivElement>(null);
+  // const taskDetailsEditorRef = React.useRef<HTMLDivElement>(null);
 
   const [openTaskDetails, setOpenTaskDetails] = useState(false);
-  const [detailsTab, setDetailsTab] = useState(0);
-  const [taskDetails, setTaskDetails] = useState("");
+  // const [detailsTab, setDetailsTab] = useState(0);
+  // const [taskDetails, setTaskDetails] = useState("");
   const [eventError, setEventError] = useState("");
   const [_now, setNow] = useState(Date.now());
 
@@ -88,38 +94,38 @@ function Task() {
     }
   }, [clinic?.id, dispatch]);
 
-  useEffect(() => {
-    if (!openTaskDetails || detailsTab !== 0 || !taskDetailsEditorRef.current)
-      return;
+  // useEffect(() => {
+  //   if (!openTaskDetails || detailsTab !== 0 || !taskDetailsEditorRef.current)
+  //     return;
 
-    const editor = taskDetailsEditorRef.current;
-    const raf1 = requestAnimationFrame(() => {
-      setTimeout(() => {
-        if (!editor.isConnected) return;
-        editor.innerHTML = "";
-        if (taskDetails?.trim()) {
-          editor.innerHTML = taskDetails;
-        } else {
-          editor.innerHTML =
-            '<p style="color:#aaa; font-style:italic;">No description saved yet. Click to edit...</p>';
-        }
-        void editor.offsetHeight;
-        try {
-          const range = document.createRange();
-          range.selectNodeContents(editor);
-          range.collapse(false);
-          const sel = window.getSelection();
-          sel?.removeAllRanges();
-          sel?.addRange(range);
-          editor.focus();
-        } catch (err) {
-          console.warn("Cursor positioning failed:", err);
-        }
-        checkFormats();
-      }, 0);
-    });
-    return () => cancelAnimationFrame(raf1);
-  }, [openTaskDetails, detailsTab, taskDetails]);
+  //   const editor = taskDetailsEditorRef.current;
+  //   const raf1 = requestAnimationFrame(() => {
+  //     setTimeout(() => {
+  //       if (!editor.isConnected) return;
+  //       editor.innerHTML = "";
+  //       if (taskDetails?.trim()) {
+  //         editor.innerHTML = taskDetails;
+  //       } else {
+  //         editor.innerHTML =
+  //           '<p style="color:#aaa; font-style:italic;">No description saved yet. Click to edit...</p>';
+  //       }
+  //       void editor.offsetHeight;
+  //       try {
+  //         const range = document.createRange();
+  //         range.selectNodeContents(editor);
+  //         range.collapse(false);
+  //         const sel = window.getSelection();
+  //         sel?.removeAllRanges();
+  //         sel?.addRange(range);
+  //         editor.focus();
+  //       } catch (err) {
+  //         console.warn("Cursor positioning failed:", err);
+  //       }
+  //       checkFormats();
+  //     }, 0);
+  //   });
+  //   return () => cancelAnimationFrame(raf1);
+  // }, [openTaskDetails, detailsTab, taskDetails]);
 
   const tasks = useMemo(() => {
     if (!selectedEventId) return [];
@@ -172,12 +178,12 @@ function Task() {
     [events, selectedEventId]
   );
 
-  const checkFormats = () => {
-    const formats: string[] = [];
-    if (document.queryCommandState("bold")) formats.push("bold");
-    if (document.queryCommandState("italic")) formats.push("italic");
-    if (document.queryCommandState("underline")) formats.push("underline");
-  };
+  // const checkFormats = () => {
+  //   const formats: string[] = [];
+  //   if (document.queryCommandState("bold")) formats.push("bold");
+  //   if (document.queryCommandState("italic")) formats.push("italic");
+  //   if (document.queryCommandState("underline")) formats.push("underline");
+  // };
 
   const showStatus = activeFilter === "All";
 
@@ -485,12 +491,13 @@ function Task() {
                         }}
                         onClick={() => {
                           setSelectedTaskDetails(t);
-                          setTaskDetails(
-                            t.description ||
-                              '<p style="color:#aaa; font-style:italic;">No description saved yet. Click here to add details...</p>'
-                          );
+                          // setTaskDetails(
+                          //   t.description ||
+                          //     '<p style="color:#aaa; font-style:italic;">No description saved yet. Click here to add details...</p>'
+                          // );
+                          // setOpenTaskDetails(true);
+                          // setDetailsTab(0);
                           setOpenTaskDetails(true);
-                          setDetailsTab(0);
                         }}
                       >
                         <Typography
@@ -612,7 +619,7 @@ function Task() {
           <AddTaskDialog
             open={openAddTask}
             onClose={() => setOpenAddTask(false)}
-            events={events}
+            // events={events}
             initialSelectedEvent={selectedEvent}
             onTaskCreated={() => {
               if (clinic?.id) {
