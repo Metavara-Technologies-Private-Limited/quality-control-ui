@@ -16,11 +16,11 @@ import {
 } from "recharts";
 
 // MUI and Dayjs Imports
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { TimePicker } from '@mui/x-date-pickers/TimePicker';
-import dayjs, { Dayjs } from 'dayjs';
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { TimePicker } from "@mui/x-date-pickers/TimePicker";
+import dayjs, { Dayjs } from "dayjs";
 
 const SpermAnalyzersForm = ({
   selectedRadio,
@@ -58,8 +58,9 @@ const SpermAnalyzersForm = ({
 
   const getDbParam = (dbName: string) => {
     if (!currentEquipment?.parameters) return null;
-    return currentEquipment.parameters.find((p: any) =>
-      p.parameter_name.toLowerCase().trim() === dbName.toLowerCase().trim()
+    return currentEquipment.parameters.find(
+      (p: any) =>
+        p.parameter_name.toLowerCase().trim() === dbName.toLowerCase().trim()
     );
   };
 
@@ -80,97 +81,103 @@ const SpermAnalyzersForm = ({
     return config;
   };
 
-const getRangeStatusColor = (dbName: string) => {
+  const getRangeStatusColor = (dbName: string) => {
     const config = getParameterConfig(dbName);
-    
-     
-    const fieldEntry = fieldMapping.find(f => f.dbName === dbName);
+
+    const fieldEntry = fieldMapping.find((f) => f.dbName === dbName);
     const rawValue = fieldEntry ? logValues[fieldEntry.key] : null;
 
-     
-    if (!rawValue || !config || config.min_value == null || config.max_value == null) {
+    if (
+      !rawValue ||
+      !config ||
+      config.min_value == null ||
+      config.max_value == null
+    ) {
       return "#9E9E9E";
     }
 
     const inputValue = parseFloat(rawValue);
     if (isNaN(inputValue)) return "#9E9E9E";
 
-    if (inputValue < Number(config.min_value)) return "#D6BA18"; 
-    if (inputValue > Number(config.max_value)) return "#F25B5B"; 
-    
-    return "#9E9E9E";  
+    if (inputValue < Number(config.min_value)) return "#D6BA18";
+    if (inputValue > Number(config.max_value)) return "#F25B5B";
+
+    return "#9E9E9E";
   };
 
-                  const renderParameterInfo = (dbName: string) => {
-                        const config = getParameterConfig(dbName);
-                      if (!config) return null;
+  const renderParameterInfo = (dbName: string) => {
+    const config = getParameterConfig(dbName);
+    if (!config) return null;
 
-                      const dataType = config.data_type;
-                      // Get real-time color feedback based on logValues input
-                      const dynamicColor = getRangeStatusColor(dbName);
+    const dataType = config.data_type;
+    // Get real-time color feedback based on logValues input
+    const dynamicColor = getRangeStatusColor(dbName);
 
-                      const rangeStyle = {
-                        color: dynamicColor,
-                        fontSize: "12px",
-                        fontWeight: "500",
-                        transition: "color 0.2s ease"
-                      };
+    const rangeStyle = {
+      color: dynamicColor,
+      fontSize: "12px",
+      fontWeight: "500",
+      transition: "color 0.2s ease",
+    };
 
-                      const defaultGreyStyle = {
-                        color: "#9E9E9E",
-                        fontSize: "12px",
-                        fontWeight: "500"
-                      };
+    const defaultGreyStyle = {
+      color: "#9E9E9E",
+      fontSize: "12px",
+      fontWeight: "500",
+    };
 
-                      switch (dataType) {
-                        case "Integer":
-                        case "Decimal":
-                        case "Min/Max":
-                          if (config.min_value != null && config.max_value != null) {
-                            return (
-                              <span style={rangeStyle}>
-                                Range: {config.min_value} - {config.max_value}
-                              </span>
-                            );
-                          }
-                          break;
-                        case "Percentage":
-                          if (config.percentage != null) {
-                            return (
-                              <span style={rangeStyle}>
-                                Range: 0% - {config.percentage}%
-                              </span>
-                            );
-                          }
-                          break;
-                        case "Boolean":
-                          return (
-                            <span style={defaultGreyStyle}>
-                              Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
-                            </span>
-                          );
-                        // ✅ UPDATED: Now displays the actual text recommendation instead of the data type
-                        case "Text":
-                          const textValue = config.text || config.recommendation || "";
-                          return (
-                            <span style={defaultGreyStyle}>
-                              Text: {textValue}
-                            </span>
-                          );
-                        case "Select":
-                        case "Dropdown":
-                          if (config.dropdown && Array.isArray(config.dropdown)) {
-                      return (
-                    <span style={defaultGreyStyle}>
-                                Options: {config.dropdown.join(", ")}
-                  </span>
-                    );
-                    }
-                    break;
-                    default:
-                  return null;
-                  }
-                  };
+    switch (dataType) {
+      case "Integer":
+      case "Decimal":
+      case "Min/Max":
+        if (config.min_value != null && config.max_value != null) {
+          return (
+            <span style={rangeStyle}>
+                            Range: {config.min_value} - {config.max_value}     
+                   {" "}
+            </span>
+          );
+        }
+        break;
+      case "Percentage":
+        if (config.percentage != null) {
+          return (
+            <span style={rangeStyle}>
+                            Range: 0% - {config.percentage}%            {" "}
+            </span>
+          );
+        }
+        break;
+      case "Boolean":
+        return (
+          <span style={defaultGreyStyle}>
+                        Type:{" "}
+            {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}         {" "}
+          </span>
+        );
+      // ✅ UPDATED: Now displays the actual text recommendation instead of the data type
+      case "Text":
+        const textValue = config.text || config.recommendation || "";
+        return (
+          <span style={defaultGreyStyle}>
+                        Text: {textValue}         {" "}
+          </span>
+        );
+      case "Select":
+      case "Dropdown":
+        if (config.dropdown && Array.isArray(config.dropdown)) {
+          return (
+            <span style={defaultGreyStyle}>
+              Options: {config.dropdown.join(", ")}
+            </span>
+          );
+        }
+        break;
+      default:
+        return null;
+    }
+  };
+  
   const setValue = (key: string, value: any) => {
     setLogValues((prev) => ({ ...prev, [key]: value }));
   };
@@ -219,7 +226,7 @@ const getRangeStatusColor = (dbName: string) => {
   const handleSaveLogs = async () => {
     if (!currentEquipment) return;
     const hasData = Object.values(logValues).some(
-        (val) => val && (typeof val === 'string' ? val.trim() !== "" : true)
+      (val) => val && (typeof val === "string" ? val.trim() !== "" : true)
     );
     if (!hasData) {
       toast.error("Please fill at least one field");
@@ -231,17 +238,17 @@ const getRangeStatusColor = (dbName: string) => {
       const requests = fieldMapping
         .filter((item) => logValues[item.key] && getDbParam(item.dbName))
         .map((item) => {
-            let val = logValues[item.key];
-            
-            // Format dates and times using dayjs before saving
-            if (item.key === "date" && val) val = val.format("YYYY-MM-DD");
-            if (item.key === "time" && val) val = val.format("HH:mm");
+          let val = logValues[item.key];
 
-            return parameterValueApi.create({
-                parameter: getDbParam(item.dbName).id,
-                equipment_details: currentEquipment.equipment_id,
-                content: val.toString(),
-            });
+          // Format dates and times using dayjs before saving
+          if (item.key === "date" && val) val = val.format("YYYY-MM-DD");
+          if (item.key === "time" && val) val = val.format("HH:mm");
+
+          return parameterValueApi.create({
+            parameter: getDbParam(item.dbName).id,
+            equipment_details: currentEquipment.equipment_id,
+            content: val.toString(),
+          });
         });
 
       await Promise.all(requests);
@@ -294,22 +301,22 @@ const getRangeStatusColor = (dbName: string) => {
 
   // MUI input specific styling
   const muiInputStyle = {
-    '& .MuiOutlinedInput-root': {
-      height: '50px',
-      borderRadius: '8px',
+    "& .MuiOutlinedInput-root": {
+      height: "50px",
+      borderRadius: "8px",
       fontFamily: "'Montserrat', sans-serif",
-      '& fieldset': { borderColor: '#e5e7eb' },
-      '&:hover fieldset': { borderColor: '#E17E61' },
-      '&.Mui-focused fieldset': { borderColor: '#E17E61' },
+      "& fieldset": { borderColor: "#e5e7eb" },
+      "&:hover fieldset": { borderColor: "#E17E61" },
+      "&.Mui-focused fieldset": { borderColor: "#E17E61" },
     },
-    '& .MuiInputBase-input': {
-      fontSize: '16px',
-      color: '#9E9E9E',
+    "& .MuiInputBase-input": {
+      fontSize: "16px",
+      color: "#9E9E9E",
     },
-    '& .Mui-disabled': {
-        backgroundColor: "#f1f5f9",
-        cursor: "not-allowed"
-    }
+    "& .Mui-disabled": {
+      backgroundColor: "#f1f5f9",
+      cursor: "not-allowed",
+    },
   };
 
   const labelOverlayStyle: React.CSSProperties = {
@@ -439,8 +446,8 @@ const getRangeStatusColor = (dbName: string) => {
                     value={logValues["date"]}
                     onChange={(newValue) => setValue("date", newValue)}
                     disabled={!isFieldEnabled("Date")}
-                    slotProps={{ 
-                      textField: { fullWidth: true, sx: muiInputStyle } 
+                    slotProps={{
+                      textField: { fullWidth: true, sx: muiInputStyle },
                     }}
                   />
                   <label style={labelOverlayStyle}>Date</label>
@@ -455,8 +462,8 @@ const getRangeStatusColor = (dbName: string) => {
                     value={logValues["time"]}
                     onChange={(newValue) => setValue("time", newValue)}
                     disabled={!isFieldEnabled("Time")}
-                    slotProps={{ 
-                      textField: { fullWidth: true, sx: muiInputStyle } 
+                    slotProps={{
+                      textField: { fullWidth: true, sx: muiInputStyle },
                     }}
                   />
                   <label style={labelOverlayStyle}>Time</label>
@@ -471,7 +478,9 @@ const getRangeStatusColor = (dbName: string) => {
                     type="text"
                     placeholder="Type Here"
                     value={logValues["softwareVersion"] || ""}
-                    onChange={(e) => setValue("softwareVersion", e.target.value)}
+                    onChange={(e) =>
+                      setValue("softwareVersion", e.target.value)
+                    }
                     disabled={!isFieldEnabled("Software Version")}
                     style={{
                       ...getInputStyle("Software Version"),
@@ -488,7 +497,9 @@ const getRangeStatusColor = (dbName: string) => {
                 <div style={inputContainerStyle("Calibration Checks")}>
                   <select
                     value={logValues["calibrationChecks"] || "Accurate"}
-                    onChange={(e) => setValue("calibrationChecks", e.target.value)}
+                    onChange={(e) =>
+                      setValue("calibrationChecks", e.target.value)
+                    }
                     disabled={!isFieldEnabled("Calibration Checks")}
                     style={{
                       ...getInputStyle("Calibration Checks"),
@@ -507,7 +518,9 @@ const getRangeStatusColor = (dbName: string) => {
                 </div>
 
                 {/* Quality Control */}
-                <div style={inputContainerStyle("Quality Control Sample Testing")}>
+                <div
+                  style={inputContainerStyle("Quality Control Sample Testing")}
+                >
                   <select
                     value={logValues["qualityControl"] || "Passed"}
                     onChange={(e) => setValue("qualityControl", e.target.value)}
@@ -520,7 +533,9 @@ const getRangeStatusColor = (dbName: string) => {
                     <option value="Passed">Passed</option>
                     <option value="Failed">Failed</option>
                   </select>
-                  <label style={labelOverlayStyle}>Quality Control Sample Testing</label>
+                  <label style={labelOverlayStyle}>
+                    Quality Control Sample Testing
+                  </label>
                   <div style={rangeTextStyle}>
                     {renderParameterInfo("Quality Control Sample Testing")}
                   </div>
@@ -596,7 +611,9 @@ const getRangeStatusColor = (dbName: string) => {
                   </b>
                 </div>
 
-                <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
+                <div
+                  style={{ marginLeft: "auto", display: "flex", gap: "12px" }}
+                >
                   <button
                     onClick={handleClear}
                     disabled={isSaving}
@@ -656,7 +673,9 @@ const getRangeStatusColor = (dbName: string) => {
                     <th style={{ padding: "12px", fontWeight: "600" }}>
                       Parameter
                     </th>
-                    <th style={{ padding: "12px", fontWeight: "600" }}>Value</th>
+                    <th style={{ padding: "12px", fontWeight: "600" }}>
+                      Value
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -731,7 +750,9 @@ const getRangeStatusColor = (dbName: string) => {
             </div>
 
             <div style={{ display: "flex", gap: "20px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
                 <div
                   style={{
                     width: "10px",
@@ -744,7 +765,9 @@ const getRangeStatusColor = (dbName: string) => {
                   Compliant
                 </span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
                 <div
                   style={{
                     width: "10px",
