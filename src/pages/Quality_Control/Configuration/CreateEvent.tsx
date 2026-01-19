@@ -348,7 +348,7 @@ const CreateEvent = () => {
                 width: "380px",
 
                 "& .MuiOutlinedInput-root": {
-                  height: "50px",
+                  // height: "50px",
                   backgroundColor: "#FFFFFF",
 
                   "& fieldset": {
@@ -384,7 +384,7 @@ const CreateEvent = () => {
                 width: "380px",
 
                 "& .MuiOutlinedInput-root": {
-                  height: "50px",
+                  // height: "50px",
                   backgroundColor: "#FFFFFF",
 
                   "& fieldset": {
@@ -496,6 +496,17 @@ const CreateEvent = () => {
                     label="From Time"
                     value={fromTime}
                     onChange={setFromTime}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            backgroundColor: "#FFFFFF",
+                          },
+                        },
+                      },
+                    }}
                   />
                 </Grid>
                 <Grid item xs={4}>
@@ -503,6 +514,17 @@ const CreateEvent = () => {
                     label="To Time"
                     value={toTime}
                     onChange={setToTime}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            backgroundColor: "#FFFFFF",
+                          },
+                        },
+                      },
+                    }}
                   />
                 </Grid>
                 <Grid item xs={4}>
@@ -511,6 +533,17 @@ const CreateEvent = () => {
                     value={startDate}
                     onChange={handleStartDateChange}
                     minDate={dayjs()}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            backgroundColor: "#FFFFFF",
+                          },
+                        },
+                      },
+                    }}
                   />
                 </Grid>
               </Grid>
@@ -558,6 +591,17 @@ const CreateEvent = () => {
                     value={startDate}
                     onChange={handleStartDateChange}
                     minDate={dayjs()}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            backgroundColor: "#FFFFFF",
+                          },
+                        },
+                      },
+                    }}
                   />
                 </Grid>
 
@@ -567,6 +611,17 @@ const CreateEvent = () => {
                     value={endDate}
                     onChange={handleEndDateChange}
                     minDate={startDate ?? dayjs()}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            backgroundColor: "#FFFFFF",
+                          },
+                        },
+                      },
+                    }}
                   />
                 </Grid>
 
@@ -636,6 +691,17 @@ const CreateEvent = () => {
                     value={startDate}
                     onChange={handleStartDateChange}
                     minDate={dayjs()}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            backgroundColor: "#FFFFFF",
+                          },
+                        },
+                      },
+                    }}
                   />
                 </Grid>
 
@@ -645,6 +711,17 @@ const CreateEvent = () => {
                     value={endDate}
                     onChange={handleEndDateChange}
                     minDate={startDate ?? dayjs()}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            backgroundColor: "#FFFFFF",
+                          },
+                        },
+                      },
+                    }}
                   />
                 </Grid>
               </Grid>
@@ -709,6 +786,17 @@ const CreateEvent = () => {
                     value={startDate}
                     onChange={handleStartDateChange}
                     minDate={dayjs()}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            backgroundColor: "#FFFFFF",
+                          },
+                        },
+                      },
+                    }}
                   />
                 </Grid>
 
@@ -718,6 +806,17 @@ const CreateEvent = () => {
                     value={endDate}
                     onChange={handleEndDateChange}
                     minDate={startDate ?? dayjs()}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            backgroundColor: "#FFFFFF",
+                          },
+                        },
+                      },
+                    }}
                   />
                 </Grid>
 

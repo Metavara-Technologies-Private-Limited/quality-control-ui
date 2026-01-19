@@ -51,6 +51,21 @@ const formatDate = (isoString: string) => {
   return new Date(isoString).toLocaleDateString("en-GB");
 };
 
+const buildEquipmentParameterMap = (clinic: any) => {
+  const map: Record<number, Set<number>> = {};
+
+  clinic?.department?.forEach((d: any) => {
+    d.equipments?.forEach((e: any) => {
+      map[e.id] = new Set(
+        (e.parameters || []).map((p: any) => p.id)
+      );
+    });
+  });
+
+  return map;
+};
+
+
 const EventsHeader = ({ onCreate, onSearch }: any) => (
   <Stack
     direction="row"
@@ -484,7 +499,7 @@ const EventsTable = ({
   );
 };
 
-const mapEventToRow = (e: any) => {
+const mapEventToRow = (e: any, clinic: any) => {
   let equipmentsDetails: any[] = [];
 
   // ✅ PRIMARY: Use event_equipments with nested parameters
@@ -498,17 +513,26 @@ const mapEventToRow = (e: any) => {
   } 
   // ⚠️ FALLBACK: If no relationship data, show all parameters for all equipment
   else if (e.equipments && e.equipments.length > 0) {
-    equipmentsDetails = (e.equipments || []).map((equipment: any) => {
-      const parameters = (e.parameters || []).map((p: any) => ({
-        name: p.parameter__parameter_name || p.name || "-",
-      }));
-
+    const equipmentParamMap = buildEquipmentParameterMap(clinic);
+  
+    equipmentsDetails = e.equipments.map((equipment: any) => {
+      const allowedParams =
+        equipmentParamMap[equipment.equipment__id] || new Set();
+  
+      const parameters = (e.parameters || [])
+        .filter((p: any) =>
+          allowedParams.has(p.parameter__id)
+        )
+        .map((p: any) => ({
+          name: p.parameter__parameter_name || "-",
+        }));
+  
       return {
         equipment_name: equipment.equipment__equipment_name || "-",
-        parameters: parameters,
+        parameters,
       };
     });
-  }
+  }  
 
   const parameterCount = equipmentsDetails.reduce(
     (total: number, eq: any) => total + (eq.parameters?.length || 0),
@@ -564,7 +588,7 @@ const Events = () => {
     }
   }, [clinic?.id, dispatch]);
 
-  const events = rawEvents.map(mapEventToRow);
+  const events = rawEvents.map((e) => mapEventToRow(e, clinic));
 
   const filteredEvents = events.filter((e) =>
     e.name.toLowerCase().includes(search.toLowerCase())
