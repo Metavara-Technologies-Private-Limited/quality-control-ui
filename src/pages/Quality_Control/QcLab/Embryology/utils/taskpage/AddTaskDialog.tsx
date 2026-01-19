@@ -395,7 +395,7 @@ const events = rawEvents.filter(item => item.department.toLowerCase() === deptNa
                       onChange={(e) => setSelectedEventId(e.target.value as number)}
                       displayEmpty
                       sx={{ borderRadius: "12px" }}
-                      label="Event"
+                      label="Maintenance"
                       notched
                     >
                       <MenuItem value="" disabled>

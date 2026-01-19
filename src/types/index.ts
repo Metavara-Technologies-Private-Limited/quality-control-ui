@@ -248,7 +248,7 @@ export interface Task {
   assignment?: number | null; // ✅ employee ID
 
   sub_tasks: SubTask[];
-  attachments?: Attachment[];
+  documents?: Document[];
 }
 
 export interface SubTask {
@@ -298,4 +298,14 @@ export interface TaskUpdatePayload {
   due_date: string;
   status: TaskStatus;
   sub_tasks: SubTaskUpdatePayload[];
+
+  documents?: {
+    document_name: string;
+    data: string; // or handled via multipart
+  }[];
+}
+export interface Document {
+  id: number;               // ✅ REQUIRED
+  document_name: string;
+  created_at: string;
 }

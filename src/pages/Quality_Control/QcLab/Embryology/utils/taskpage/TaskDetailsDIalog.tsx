@@ -57,6 +57,11 @@ import dayjs from "dayjs";
 type UITask = Task & {
   status_label: "To - Do" | "In Progress" | "Completed";
   due?: string;
+  documents?: {
+    id: number;
+    document_name: string;
+    created_at: string;
+  }[];
 };
 interface TaskDetailsDialogProps {
   open: boolean;
@@ -100,6 +105,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
   const [showSubTaskForm, setShowSubTaskForm] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [subTaskToDelete, setSubTaskToDelete] = useState<SubTask | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [, forceTick] = useState(0);
 
   const editorRef = useRef<HTMLDivElement>(null);
@@ -175,7 +181,11 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
       setTaskDetails(task.description || "");
     });
   }, [open, task?.id]);
-  
+
+  useEffect(() => {
+    if (!open) return;
+    setSelectedFiles([]);
+  }, [open, task?.id]);
 
   const getTaskTime = (task: UITask) => {
     let tracked = task.total_tracked_sec ?? 0;
@@ -245,16 +255,19 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      Array.from(files).forEach((file) => {
-        if (file.type.startsWith("image/")) {
-          insertImageFromUpload(file);
-        }
-      });
-      e.target.value = "";
-    }
-  };
+    if (!e.target.files) return;
+  
+    const files = Array.from(e.target.files);
+  
+    files.forEach(file => {
+      if (file.type.startsWith("image/")) {
+        insertImageFromUpload(file); // editor only
+      }
+    });
+  
+    setSelectedFiles(prev => [...prev, ...files]); // ⭐ KEY FIX
+    e.target.value = "";
+  };  
 
   const tabs = ["Description", "Sub Tasks"];
 
@@ -307,6 +320,10 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
         due_date: toISO(st.due_date)!,
         assignment: st.assignment ?? null,
       })),
+      documents: selectedFiles.map(file => ({
+        document_name: file.name,
+        data: "BASE64_DATA",
+      }))      
     };
 
     await taskApi.update(task.id, payload);
@@ -841,11 +858,67 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                   </Typography>
                 )}
               </Box>
+  
+              {task.documents && task.documents.length > 0 && (
+                <Box mt={3}>
+                  <Typography fontSize={14} fontWeight={600} mb={1}>
+                    Attachments
+                  </Typography>
+
+                  <Stack direction="row" spacing={1} flexWrap="wrap">
+                    {task.documents.map((doc) => (
+                      <Box
+                        key={doc.id}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          px: 1.5,
+                          py: 0.5,
+                          borderRadius: "8px",
+                          border: "1px solid #E5E7EB",
+                          bgcolor: "#F9FAFB",
+                        }}
+                      >
+                        <CloudUploadOutlinedIcon sx={{ fontSize: 16, color: "#6B7280" }} />
+                        <Typography fontSize={13}>{doc.document_name}</Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+
+              {/* Documents / Attachments */}
+              {selectedFiles.length > 0 && (
+                <Box mt={2}>
+                  <Typography fontSize={14} fontWeight={600}>
+                    New Attachments
+                  </Typography>
+
+                  <Stack direction="row" spacing={1} flexWrap="wrap">
+                    {selectedFiles.map((file, idx) => (
+                      <Box
+                        key={idx}
+                        sx={{
+                          px: 1.5,
+                          py: 0.5,
+                          border: "1px solid #E5E7EB",
+                          borderRadius: "8px",
+                          bgcolor: "#F3F4F6",
+                          fontSize: 13,
+                        }}
+                      >
+                        {file.name}
+                      </Box>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
 
               <input
                 type="file"
                 ref={fileInputRef}
-                accept="image/*"
+                accept="*/*"
                 style={{ display: "none" }}
                 onChange={handleFileUpload}
                 multiple
@@ -871,13 +944,10 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                   sx={{ fontSize: 36, color: "#444", mb: 1 }}
                 />
                 <Typography fontSize={14} color="#666">
-                  Drag & Drop or{" "}
-                  <span style={{ color: "#2196F3", fontWeight: 600 }}>
-                    Choose to Upload
-                  </span>
+                  Drag & Drop or <span style={{ color: '#2196F3', fontWeight: 600 }}>Choose Files</span>
                 </Typography>
                 <Typography fontSize={12} color="#999">
-                  File format png, jpeg, pdf, etc.
+                  Any file type • Multiple files supported
                 </Typography>
               </Box>
             </Stack>
