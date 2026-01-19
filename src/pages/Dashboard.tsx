@@ -202,8 +202,7 @@ const Dashboard = () => {
 
               <Grid item xs={12} md={4}>
                 <AssigneePanel
-                  equipmentId={equipment.id}
-                  equipmentName={equipment.equipment_name}
+                  departmentName={department?.name ?? ""}
                 />
               </Grid>
             </Grid>

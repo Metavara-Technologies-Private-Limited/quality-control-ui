@@ -18,46 +18,52 @@ import { RootState } from "@/store";
 import { getAvatarForId } from "@/utils/mockData";
 
 interface AssigneePanelProps {
-  equipmentId: number;
-  equipmentName: string;
+  departmentName: string;
 }
 
 const AssigneePanel: React.FC<AssigneePanelProps> = ({
-  // equipmentId,
-  equipmentName,
+  departmentName,
 }) => {
   const assigneesFromStore = useSelector(
     (state: RootState) => state.assignees.data
   );
+
+  const [assignees, setAssignees] = useState(assigneesFromStore);
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearch, setShowSearch] = useState(false);
 
-  /** ✅ KEEP LOCAL STATE (same logic as before) */
-  const [assignees, setAssignees] = useState(assigneesFromStore);
-
-  /** Sync once store is loaded */
+  /** Sync local state when store updates */
   useEffect(() => {
     setAssignees(assigneesFromStore);
   }, [assigneesFromStore]);
 
-  const assigned = assignees.filter((a) => a.department_name === equipmentName);
-
-  const available = assignees.filter(
-    (a) => a.department_name !== equipmentName
+  /* -----------------------------
+     FILTER BY DEPARTMENT (FIX)
+  ----------------------------- */
+  const assigned = assignees.filter(
+    (a) => a.department_name === departmentName
   );
 
-  /** 🔁 SAME LOGIC — UNCHANGED */
+  const available = assignees.filter(
+    (a) => a.department_name !== departmentName
+  );
+
+  /* -----------------------------
+     ASSIGN / UNASSIGN
+  ----------------------------- */
   const handleAssign = (id: number) => {
     setAssignees((prev) =>
       prev.map((a) =>
-        a.id === id ? { ...a, department_name: equipmentName } : a
+        a.id === id ? { ...a, department_name: departmentName } : a
       )
     );
   };
 
   const handleUnassign = (id: number) => {
     setAssignees((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, department_name: null } : a))
+      prev.map((a) =>
+        a.id === id ? { ...a, department_name: null } : a
+      )
     );
   };
 
@@ -71,6 +77,7 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({
 
   return (
     <Card sx={{ height: "100%", minHeight: 350, borderRadius: 3 }}>
+      {/* HEADER */}
       <CardContent
         sx={{
           height: 56,
@@ -79,8 +86,14 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({
           justifyContent: "space-between",
         }}
       >
-        <Typography fontWeight={700}>{equipmentName} Assignees</Typography>
-        <IconButton size="small" onClick={() => setShowSearch((prev) => !prev)}>
+        <Typography fontWeight={700}>
+          {departmentName} Assignees
+        </Typography>
+
+        <IconButton
+          size="small"
+          onClick={() => setShowSearch((prev) => !prev)}
+        >
           <SearchIcon />
         </IconButton>
 
@@ -97,7 +110,7 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({
 
       <Divider />
 
-      {/* Assigned */}
+      {/* ASSIGNED */}
       <Box sx={{ p: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
         {filteredAssigned.map((a) => (
           <Box
@@ -112,13 +125,16 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({
               backgroundColor: "#f3f4f6",
             }}
           >
-            <Avatar src={getAvatarForId(a.id)} sx={{ width: 28, height: 28 }} />
+            <Avatar
+              src={getAvatarForId(a.id)}
+              sx={{ width: 28, height: 28 }}
+            />
             <Box>
               <Typography fontSize={13} fontWeight={500}>
                 {a.emp_name}
               </Typography>
               <Typography fontSize={11} color="text.secondary">
-                {equipmentName}
+                {departmentName}
               </Typography>
             </Box>
             <IconButton size="small" onClick={() => handleUnassign(a.id)}>
@@ -128,7 +144,7 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({
         ))}
       </Box>
 
-      {/* Available */}
+      {/* AVAILABLE */}
       <Box sx={{ p: 2 }}>
         {filteredAvailable.map((a) => (
           <Box
