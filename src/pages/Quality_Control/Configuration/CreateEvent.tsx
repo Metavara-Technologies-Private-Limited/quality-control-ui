@@ -108,7 +108,7 @@ const CreateEvent = () => {
 
   const [assigneeDialogOpen, setAssigneeDialogOpen] = useState(false);
   const [selectedAssignee, setSelectedAssignee] = useState<Assignee | null>(
-    null
+    null,
   );
   const [addedAssignee, setAddedAssignee] = useState<Assignee | null>(null);
 
@@ -125,10 +125,41 @@ const CreateEvent = () => {
   const { data: clinic } = useSelector((state: RootState) => state.clinic);
   const departments = clinic ? clinic.department : [];
   const assigneeOptions = useSelector(
-    (state: RootState) => state.assignees.data
+    (state: RootState) => state.assignees.data,
   );
 
   const navigate = useNavigate();
+
+  //date handlers
+  const handleStartDateChange = (date: Dayjs | null) => {
+    if (!date) {
+      setStartDate(null);
+      return;
+    }
+
+    // If endDate exists and new startDate is after endDate → reset endDate
+    if (endDate && date.isAfter(endDate, "day")) {
+      toast.warn("Start date cannot be after end date");
+      setEndDate(null);
+    }
+
+    setStartDate(date);
+  };
+
+  const handleEndDateChange = (date: Dayjs | null) => {
+    if (!date) {
+      setEndDate(null);
+      return;
+    }
+
+    // If startDate exists and endDate is before startDate → reject
+    if (startDate && date.isBefore(startDate, "day")) {
+      toast.warn("End date cannot be before start date");
+      return;
+    }
+
+    setEndDate(date);
+  };
 
   const handleClearAll = () => {
     setEventName("");
@@ -144,7 +175,7 @@ const CreateEvent = () => {
       ? clinic.department
           .filter((dep) => dep.id === selectedDepartmentId)
           .flatMap((dep) =>
-            dep.equipments.map((eq) => ({ ...eq, department: dep }))
+            dep.equipments.map((eq) => ({ ...eq, department: dep })),
           )
       : [];
 
@@ -153,13 +184,13 @@ const CreateEvent = () => {
     ? assigneeOptions.filter(
         (a) =>
           a.department_name ===
-          departments.find((d) => d.id === selectedDepartmentId)?.name
+          departments.find((d) => d.id === selectedDepartmentId)?.name,
       )
     : [];
 
   const toggleDay = (day: string) => {
     setSelectedDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
     );
   };
 
@@ -175,7 +206,7 @@ const CreateEvent = () => {
   const getSelectedParameters = (item: SelectedEquipmentData) => {
     const selectedParamIds = item.parameters.map((p) => p.id);
     return item.equipment.parameters.filter((p) =>
-      selectedParamIds.includes(p.id)
+      selectedParamIds.includes(p.id),
     );
   };
 
@@ -207,7 +238,7 @@ const CreateEvent = () => {
 
         // Only send selected parameter IDs
         parameter_ids: addedEquipments.flatMap((e) =>
-          e.parameters.map((p) => p.id)
+          e.parameters.map((p) => p.id),
         ),
 
         schedule: {
@@ -478,7 +509,8 @@ const CreateEvent = () => {
                   <DatePicker
                     label="Date"
                     value={startDate}
-                    onChange={setStartDate}
+                    onChange={handleStartDateChange}
+                    minDate={dayjs()}
                   />
                 </Grid>
               </Grid>
@@ -487,45 +519,70 @@ const CreateEvent = () => {
 
           {schedule === "daily" && (
             <>
-              <Typography fontWeight={600} mt={2}>
+              <Typography fontWeight={600} mt={2} mb={2} color="#111827">
                 Daily Details
               </Typography>
-              <Grid container spacing={2} mt={1}>
-                <Grid item xs={4}>
+
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={3}>
                   <TimePicker
                     label="From Time"
                     value={fromTime}
                     onChange={setFromTime}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                      },
+                    }}
                   />
                 </Grid>
-                <Grid item xs={4}>
+
+                <Grid item xs={12} sm={6} md={3}>
                   <TimePicker
                     label="To Time"
                     value={toTime}
                     onChange={setToTime}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                      },
+                    }}
                   />
                 </Grid>
-                <Grid item xs={4}>
+
+                <Grid item xs={12} sm={6} md={3}>
                   <DatePicker
                     label="Start Date"
                     value={startDate}
-                    onChange={setStartDate}
+                    onChange={handleStartDateChange}
+                    minDate={dayjs()}
                   />
                 </Grid>
-                <Grid item xs={4}>
+
+                <Grid item xs={12} sm={6} md={3}>
                   <DatePicker
                     label="End Date"
                     value={endDate}
-                    onChange={setEndDate}
+                    onChange={handleEndDateChange}
+                    minDate={startDate ?? dayjs()}
                   />
                 </Grid>
-                <Grid item xs={4}>
+
+                <Grid item xs={12} sm={6} md={3}>
                   <TextField
                     fullWidth
-                    size="medium"
+                    size="small"
                     label="Recur Day"
+                    select
                     InputLabelProps={{ shrink: true }}
-                  />
+                  >
+                    <MenuItem value="">Select</MenuItem>
+                    <MenuItem value="Everyday">Everyday</MenuItem>
+                    <MenuItem value="Weekdays">Weekdays</MenuItem>
+                    <MenuItem value="Weekends">Weekends</MenuItem>
+                  </TextField>
                 </Grid>
               </Grid>
             </>
@@ -533,55 +590,91 @@ const CreateEvent = () => {
 
           {schedule === "weekly" && (
             <>
-              <Typography fontWeight={600} mt={2}>
+              <Typography fontWeight={600} mb={2} color="#111827">
                 Weekly Details
               </Typography>
-              <Grid container spacing={2} mt={1}>
-                <Grid item xs={4}>
+              <Grid container spacing={3} mb={3}>
+                <Grid item xs={12} sm={3}>
                   <TimePicker
                     label="From Time"
                     value={fromTime}
                     onChange={setFromTime}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            backgroundColor: "#FFFFFF",
+                          },
+                        },
+                      },
+                    }}
                   />
                 </Grid>
-                <Grid item xs={4}>
+                <Grid item xs={12} sm={3}>
                   <TimePicker
                     label="To Time"
                     value={toTime}
                     onChange={setToTime}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            backgroundColor: "#FFFFFF",
+                          },
+                        },
+                      },
+                    }}
                   />
                 </Grid>
-                <Grid item xs={4}>
+                <Grid item xs={12} sm={6} md={3}>
                   <DatePicker
                     label="Start Date"
                     value={startDate}
-                    onChange={setStartDate}
+                    onChange={handleStartDateChange}
+                    minDate={dayjs()}
                   />
                 </Grid>
-                <Grid item xs={4}>
+
+                <Grid item xs={12} sm={6} md={3}>
                   <DatePicker
                     label="End Date"
                     value={endDate}
-                    onChange={setEndDate}
-                  />
-                </Grid>
-                <Grid item xs={4}>
-                  <TextField
-                    fullWidth
-                    size="medium"
-                    label="Recur Every Weeks On"
-                    value={recurWeeks}
-                    onChange={(e) => setRecurWeeks(e.target.value)}
-                    InputLabelProps={{ shrink: true }}
+                    onChange={handleEndDateChange}
+                    minDate={startDate ?? dayjs()}
                   />
                 </Grid>
               </Grid>
 
-              <Typography fontWeight={600} mt={2}>
+              <Typography fontWeight={600} mb={2} color="#111827">
+                Recur Every Weeks On
+              </Typography>
+              <Grid container spacing={3} mb={3}>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Weeks"
+                    value={recurWeeks}
+                    onChange={(e) => setRecurWeeks(e.target.value)}
+                    type="number"
+                    InputLabelProps={{ shrink: true }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        backgroundColor: "#FFFFFF",
+                      },
+                    }}
+                  />
+                </Grid>
+              </Grid>
+
+              <Typography fontWeight={600} mb={2} color="#111827">
                 Days
               </Typography>
-
-              <Stack direction="row" spacing={2} mt={1}>
+              <Stack direction="row" spacing={2} flexWrap="wrap" sx={{ mb: 3 }}>
                 {days.map((d) => (
                   <FormControlLabel
                     key={d}
@@ -591,11 +684,12 @@ const CreateEvent = () => {
                         onChange={() => toggleDay(d)}
                         sx={{
                           color: "#D1D5DB",
-                          "&.Mui-checked": { color: "#8BC34A" },
+                          "&.Mui-checked": { color: "#22C55E" },
                         }}
                       />
                     }
                     label={d}
+                    sx={{ color: "#111827", fontWeight: 500 }}
                   />
                 ))}
               </Stack>
@@ -604,47 +698,82 @@ const CreateEvent = () => {
 
           {schedule === "monthly" && (
             <>
-              <Typography fontWeight={600} mt={2}>
+              <Typography fontWeight={600} mb={3} color="#111827">
                 Monthly Details
               </Typography>
-              <Grid container spacing={2} mt={1}>
-                <Grid item xs={4}>
+
+              <Grid container spacing={3} mb={3}>
+                <Grid item xs={12} sm={6} md={3}>
+                  <DatePicker
+                    label="Start Date"
+                    value={startDate}
+                    onChange={handleStartDateChange}
+                    minDate={dayjs()}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={3}>
+                  <DatePicker
+                    label="End Date"
+                    value={endDate}
+                    onChange={handleEndDateChange}
+                    minDate={startDate ?? dayjs()}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={3}>
                   <TimePicker
                     label="From Time"
                     value={fromTime}
                     onChange={setFromTime}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            backgroundColor: "#FFFFFF",
+                          },
+                        },
+                      },
+                    }}
                   />
                 </Grid>
-                <Grid item xs={4}>
+              </Grid>
+
+              <Grid container spacing={3} mb={3}>
+                <Grid item xs={12} sm={6} md={3}>
                   <TimePicker
                     label="To Time"
                     value={toTime}
                     onChange={setToTime}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            backgroundColor: "#FFFFFF",
+                          },
+                        },
+                      },
+                    }}
                   />
                 </Grid>
-                <Grid item xs={4}>
-                  <DatePicker
-                    label="Start Date"
-                    value={startDate}
-                    onChange={setStartDate}
-                  />
-                </Grid>
-                <Grid item xs={4}>
-                  <DatePicker
-                    label="End Date"
-                    value={endDate}
-                    onChange={setEndDate}
-                  />
-                </Grid>
-
-                <Grid item xs={4}>
+                <Grid item xs={12} sm={6} md={3}>
                   <TextField
                     fullWidth
-                    size="medium"
+                    size="small"
                     label="Months"
                     select
                     value={month}
                     onChange={(e) => setMonth(e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        backgroundColor: "#FFFFFF",
+                      },
+                    }}
                   >
                     <MenuItem value="">Select</MenuItem>
                     {monthNames.map((m) => (
@@ -654,25 +783,88 @@ const CreateEvent = () => {
                     ))}
                   </TextField>
                 </Grid>
-
-                <Grid item xs={4}>
-                  <TextField
-                    fullWidth
-                    size="medium"
-                    label="Day"
-                    select
-                    value={monthDay}
-                    onChange={(e) => setMonthDay(e.target.value)}
-                  >
-                    <MenuItem value="">Select</MenuItem>
-                    {[...Array(31)].map((_, i) => (
-                      <MenuItem key={i + 1} value={i + 1}>
-                        {i + 1}
-                      </MenuItem>
-                    ))}
-                  </TextField>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box>
+                    <Typography
+                      fontWeight={600}
+                      color="#111827"
+                      sx={{ mb: 1.5, fontSize: "13px" }}
+                    ></Typography>
+                    <Stack direction="row" spacing={3}>
+                      <FormControlLabel
+                        control={
+                          <Radio
+                            checked={monthDay === "select"}
+                            onChange={() => setMonthDay("select")}
+                            size="small"
+                            sx={{
+                              color: "#D1D5DB",
+                              "&.Mui-checked": { color: "#F36F45" },
+                            }}
+                          />
+                        }
+                        label={
+                          <Typography
+                            sx={{ fontSize: "13px", color: "#111827" }}
+                          >
+                            Days
+                          </Typography>
+                        }
+                        sx={{ m: 0 }}
+                      />
+                      <FormControlLabel
+                        control={
+                          <Radio
+                            checked={monthDay === "on"}
+                            onChange={() => setMonthDay("on")}
+                            size="small"
+                            sx={{
+                              color: "#D1D5DB",
+                              "&.Mui-checked": { color: "#F36F45" },
+                            }}
+                          />
+                        }
+                        label={
+                          <Typography
+                            sx={{ fontSize: "13px", color: "#111827" }}
+                          >
+                            On
+                          </Typography>
+                        }
+                        sx={{ m: 0 }}
+                      />
+                    </Stack>
+                  </Box>
                 </Grid>
               </Grid>
+
+              {monthDay === "select" && (
+                <Grid container spacing={3}>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Day"
+                      select
+                      value={month}
+                      onChange={(e) => setMonth(e.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          backgroundColor: "#FFFFFF",
+                        },
+                      }}
+                    >
+                      <MenuItem value="">Select</MenuItem>
+                      {[...Array(31)].map((_, i) => (
+                        <MenuItem key={i + 1} value={i + 1}>
+                          {i + 1}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Grid>
+                </Grid>
+              )}
             </>
           )}
         </LocalizationProvider>

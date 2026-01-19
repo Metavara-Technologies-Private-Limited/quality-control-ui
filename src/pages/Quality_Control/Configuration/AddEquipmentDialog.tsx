@@ -100,24 +100,30 @@ export default function AddEquipmentDialog({
           fieldType,
           value:
             fieldType === "integer"
-              ? toNumber(content.value ?? content.default)
+              ? toNumber(
+                  content.integer_value ?? content.value ?? content.default,
+                )
               : fieldType === "percentage"
-              ? toNumber(content.percentage)
-              : undefined,
+                ? toNumber(content.percentage)
+                : undefined,
           min:
             fieldType === "decimal"
               ? toNumber(content.min_value ?? content.min)
-              : undefined,
+              : fieldType === "integer"
+                ? toNumber(content.min_value ?? content.min)
+                : undefined,
           max:
             fieldType === "decimal"
               ? toNumber(content.max_value ?? content.max)
-              : undefined,
+              : fieldType === "integer"
+                ? toNumber(content.max_value ?? content.max)
+                : undefined,
           unit: content.unit,
           options: Array.isArray(content.dropdown)
             ? content.dropdown
             : content.dropdown
-            ? [content.dropdown]
-            : [],
+              ? [content.dropdown]
+              : [],
         };
       }),
     }));
@@ -127,19 +133,14 @@ export default function AddEquipmentDialog({
   const renderParameterInfo = (p: Parameter) => {
     switch (p.fieldType) {
       case "decimal":
+      case "integer":
         return p.min != null && p.max != null ? (
           <Typography fontSize={11} color={TEXT_GRAY}>
             Range: {p.min} – {p.max} {p.unit ?? ""}
           </Typography>
         ) : (
           <Typography fontSize={11} color={TEXT_GRAY}>
-            Range: N/A
-          </Typography>
-        );
-      case "integer":
-        return (
-          <Typography fontSize={11} color={TEXT_GRAY}>
-            Value: {p.value != null ? p.value : "N/A"}
+            Value: {p.value != null ? p.value : "N/A"} {p.unit ?? ""}
           </Typography>
         );
       case "percentage":
@@ -179,7 +180,7 @@ export default function AddEquipmentDialog({
   /* ===== STATE ===== */
   const [selected, setSelected] = useState<SelectedEquipmentData[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
-  const [popupOpen, setPopupOpen] = useState(false); // 🔴 popup state
+  const [popupOpen, setPopupOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -202,7 +203,11 @@ export default function AddEquipmentDialog({
       setActiveId(eq.id);
       return [
         ...prev,
-        { equipment: eq, units: eq.units.map((u) => u.id), parameters: [] },
+        {
+          equipment: eq,
+          units: eq.units.map((u) => u.id),
+          parameters: eq.parameters.map((p) => ({ id: p.id })), // ✅ AUTO SELECT PARAMETERS
+        },
       ];
     });
   };
@@ -219,9 +224,9 @@ export default function AddEquipmentDialog({
                   ? s.units.filter((u) => u !== id)
                   : [...s.units, id],
               }
-            : s
+            : s,
         )
-        .filter((s) => s.units.length > 0)
+        .filter((s) => s.units.length > 0),
     );
   };
 
@@ -236,22 +241,22 @@ export default function AddEquipmentDialog({
                 ? s.parameters.filter((p) => p.id !== id)
                 : [...s.parameters, { id }],
             }
-          : s
-      )
+          : s,
+      ),
     );
   };
 
   const handleAdd = () => {
     const invalid = selected.some(
-      (s) => s.units.length > 0 && s.parameters.length === 0
+      (s) => s.units.length > 0 && s.parameters.length === 0,
     );
     if (invalid) {
-      setPopupOpen(true); // show popup
+      setPopupOpen(true);
       return;
     }
 
     const cleaned = selected.filter(
-      (s) => s.units.length > 0 && s.parameters.length > 0
+      (s) => s.units.length > 0 && s.parameters.length > 0,
     );
 
     onAdd(cleaned);
@@ -293,7 +298,7 @@ export default function AddEquipmentDialog({
                 <Stack spacing={0.5}>
                   {normalized.map((eq) => {
                     const checked = selected.some(
-                      (s) => s.equipment.id === eq.id
+                      (s) => s.equipment.id === eq.id,
                     );
                     return (
                       <Box
@@ -307,7 +312,7 @@ export default function AddEquipmentDialog({
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "space-between",
-                          bgcolor: checked ? "#F3F4F6" : "transparent", // ✅ mild/light grey
+                          bgcolor: checked ? "#F3F4F6" : "transparent",
                         }}
                       >
                         <Box display="flex" alignItems="center" gap={1}>
@@ -374,7 +379,6 @@ export default function AddEquipmentDialog({
             </Grid>
 
             {/* RIGHT */}
-            {/* RIGHT */}
             <Grid item xs={9}>
               {active && (
                 <Stack spacing={3}>
@@ -432,7 +436,7 @@ export default function AddEquipmentDialog({
                           <Box display="flex" alignItems="center" gap={1}>
                             <Checkbox
                               checked={active.parameters.some(
-                                (ap) => ap.id === p.id
+                                (ap) => ap.id === p.id,
                               )}
                               sx={{
                                 width: 15,
@@ -457,7 +461,7 @@ export default function AddEquipmentDialog({
         </DialogContent>
       </Dialog>
 
-      {/* POPUP DIALOG */}
+      {/* POPUP */}
       <Dialog open={popupOpen} onClose={() => setPopupOpen(false)}>
         <DialogTitle fontWeight={600}>Alert</DialogTitle>
         <DialogContent>
