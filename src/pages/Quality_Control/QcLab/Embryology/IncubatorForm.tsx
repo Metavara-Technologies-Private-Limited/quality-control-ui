@@ -84,14 +84,13 @@ const IncubatorForm = ({
     }
     return config;
   };
+
 const renderParameterInfo = (parameterName: string) => {
   const config = getParameterConfig(parameterName);
   if (!config) return null;
 
-  // This color is dynamic (Grey, Yellow, or Red) based on input
+ 
   const dynamicColor = getRangeStatusColor(parameterName);
-  
-  // Style for the dynamic "Range" part
   const dynamicStyle = {
     color: dynamicColor,
     fontSize: "12px",
@@ -99,30 +98,32 @@ const renderParameterInfo = (parameterName: string) => {
     transition: "color 0.2s ease",
   };
 
-  // Style for the "Recommended" prefix (Always Grey)
+
   const defaultGreyStyle = {
     color: "#9E9E9E",
     fontSize: "12px",
     fontWeight: "500"
   };
 
-  const isTemperature = parameterName.toLowerCase().includes("temperature");
   const dataType = config.data_type;
 
   switch (dataType) {
     case "Decimal":
     case "Min/Max":
     case "Integer":
+ 
+      const hasDefaultValue = config.default_value != null && config.default_value !== "";
+      
       if (config.min_value != null && config.max_value != null) {
         return (
           <span>
-            
-            {isTemperature && (
+            {hasDefaultValue && (
               <span style={defaultGreyStyle}>
-                Recommended: {config.min_value}{config.unit || ""} | {" "}
+                 Recommended:{config.default_value}{config.unit || ""} | {" "}
               </span>
             )}
-             
+            
+            {/* Show Range */}
             <span style={dynamicStyle}>
               Range: {config.min_value}{config.unit || ""} - {config.max_value}{config.unit || ""}
             </span>
@@ -132,10 +133,19 @@ const renderParameterInfo = (parameterName: string) => {
       break;
 
     case "Percentage":
+      const hasDefaultPercentage = config.default_value != null && config.default_value !== "";
+      
       if (config.percentage != null) {
         return (
-          <span style={dynamicStyle}>
-            Range: 0% - {config.percentage}%
+          <span>
+            {hasDefaultPercentage && (
+              <span style={defaultGreyStyle}>
+                 Recommended: {config.default_value}% | {" "}
+              </span>
+            )}
+            <span style={dynamicStyle}>
+              Range: 0% - {config.percentage}%
+            </span>
           </span>
         );
       }
@@ -143,18 +153,43 @@ const renderParameterInfo = (parameterName: string) => {
 
     case "Text":
       const textValue = config.text || config.recommendation || "";
+      const hasDefaultText = config.default_value || textValue;
+      
       return (
         <span style={defaultGreyStyle}>
-          Text: {textValue}
+          {hasDefaultText ? `Text:  ${config.default_value || textValue}` : "No Text value"}
         </span>
       );
 
     case "Select":
     case "Dropdown":
       const dropdownOptions = config.dropdown || config.options || [];
+      const hasDefaultDropdown = config.default_value != null && config.default_value !== "";
+      
       return (
         <span style={defaultGreyStyle}>
-          Options: {dropdownOptions.join(", ")}
+          {hasDefaultDropdown && (
+            <>
+              Type: {config.default_value} | {" "}
+            </>
+          )}
+          Type: {dropdownOptions.join(", ")}
+        </span>
+      );
+
+    case "Boolean":
+      const hasDefaultBoolean = config.default_value != null && config.default_value !== "";
+      const booleanType = config.boolean_type || "yesno";
+      const booleanLabel = booleanType === "yesno" ? "Yes/No" : "True/False";
+      
+      return (
+        <span style={defaultGreyStyle}>
+          {hasDefaultBoolean && (
+            <>
+              Default: {config.default_value} | {" "}
+            </>
+          )}
+          Type: {booleanLabel}
         </span>
       );
 

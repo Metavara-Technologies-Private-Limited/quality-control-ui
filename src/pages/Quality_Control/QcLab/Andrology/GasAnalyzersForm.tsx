@@ -103,93 +103,115 @@ const GasAnalyzersForm = ({
     return "#9E9E9E"; // In range or valid input
   };
 
- const renderParameterInfo = (parameterName: string) => {
-    const config = getParameterConfig(parameterName);
-    if (!config) return null;
+ 
 
-    // Get dynamic color based on user input (Grey/Yellow/Red)
-    const dynamicColor = getRangeStatusColor(parameterName);
+const renderParameterInfo = (parameterName: string) => {
+  const config = getParameterConfig(parameterName);
+  if (!config) return null;
 
-    const rangeStyle = { 
-      color: dynamicColor, 
-      fontSize: "12px", 
-      fontWeight: "500",
-      transition: "color 0.2s ease"
-    };
+ 
+  const dynamicColor = getRangeStatusColor(parameterName);
 
-    const defaultGreyStyle = {
-      color: "#9E9E9E",
-      fontSize: "12px",
-      fontWeight: "500"
-    };
+  const rangeStyle = { 
+    color: dynamicColor, 
+    fontSize: "12px", 
+    fontWeight: "500",
+    transition: "color 0.2s ease"
+  };
 
-    const dataType = config.data_type;
-    // Check if it's the Gas Mixture field to add the prefix
-    const isGasMixture = parameterName.toLowerCase().includes("gas mixture");
+  const defaultGreyStyle = {
+    color: "#9E9E9E",
+    fontSize: "12px",
+    fontWeight: "500"
+  };
 
-    switch (dataType) {
-      case "Integer":
-      case "Decimal":
-      case "Min/Max":
-        if (config.min_value != null && config.max_value != null) {
-          return (
-            <span>
-              {/* Prefix stays grey regardless of input status */}
-              {isGasMixture && (
-                <span style={defaultGreyStyle}>
-                  Recommended: {config.min_value}{config.unit || ""} |{" "}
-                </span>
-              )}
-              {/* Range text follows the color-coding logic */}
-              <span style={rangeStyle}>
-                Range: {config.min_value}{config.unit || ""} - {config.max_value}{config.unit || ""}
+  const dataType = config.data_type;
+  const hasDefaultValue = config.default_value != null && config.default_value !== "";
+
+ 
+
+  switch (dataType) {
+    case "Integer":
+    case "Decimal":
+    case "Min/Max":
+      if (config.min_value != null && config.max_value != null) {
+        return (
+          <span>
+           
+            {hasDefaultValue && (
+              <span style={defaultGreyStyle}>
+                Recommended: {config.default_value}{config.unit || ""} | {" "}
               </span>
+            )}
+         
+            <span style={rangeStyle}>
+              Range: {config.min_value}{config.unit || ""} - {config.max_value}{config.unit || ""}
             </span>
-          );
-        }
-        break;
+          </span>
+        );
+      }
+      break;
 
-      case "Percentage":
-        if (config.percentage != null) {
-          return (
+    case "Percentage":
+      if (config.percentage != null) {
+        return (
+          <span>
+            {hasDefaultValue && (
+              <span style={defaultGreyStyle}>
+                Recommended: {config.default_value}% | {" "}
+              </span>
+            )}
             <span style={rangeStyle}>
               Range: 0% - {config.percentage}%
             </span>
-          );
-        }
-        break;
-
-      case "Boolean":
-        return (
-          <span style={defaultGreyStyle}>
-            Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
           </span>
         );
+      }
+      break;
 
-      // ✅ UPDATED: Calls the actual text content (like "test done") instead of data type label
-      case "Text":
-        const displayValue = config.text || config.recommendation || "";
+    case "Boolean":
+      const hasBoolDefault = config.default_value != null && config.default_value !== "";
+      return (
+        <span style={defaultGreyStyle}>
+          {hasBoolDefault && (
+            <>
+              Type: {config.default_value} | {" "}
+            </>
+          )}
+          Type: {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
+        </span>
+      );
+
+    case "Text":
+      const displayValue = config.text || config.recommendation || "";
+      const hasTextDefault = config.default_value || displayValue;
+      return (
+        <span style={defaultGreyStyle}>
+          {hasTextDefault ? `Text: ${config.default_value || displayValue}` : "No recommended value"}
+        </span>
+      );
+
+    case "Select":
+    case "Dropdown":
+      if (config.dropdown && Array.isArray(config.dropdown)) {
         return (
           <span style={defaultGreyStyle}>
-            Text: {displayValue}
+            {hasDefaultValue && (
+              <>
+                Type: {config.default_value} | {" "}
+              </>
+            )}
+            Options: {config.dropdown.join(", ")}
           </span>
         );
+      }
+      break;
 
-      case "Select":
-      case "Dropdown":
-        if (config.dropdown && Array.isArray(config.dropdown)) {
-          return (
-            <span style={defaultGreyStyle}>
-              Options: {config.dropdown.join(", ")}
-            </span>
-          );
-        }
-        break;
+    default:
+      return null;
+  }
+};
 
-      default:
-        return null;
-    }
-  };
   const setValue = (key: string, value: any) => {
     setLogValues((prev) => ({ ...prev, [key]: value }));
   };

@@ -147,7 +147,7 @@ const loadInitialData = () => {
     } else if (typeof initialData.dropdown === "string") {
       dropdownArray = initialData.dropdown
         .split(",")
-        .map((s) => s.trim())
+        .map((s: string) => s.trim())
         .filter(Boolean);
     }
     
@@ -176,82 +176,120 @@ const loadInitialData = () => {
     setSelectedDropdownValues([]);
   };
 
-  const validateForm = () => {
-    if (!title.trim()) {
-      toast.error("Please enter Title");
+// In AddParameterPopup.tsx - Update the validateForm function
+
+const validateForm = () => {
+  if (!title.trim()) {
+    toast.error("Please enter Title");
+    return false;
+  }
+
+  if (!fieldType) {
+    toast.error("Please select Field Type");
+    return false;
+  }
+
+  if (fieldType === "Integer") {
+    if (!integerDefault.trim()) {
+      toast.error("Please enter Default Value for Integer");
       return false;
     }
-
-    if (!fieldType) {
-      toast.error("Please select Field Type");
+    if (!integerMin.trim()) {
+      toast.error("Please enter Minimum Value");
       return false;
     }
-
-    if (fieldType === "Integer") {
-      if (!integerDefault.trim()) {
-        toast.error("Please enter Default Value");
-        return false;
-      }
+    if (!integerMax.trim()) {
+      toast.error("Please enter Maximum Value");
+      return false;
     }
+  }
 
-    if (fieldType === "Decimal") {
-      if (!decimalDefault.trim() || !decimalMin.trim() || !decimalMax.trim()) {
-        toast.error("Please fill all Decimal fields");
-        return false;
-      }
+  if (fieldType === "Decimal") {
+    if (!decimalDefault.trim()) {
+      toast.error("Please enter Default Value for Decimal");
+      return false;
     }
+    if (!decimalMin.trim()) {
+      toast.error("Please enter Minimum Value");
+      return false;
+    }
+    if (!decimalMax.trim()) {
+      toast.error("Please enter Maximum Value");
+      return false;
+    }
+  }
 
-    if (fieldType === "Text" && !textValue.trim()) {
+  if (fieldType === "Text") {
+    if (!textValue.trim()) {
       toast.error("Please enter Text value");
       return false;
     }
+  }
 
-    return true;
+  if (fieldType === "Dropdown") {
+    const validOptions = dropdownOptions.filter(opt => opt.trim());
+    if (validOptions.length < 2) {
+      toast.error("Please add at least 2 dropdown options");
+      return false;
+    }
+  }
+
+  return true;
+};
+// In AddParameterPopup.tsx - Update the handleSave function
+
+const handleSave = () => {
+  if (!validateForm()) return;
+
+  const payload: any = {
+    title,
+    name: title,
+    mandatory,
+    field_type: fieldType,
+    data_type: fieldType,
   };
 
-  const handleSave = () => {
-    if (!validateForm()) return;
+  if (fieldType === "Integer") {
+    payload.default_value = integerDefault.trim() ? parseInt(integerDefault) : null;
+    payload.integer_value = integerDefault.trim() ? parseInt(integerDefault) : null;
+    payload.unit = integerUnit || null;
+    payload.min_value = integerMin.trim() ? parseInt(integerMin) : null;
+    payload.max_value = integerMax.trim() ? parseInt(integerMax) : null;
+  }
 
-    const payload: any = {
-      title,
-      name: title,
-      mandatory,
-      field_type: fieldType,
-      data_type: fieldType,
-    };
+  if (fieldType === "Decimal") {
+    payload.default_value = decimalDefault.trim() ? parseFloat(decimalDefault) : null;
+    payload.unit = decimalUnit || null;
+    payload.min_value = decimalMin.trim() ? parseFloat(decimalMin) : null;
+    payload.max_value = decimalMax.trim() ? parseFloat(decimalMax) : null;
+  }
 
-    if (fieldType === "Integer") {
-      payload.default_value = integerDefault;
-      payload.unit = integerUnit;
-      payload.min_value = integerMin;
-      payload.max_value = integerMax;
-    }
+  if (fieldType === "Text") {
+    payload.text_type = textType;
+    payload.text = textValue.trim() || null;
+    payload.default_value = textValue.trim() || null; // ✅ SAVE TEXT AS DEFAULT VALUE
+  }
 
-    if (fieldType === "Decimal") {
-      payload.default_value = decimalDefault;
-      payload.unit = decimalUnit;
-      payload.min_value = decimalMin;
-      payload.max_value = decimalMax;
-    }
+  if (fieldType === "Boolean") {
+    payload.boolean_type = booleanType;
+    payload.default_value = null; // Booleans typically don't have defaults
+  }
 
-    if (fieldType === "Text") {
-      payload.text_type = textType;
-      payload.text = textValue;
-    }
+  if (fieldType === "Dropdown") {
+    payload.dropdown = dropdownOptions.filter(opt => opt.trim()); // Filter empty strings
+    payload.selection_type = dropdownMode;
+    payload.default_value = null; // Dropdowns typically don't have defaults
+  }
 
-    if (fieldType === "Boolean") {
-      payload.boolean_type = booleanType;
-    }
+  // Keep id if editing
+  if (initialData?.id) {
+    payload.id = initialData.id;
+  }
 
-    if (fieldType === "Dropdown") {
-      payload.dropdown = dropdownOptions;
-      payload.selection_type = dropdownMode;
-    }
-
-    onAdd(payload);
-    resetForm();
-    onClose();
-  };
+  onAdd(payload);
+  resetForm();
+  onClose();
+};
 
   // ✅ Handle selection mode change - clear selections when switching modes
   const handleDropdownModeChange = (newMode: "single" | "multi") => {
