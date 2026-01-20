@@ -14,6 +14,9 @@ import AuditTrail from "./pages/AuditTrail";
 import Clinical from "./pages/Quality_Control/Clinical";
 import Reports from "./pages/Quality_Control/Reports";
 
+import AddEnvironmentParameter from
+  "./pages/Quality_Control/Configuration/AddEnvironmentParameter";
+import ConfigurationEnvironment from "./pages/Quality_Control/Configuration/ConfigurationEnvironment";
 import ConfigurationLayout from "./pages/Quality_Control/Configuration/ConfigurationLayout";
 import Events from "./pages/Quality_Control/Configuration/Events";
 import CreateEvent from "./pages/Quality_Control/Configuration/CreateEvent";
@@ -128,6 +131,14 @@ function App() {
             path="equipment/add-parameter"
             element={<AddParameterPage />}
           />
+          <Route
+              path="environment"
+              element={<ConfigurationEnvironment />}
+            />
+          <Route
+  path="environment/add-parameter"
+  element={<AddEnvironmentParameter />}
+/>
 
           {/* ================= EVENTS ================= */}
           <Route path="events" element={<Events />} />
