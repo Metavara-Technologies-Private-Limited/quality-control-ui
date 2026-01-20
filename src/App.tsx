@@ -14,8 +14,7 @@ import AuditTrail from "./pages/AuditTrail";
 import Clinical from "./pages/Quality_Control/Clinical";
 import Reports from "./pages/Quality_Control/Reports";
 
-import AddEnvironmentParameter from
-  "./pages/Quality_Control/Configuration/AddEnvironmentParameter";
+import AddEnvironmentParameter from "./pages/Quality_Control/Configuration/AddEnvironmentParameter";
 import ConfigurationEnvironment from "./pages/Quality_Control/Configuration/ConfigurationEnvironment";
 import ConfigurationLayout from "./pages/Quality_Control/Configuration/ConfigurationLayout";
 import Events from "./pages/Quality_Control/Configuration/Events";
@@ -23,25 +22,25 @@ import CreateEvent from "./pages/Quality_Control/Configuration/CreateEvent";
 
 import LabLayout from "./pages/Quality_Control/QcLab/LabLayout";
 
-import EmbryologyLayout from "./pages/Quality_Control/QcLab/Embryology/EmbryologyLayout";
-import Equipment from "./pages/Quality_Control/QcLab/Embryology/Equipments";
+// import EmbryologyLayout from "./pages/Quality_Control/QcLab/Embryology/EmbryologyLayout";
+// import Equipment from "./pages/Quality_Control/QcLab/Embryology/Equipments";
 import Environment from "./pages/Quality_Control/QcLab/Embryology/Environment";
 import Task from "./pages/Quality_Control/QcLab/Embryology/Task";
 
-import AndrologyLayout from "./pages/Quality_Control/QcLab/Andrology/AndrologyLayout";
-import AndrologyEquipment from "./pages/Quality_Control/QcLab/Andrology/Equipments";
+// import AndrologyLayout from "./pages/Quality_Control/QcLab/Andrology/AndrologyLayout";
+// import AndrologyEquipment from "./pages/Quality_Control/QcLab/Andrology/Equipments";
 import AndrologyEnvironment from "./pages/Quality_Control/QcLab/Andrology/Environment";
 
-import CryopreservationLayout from "./pages/Quality_Control/QcLab/Cryopreservation/CryopreservationLayout";
-import CryoEquipment from "./pages/Quality_Control/QcLab/Cryopreservation/Equipments";
+// import CryopreservationLayout from "./pages/Quality_Control/QcLab/Cryopreservation/CryopreservationLayout";
+// import CryoEquipment from "./pages/Quality_Control/QcLab/Cryopreservation/Equipments";
 import CryoEnvironment from "./pages/Quality_Control/QcLab/Cryopreservation/Environment";
 
-import EnvironmentalLayout from "./pages/Quality_Control/QcLab/Environmental/EnvironmentalLayout";
-import EnvEquipment from "./pages/Quality_Control/QcLab/Environmental/Equipment";
+// import EnvironmentalLayout from "./pages/Quality_Control/QcLab/Environmental/EnvironmentalLayout";
+// import EnvEquipment from "./pages/Quality_Control/QcLab/Environmental/Equipment";
 import EnvEnvironment from "./pages/Quality_Control/QcLab/Environmental/Environment";
 
-import LabEquipmentLayout from "./pages/Quality_Control/QcLab/LabEquipment/LabEquipmentLayout";
-import LabEquipEquipment from "./pages/Quality_Control/QcLab/LabEquipment/Equipment";
+// import LabEquipmentLayout from "./pages/Quality_Control/QcLab/LabEquipment/LabEquipmentLayout";
+// import LabEquipEquipment from "./pages/Quality_Control/QcLab/LabEquipment/Equipment";
 import LabEquipEnvironment from "./pages/Quality_Control/QcLab/LabEquipment/Environment";
 
 import EquipmentPage from "./components/Configuration/EquipmentPage";
@@ -59,6 +58,8 @@ import WorkFlows from "./pages/Document_Control/WorkFlows";
 
 import RiskA from "./pages/Risk_Management/Risk_A";
 import { fetchAssigneesByClinic } from "./store/assigneeSlice";
+import DepartmentLayout from "./pages/Quality_Control/QcLab/Department/DepartmentLayout";
+import LabEquipments from "./pages/Quality_Control/QcLab/Department/LabEquipment";
 
 function App() {
   const dispatch = useDispatch<AppDispatch>();
@@ -85,37 +86,37 @@ function App() {
         <Route path="qc-lab" element={<LabLayout />}>
           <Route index element={<Navigate to="embryology" replace />} />
 
-          <Route path="embryology" element={<EmbryologyLayout />}>
+          <Route path="embryology" element={<DepartmentLayout />}>
             <Route index element={<Navigate to="equipments" replace />} />
-            <Route path="equipments" element={<Equipment />} />
+            <Route path="equipments" element={<LabEquipments />} />
             <Route path="environment" element={<Environment />} />
             <Route path="task" element={<Task />} />
           </Route>
 
-          <Route path="andrology" element={<AndrologyLayout />}>
+          <Route path="andrology" element={<DepartmentLayout />}>
             <Route index element={<Navigate to="equipments" replace />} />
-            <Route path="equipments" element={<AndrologyEquipment />} />
+            <Route path="equipments" element={<LabEquipments />} />
             <Route path="environment" element={<AndrologyEnvironment />} />
             <Route path="task" element={<Task />} />
           </Route>
 
-          <Route path="cryopreservation" element={<CryopreservationLayout />}>
+          <Route path="cryopreservation" element={<DepartmentLayout />}>
             <Route index element={<Navigate to="equipments" replace />} />
-            <Route path="equipments" element={<CryoEquipment />} />
+            <Route path="equipments" element={<LabEquipments />} />
             <Route path="environment" element={<CryoEnvironment />} />
             <Route path="task" element={<Task />} />
           </Route>
 
-          <Route path="environmental" element={<EnvironmentalLayout />}>
+          <Route path="environmental" element={<DepartmentLayout />}>
             <Route index element={<Navigate to="equipments" replace />} />
-            <Route path="equipments" element={<EnvEquipment />} />
+            <Route path="equipments" element={<LabEquipments />} />
             <Route path="environment" element={<EnvEnvironment />} />
             <Route path="task" element={<Task />} />
           </Route>
 
-          <Route path="labequipment" element={<LabEquipmentLayout />}>
+          <Route path="labequipment" element={<DepartmentLayout />}>
             <Route index element={<Navigate to="equipments" replace />} />
-            <Route path="equipments" element={<LabEquipEquipment />} />
+            <Route path="equipments" element={<LabEquipments />} />
             <Route path="environment" element={<LabEquipEnvironment />} />
             <Route path="task" element={<Task />} />
           </Route>
@@ -131,14 +132,11 @@ function App() {
             path="equipment/add-parameter"
             element={<AddParameterPage />}
           />
+          <Route path="environment" element={<ConfigurationEnvironment />} />
           <Route
-              path="environment"
-              element={<ConfigurationEnvironment />}
-            />
-          <Route
-  path="environment/add-parameter"
-  element={<AddEnvironmentParameter />}
-/>
+            path="environment/add-parameter"
+            element={<AddEnvironmentParameter />}
+          />
 
           {/* ================= EVENTS ================= */}
           <Route path="events" element={<Events />} />
