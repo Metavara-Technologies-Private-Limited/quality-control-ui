@@ -78,10 +78,17 @@ export interface Reading {
 export interface ParameterContent {
   id?: number;
   name?: string;
+  title?: string;
+  mandatory?: boolean;
   parameter_name?: string;
   is_deleted?: boolean;
   data_type?: string;
+  field_type?: string;
   integer_value?: number | string;
+  default_value?: number | string;
+  text_type?: string;
+  boolean_type?: string;
+  selection_type?: string;
   min_value?: number | string;
   max_value?: number | string;
   unit?: string;

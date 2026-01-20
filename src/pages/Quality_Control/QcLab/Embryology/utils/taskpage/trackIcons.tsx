@@ -17,13 +17,9 @@ const noop = () => {};
 
 export const trackIcons = (
   timerStatus: TimerStatus,
-  handlers: TimerHandlers = {} // ✅ default
+  handlers: TimerHandlers = {}, // ✅ default
 ) => {
-  const {
-    onStart = noop,
-    onPause = noop,
-    onStop = noop,
-  } = handlers;
+  const { onStart = noop, onPause = noop, onStop = noop } = handlers;
 
   switch (timerStatus) {
     case "RUNNING":
@@ -68,9 +64,7 @@ export const trackIcons = (
 
     case "STOPPED":
       return (
-        <CheckCircleRoundedIcon
-          sx={{ fontSize: 22, color: COLORS.complete }}
-        />
+        <CheckCircleRoundedIcon sx={{ fontSize: 22, color: COLORS.complete }} />
       );
 
     case "IDLE":

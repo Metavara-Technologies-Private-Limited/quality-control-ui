@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { ToastContainer } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
   Box,
@@ -45,10 +45,12 @@ function Task() {
     [...s.events.data].sort((a, b) =>
       (a.event_name ?? "").localeCompare(b.event_name ?? "", undefined, {
         sensitivity: "base",
-      })
-    )
-  );  
-  const events = rawEvents.filter(item => item.department.toLowerCase() === deptName.toLowerCase());
+      }),
+    ),
+  );
+  const events = rawEvents.filter(
+    (item) => item.department.toLowerCase() === deptName.toLowerCase(),
+  );
   const eventLoading = useSelector((s: RootState) => s.events.loading);
   const assignees = useSelector((state: RootState) => state.assignees.data);
 
@@ -58,7 +60,7 @@ function Task() {
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
 
   const [selectedTaskDetails, setSelectedTaskDetails] = useState<UITask | null>(
-    null
+    null,
   );
   const [openAddTask, setOpenAddTask] = useState(false);
   // const taskDetailsEditorRef = React.useRef<HTMLDivElement>(null);
@@ -73,10 +75,10 @@ function Task() {
     const id = setInterval(() => {
       setNow(Date.now());
     }, 1000);
-  
+
     return () => clearInterval(id);
   }, []);
-  
+
   useEffect(() => {
     if (clinic?.id)
       if (!events.length) dispatch(fetchEventsByClinic(clinic.id));
@@ -94,38 +96,23 @@ function Task() {
     }
   }, [clinic?.id, dispatch]);
 
-  // useEffect(() => {
-  //   if (!openTaskDetails || detailsTab !== 0 || !taskDetailsEditorRef.current)
-  //     return;
+  const handleCreateEvent = async (name: string) => {
+    if (!clinic?.id || !name) return;
 
-  //   const editor = taskDetailsEditorRef.current;
-  //   const raf1 = requestAnimationFrame(() => {
-  //     setTimeout(() => {
-  //       if (!editor.isConnected) return;
-  //       editor.innerHTML = "";
-  //       if (taskDetails?.trim()) {
-  //         editor.innerHTML = taskDetails;
-  //       } else {
-  //         editor.innerHTML =
-  //           '<p style="color:#aaa; font-style:italic;">No description saved yet. Click to edit...</p>';
-  //       }
-  //       void editor.offsetHeight;
-  //       try {
-  //         const range = document.createRange();
-  //         range.selectNodeContents(editor);
-  //         range.collapse(false);
-  //         const sel = window.getSelection();
-  //         sel?.removeAllRanges();
-  //         sel?.addRange(range);
-  //         editor.focus();
-  //       } catch (err) {
-  //         console.warn("Cursor positioning failed:", err);
-  //       }
-  //       checkFormats();
-  //     }, 0);
-  //   });
-  //   return () => cancelAnimationFrame(raf1);
-  // }, [openTaskDetails, detailsTab, taskDetails]);
+    try {
+      // await taskApi.createEvent({
+      //   event_name: name,
+      //   clinic: clinic.id,
+      //   department: deptName,
+      // });
+
+      toast.success("Event created");
+      dispatch(fetchEventsByClinic(clinic.id));
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to create event");
+    }
+  };
 
   const tasks = useMemo(() => {
     if (!selectedEventId) return [];
@@ -175,15 +162,8 @@ function Task() {
 
   const selectedEvent = useMemo(
     () => events.find((e) => e.id === selectedEventId),
-    [events, selectedEventId]
+    [events, selectedEventId],
   );
-
-  // const checkFormats = () => {
-  //   const formats: string[] = [];
-  //   if (document.queryCommandState("bold")) formats.push("bold");
-  //   if (document.queryCommandState("italic")) formats.push("italic");
-  //   if (document.queryCommandState("underline")) formats.push("underline");
-  // };
 
   const showStatus = activeFilter === "All";
 
@@ -200,7 +180,7 @@ function Task() {
 
   const handleStatusClick = (
     event: React.MouseEvent<HTMLElement>,
-    taskIndex: number
+    taskIndex: number,
   ) => {
     event.stopPropagation();
     console.log(taskIndex);
@@ -356,8 +336,8 @@ function Task() {
                               i === 0
                                 ? "6px 0 0 6px"
                                 : i === 3
-                                ? "0 6px 6px 0"
-                                : 0,
+                                  ? "0 6px 6px 0"
+                                  : 0,
                             bgcolor:
                               activeFilter === label ? COLORS.dark : "#FFF",
                             color: activeFilter === label ? "#FFF" : "#111",
@@ -375,7 +355,7 @@ function Task() {
                           {label}
                         </Button>
                       );
-                    }
+                    },
                   )}
                 </Stack>
                 <Button
@@ -534,15 +514,20 @@ function Task() {
                                   t.status_label === "Completed"
                                     ? COLORS.complete
                                     : t.status_label === "In Progress"
-                                    ? COLORS.progress
-                                    : COLORS.todo,
+                                      ? COLORS.progress
+                                      : COLORS.todo,
                                 color: "#fff",
                                 overflow: "hidden",
                               }}
                               onClick={(e) => handleStatusClick(e, i)}
                             >
                               <Typography
-                                sx={{ px: 1.2, fontSize: 12, fontWeight: 500,color: "#fff", }}
+                                sx={{
+                                  px: 1.2,
+                                  fontSize: 12,
+                                  fontWeight: 500,
+                                  color: "#fff",
+                                }}
                               >
                                 {t.status_label}
                               </Typography>
@@ -613,7 +598,7 @@ function Task() {
             setNewEventName={setNewEventName}
             eventError={eventError}
             setEventError={setEventError}
-            setSelectedEventId={setSelectedEventId}
+            onCreate={handleCreateEvent}
           />
 
           <AddTaskDialog

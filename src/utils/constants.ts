@@ -1,22 +1,3 @@
-// Department Types
-export const DEPARTMENTS = [
-  'Embryology',
-  'Andrology',
-  'Cryopresevation',
-  'Environmental',
-  'Lab Equipment'
-] as const;
-
-// Equipment Types for Embryology
-export const EMBRYOLOGY_EQUIPMENT = [
-  'Incubator',
-  'Laminar Flow Hoods',
-  'Cryopreservation Tanks (LN2)',
-  'Autoclaves',
-  'Ovens & Water Baths',
-  'Sterilizers',
-] as const;
-
 // Parameter Types
 export const PARAMETERS = [
   'Temperature',
@@ -26,14 +7,6 @@ export const PARAMETERS = [
   'Gas Conc.',
 ] as const;
 
-// Parameter Units
-export const PARAMETER_UNITS: Record<string, string> = {
-  Temperature: '°C',
-  'CO₂ Conc.': '%',
-  Humidity: '%',
-  'Gas Mix.': '%',
-  'Gas Conc.': '%',
-};
 
 // Status Colors
 export const STATUS_COLORS = {
@@ -56,12 +29,40 @@ export const CHART_COLORS = [
   '#ec4899', // pink
 ] as const;
 
-// Activity Types
-export const ACTIVITY_TYPES = {
-  temperature: 'Temperature',
-  humidity: 'Humidity',
-  co2: 'CO₂',
-  assignee: 'Assignee',
-  other: 'Other',
-} as const;
+// // Department Types
+// export const DEPARTMENTS = [
+//   'Embryology',
+//   'Andrology',
+//   'Cryopresevation',
+//   'Environmental',
+//   'Lab Equipment'
+// ] as const;
+
+// // Equipment Types for Embryology
+// export const EMBRYOLOGY_EQUIPMENT = [
+//   'Incubator',
+//   'Laminar Flow Hoods',
+//   'Cryopreservation Tanks (LN2)',
+//   'Autoclaves',
+//   'Ovens & Water Baths',
+//   'Sterilizers',
+// ] as const;
+
+// // Parameter Units
+// export const PARAMETER_UNITS: Record<string, string> = {
+//   Temperature: '°C',
+//   'CO₂ Conc.': '%',
+//   Humidity: '%',
+//   'Gas Mix.': '%',
+//   'Gas Conc.': '%',
+// };
+
+// // Activity Types
+// export const ACTIVITY_TYPES = {
+//   temperature: 'Temperature',
+//   humidity: 'Humidity',
+//   co2: 'CO₂',
+//   assignee: 'Assignee',
+//   other: 'Other',
+// } as const;
 

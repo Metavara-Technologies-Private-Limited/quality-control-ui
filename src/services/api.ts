@@ -55,16 +55,16 @@ export const equipmentApi = {
   update: (
     departmentId: number,
     equipmentId: number,
-    data: EquipmentCreatePayload
+    data: EquipmentCreatePayload,
   ) =>
     http.put(`/departments/${departmentId}/equipments/${equipmentId}/`, data),
   delete: (departmentId: number, equipmentId: number) =>
     http.delete(
-      `/departments/${departmentId}/equipments/${equipmentId}/delete/`
+      `/departments/${departmentId}/equipments/${equipmentId}/delete/`,
     ),
   inactive: (departmentId: number, equipmentId: number) =>
     http.patch(
-      `/departments/${departmentId}/equipments/${equipmentId}/inactive/`
+      `/departments/${departmentId}/equipments/${equipmentId}/inactive/`,
     ),
   activate: (equipmentId: number) =>
     http.post(`/equipment/${equipmentId}/activate/`),
@@ -106,7 +106,7 @@ export const dashboardApi = {
   getParameterChart: (
     equipmentIds: number[],
     parameterId: number,
-    dateRange?: { start: string; end: string }
+    dateRange?: { start: string; end: string },
   ) =>
     http.get<ParameterChartData>("/dashboard/parameter-chart/", {
       params: {
@@ -174,8 +174,7 @@ export const eventApi = {
 };
 
 export const taskApi = {
-  listByEvent: (eventId: number) =>
-    http.get<Task[]>(`/tasks/event/${eventId}`),
+  listByEvent: (eventId: number) => http.get<Task[]>(`/tasks/event/${eventId}`),
 
   listByClinic: (clinicId: number) =>
     http.get<Task[]>(`/clinics/${clinicId}/tasks/`), // ✅ NEW
@@ -190,26 +189,21 @@ export const taskApi = {
   updateStatus: (id: number, status: Task["status"]) =>
     http.patch(`/tasks/${id}/status/`, { status }),
 
-  startTimer: (taskId: number) =>
-    http.post(`/tasks/${taskId}/timer/start`),
+  startTimer: (taskId: number) => http.post(`/tasks/${taskId}/timer/start`),
 
-  pauseTimer: (taskId: number) =>
-    http.post(`/tasks/${taskId}/timer/pause`),
+  pauseTimer: (taskId: number) => http.post(`/tasks/${taskId}/timer/pause`),
 
-  stopTimer: (taskId: number) =>
-    http.post(`/tasks/${taskId}/timer/stop`),
+  stopTimer: (taskId: number) => http.post(`/tasks/${taskId}/timer/stop`),
 };
 
 // APIs related to parameter values (logs)
 export const parameterValueApi = {
   create: (data: {
     parameter: number;
-    equipment_details: number; // ✅ incubator-1 / incubator-2 id
-    content: string | number; // ✅ logged value
+    equipment_details: number;
+    content: string | number;
   }) => http.post("/parameter-values/", data),
 
   listByParameter: (parameterId: number) =>
     http.get(`/parameters/${parameterId}/values/`),
-
-
 };

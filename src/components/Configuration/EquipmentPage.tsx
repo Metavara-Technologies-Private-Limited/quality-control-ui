@@ -36,7 +36,7 @@ const EquipmentPage = () => {
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState<number | null>(
-    null
+    null,
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [openAddEquipmentPopup, setOpenAddEquipmentPopup] = useState(false);
@@ -53,21 +53,21 @@ const EquipmentPage = () => {
     if (!clinic?.department) return [];
 
     return clinic.department.flatMap((dep) =>
-      dep.equipments.map((eq) => ({ ...eq, department: dep }))
+      dep.equipments.map((eq) => ({ ...eq, department: dep })),
     );
   }, [clinic]);
 
   const filteredEquipments = useMemo(
     () =>
       equipments.filter((eq) =>
-        eq.equipment_name.toLowerCase().includes(searchQuery.toLowerCase())
+        eq.equipment_name.toLowerCase().includes(searchQuery.toLowerCase()),
       ),
-    [equipments, searchQuery]
+    [equipments, searchQuery],
   );
 
   const selectedEquipment = useMemo(
     () => equipments.find((e) => e.id === selectedEquipmentId),
-    [equipments, selectedEquipmentId]
+    [equipments, selectedEquipmentId],
   );
 
   /* ------------------ Helpers ------------------ */
@@ -79,9 +79,9 @@ const EquipmentPage = () => {
 
   const confirmDelete = async () => {
     if (!selectedEquipment) return;
-  
+
     const { id, department } = selectedEquipment;
-  
+
     try {
       await equipmentApi.delete(department.id, id);
       dispatch(fetchClinic(1));
@@ -91,7 +91,7 @@ const EquipmentPage = () => {
       console.error(err);
       toast.error("Failed to delete equipment.");
     }
-  };  
+  };
 
   const toggleEquipment = async (active: boolean) => {
     if (!selectedEquipment) return;
@@ -118,7 +118,11 @@ const EquipmentPage = () => {
   return (
     <Box>
       {/* Toast Container */}
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+      />
 
       {/* Header */}
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
@@ -128,24 +132,23 @@ const EquipmentPage = () => {
 
         <Box sx={{ display: "flex", gap: 2 }}>
           <TextField
-  size="small"
-  variant="outlined"
-  InputLabelProps={{ shrink: true }}
-  placeholder="Search Equipments"
-  value={searchQuery}
-  onChange={(e) => setSearchQuery(e.target.value)}
-  sx={{
-    width: 260,
-    background: "#fff",
-    "& .MuiOutlinedInput-root fieldset": {
-      borderColor: "#505050", // normal
-    },
-    "& .MuiOutlinedInput-root.Mui-focused fieldset": {
-      borderColor: "#232323", // only on tap/focus
-    },
-  }}
-/>
-
+            size="small"
+            variant="outlined"
+            InputLabelProps={{ shrink: true }}
+            placeholder="Search Equipments"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{
+              width: 260,
+              background: "#fff",
+              "& .MuiOutlinedInput-root fieldset": {
+                borderColor: "#505050", // normal
+              },
+              "& .MuiOutlinedInput-root.Mui-focused fieldset": {
+                borderColor: "#232323", // only on tap/focus
+              },
+            }}
+          />
 
           <Button
             variant="contained"
@@ -333,17 +336,21 @@ const EquipmentPage = () => {
         onClose={() => setAnchorEl(null)}
       >
         {selectedEquipment?.is_active ? (
-          <MenuItem onClick={() => {
-            setDialogs({ ...dialogs, inactive: true });
-            setAnchorEl(null);
-          }}>
+          <MenuItem
+            onClick={() => {
+              setDialogs({ ...dialogs, inactive: true });
+              setAnchorEl(null);
+            }}
+          >
             Inactivate
           </MenuItem>
         ) : (
-          <MenuItem onClick={() => {
-            setDialogs({ ...dialogs, active: true });
-            setAnchorEl(null);
-          }}>
+          <MenuItem
+            onClick={() => {
+              setDialogs({ ...dialogs, active: true });
+              setAnchorEl(null);
+            }}
+          >
             Activate
           </MenuItem>
         )}
@@ -352,7 +359,6 @@ const EquipmentPage = () => {
           onClick={() => {
             setDialogs({ ...dialogs, delete: true });
             setAnchorEl(null);
-            
           }}
         >
           Delete
@@ -363,7 +369,6 @@ const EquipmentPage = () => {
       <Dialog
         open={dialogs.delete}
         onClose={() => setDialogs({ ...dialogs, delete: false })}
-        
       >
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
@@ -372,18 +377,24 @@ const EquipmentPage = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogs({ ...dialogs, delete: false })}
-          sx={{
-    color: "#232323",
-    border: "1px solid #505050",
-    "&:hover": {
-      border: "1px solid #232323",
-    }
-  }}
-            >
+          <Button
+            onClick={() => setDialogs({ ...dialogs, delete: false })}
+            sx={{
+              color: "#232323",
+              border: "1px solid #505050",
+              "&:hover": {
+                border: "1px solid #232323",
+              },
+            }}
+          >
             Cancel
           </Button>
-          <Button onClick={confirmDelete} variant="contained" color="error" sx={{ background: "#505050", "&:hover": { background: "#232323" } }}>
+          <Button
+            onClick={confirmDelete}
+            variant="contained"
+            color="error"
+            sx={{ background: "#505050", "&:hover": { background: "#232323" } }}
+          >
             Delete
           </Button>
         </DialogActions>
@@ -402,17 +413,17 @@ const EquipmentPage = () => {
         </DialogContent>
         <DialogActions>
           <Button
-  onClick={() => setDialogs({ ...dialogs, inactive: false })}
-  sx={{
-    color: "#232323",
-    border: "1px solid #505050",
-    "&:hover": {
-      border: "1px solid #232323",
-    },
-  }}
->
-  Cancel
-</Button>
+            onClick={() => setDialogs({ ...dialogs, inactive: false })}
+            sx={{
+              color: "#232323",
+              border: "1px solid #505050",
+              "&:hover": {
+                border: "1px solid #232323",
+              },
+            }}
+          >
+            Cancel
+          </Button>
 
           <Button
             onClick={() => toggleEquipment(false)}
@@ -437,18 +448,18 @@ const EquipmentPage = () => {
         </DialogContent>
         <DialogActions>
           <Button
-  onClick={() => setDialogs({ ...dialogs, active: false })}
-  variant="outlined"
-  sx={{
-    color: "#232323",
-    border: "1px solid #505050",
-    "&:hover": {
-      border: "1px solid #232323",
-    },
-  }}
->
-  Cancel
-</Button>
+            onClick={() => setDialogs({ ...dialogs, active: false })}
+            variant="outlined"
+            sx={{
+              color: "#232323",
+              border: "1px solid #505050",
+              "&:hover": {
+                border: "1px solid #232323",
+              },
+            }}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={() => toggleEquipment(true)}
             variant="contained"

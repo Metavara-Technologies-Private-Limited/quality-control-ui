@@ -19,7 +19,6 @@ const renderParameterDetails = (p: Parameter) => {
   let content = p.config;
   if (!content) return "-";
 
-  // ✅ Handle history format - get latest config
   if (
     content.history &&
     Array.isArray(content.history) &&
@@ -37,7 +36,8 @@ const renderParameterDetails = (p: Parameter) => {
           component="span"
           sx={{ fontSize: 13, color: "#374151", fontWeight: 500 }}
         >
-          Min {content.min_value ?? "-"} {content.unit || ""} – Max {content.max_value ?? "-"} {content.unit || ""}
+          Min {content.min_value ?? "-"} {content.unit || ""} – Max{" "}
+          {content.max_value ?? "-"} {content.unit || ""}
         </Typography>
       );
 
@@ -124,7 +124,7 @@ const ViewEquipment = () => {
     );
   }
   const department = clinic?.department.find((d) =>
-    d.equipments.some((e) => e.id === equipmentId)
+    d.equipments.some((e) => e.id === equipmentId),
   );
 
   const departmentName = department?.name ?? "Unknown Department";

@@ -156,28 +156,27 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
 
   useEffect(() => {
     if (task?.timer_status !== "RUNNING") return;
-  
+
     const i = setInterval(() => {
-      forceTick(t => t + 1);
+      forceTick((t) => t + 1);
     }, 1000);
-  
+
     return () => clearInterval(i);
-  }, [task?.timer_status]);  
+  }, [task?.timer_status]);
 
   // const hydratedTaskIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!open || !task) return;
-  
+
     // defer until DOM is painted
     requestAnimationFrame(() => {
       if (!editorRef.current) return;
-  
-      editorRef.current.innerHTML =
-        task.description?.trim()
-          ? task.description
-          : '<p style="color:#aaa;font-style:italic;">No description yet. Click to edit…</p>';
-  
+
+      editorRef.current.innerHTML = task.description?.trim()
+        ? task.description
+        : '<p style="color:#aaa;font-style:italic;">No description yet. Click to edit…</p>';
+
       setTaskDetails(task.description || "");
     });
   }, [open, task?.id]);
@@ -256,18 +255,18 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
-  
+
     const files = Array.from(e.target.files);
-  
-    files.forEach(file => {
+
+    files.forEach((file) => {
       if (file.type.startsWith("image/")) {
         insertImageFromUpload(file); // editor only
       }
     });
-  
-    setSelectedFiles(prev => [...prev, ...files]); // ⭐ KEY FIX
+
+    setSelectedFiles((prev) => [...prev, ...files]); // ⭐ KEY FIX
     e.target.value = "";
-  };  
+  };
 
   const tabs = ["Description", "Sub Tasks"];
 
@@ -320,10 +319,10 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
         due_date: toISO(st.due_date)!,
         assignment: st.assignment ?? null,
       })),
-      documents: selectedFiles.map(file => ({
+      documents: selectedFiles.map((file) => ({
         document_name: file.name,
         data: "BASE64_DATA",
-      }))      
+      })),
     };
 
     await taskApi.update(task.id, payload);
@@ -858,7 +857,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                   </Typography>
                 )}
               </Box>
-  
+
               {task.documents && task.documents.length > 0 && (
                 <Box mt={3}>
                   <Typography fontSize={14} fontWeight={600} mb={1}>
@@ -880,8 +879,12 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                           bgcolor: "#F9FAFB",
                         }}
                       >
-                        <CloudUploadOutlinedIcon sx={{ fontSize: 16, color: "#6B7280" }} />
-                        <Typography fontSize={13}>{doc.document_name}</Typography>
+                        <CloudUploadOutlinedIcon
+                          sx={{ fontSize: 16, color: "#6B7280" }}
+                        />
+                        <Typography fontSize={13}>
+                          {doc.document_name}
+                        </Typography>
                       </Box>
                     ))}
                   </Stack>
@@ -944,7 +947,10 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                   sx={{ fontSize: 36, color: "#444", mb: 1 }}
                 />
                 <Typography fontSize={14} color="#666">
-                  Drag & Drop or <span style={{ color: '#2196F3', fontWeight: 600 }}>Choose Files</span>
+                  Drag & Drop or{" "}
+                  <span style={{ color: "#2196F3", fontWeight: 600 }}>
+                    Choose Files
+                  </span>
                 </Typography>
                 <Typography fontSize={12} color="#999">
                   Any file type • Multiple files supported

@@ -26,7 +26,7 @@ const Header = () => {
   const { activeTabIndex } = useTab();
 
   const activeTab = SIDEBAR_TABS.find(
-    (tab) => tab.iconIndex === activeTabIndex
+    (tab) => tab.iconIndex === activeTabIndex,
   );
 
   const clinicName = useSelector((state: RootState) => state.clinic.data?.name);
@@ -39,7 +39,7 @@ const Header = () => {
 
   const handleIconClick = (
     event: React.MouseEvent<HTMLElement>,
-    type: "calendar" | "notification" | "help"
+    type: "calendar" | "notification" | "help",
   ) => {
     setAnchorEl(event.currentTarget);
     setActiveMenu(type);
@@ -75,6 +75,8 @@ const Header = () => {
     embryology: "Embryology",
     andrology: "Andrology",
     "cryo-preservation": "Cryo Preservation",
+    "labequipment": "Lab Equipment",
+    "environmental": "Environmental",
     compliance: "Compliance",
     "document-control": "Document Control",
     equipment: "Equipment",
@@ -114,7 +116,6 @@ const Header = () => {
         >
           <Breadcrumbs
             separator={
-              // <Typography sx={{ color: "#232323", fontSize: "0.875rem" }}>
               <svg
                 width="16"
                 height="16"
@@ -127,7 +128,6 @@ const Header = () => {
                   fill="#1B1918"
                 />
               </svg>
-              // </Typography>
             }
             aria-label="breadcrumb"
             sx={{ display: { xs: "none", sm: "flex" } }}

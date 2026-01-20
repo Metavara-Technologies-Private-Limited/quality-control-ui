@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from "react";
 
 type TabContextType = {
   activeTabIndex: number;
@@ -19,6 +19,6 @@ export const TabProvider = ({ children }: { children: ReactNode }) => {
 
 export const useTab = () => {
   const ctx = useContext(TabContext);
-  if (!ctx) throw new Error('useTab must be used inside TabProvider');
+  if (!ctx) throw new Error("useTab must be used inside TabProvider");
   return ctx;
 };

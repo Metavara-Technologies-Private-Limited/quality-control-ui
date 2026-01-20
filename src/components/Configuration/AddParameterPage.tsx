@@ -16,7 +16,7 @@ import {
   TextField,
   IconButton,
 } from "@mui/material";
-import TurnLeftIcon from '@mui/icons-material/TurnLeft';
+import TurnLeftIcon from "@mui/icons-material/TurnLeft";
 import { useNavigate, useLocation } from "react-router-dom";
 import AddParameterPopup from "./AddParameterPopup";
 import { MoreHoriz } from "@mui/icons-material";
@@ -58,7 +58,7 @@ const AddParameterPage = () => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [menuParamIndex, setMenuParamIndex] = useState<number | null>(null);
   const [paramIndexToDelete, setParamIndexToDelete] = useState<number | null>(
-    null
+    null,
   );
   const open = Boolean(anchorEl);
   const equipmentQuantity = Array.from({ length: count }, (_, i) => i + 1);
@@ -71,7 +71,7 @@ const AddParameterPage = () => {
 
   const [paramToEdit, setParamToEdit] = useState<any>(null);
   const [editingParamIndex, setEditingParamIndex] = useState<number | null>(
-    null
+    null,
   );
 
   const [deleteParamDialogOpen, setDeleteParamDialogOpen] = useState(false);
@@ -108,7 +108,7 @@ const AddParameterPage = () => {
       setEquipmentName(storeEquipment.equipment_name || "");
 
       const dept = clinic?.department.find((d) =>
-        d.equipments.some((e) => e.id === storeEquipment.id)
+        d.equipments.some((e) => e.id === storeEquipment.id),
       );
 
       setDepartmentName(dept?.name || "");
@@ -119,7 +119,7 @@ const AddParameterPage = () => {
         (detail: any, index: number) => {
           const numMatch = detail.equipment_num?.match(/-(\d+)$/);
           const srNo = numMatch ? parseInt(numMatch[1]) : index + 1;
-          
+
           return {
             id: detail.id,
             sr: srNo,
@@ -127,78 +127,78 @@ const AddParameterPage = () => {
             make: detail.make || "",
             model: detail.model || "",
           };
-        }
+        },
       );
 
       setEquipmentTable(loadedEquipmentTable);
 
       if (loadedEquipmentTable.length > 0) {
         const maxSrNo = Math.max(
-          ...loadedEquipmentTable.map((item: any) => item.sr)
+          ...loadedEquipmentTable.map((item: any) => item.sr),
         );
         setCount(maxSrNo);
         setSelected([]);
         setNextSrNo(maxSrNo + 1);
       }
- const loadedParams = storeEquipment.parameters.map((p: any) => {
-  let cfg = p.config || {};
+      const loadedParams = storeEquipment.parameters.map((p: any) => {
+        let cfg = p.config || {};
 
-  // Get the latest config from history if it exists
-  if (cfg.history?.length) {
-    cfg = cfg.history[cfg.history.length - 1];
-  }
+        // Get the latest config from history if it exists
+        if (cfg.history?.length) {
+          cfg = cfg.history[cfg.history.length - 1];
+        }
 
-  // Create the base parameter object
-  const param: any = {
-    id: p.id,
-    name: p.parameter_name,
-    title: p.parameter_name,
-    data_type: cfg.data_type,
-    field_type: cfg.data_type,
-    mandatory: p.mandatory || false,
-  };
+        // Create the base parameter object
+        const param: any = {
+          id: p.id,
+          name: p.parameter_name,
+          title: p.parameter_name,
+          data_type: cfg.data_type,
+          field_type: cfg.data_type,
+          mandatory: p.mandatory || false,
+        };
 
-  // Handle different data types
-  switch (cfg.data_type) {
-    case "Integer":
-      param.default_value = cfg.default_value || cfg.integer_value || "";
-      param.integer_value = cfg.integer_value || cfg.default_value || "";
-      param.unit = cfg.unit || "";
-      param.min_value = cfg.min_value || "";
-      param.max_value = cfg.max_value || "";
-      break;
+        // Handle different data types
+        switch (cfg.data_type) {
+          case "Integer":
+            param.default_value = cfg.default_value || cfg.integer_value || "";
+            param.integer_value = cfg.integer_value || cfg.default_value || "";
+            param.unit = cfg.unit || "";
+            param.min_value = cfg.min_value || "";
+            param.max_value = cfg.max_value || "";
+            break;
 
-    case "Decimal":
-      param.default_value = cfg.default_value || "";
-      param.unit = cfg.unit || "";
-      param.min_value = cfg.min_value || "";
-      param.max_value = cfg.max_value || "";
-      break;
+          case "Decimal":
+            param.default_value = cfg.default_value || "";
+            param.unit = cfg.unit || "";
+            param.min_value = cfg.min_value || "";
+            param.max_value = cfg.max_value || "";
+            break;
 
-    case "Text":
-      param.text_type = cfg.text_type || "single";
-      param.text = cfg.text || "";
-      break;
+          case "Text":
+            param.text_type = cfg.text_type || "single";
+            param.text = cfg.text || "";
+            break;
 
-    case "Boolean":
-      param.boolean_type = cfg.boolean_type || "yesno";
-      break;
+          case "Boolean":
+            param.boolean_type = cfg.boolean_type || "yesno";
+            break;
 
-    case "Dropdown":
-      // Ensure dropdown is properly formatted as array
-      param.dropdown = normalizeDropdownValue(cfg.dropdown);
-      param.selection_type = cfg.selection_type || "single";
-      break;
-  }
+          case "Dropdown":
+            // Ensure dropdown is properly formatted as array
+            param.dropdown = normalizeDropdownValue(cfg.dropdown);
+            param.selection_type = cfg.selection_type || "single";
+            break;
+        }
 
-  // Keep original values for display
-  param.percentage = cfg.percentage || null;
+        // Keep original values for display
+        param.percentage = cfg.percentage || null;
 
-  return param;
-});
+        return param;
+      });
 
-setParameters(loadedParams);
-localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
+      setParameters(loadedParams);
+      localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
 
       setParameters(loadedParams);
       localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
@@ -209,7 +209,8 @@ localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
 
       const dept = clinic?.department.find(
         (d) =>
-          d.name.toLowerCase() === location.state?.departmentName?.toLowerCase()
+          d.name.toLowerCase() ===
+          location.state?.departmentName?.toLowerCase(),
       );
       setDepartmentId(dept?.id || null);
 
@@ -225,7 +226,7 @@ localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
 
   const toggleSelection = (num: number) => {
     setSelected((prev) =>
-      prev.includes(num) ? prev.filter((i) => i !== num) : [...prev, num]
+      prev.includes(num) ? prev.filter((i) => i !== num) : [...prev, num],
     );
   };
 
@@ -235,7 +236,7 @@ localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
 
     const currentMaxNum = Math.max(
       ...equipmentTable.map((row) => row.equipmentNum),
-      0
+      0,
     );
 
     if (count > currentMaxNum) {
@@ -267,7 +268,7 @@ localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
 
   const handleMenuOpen = (
     event: React.MouseEvent<HTMLElement>,
-    index: number
+    index: number,
   ) => {
     setAnchorEl(event.currentTarget);
     setMenuParamIndex(index);
@@ -279,48 +280,48 @@ localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
   };
 
   const handleEditParameter = () => {
-  if (menuParamIndex !== null) {
-    const param = parameters[menuParamIndex];
-    
-    // Create a complete copy with all necessary fields
-    const paramToEditData = {
-      id: param.id,
-      name: param.name || param.title,
-      title: param.title || param.name,
-      mandatory: param.mandatory || false,
-      field_type: param.field_type || param.data_type,
-      data_type: param.data_type || param.field_type,
-      
-      // Integer
-      default_value: param.default_value || param.integer_value || "",
-      unit: param.unit || "",
-      min_value: param.min_value || "",
-      max_value: param.max_value || "",
-      integer_value: param.integer_value || "",
-      
-      // Decimal (same structure as integer)
-      
-      // Text
-      text_type: param.text_type || "single",
-      text: param.text || "",
-      
-      // Boolean
-      boolean_type: param.boolean_type || "yesno",
-      
-      // Dropdown
-      dropdown: param.dropdown || [],
-      selection_type: param.selection_type || "single",
-      
-      // Other
-      percentage: param.percentage || null,
-    };
-    
-    setParamToEdit(paramToEditData);
-    setEditingParamIndex(menuParamIndex);
-    setOpenParamPopup(true);
-  }
-  handleClose();
-};
+    if (menuParamIndex !== null) {
+      const param = parameters[menuParamIndex];
+
+      // Create a complete copy with all necessary fields
+      const paramToEditData = {
+        id: param.id,
+        name: param.name || param.title,
+        title: param.title || param.name,
+        mandatory: param.mandatory || false,
+        field_type: param.field_type || param.data_type,
+        data_type: param.data_type || param.field_type,
+
+        // Integer
+        default_value: param.default_value || param.integer_value || "",
+        unit: param.unit || "",
+        min_value: param.min_value || "",
+        max_value: param.max_value || "",
+        integer_value: param.integer_value || "",
+
+        // Decimal (same structure as integer)
+
+        // Text
+        text_type: param.text_type || "single",
+        text: param.text || "",
+
+        // Boolean
+        boolean_type: param.boolean_type || "yesno",
+
+        // Dropdown
+        dropdown: param.dropdown || [],
+        selection_type: param.selection_type || "single",
+
+        // Other
+        percentage: param.percentage || null,
+      };
+
+      setParamToEdit(paramToEditData);
+      setEditingParamIndex(menuParamIndex);
+      setOpenParamPopup(true);
+    }
+    handleClose();
+  };
 
   const handleDeleteParameter = () => {
     setParamIndexToDelete(menuParamIndex);
@@ -388,7 +389,7 @@ localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
       return;
     }
     const selectedRows = equipmentTable.filter((row) =>
-      selected.includes(row.equipmentNum)
+      selected.includes(row.equipmentNum),
     );
     if (selectedRows.length === 0) {
       setMake("");
@@ -398,10 +399,10 @@ localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
     const firstMake = selectedRows[0]?.make || "";
     const firstModel = selectedRows[0]?.model || "";
     const sameMake = selectedRows.every(
-      (row) => (row.make || "") === firstMake
+      (row) => (row.make || "") === firstMake,
     );
     const sameModel = selectedRows.every(
-      (row) => (row.model || "") === firstModel
+      (row) => (row.model || "") === firstModel,
     );
     setMake(sameMake ? firstMake : "");
     setModel(sameModel ? firstModel : "");
@@ -427,7 +428,7 @@ localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
   const handleAddParameter = (data: any) => {
     if (editingParamIndex !== null) {
       setParameters((prev) =>
-        prev.map((p, i) => (i === editingParamIndex ? { ...p, ...data } : p))
+        prev.map((p, i) => (i === editingParamIndex ? { ...p, ...data } : p)),
       );
       setEditingParamIndex(null);
       setParamToEdit(null);
@@ -438,199 +439,202 @@ localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
     }
     setOpenParamPopup(false);
   };
-// In AddParameterPage.tsx - Update the handleFinalSave function
+  // In AddParameterPage.tsx - Update the handleFinalSave function
 
-const handleFinalSave = async () => {
-  if (parameters.length === 0) {
-    toast.error("Please add at least one parameter");
-    return;
-  }
-
-  if (equipmentTable.length === 0) {
-    toast.error("Please add equipment details (Make and Model)");
-    return;
-  }
-
-  if (!departmentId) {
-    toast.error("Department not found");
-    return;
-  }
-
-  try {
-    const equipmentPayload = {
-      equipment_name: equipmentName,
-      is_active: true,
-      equipment_details: equipmentTable.map((row) => ({
-        id: row.id ?? undefined,
-        equipment_num: `${equipmentName}-${row.equipmentNum}`,
-        make: row.make || "",
-        model: row.model || "",
-        is_active: true,
-      })),
-      parameters: parameters.map((p) => {
-        // Determine the correct default value based on data type
-        let defaultValue = null;
-        
-        switch (p.data_type || p.field_type) {
-          case "Integer":
-            defaultValue = p.default_value || p.integer_value || null;
-            break;
-          case "Decimal":
-            defaultValue = p.default_value || null;
-            break;
-          case "Text":
-            defaultValue = p.text || null;
-            break;
-          case "Boolean":
-            defaultValue = null; // Booleans don't have default values
-            break;
-          case "Dropdown":
-            defaultValue = null; // Dropdowns don't have default values
-            break;
-          default:
-            defaultValue = null;
-        }
-
-        return {
-          id: p.id ?? undefined,
-          parameter_name: p.name || p.title || "",
-          is_active: true,
-          config: {
-            data_type: p.data_type || p.field_type || "",
-            default_value: defaultValue, // ✅ EXPLICITLY INCLUDE DEFAULT VALUE
-            min_value: p.min_value ?? null,
-            max_value: p.max_value ?? null,
-            integer_value: p.integer_value ?? p.default_value ?? null,
-            unit: p.unit ?? null,
-            percentage: p.percentage ?? null,
-            text: p.text ?? null,
-            text_type: p.text_type ?? null,
-            boolean_type: p.boolean_type ?? null,
-            dropdown: p.dropdown ?? [],
-            selection_type: p.selection_type ?? null,
-          },
-        };
-      }),
-    };
-
-    if (isEditMode && originalEquipment?.id) {
-      await equipmentApi.update(
-        departmentId,
-        originalEquipment.id,
-        equipmentPayload
-      );
-      toast.success("Equipment updated successfully!", {
-        position: "top-right",
-        autoClose: 2000,
-      });
-    } else {
-      await equipmentApi.create(departmentId, equipmentPayload);
-      toast.success("Equipment created successfully!", {
-        position: "top-right",
-        autoClose: 2000,
-        theme: "colored",
-      });
+  const handleFinalSave = async () => {
+    if (parameters.length === 0) {
+      toast.error("Please add at least one parameter");
+      return;
     }
-    localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
-    dispatch(fetchClinic(1));
 
-    setTimeout(() => {
-      navigate("/configuration/equipment", { replace: true });
-    }, 2000);
-  } catch (error) {
-    console.error("Save failed:", error);
-    toast.error("Save failed! Please check console.");
-  }
-};
+    if (equipmentTable.length === 0) {
+      toast.error("Please add equipment details (Make and Model)");
+      return;
+    }
+
+    if (!departmentId) {
+      toast.error("Department not found");
+      return;
+    }
+
+    try {
+      const equipmentPayload = {
+        equipment_name: equipmentName,
+        is_active: true,
+        equipment_details: equipmentTable.map((row) => ({
+          id: row.id ?? undefined,
+          equipment_num: `${equipmentName}-${row.equipmentNum}`,
+          make: row.make || "",
+          model: row.model || "",
+          is_active: true,
+        })),
+        parameters: parameters.map((p) => {
+          // Determine the correct default value based on data type
+          let defaultValue = null;
+
+          switch (p.data_type || p.field_type) {
+            case "Integer":
+              defaultValue = p.default_value || p.integer_value || null;
+              break;
+            case "Decimal":
+              defaultValue = p.default_value || null;
+              break;
+            case "Text":
+              defaultValue = p.text || null;
+              break;
+            case "Boolean":
+              defaultValue = null; // Booleans don't have default values
+              break;
+            case "Dropdown":
+              defaultValue = null; // Dropdowns don't have default values
+              break;
+            default:
+              defaultValue = null;
+          }
+
+          return {
+            id: p.id ?? undefined,
+            parameter_name: p.name || p.title || "",
+            is_active: true,
+            config: {
+              data_type: p.data_type || p.field_type || "",
+              default_value: defaultValue, // ✅ EXPLICITLY INCLUDE DEFAULT VALUE
+              min_value: p.min_value ?? null,
+              max_value: p.max_value ?? null,
+              integer_value: p.integer_value ?? p.default_value ?? null,
+              unit: p.unit ?? null,
+              percentage: p.percentage ?? null,
+              text: p.text ?? null,
+              text_type: p.text_type ?? null,
+              boolean_type: p.boolean_type ?? null,
+              dropdown: p.dropdown ?? [],
+              selection_type: p.selection_type ?? null,
+            },
+          };
+        }),
+      };
+
+      if (isEditMode && originalEquipment?.id) {
+        await equipmentApi.update(
+          departmentId,
+          originalEquipment.id,
+          equipmentPayload,
+        );
+        toast.success("Equipment updated successfully!", {
+          position: "top-right",
+          autoClose: 2000,
+        });
+      } else {
+        await equipmentApi.create(departmentId, equipmentPayload);
+        toast.success("Equipment created successfully!", {
+          position: "top-right",
+          autoClose: 2000,
+          theme: "colored",
+        });
+      }
+      localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
+      dispatch(fetchClinic(1));
+
+      setTimeout(() => {
+        navigate("/configuration/equipment", { replace: true });
+      }, 2000);
+    } catch (error) {
+      console.error("Save failed:", error);
+      toast.error("Save failed! Please check console.");
+    }
+  };
 
   // In AddParameterPage.tsx - Update the renderParameterContent function:
 
-const renderParameterContent = (p: any) => {
-  let data_type = p.data_type || p.field_type;
-  let config = p;
+  const renderParameterContent = (p: any) => {
+    let data_type = p.data_type || p.field_type;
+    let config = p;
 
-  if (p.history && Array.isArray(p.history) && p.history.length > 0) {
-    config = p.history[p.history.length - 1];
-    data_type = config.data_type;
-  }
+    if (p.history && Array.isArray(p.history) && p.history.length > 0) {
+      config = p.history[p.history.length - 1];
+      data_type = config.data_type;
+    }
 
-  switch (data_type) {
-    case "Integer":
-      return (
-        <Typography
-          sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
-        >
-          Min {config.min_value || "-"} {config.unit || ""} – Max {config.max_value || "-"} {config.unit || ""}
-        </Typography>
-      );
-    case "Decimal":
-      return (
-        <Typography
-          sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
-        >
-          Min {config.min_value || "-"} {config.unit || ""} – Max {config.max_value || "-"} {config.unit || ""}
-        </Typography>
-      );
-    case "Min/Max":
-      return (
-        <Typography
-          sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
-        >
-          Min {config.min_value || "-"} – Max {config.max_value || "-"} {config.unit ? config.unit : ""}
-        </Typography>
-      );
-    case "Percentage":
-      return (
-        <Typography
-          sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
-        >
-          {config.percentage}%
-        </Typography>
-      );
-    case "Text":
-      return (
-        <Typography
-          sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
-        >
-          {config.text}
-        </Typography>
-      );
-    case "Boolean":
-      return (
-        <Typography
-          sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
-        >
-          {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
-        </Typography>
-      );
-    case "Dropdown":
-    case "Select":
-      let options = normalizeDropdownValue(config.dropdown);
-      if (options.length === 0) return null;
-      return (
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-            flexWrap: "wrap",
-            mt: 0.5,
-          }}
-        >
-          {options.map((val: any, i: number) => (
-            <Chip
-              key={i}
-              label={String(val)}
-              size="small"
-              sx={{ background: "transparent" }}
-            />
-          ))}
-        </Box>
-      );
-    default:
-      return null;
-  }
-};
+    switch (data_type) {
+      case "Integer":
+        return (
+          <Typography
+            sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
+          >
+            Min {config.min_value || "-"} {config.unit || ""} – Max{" "}
+            {config.max_value || "-"} {config.unit || ""}
+          </Typography>
+        );
+      case "Decimal":
+        return (
+          <Typography
+            sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
+          >
+            Min {config.min_value || "-"} {config.unit || ""} – Max{" "}
+            {config.max_value || "-"} {config.unit || ""}
+          </Typography>
+        );
+      case "Min/Max":
+        return (
+          <Typography
+            sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
+          >
+            Min {config.min_value || "-"} – Max {config.max_value || "-"}{" "}
+            {config.unit ? config.unit : ""}
+          </Typography>
+        );
+      case "Percentage":
+        return (
+          <Typography
+            sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
+          >
+            {config.percentage}%
+          </Typography>
+        );
+      case "Text":
+        return (
+          <Typography
+            sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
+          >
+            {config.text}
+          </Typography>
+        );
+      case "Boolean":
+        return (
+          <Typography
+            sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
+          >
+            {config.boolean_type === "yesno" ? "Yes/No" : "True/False"}
+          </Typography>
+        );
+      case "Dropdown":
+      case "Select":
+        let options = normalizeDropdownValue(config.dropdown);
+        if (options.length === 0) return null;
+        return (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              flexWrap: "wrap",
+              mt: 0.5,
+            }}
+          >
+            {options.map((val: any, i: number) => (
+              <Chip
+                key={i}
+                label={String(val)}
+                size="small"
+                sx={{ background: "transparent" }}
+              />
+            ))}
+          </Box>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <Box>
@@ -649,10 +653,10 @@ const renderParameterContent = (p: any) => {
               borderRadius: 1,
               mr: 1,
               boxShadow: "3px 3px 6px rgba(0,0,0,0.2)",
-              backgroundColor: "#fff"
+              backgroundColor: "#fff",
             }}
           >
-            <TurnLeftIcon sx={{ fontSize: 24, padding: "3px", }}/>
+            <TurnLeftIcon sx={{ fontSize: 24, padding: "3px" }} />
           </IconButton>
           <Typography sx={{ fontWeight: 700, fontSize: "20px" }}>
             {isEditMode ? "Edit Equipment" : "Add Equipment"}
@@ -795,25 +799,47 @@ const renderParameterContent = (p: any) => {
                 border: "1px solid #E2E3E5",
                 borderRadius: 1,
                 height: "30px",
-                width: "97px"
+                width: "97px",
               }}
             >
               <Button
                 variant="text"
                 onClick={() => setCount((c) => (c > 1 ? c - 1 : c))}
-                sx={{ flex: 1,fontWeight: 500, color: "#565656", fontSize: "20px", p:0,minWidth: 0 }}
+                sx={{
+                  flex: 1,
+                  fontWeight: 500,
+                  color: "#565656",
+                  fontSize: "20px",
+                  p: 0,
+                  minWidth: 0,
+                }}
               >
                 –
               </Button>
 
-              <Box sx={{ flex: 1,textAlign: "center",fontWeight: 600, color: "#565656", fontSize: "15px" }}>
+              <Box
+                sx={{
+                  flex: 1,
+                  textAlign: "center",
+                  fontWeight: 600,
+                  color: "#565656",
+                  fontSize: "15px",
+                }}
+              >
                 {String(count).padStart(2, "0")}
               </Box>
 
               <Button
                 variant="text"
                 onClick={() => setCount((c) => c + 1)}
-                sx={{ flex: 1,fontWeight: 500, color: "#565656", fontSize: "20px", p:0,minWidth: 0 }}
+                sx={{
+                  flex: 1,
+                  fontWeight: 500,
+                  color: "#565656",
+                  fontSize: "20px",
+                  p: 0,
+                  minWidth: 0,
+                }}
               >
                 +
               </Button>
@@ -928,7 +954,7 @@ const renderParameterContent = (p: any) => {
                   backgroundColor: "#F3F3F3",
                   color: "#505050",
                   border: "1px solid #E5E7EB",
-                  px: 4,        
+                  px: 4,
                   py: 1.2,
                   fontSize: "16px",
                   fontWeight: 700,
@@ -936,7 +962,7 @@ const renderParameterContent = (p: any) => {
                   boxShadow: "none",
                   "&:hover": {
                     backgroundColor: "#EDEDED",
-                    color:"#232323",
+                    color: "#232323",
                     boxShadow: "none",
                   },
                 }}
@@ -990,40 +1016,39 @@ const renderParameterContent = (p: any) => {
           sx={{ mt: 10, display: "flex", justifyContent: "flex-end", gap: 2 }}
         >
           <Button
-  variant="outlined"
-  onClick={handleClearAll}
-  sx={{
-    borderRadius: "10px",
-    borderColor: "#505050",
-    color: "#232323",
-    textTransform: "none",
-    "&:hover": {
-      borderColor: "#232323",
-    },
-  }}
->
-  Clear All
-</Button>
+            variant="outlined"
+            onClick={handleClearAll}
+            sx={{
+              borderRadius: "10px",
+              borderColor: "#505050",
+              color: "#232323",
+              textTransform: "none",
+              "&:hover": {
+                borderColor: "#232323",
+              },
+            }}
+          >
+            Clear All
+          </Button>
 
-<Button
-  variant="contained"
-  onClick={handleFinalSave}
-  sx={{
-    borderRadius: "10px",
-    background: "#505050",
-    color: "#FFFFFF",
-    textTransform: "none",
-    px: 4,       
-    py: 1.2,      
-    fontSize: "16px",
-    "&:hover": {
-      backgroundColor: "#232323",
-    },
-  }}
->
-  Save
-</Button>
-
+          <Button
+            variant="contained"
+            onClick={handleFinalSave}
+            sx={{
+              borderRadius: "10px",
+              background: "#505050",
+              color: "#FFFFFF",
+              textTransform: "none",
+              px: 4,
+              py: 1.2,
+              fontSize: "16px",
+              "&:hover": {
+                backgroundColor: "#232323",
+              },
+            }}
+          >
+            Save
+          </Button>
         </Box>
       </Box>
 
@@ -1095,4 +1120,4 @@ const headerStyle: CSSProperties = {
 };
 const cellStyle = { padding: "10px", fontSize: "14px", color: "#4B5563" };
 
-export default AddParameterPage; 
+export default AddParameterPage;

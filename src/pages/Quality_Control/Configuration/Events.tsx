@@ -26,7 +26,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
-import { fetchEventsByClinic, selectUIEvents } from "@/store/eventSlice";
+import { fetchEventsByClinic } from "@/store/eventSlice";
 
 const COLORS = {
   textPrimary: "#000000",
@@ -56,15 +56,12 @@ const buildEquipmentParameterMap = (clinic: any) => {
 
   clinic?.department?.forEach((d: any) => {
     d.equipments?.forEach((e: any) => {
-      map[e.id] = new Set(
-        (e.parameters || []).map((p: any) => p.id)
-      );
+      map[e.id] = new Set((e.parameters || []).map((p: any) => p.id));
     });
   });
 
   return map;
 };
-
 
 const EventsHeader = ({ onCreate, onSearch }: any) => (
   <Stack
@@ -250,53 +247,110 @@ const EventDetailView = ({ event, onBack }: any) => (
 
         <Divider sx={{ mb: 4 }} />
 
-        <Typography fontSize={15} fontWeight={700} mb={1.5} color={COLORS.textPrimary}>
+        <Typography
+          fontSize={15}
+          fontWeight={700}
+          mb={1.5}
+          color={COLORS.textPrimary}
+        >
           Schedule
         </Typography>
-        <Typography fontSize={14} fontWeight={600} mb={3.5} color={COLORS.textPrimary}>
+        <Typography
+          fontSize={14}
+          fontWeight={600}
+          mb={3.5}
+          color={COLORS.textPrimary}
+        >
           {event.scheduleType}
         </Typography>
 
         <Grid container columnSpacing={10} rowSpacing={4} mb={6}>
           <Grid item>
-            <Typography fontSize={12} color={COLORS.textMuted} fontWeight={600} mb={1.5}>
+            <Typography
+              fontSize={12}
+              color={COLORS.textMuted}
+              fontWeight={600}
+              mb={1.5}
+            >
               From Time
             </Typography>
-            <Typography fontSize={15} color={COLORS.textPrimary}>{event.fromTime}</Typography>
+            <Typography fontSize={15} color={COLORS.textPrimary}>
+              {event.fromTime}
+            </Typography>
           </Grid>
           <Grid item>
-            <Typography fontSize={12} color={COLORS.textMuted} fontWeight={600} mb={1.5}>
+            <Typography
+              fontSize={12}
+              color={COLORS.textMuted}
+              fontWeight={600}
+              mb={1.5}
+            >
               To Time
             </Typography>
-            <Typography fontSize={15} color={COLORS.textPrimary}>{event.toTime}</Typography>
+            <Typography fontSize={15} color={COLORS.textPrimary}>
+              {event.toTime}
+            </Typography>
           </Grid>
           <Grid item>
-            <Typography fontSize={12} color={COLORS.textMuted} fontWeight={600} mb={1.5}>
+            <Typography
+              fontSize={12}
+              color={COLORS.textMuted}
+              fontWeight={600}
+              mb={1.5}
+            >
               Start Date
             </Typography>
-            <Typography fontSize={15} color={COLORS.textPrimary}>{event.startDate}</Typography>
+            <Typography fontSize={15} color={COLORS.textPrimary}>
+              {event.startDate}
+            </Typography>
           </Grid>
           <Grid item>
-            <Typography fontSize={12} color={COLORS.textMuted} fontWeight={600} mb={1.5}>
+            <Typography
+              fontSize={12}
+              color={COLORS.textMuted}
+              fontWeight={600}
+              mb={1.5}
+            >
               End Date
             </Typography>
-            <Typography fontSize={15} color={COLORS.textPrimary}>{event.endDate}</Typography>
+            <Typography fontSize={15} color={COLORS.textPrimary}>
+              {event.endDate}
+            </Typography>
           </Grid>
           <Grid item>
-            <Typography fontSize={12} color={COLORS.textMuted} fontWeight={600} mb={1.5}>
+            <Typography
+              fontSize={12}
+              color={COLORS.textMuted}
+              fontWeight={600}
+              mb={1.5}
+            >
               Recur Every Weeks on
             </Typography>
-            <Typography fontSize={15} color={COLORS.textPrimary}>{event.recurDuration || "1"}</Typography>
+            <Typography fontSize={15} color={COLORS.textPrimary}>
+              {event.recurDuration || "1"}
+            </Typography>
           </Grid>
           <Grid item>
-            <Typography fontSize={12} color={COLORS.textMuted} fontWeight={600} mb={1.5}>
+            <Typography
+              fontSize={12}
+              color={COLORS.textMuted}
+              fontWeight={600}
+              mb={1.5}
+            >
               Days
             </Typography>
-            <Typography fontSize={15} color={COLORS.textPrimary}>{event.days}</Typography>
+            <Typography fontSize={15} color={COLORS.textPrimary}>
+              {event.days}
+            </Typography>
           </Grid>
         </Grid>
 
-        <Typography fontSize={15} fontWeight={700} mb={2.5} color={COLORS.textPrimary}>
+        <Typography
+          fontSize={15}
+          fontWeight={700}
+          mb={2.5}
+          color={COLORS.textPrimary}
+        >
           Equipment
         </Typography>
         <TableContainer
@@ -360,7 +414,12 @@ const EventDetailView = ({ event, onBack }: any) => (
           </Table>
         </TableContainer>
 
-        <Typography fontSize={15} fontWeight={700} mb={2.5} color={COLORS.textPrimary}>
+        <Typography
+          fontSize={15}
+          fontWeight={700}
+          mb={2.5}
+          color={COLORS.textPrimary}
+        >
           Assignee
         </Typography>
         <Box
@@ -503,40 +562,42 @@ const mapEventToRow = (e: any, clinic: any) => {
   let equipmentsDetails: any[] = [];
 
   // ✅ PRIMARY: Use event_equipments with nested parameters
-  if (e.event_equipments && Array.isArray(e.event_equipments) && e.event_equipments.length > 0) {
+  if (
+    e.event_equipments &&
+    Array.isArray(e.event_equipments) &&
+    e.event_equipments.length > 0
+  ) {
     equipmentsDetails = e.event_equipments.map((eventEq: any) => ({
       equipment_name: eventEq.equipment__equipment_name || "-",
       parameters: (eventEq.parameters || []).map((p: any) => ({
         name: p.parameter__parameter_name || p.name || "-",
       })),
     }));
-  } 
+  }
   // ⚠️ FALLBACK: If no relationship data, show all parameters for all equipment
   else if (e.equipments && e.equipments.length > 0) {
     const equipmentParamMap = buildEquipmentParameterMap(clinic);
-  
+
     equipmentsDetails = e.equipments.map((equipment: any) => {
       const allowedParams =
         equipmentParamMap[equipment.equipment__id] || new Set();
-  
+
       const parameters = (e.parameters || [])
-        .filter((p: any) =>
-          allowedParams.has(p.parameter__id)
-        )
+        .filter((p: any) => allowedParams.has(p.parameter__id))
         .map((p: any) => ({
           name: p.parameter__parameter_name || "-",
         }));
-  
+
       return {
         equipment_name: equipment.equipment__equipment_name || "-",
         parameters,
       };
     });
-  }  
+  }
 
   const parameterCount = equipmentsDetails.reduce(
     (total: number, eq: any) => total + (eq.parameters?.length || 0),
-    0
+    0,
   );
 
   return {
@@ -549,10 +610,10 @@ const mapEventToRow = (e: any, clinic: any) => {
       e.schedule?.type === 3
         ? "Weekly"
         : e.schedule?.type === 1
-        ? "One Time"
-        : e.schedule?.type === 2
-        ? "Daily"
-        : "Monthly",
+          ? "One Time"
+          : e.schedule?.type === 2
+            ? "Daily"
+            : "Monthly",
     fromTime: formatTime(e.schedule?.from_time),
     toTime: formatTime(e.schedule?.to_time),
     startDate: formatDate(e.schedule?.start_date || e.schedule?.one_time_date),
@@ -591,12 +652,12 @@ const Events = () => {
   const events = rawEvents.map((e) => mapEventToRow(e, clinic));
 
   const filteredEvents = events.filter((e) =>
-    e.name.toLowerCase().includes(search.toLowerCase())
+    e.name.toLowerCase().includes(search.toLowerCase()),
   );
 
   const paginatedEvents = filteredEvents.slice(
     page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
+    page * rowsPerPage + rowsPerPage,
   );
 
   return (

@@ -9,7 +9,7 @@ export const formatDueDateDisplay = (due: string) => {
 
   // Try parsing as ISO first
   let date = dayjs(due);
-  
+
   // If invalid, try parsing as DD/MM/YYYY
   if (!date.isValid()) {
     date = dayjs(due, "DD/MM/YYYY", true); // strict parsing

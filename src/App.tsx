@@ -6,22 +6,18 @@ import { fetchClinic } from "./store/clinicSlice";
 
 import MainLayout from "./components/Layout/MainLayout";
 
-/* ================= GLOBAL PAGES ================= */
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import UserConfiguration from "./pages/UserConfiguration";
 import AuditTrail from "./pages/AuditTrail";
 
-/* ================= QUALITY CONTROL ================= */
 import Clinical from "./pages/Quality_Control/Clinical";
 import Reports from "./pages/Quality_Control/Reports";
 
-/* ================= QC CONFIGURATION ================= */
 import ConfigurationLayout from "./pages/Quality_Control/Configuration/ConfigurationLayout";
 import Events from "./pages/Quality_Control/Configuration/Events";
 import CreateEvent from "./pages/Quality_Control/Configuration/CreateEvent";
 
-/* ================= QC LAB ================= */
 import LabLayout from "./pages/Quality_Control/QcLab/LabLayout";
 
 import EmbryologyLayout from "./pages/Quality_Control/QcLab/Embryology/EmbryologyLayout";
@@ -32,40 +28,32 @@ import Task from "./pages/Quality_Control/QcLab/Embryology/Task";
 import AndrologyLayout from "./pages/Quality_Control/QcLab/Andrology/AndrologyLayout";
 import AndrologyEquipment from "./pages/Quality_Control/QcLab/Andrology/Equipments";
 import AndrologyEnvironment from "./pages/Quality_Control/QcLab/Andrology/Environment";
-// import AndrologyTask from "./pages/Quality_Control/QcLab/Andrology/Task";
 
 import CryopreservationLayout from "./pages/Quality_Control/QcLab/Cryopreservation/CryopreservationLayout";
 import CryoEquipment from "./pages/Quality_Control/QcLab/Cryopreservation/Equipments";
 import CryoEnvironment from "./pages/Quality_Control/QcLab/Cryopreservation/Environment";
-// import CryoTask from "./pages/Quality_Control/QcLab/Cryopreservation/Task";
 
 import EnvironmentalLayout from "./pages/Quality_Control/QcLab/Environmental/EnvironmentalLayout";
 import EnvEquipment from "./pages/Quality_Control/QcLab/Environmental/Equipment";
 import EnvEnvironment from "./pages/Quality_Control/QcLab/Environmental/Environment";
-// import EnvTask from "./pages/Quality_Control/QcLab/Environmental/Task";
 
 import LabEquipmentLayout from "./pages/Quality_Control/QcLab/LabEquipment/LabEquipmentLayout";
 import LabEquipEquipment from "./pages/Quality_Control/QcLab/LabEquipment/Equipment";
 import LabEquipEnvironment from "./pages/Quality_Control/QcLab/LabEquipment/Environment";
-// import LabEquipTask from "./pages/Quality_Control/QcLab/LabEquipment/Task";
 
-/* ================= CONFIGURATION COMPONENTS ================= */
 import EquipmentPage from "./components/Configuration/EquipmentPage";
 import ViewEquipment from "./components/Configuration/ViewEquipment";
 import AddParameterPage from "./components/Configuration/AddParameterPage";
 
-/* ================= COMPLIANCE ================= */
 import ComplianceClinical from "./pages/Compliance/Clinical";
 import ComplianceLab from "./pages/Compliance/Lab";
 
-/* ================= DOCUMENT CONTROL ================= */
 import DocConfiguration from "./pages/Document_Control/Configuration";
 import Documents from "./pages/Document_Control/Documents";
 import RecycleBin from "./pages/Document_Control/RecycleBin";
 import DocReports from "./pages/Document_Control/Reports";
 import WorkFlows from "./pages/Document_Control/WorkFlows";
 
-/* ================= RISK MANAGEMENT ================= */
 import RiskA from "./pages/Risk_Management/Risk_A";
 import { fetchAssigneesByClinic } from "./store/assigneeSlice";
 

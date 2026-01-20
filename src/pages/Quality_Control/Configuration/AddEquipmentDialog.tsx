@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -16,7 +16,7 @@ import {
 
 /* ================= COLORS ================= */
 const GREEN = "#47B35F";
-const LIGHT_GREEN = "#EAF6EE";
+// const LIGHT_GREEN = "#EAF6EE";
 const BORDER = "#E5E7EB";
 const TEXT_GRAY = "#6B7280";
 

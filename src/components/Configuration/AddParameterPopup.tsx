@@ -26,6 +26,7 @@ interface Props {
 const UNIT_OPTIONS = [
   "°C",
   "°F",
+  "m/s",
   "µg/m³",
   "%",
   "ppm",
@@ -39,13 +40,7 @@ const UNIT_OPTIONS = [
   "cm",
 ];
 
-const FIELD_TYPES = [
-  "Integer",
-  "Decimal",
-  "Text",
-  "Boolean",
-  "Dropdown",
-];
+const FIELD_TYPES = ["Integer", "Decimal", "Text", "Boolean", "Dropdown"];
 
 const AddParameterPopup: React.FC<Props> = ({
   open,
@@ -78,9 +73,16 @@ const AddParameterPopup: React.FC<Props> = ({
   const [booleanType, setBooleanType] = useState("yesno");
 
   // Dropdown fields
-  const [dropdownMode, setDropdownMode] = useState<"single" | "multi">("single");
-  const [dropdownOptions, setDropdownOptions] = useState<string[]>(["Option 1", "Option 2"]);
-  const [selectedDropdownValues, setSelectedDropdownValues] = useState<string[]>([]);
+  const [dropdownMode, setDropdownMode] = useState<"single" | "multi">(
+    "single",
+  );
+  const [dropdownOptions, setDropdownOptions] = useState<string[]>([
+    "Option 1",
+    "Option 2",
+  ]);
+  const [selectedDropdownValues, setSelectedDropdownValues] = useState<
+    string[]
+  >([]);
 
   useEffect(() => {
     if (open) {
@@ -92,69 +94,67 @@ const AddParameterPopup: React.FC<Props> = ({
     }
   }, [open, initialData]);
 
-const loadInitialData = () => {
-  if (!initialData) return;
+  const loadInitialData = () => {
+    if (!initialData) return;
 
-  // Extract the actual data type
-  const dataType = initialData.field_type || initialData.data_type;
+    // Extract the actual data type
+    const dataType = initialData.field_type || initialData.data_type;
 
-  setTitle(initialData.title || initialData.name || "");
-  setMandatory(initialData.mandatory || false);
-  setFieldType(dataType);
+    setTitle(initialData.title || initialData.name || "");
+    setMandatory(initialData.mandatory || false);
+    setFieldType(dataType);
 
-  // Debug log to see what data we're receiving
-  console.log("Loading initial data:", initialData);
+    // Debug log to see what data we're receiving
+    console.log("Loading initial data:", initialData);
 
-  // Load type-specific data
-  if (dataType === "Integer") {
-    // Try multiple possible field names for default value
-    const defaultVal = 
-      initialData.default_value || 
-      initialData.integer_value || 
-      initialData.int_value || 
-      "";
-    
-    setIntegerDefault(String(defaultVal));
-    setIntegerUnit(initialData.unit || "");
-    setIntegerMin(String(initialData.min_value || ""));
-    setIntegerMax(String(initialData.max_value || ""));
-  } 
-  else if (dataType === "Decimal") {
-    // Try multiple possible field names for default value
-    const defaultVal = 
-      initialData.default_value || 
-      initialData.decimal_value || 
-      "";
-    
-    setDecimalDefault(String(defaultVal));
-    setDecimalUnit(initialData.unit || "");
-    setDecimalMin(String(initialData.min_value || ""));
-    setDecimalMax(String(initialData.max_value || ""));
-  } 
-  else if (dataType === "Text") {
-    setTextType(initialData.text_type || "single");
-    setTextValue(initialData.text || "");
-  } 
-  else if (dataType === "Boolean") {
-    setBooleanType(initialData.boolean_type || "yesno");
-  } 
-  else if (dataType === "Dropdown") {
-    // Normalize dropdown options
-    let dropdownArray: string[] = [];
-    
-    if (Array.isArray(initialData.dropdown)) {
-      dropdownArray = initialData.dropdown.map((d: any) => String(d)).filter(Boolean);
-    } else if (typeof initialData.dropdown === "string") {
-      dropdownArray = initialData.dropdown
-        .split(",")
-        .map((s: string) => s.trim())
-        .filter(Boolean);
+    // Load type-specific data
+    if (dataType === "Integer") {
+      // Try multiple possible field names for default value
+      const defaultVal =
+        initialData.default_value ||
+        initialData.integer_value ||
+        initialData.int_value ||
+        "";
+
+      setIntegerDefault(String(defaultVal));
+      setIntegerUnit(initialData.unit || "");
+      setIntegerMin(String(initialData.min_value || ""));
+      setIntegerMax(String(initialData.max_value || ""));
+    } else if (dataType === "Decimal") {
+      // Try multiple possible field names for default value
+      const defaultVal =
+        initialData.default_value || initialData.decimal_value || "";
+
+      setDecimalDefault(String(defaultVal));
+      setDecimalUnit(initialData.unit || "");
+      setDecimalMin(String(initialData.min_value || ""));
+      setDecimalMax(String(initialData.max_value || ""));
+    } else if (dataType === "Text") {
+      setTextType(initialData.text_type || "single");
+      setTextValue(initialData.text || "");
+    } else if (dataType === "Boolean") {
+      setBooleanType(initialData.boolean_type || "yesno");
+    } else if (dataType === "Dropdown") {
+      // Normalize dropdown options
+      let dropdownArray: string[] = [];
+
+      if (Array.isArray(initialData.dropdown)) {
+        dropdownArray = initialData.dropdown
+          .map((d: any) => String(d))
+          .filter(Boolean);
+      } else if (typeof initialData.dropdown === "string") {
+        dropdownArray = initialData.dropdown
+          .split(",")
+          .map((s: string) => s.trim())
+          .filter(Boolean);
+      }
+
+      setDropdownOptions(
+        dropdownArray.length > 0 ? dropdownArray : ["Option 1", "Option 2"],
+      );
+      setDropdownMode(initialData.selection_type || "single");
     }
-    
-    setDropdownOptions(dropdownArray.length > 0 ? dropdownArray : ["Option 1", "Option 2"]);
-    setDropdownMode(initialData.selection_type || "single");
-  }
-};
+  };
 
   const resetForm = () => {
     setTitle("");
@@ -176,120 +176,126 @@ const loadInitialData = () => {
     setSelectedDropdownValues([]);
   };
 
-// In AddParameterPopup.tsx - Update the validateForm function
+  // In AddParameterPopup.tsx - Update the validateForm function
 
-const validateForm = () => {
-  if (!title.trim()) {
-    toast.error("Please enter Title");
-    return false;
-  }
-
-  if (!fieldType) {
-    toast.error("Please select Field Type");
-    return false;
-  }
-
-  if (fieldType === "Integer") {
-    if (!integerDefault.trim()) {
-      toast.error("Please enter Default Value for Integer");
+  const validateForm = () => {
+    if (!title.trim()) {
+      toast.error("Please enter Title");
       return false;
     }
-    if (!integerMin.trim()) {
-      toast.error("Please enter Minimum Value");
-      return false;
-    }
-    if (!integerMax.trim()) {
-      toast.error("Please enter Maximum Value");
-      return false;
-    }
-  }
 
-  if (fieldType === "Decimal") {
-    if (!decimalDefault.trim()) {
-      toast.error("Please enter Default Value for Decimal");
+    if (!fieldType) {
+      toast.error("Please select Field Type");
       return false;
     }
-    if (!decimalMin.trim()) {
-      toast.error("Please enter Minimum Value");
-      return false;
+
+    if (fieldType === "Integer") {
+      if (!integerDefault.trim()) {
+        toast.error("Please enter Default Value for Integer");
+        return false;
+      }
+      if (!integerMin.trim()) {
+        toast.error("Please enter Minimum Value");
+        return false;
+      }
+      if (!integerMax.trim()) {
+        toast.error("Please enter Maximum Value");
+        return false;
+      }
     }
-    if (!decimalMax.trim()) {
-      toast.error("Please enter Maximum Value");
-      return false;
+
+    if (fieldType === "Decimal") {
+      if (!decimalDefault.trim()) {
+        toast.error("Please enter Default Value for Decimal");
+        return false;
+      }
+      if (!decimalMin.trim()) {
+        toast.error("Please enter Minimum Value");
+        return false;
+      }
+      if (!decimalMax.trim()) {
+        toast.error("Please enter Maximum Value");
+        return false;
+      }
     }
-  }
 
-  if (fieldType === "Text") {
-    if (!textValue.trim()) {
-      toast.error("Please enter Text value");
-      return false;
+    if (fieldType === "Text") {
+      if (!textValue.trim()) {
+        toast.error("Please enter Text value");
+        return false;
+      }
     }
-  }
 
-  if (fieldType === "Dropdown") {
-    const validOptions = dropdownOptions.filter(opt => opt.trim());
-    if (validOptions.length < 2) {
-      toast.error("Please add at least 2 dropdown options");
-      return false;
+    if (fieldType === "Dropdown") {
+      const validOptions = dropdownOptions.filter((opt) => opt.trim());
+      if (validOptions.length < 2) {
+        toast.error("Please add at least 2 dropdown options");
+        return false;
+      }
     }
-  }
 
-  return true;
-};
-// In AddParameterPopup.tsx - Update the handleSave function
-
-const handleSave = () => {
-  if (!validateForm()) return;
-
-  const payload: any = {
-    title,
-    name: title,
-    mandatory,
-    field_type: fieldType,
-    data_type: fieldType,
+    return true;
   };
+  // In AddParameterPopup.tsx - Update the handleSave function
 
-  if (fieldType === "Integer") {
-    payload.default_value = integerDefault.trim() ? parseInt(integerDefault) : null;
-    payload.integer_value = integerDefault.trim() ? parseInt(integerDefault) : null;
-    payload.unit = integerUnit || null;
-    payload.min_value = integerMin.trim() ? parseInt(integerMin) : null;
-    payload.max_value = integerMax.trim() ? parseInt(integerMax) : null;
-  }
+  const handleSave = () => {
+    if (!validateForm()) return;
 
-  if (fieldType === "Decimal") {
-    payload.default_value = decimalDefault.trim() ? parseFloat(decimalDefault) : null;
-    payload.unit = decimalUnit || null;
-    payload.min_value = decimalMin.trim() ? parseFloat(decimalMin) : null;
-    payload.max_value = decimalMax.trim() ? parseFloat(decimalMax) : null;
-  }
+    const payload: any = {
+      title,
+      name: title,
+      mandatory,
+      field_type: fieldType,
+      data_type: fieldType,
+    };
 
-  if (fieldType === "Text") {
-    payload.text_type = textType;
-    payload.text = textValue.trim() || null;
-    payload.default_value = textValue.trim() || null; // ✅ SAVE TEXT AS DEFAULT VALUE
-  }
+    if (fieldType === "Integer") {
+      payload.default_value = integerDefault.trim()
+        ? parseInt(integerDefault)
+        : null;
+      payload.integer_value = integerDefault.trim()
+        ? parseInt(integerDefault)
+        : null;
+      payload.unit = integerUnit || null;
+      payload.min_value = integerMin.trim() ? parseInt(integerMin) : null;
+      payload.max_value = integerMax.trim() ? parseInt(integerMax) : null;
+    }
 
-  if (fieldType === "Boolean") {
-    payload.boolean_type = booleanType;
-    payload.default_value = null; // Booleans typically don't have defaults
-  }
+    if (fieldType === "Decimal") {
+      payload.default_value = decimalDefault.trim()
+        ? parseFloat(decimalDefault)
+        : null;
+      payload.unit = decimalUnit || null;
+      payload.min_value = decimalMin.trim() ? parseFloat(decimalMin) : null;
+      payload.max_value = decimalMax.trim() ? parseFloat(decimalMax) : null;
+    }
 
-  if (fieldType === "Dropdown") {
-    payload.dropdown = dropdownOptions.filter(opt => opt.trim()); // Filter empty strings
-    payload.selection_type = dropdownMode;
-    payload.default_value = null; // Dropdowns typically don't have defaults
-  }
+    if (fieldType === "Text") {
+      payload.text_type = textType;
+      payload.text = textValue.trim() || null;
+      payload.default_value = textValue.trim() || null; // ✅ SAVE TEXT AS DEFAULT VALUE
+    }
 
-  // Keep id if editing
-  if (initialData?.id) {
-    payload.id = initialData.id;
-  }
+    if (fieldType === "Boolean") {
+      payload.boolean_type = booleanType;
+      payload.default_value = null; // Booleans typically don't have defaults
+    }
 
-  onAdd(payload);
-  resetForm();
-  onClose();
-};
+    if (fieldType === "Dropdown") {
+      payload.dropdown = dropdownOptions.filter((opt) => opt.trim()); // Filter empty strings
+      payload.selection_type = dropdownMode;
+      payload.default_value = null; // Dropdowns typically don't have defaults
+    }
+
+    // Keep id if editing
+    if (initialData?.id) {
+      payload.id = initialData.id;
+    }
+
+    onAdd(payload);
+    resetForm();
+    onClose();
+  };
 
   // ✅ Handle selection mode change - clear selections when switching modes
   const handleDropdownModeChange = (newMode: "single" | "multi") => {
@@ -314,10 +320,10 @@ const handleSave = () => {
       "&.Mui-focused fieldset": { borderColor: "#CFD1D4 !important" },
     },
   };
-  
+
   const halfFieldSX = {
     ...commonFieldSX,
-    width: "182px",  
+    width: "182px",
   };
 
   return (
@@ -468,10 +474,7 @@ const handleSave = () => {
                 value={integerMin}
                 onChange={(e) => setIntegerMin(e.target.value)}
                 InputLabelProps={{ shrink: true }}
-                sx={{ ...commonFieldSX, 
-                  width: "182px",
-                  height:"50px"
-                }}
+                sx={{ ...commonFieldSX, width: "182px", height: "50px" }}
               />
 
               <TextField
@@ -480,10 +483,7 @@ const handleSave = () => {
                 value={integerMax}
                 onChange={(e) => setIntegerMax(e.target.value)}
                 InputLabelProps={{ shrink: true }}
-                sx={{ ...commonFieldSX, 
-                  width: "182px",
-                   height:"50px"
-                 }}
+                sx={{ ...commonFieldSX, width: "182px", height: "50px" }}
               />
             </Box>
           </>
@@ -545,7 +545,9 @@ const handleSave = () => {
         {fieldType === "Text" && (
           <>
             <Box sx={{ display: "flex", gap: 3, alignItems: "center", ml: 1 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <label
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
                 <input
                   type="radio"
                   checked={textType === "single"}
@@ -569,7 +571,9 @@ const handleSave = () => {
                 Single Line
               </label>
 
-              <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <label
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
                 <input
                   type="radio"
                   checked={textType === "multi"}
@@ -610,7 +614,9 @@ const handleSave = () => {
           <RadioGroup
             row
             value={booleanType}
-            onChange={(e) => setBooleanType(e.target.value as "yesno" | "truefalse")}
+            onChange={(e) =>
+              setBooleanType(e.target.value as "yesno" | "truefalse")
+            }
             sx={{ ml: 1 }}
           >
             <FormControlLabel
@@ -675,11 +681,11 @@ const handleSave = () => {
                       name="dropdown-single-selection"
                       checked={selectedDropdownValues.includes(opt)}
                       onChange={() => setSelectedDropdownValues([opt])}
-                      style={{ 
+                      style={{
                         margin: 0,
                         cursor: "pointer",
                         width: "16px",
-                        height: "16px"
+                        height: "16px",
                       }}
                     />
                   ) : (
@@ -694,15 +700,15 @@ const handleSave = () => {
                           ]);
                         } else {
                           setSelectedDropdownValues(
-                            selectedDropdownValues.filter((v) => v !== opt)
+                            selectedDropdownValues.filter((v) => v !== opt),
                           );
                         }
                       }}
-                      style={{ 
+                      style={{
                         margin: 0,
                         cursor: "pointer",
                         width: "16px",
-                        height: "16px"
+                        height: "16px",
                       }}
                     />
                   )}
@@ -716,11 +722,13 @@ const handleSave = () => {
                     const oldValue = updated[idx];
                     updated[idx] = e.target.value;
                     setDropdownOptions(updated);
-                    
+
                     // Update selected values if this option was selected
                     if (selectedDropdownValues.includes(oldValue)) {
                       setSelectedDropdownValues(
-                        selectedDropdownValues.map(v => v === oldValue ? e.target.value : v)
+                        selectedDropdownValues.map((v) =>
+                          v === oldValue ? e.target.value : v,
+                        ),
                       );
                     }
                   }}
@@ -743,11 +751,13 @@ const handleSave = () => {
                     onClick={() => {
                       const removedOption = dropdownOptions[idx];
                       setDropdownOptions(
-                        dropdownOptions.filter((_, i) => i !== idx)
+                        dropdownOptions.filter((_, i) => i !== idx),
                       );
                       // Remove from selections if it was selected
                       setSelectedDropdownValues(
-                        selectedDropdownValues.filter(v => v !== removedOption)
+                        selectedDropdownValues.filter(
+                          (v) => v !== removedOption,
+                        ),
                       );
                     }}
                     size="small"
@@ -762,7 +772,15 @@ const handleSave = () => {
         )}
 
         {/* Action Buttons */}
-        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, px: 2, mr: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 2,
+            px: 2,
+            mr: 2,
+          }}
+        >
           <Button
             variant="contained"
             onClick={onClose}
