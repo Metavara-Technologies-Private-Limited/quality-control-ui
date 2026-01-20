@@ -204,11 +204,13 @@ const EquipmentCard = ({ item, selected = false, onClick, assignees, onAddAssign
 };
 
 const Equipment = () => {
-  const { selectedAssigneeId, searchText = "", setSearchText } = useOutletContext<{
-    selectedAssigneeId: number | null;
-    searchText: string;
-    setSearchText: (val: string) => void;
-  }>();
+  const { selectedAssigneeIds, searchText, setSearchText } = useOutletContext<{
+  selectedAssigneeIds: number[];
+  searchText: string;
+  setSearchText: (val: string) => void;
+}>();
+
+
 
   const { data: clinic } = useSelector((state: RootState) => state.clinic);
   const assigneeOptions = useSelector((state: RootState) => state.assignees.data);
@@ -274,7 +276,9 @@ const Equipment = () => {
         item.name.toLowerCase().includes(searchText.toLowerCase()) || 
         item.detailName.toLowerCase().includes(searchText.toLowerCase());
 
-      const matchesAssignee = !selectedAssigneeId || assignees.some(a => a.id === selectedAssigneeId);
+const matchesAssignee =
+  selectedAssigneeIds.length === 0 ||
+  assignees.some(a => selectedAssigneeIds.includes(a.id));
 
       if (matchesSearch && matchesAssignee) {
         if (!grouped[item.name]) grouped[item.name] = [];
@@ -283,7 +287,8 @@ const Equipment = () => {
     });
 
     return grouped;
-  }, [rawEquipmentData, searchText, selectedAssigneeId, equipmentAssignees]);
+  }, [rawEquipmentData, searchText, selectedAssigneeIds, equipmentAssignees]);
+
 
   const equipmentDetails = rawEquipmentData
     .filter((e) => e.name === selectedEquipment)

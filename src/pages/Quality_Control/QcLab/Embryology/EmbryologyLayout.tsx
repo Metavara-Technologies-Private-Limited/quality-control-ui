@@ -3,19 +3,20 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import Tooltip from '@mui/material/Tooltip';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  Box, Tabs, Tab, TextField, InputAdornment, 
-  Typography, Avatar, AvatarGroup, IconButton, InputBase 
+import {
+  Box, Tabs, Tab, TextField, InputAdornment,
+  Typography, Avatar, AvatarGroup,
+  Popover, List, ListItem, ListItemAvatar, ListItemText, Checkbox
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import CloseIcon from '@mui/icons-material/Close';
 
 const avatarColors = [
-  '#F44336', '#E91E63', '#9C27B0', '#673AB7',
-  '#3F51B5', '#2196F3', '#03A9F4', '#00BCD4',
-  '#009688', '#4CAF50', '#8BC34A', '#FFC107',
-  '#FF9800', '#FF5722', '#795548', '#607D8B',
+  '#FF5630', '#FF7452', '#FF8B00', '#FFC400',
+  '#36B37E', '#00B8D9', '#2684FF', '#6554C0',
+  '#8777D9', '#998DD9', '#0052CC', '#172B4D',
+  '#42526E', '#6B778C', '#091E42',
 ];
+
 
 const getAvatarColor = (name: string) => {
   let hash = 0;
@@ -30,15 +31,31 @@ const EmbryologyLayout = () => {
   const navigate = useNavigate();
 
   const allAssignees = useSelector((state: RootState) => state.assignees.data);
-  const [searchText, setSearchText] = useState('');
-  const [showMiniSearch, setShowMiniSearch] = useState(false);
-  const [assigneeSearch, setAssigneeSearch] = useState('');
-  const [maxAvatars, setMaxAvatars] = useState(4);
-  const [selectedAssigneeId, setSelectedAssigneeId] = useState<number | null>(null);
 
-  const miniFilteredAssignees = allAssignees.filter(a =>
-    a.emp_name.toLowerCase().startsWith(assigneeSearch.toLowerCase())
-  );
+  const [searchText, setSearchText] = useState('');
+
+  //  MULTI-SELECT STATE (same as Andrology)
+  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<number[]>([]);
+
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+
+  const handleToggleAssignee = (id: number) => {
+    setSelectedAssigneeIds(prev =>
+      prev.includes(id)
+        ? prev.filter(item => item !== id)
+        : [...prev, id]
+    );
+  };
+
+  const handleOpenPopover = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClosePopover = () => {
+    setAnchorEl(null);
+  };
+
+  const open = Boolean(anchorEl);
 
   const getActiveTab = () => {
     if (location.pathname.includes('/equipments')) return 'equipments';
@@ -60,17 +77,15 @@ const EmbryologyLayout = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           borderBottom: '1px solid #E5E7EB',
-          mx: -3, px: 3
+          mx: -3,
+          px: 3,
         }}
       >
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
           TabIndicatorProps={{ sx: { backgroundColor: '#E17E61', height: '1px' } }}
-          sx={{
-            minHeight: 30,
-            '& .MuiTabs-flexContainer': { gap: 6 },
-          }}
+          sx={{ minHeight: 30, '& .MuiTabs-flexContainer': { gap: 6 } }}
         >
           {['equipments', 'environment', 'task'].map(tab => (
             <Tab
@@ -91,95 +106,159 @@ const EmbryologyLayout = () => {
         </Tabs>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-          <Box sx={{ position: 'relative' }}>
-            <TextField
-              size="small"
-              placeholder="Search for equipments"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              sx={{
-                width: '300px',
-                '& .MuiOutlinedInput-root': { borderRadius: '10px' }
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: '#9E9E9E', fontSize: 20 }} />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Box>
+          <TextField
+            size="small"
+            placeholder="Search for equipments"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            sx={{ width: 300, '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: '#9E9E9E', fontSize: 20 }} />
+                </InputAdornment>
+              ),
+            }}
+          />
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography sx={{ fontWeight: 700, fontSize: 14, color: '#232323' }}>
+            <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
               Assignees
             </Typography>
-            
-            <AvatarGroup 
-              max={maxAvatars} 
-              componentsProps={{ 
-                additionalAvatar: { 
-                  onClick: () => setMaxAvatars(8),
-                  sx: { cursor: 'pointer' } 
-                } 
+
+            <AvatarGroup
+              max={5}
+              componentsProps={{
+                additionalAvatar: {
+                  onClick: handleOpenPopover,
+                  sx: { cursor: 'pointer' },
+                },
               }}
-              sx={{ 
-                '& .MuiAvatar-root': { 
-                  width: 30, 
-                  height: 30, 
+              sx={{
+                '& .MuiAvatar-root': {
+                  width: 32,
+                  height: 32,
                   fontSize: 12,
-                  border: '2px solid #fff' 
-                } 
+                  border: '2px solid #fff',
+                  cursor: 'pointer',
+                },
               }}
             >
-              {allAssignees.map((person) => (
-                <Tooltip key={person.id} title={person.emp_name} arrow>
-                  <Avatar sx={{ backgroundColor: getAvatarColor(person.emp_name), color: '#fff' }}>
-                    {person.emp_name.charAt(0).toUpperCase()}
-                  </Avatar>
-                </Tooltip>
-              ))}
+              {allAssignees.map(person => {
+                const isSelected = selectedAssigneeIds.includes(person.id);
+                return (
+                  <Tooltip
+                    key={person.id}
+                    title={person.emp_name}
+                    arrow
+                    placement="bottom"
+                  >
+                    <Avatar
+                      onClick={() => handleToggleAssignee(person.id)}
+                      sx={{
+                        backgroundColor: getAvatarColor(person.emp_name),
+                        outline: isSelected ? '2px solid #0052CC' : 'none',
+                        outlineOffset: '2px',
+                        opacity:
+                          selectedAssigneeIds.length > 0 && !isSelected
+                            ? 0.5
+                            : 1,
+                      }}
+                    >
+                      {person.emp_name.charAt(0).toUpperCase()}
+                    </Avatar>
+                  </Tooltip>
+                );
+              })}
             </AvatarGroup>
 
-            {showMiniSearch ? (
-              <Box sx={{ position: 'relative' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', border: '1px solid #E5E7EB', borderRadius: '8px', px: 1, height: 32, backgroundColor: '#fff' }}>
-                  <InputBase
-                    placeholder="Find assignee..."
-                    value={assigneeSearch}
-                    onChange={(e) => setAssigneeSearch(e.target.value)}
-                    sx={{ fontSize: 12, width: 100 }}
-                    autoFocus
-                  />
-                  <IconButton size="small" onClick={() => { setShowMiniSearch(false); setAssigneeSearch(''); }}>
-                    <CloseIcon sx={{ fontSize: 14 }} />
-                  </IconButton>
-                </Box>
-                <Box sx={{ position: 'absolute', top: '36px', right: 0, width: '180px', maxHeight: '120px', overflowY: 'auto', backgroundColor: '#fff', border: '1px solid #E5E7EB', borderRadius: '8px', zIndex: 30, boxShadow: '0px 4px 12px rgba(0,0,0,0.1)' }}>
-                  {miniFilteredAssignees.map(person => (
-                    <Box key={person.id} onClick={() => { setSelectedAssigneeId(person.id); setShowMiniSearch(false); setAssigneeSearch(''); }} sx={{ px: 1.5, py: 0.8, cursor: 'pointer', '&:hover': { backgroundColor: '#F8F8F8' } }}>
-                      <Typography sx={{ fontSize: 12, fontWeight: 600 }}>{person.emp_name}</Typography>
-                    </Box>
-                  ))}
-                </Box>
+            <Popover
+              open={open}
+              anchorEl={anchorEl}
+              onClose={handleClosePopover}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              PaperProps={{
+                sx: {
+                  width: 300,
+                  maxHeight: 450,
+                  borderRadius: '8px',
+                  mt: 1,
+                },
+              }}
+            >
+              <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
+                <List dense>
+                  {allAssignees.map(person => {
+                    const isSelected = selectedAssigneeIds.includes(person.id);
+                    return (
+                      <ListItem
+  key={person.id}
+  button
+  onClick={() => handleToggleAssignee(person.id)}
+  sx={{
+    px: 2,
+    py: 1,
+    backgroundColor: isSelected ? '#E9F2FF' : 'transparent',
+    '&:hover': {
+      backgroundColor: isSelected ? '#DEEBFF' : '#F4F5F7',
+    },
+  }}
+>
+  <Checkbox
+    size="small"
+    checked={isSelected}
+    sx={{
+      mr: 1,
+      p: 0,
+      color: '#C1C7D0', // unchecked
+      '&.Mui-checked': {
+        color: '#0052CC', // blue checkbox ✔
+      },
+    }}
+  />
+
+  <ListItemAvatar sx={{ minWidth: 36 }}>
+    <Avatar
+      sx={{
+        width: 28,
+        height: 28,
+        fontSize: 12,
+        backgroundColor: getAvatarColor(person.emp_name),
+      }}
+    >
+      {person.emp_name.charAt(0).toUpperCase()}
+    </Avatar>
+  </ListItemAvatar>
+
+  <ListItemText
+    primary={person.emp_name}
+    primaryTypographyProps={{
+      fontSize: 14,
+      fontWeight: isSelected ? 600 : 400,
+      color: isSelected ? '#0052CC' : '#172B4D', 
+    }}
+  />
+</ListItem>
+
+                    );
+                  })}
+                </List>
               </Box>
-            ) : (
-              <IconButton size="small" onClick={() => setShowMiniSearch(true)} sx={{ border: '1px solid #E5E7EB', borderRadius: '8px', width: 32, height: 32 }}>
-                <SearchIcon sx={{ fontSize: 18, color: '#232323' }} />
-              </IconButton>
-            )}
+            </Popover>
+
           </Box>
         </Box>
       </Box>
 
       <Box mt={3}>
-        {/* Pass BOTH selectedAssigneeId and searchText to child routes */}
-       <Outlet context={{ 
-    selectedAssigneeId, 
-    searchText, 
-    setSearchText // ✅ Add this setter to the context
-}} />
+        <Outlet
+          context={{
+            selectedAssigneeIds,
+            searchText,
+            setSearchText,
+          }}
+        />
       </Box>
     </Box>
   );
