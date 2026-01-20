@@ -16,6 +16,7 @@ import {
   DialogActions,
   Divider,
 } from "@mui/material";
+import { useOutletContext } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
 import { MoreHoriz } from "@mui/icons-material";
 import ViewIcon from "@/assets/icons/eye.jpg";
@@ -31,6 +32,7 @@ import "react-toastify/dist/ReactToastify.css";
 const EquipmentPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+const { searchQuery } = useOutletContext<{ searchQuery: string }>();
 
   const { data: clinic } = useSelector((state: RootState) => state.clinic);
 
@@ -38,8 +40,6 @@ const EquipmentPage = () => {
   const [selectedEquipmentId, setSelectedEquipmentId] = useState<number | null>(
     null,
   );
-  const [searchQuery, setSearchQuery] = useState("");
-  const [openAddEquipmentPopup, setOpenAddEquipmentPopup] = useState(false);
 
   const [dialogs, setDialogs] = useState({
     delete: false,
@@ -124,42 +124,6 @@ const EquipmentPage = () => {
         hideProgressBar={false}
       />
 
-      {/* Header */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-        <Typography sx={{ fontWeight: 700, fontSize: 20 }}>
-          Equipments
-        </Typography>
-
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <TextField
-            size="small"
-            variant="outlined"
-            InputLabelProps={{ shrink: true }}
-            placeholder="Search Equipments"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{
-              width: 260,
-              background: "#fff",
-              "& .MuiOutlinedInput-root fieldset": {
-                borderColor: "#505050", // normal
-              },
-              "& .MuiOutlinedInput-root.Mui-focused fieldset": {
-                borderColor: "#232323", // only on tap/focus
-              },
-            }}
-          />
-
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setOpenAddEquipmentPopup(true)}
-            sx={{ background: "#505050", "&:hover": { background: "#232323" } }}
-          >
-            Add Equipment
-          </Button>
-        </Box>
-      </Box>
 
       {/* Cards */}
       <Grid container spacing={2}>
@@ -470,11 +434,6 @@ const EquipmentPage = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Add Equipment Popup */}
-      <AddEquipmentPopup
-        open={openAddEquipmentPopup}
-        onClose={() => setOpenAddEquipmentPopup(false)}
-      />
     </Box>
   );
 };
