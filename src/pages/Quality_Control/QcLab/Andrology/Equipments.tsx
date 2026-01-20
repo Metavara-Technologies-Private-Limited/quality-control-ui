@@ -7,7 +7,9 @@ import { useOutletContext } from "react-router-dom";
 import { IconButton } from "@mui/material";
 import TurnLeftIcon from '@mui/icons-material/TurnLeft';
 import PlusIcon from "@/assets/icons/Lab_plusIcon.svg";
+import { toast } from "react-toastify";
 
+// Forms
 import SpermAnalyzersForm from "./SpermAnalyzersForm";
 import CentrifugesForm from "./CentrifugesForm";
 import AutoclavesForm from "./AutoclavesForm";
@@ -33,33 +35,22 @@ const getAvatarColor = (name: string) => {
 
 const CustomPlusIcon = () => (
   <div style={{ 
-    width: "24px", 
-    height: "24px", 
-    borderRadius: "6px", 
-    border: "1px solid #E5E7EB", 
-    display: "flex", 
-    alignItems: "center", 
-    justifyContent: "center", 
-    backgroundColor: "#fff", 
-    cursor: "pointer" 
+    width: "24px", height: "24px", borderRadius: "6px", 
+    border: "1px solid #E5E7EB", display: "flex", 
+    alignItems: "center", justifyContent: "center", 
+    backgroundColor: "#fff", cursor: "pointer" 
   }}>
-    <img 
-      src={PlusIcon} 
-      alt="Add assignee" 
-      style={{ width: "24px", height: "24px" }} 
-    />
+    <img src={PlusIcon} alt="Add assignee" style={{ width: "24px", height: "24px" }} />
   </div>
 );
 
 const determineEquipmentType = (name: string) => {
   const n = name.toLowerCase().trim();
-  
   if (n.includes("gas") && n.includes("analyzer")) return "gas";
   if (n.includes("sperm") && n.includes("analyzer")) return "sperm";
   if (n.includes("centrifuge")) return "centrifuge";
   if (n.includes("autoclave")) return "autoclave";
   if (n.includes("refrigerator") || n.includes("freezer") || n.includes("fridge")) return "fridge";
-  
   return "other";
 };
 
@@ -148,7 +139,6 @@ const EquipmentCard = ({ item, selected = false, onClick, assignees, onAddAssign
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }} onClick={onClick}>
         <span style={{ fontSize: "13px", fontWeight: "700" }}>{item.detailName} : <span style={{ color: "#232323", fontWeight: "500" }}> {item.paramsCount}</span></span>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }} onClick={(e) => e.stopPropagation()}>
-          <span style={{ fontSize: "12px", fontWeight: "700", color: "#0f172a" }}></span>
           <div style={{ display: "flex", position: "relative" }}>
             {assignees.slice(0, 3).map((assignee, i) => (
               <div key={assignee.id} style={{ position: "relative", marginLeft: i > 0 ? "-8px" : 0 }} title={assignee.emp_name}>
@@ -169,19 +159,9 @@ const EquipmentCard = ({ item, selected = false, onClick, assignees, onAddAssign
   );
 };
 
-const getMappedRadioName = (input: string) => {
-  const val = input ? input.toString().toUpperCase() : "";
-  if (val.includes("01") || val.includes(" 1") || val.endsWith(" A")) return "Sperm Analyzer A";
-  if (val.includes("02") || val.includes(" 2") || val.endsWith(" B")) return "Sperm Analyzer B";
-  if (val.includes("03") || val.includes(" 3") || val.endsWith(" C")) return "Sperm Analyzer C";
-  if (val.includes("04") || val.includes(" 4") || val.endsWith(" D")) return "Sperm Analyzer D";
-  if (val.includes("05") || val.includes(" 5") || val.endsWith(" E")) return "Sperm Analyzer E";
-  return input;
-};
-
 const Andrology = () => {
-  const { selectedAssigneeId, searchText = "", setSearchText } = useOutletContext<{
-    selectedAssigneeId: number | null;
+  const { selectedAssigneeIds, searchText, setSearchText } = useOutletContext<{
+    selectedAssigneeIds: number[];
     searchText: string;
     setSearchText: (val: string) => void;
   }>();
@@ -194,14 +174,32 @@ const Andrology = () => {
   const [selectedRadio, setSelectedRadio] = useState("");
   const [equipmentType, setEquipmentType] = useState("");
   const [loading, setLoading] = useState(true);
+  const [rawEquipmentData, setRawEquipmentData] = useState<any[]>([]);
 
-  const [equipmentAssignees, setEquipmentAssignees] = useState<Record<string, Assignee[]>>({});
+  // 1. Initial State Load
+  const [equipmentAssignees, setEquipmentAssignees] = useState<Record<string, Assignee[]>>(() => {
+    try {
+      const saved = localStorage.getItem("andrology_equipment_assignees");
+      return saved ? JSON.parse(saved) : {};
+    } catch (error) {
+      console.error("Failed to load andrology assignees:", error);
+      return {};
+    }
+  });
+
   const [assigneeDialogOpen, setAssigneeDialogOpen] = useState(false);
   const [currentEquipmentId, setCurrentEquipmentId] = useState<string>("");
 
-  const [rawEquipmentData, setRawEquipmentData] = useState<any[]>([]);
-
   const andrologyAssignees = assigneeOptions.filter((a) => a.department_name === "Andrology");
+
+  // 2. Sync State to LocalStorage (Crucial Fix)
+  useEffect(() => {
+    try {
+      localStorage.setItem("andrology_equipment_assignees", JSON.stringify(equipmentAssignees));
+    } catch (error) {
+      console.error("Failed to save andrology assignees:", error);
+    }
+  }, [equipmentAssignees]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -231,7 +229,6 @@ const Andrology = () => {
         const uniqueEquipmentList = equipmentList.filter(
           (item, index, self) => index === self.findIndex((t) => t.id === item.id)
         );
-
         setRawEquipmentData(uniqueEquipmentList);
       } catch (error) {
         console.error(error);
@@ -239,13 +236,11 @@ const Andrology = () => {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
   const filteredGroupedEquipments = useMemo(() => {
     const grouped: Record<string, typeof rawEquipmentData> = {};
-
     rawEquipmentData.forEach((item) => {
       const equipmentKey = `${item.name}-${item.detailName}`;
       const assignees = equipmentAssignees[equipmentKey] || [];
@@ -254,16 +249,17 @@ const Andrology = () => {
         item.name.toLowerCase().includes(searchText.toLowerCase()) ||
         item.detailName.toLowerCase().includes(searchText.toLowerCase());
 
-      const matchesAssignee = !selectedAssigneeId || assignees.some(a => a.id === selectedAssigneeId);
+      const matchesAssignee =
+        selectedAssigneeIds.length === 0 ||
+        assignees.some(a => selectedAssigneeIds.includes(a.id));
 
       if (matchesSearch && matchesAssignee) {
         if (!grouped[item.name]) grouped[item.name] = [];
         grouped[item.name].push(item);
       }
     });
-
     return grouped;
-  }, [rawEquipmentData, searchText, selectedAssigneeId, equipmentAssignees]);
+  }, [rawEquipmentData, searchText, selectedAssigneeIds, equipmentAssignees]);
 
   const equipmentDetails = rawEquipmentData
     .filter((e) => e.name === selectedEquipment)
@@ -277,13 +273,9 @@ const Andrology = () => {
 
   const selectEquipment = (eq: (typeof rawEquipmentData)[number]) => {
     setSelectedEquipment(eq.name);
-    const mappedRadio = getMappedRadioName(eq.detailName);
-    setSelectedRadio(mappedRadio);
+    setSelectedRadio(eq.detailName);
     setEquipmentType(eq.type);
-
-    if (setSearchText) {
-      setSearchText("");
-    }
+    if (setSearchText) setSearchText("");
   };
 
   const handleAddAssignee = (equipmentKey: string) => {
@@ -296,6 +288,7 @@ const Andrology = () => {
       ...prev,
       [currentEquipmentId]: [...(prev[currentEquipmentId] || []), ...newAssignees],
     }));
+    toast.success("Assignees added successfully!");
   };
 
   const handleRemoveAssignee = (equipmentKey: string, assigneeId: number) => {
@@ -303,6 +296,7 @@ const Andrology = () => {
       ...prev,
       [equipmentKey]: (prev[equipmentKey] || []).filter((a) => a.id !== assigneeId),
     }));
+    toast.success("Assignee removed!");
   };
 
   const formMap: Record<string, any> = {
@@ -329,32 +323,26 @@ const Andrology = () => {
 
         {activeTab === "To-Do" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            {Object.keys(filteredGroupedEquipments).length > 0 ? (
-              Object.keys(filteredGroupedEquipments).map((eqName) => (
-                <div key={eqName} style={{ borderRadius: "12px", backgroundColor: "#F8F8F8", padding: "15px" }}>
-                  <h2 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px", color: "#0f172a", marginTop: 0 }}>{eqName}</h2>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: "12px" }}>
-                    {filteredGroupedEquipments[eqName].map((item) => {
-                      const equipmentKey = `${item.name}-${item.detailName}`;
-                      return (
-                        <EquipmentCard
-                          key={item.id}
-                          item={item}
-                          onClick={() => { selectEquipment(item); setView("detail"); }}
-                          assignees={equipmentAssignees[equipmentKey] || []}
-                          onAddAssignee={() => handleAddAssignee(equipmentKey)}
-                          onRemoveAssignee={(id) => handleRemoveAssignee(equipmentKey, id)}
-                        />
-                      );
-                    })}
-                  </div>
+            {Object.keys(filteredGroupedEquipments).map((eqName) => (
+              <div key={eqName} style={{ borderRadius: "12px", backgroundColor: "#F8F8F8", padding: "15px" }}>
+                <h2 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px", color: "#0f172a", marginTop: 0 }}>{eqName}</h2>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: "12px" }}>
+                  {filteredGroupedEquipments[eqName].map((item) => {
+                    const equipmentKey = `${item.name}-${item.detailName}`;
+                    return (
+                      <EquipmentCard
+                        key={item.id}
+                        item={item}
+                        onClick={() => { selectEquipment(item); setView("detail"); }}
+                        assignees={equipmentAssignees[equipmentKey] || []}
+                        onAddAssignee={() => handleAddAssignee(equipmentKey)}
+                        onRemoveAssignee={(id) => handleRemoveAssignee(equipmentKey, id)}
+                      />
+                    );
+                  })}
                 </div>
-              ))
-            ) : (
-              <div style={{ textAlign: "center", marginTop: "100px", color: "#94a3b8" }}>
-                No equipments found matching "{searchText}"
               </div>
-            )}
+            ))}
           </div>
         ) : (
           <div style={{ textAlign: "center", marginTop: "100px", color: "#94a3b8" }}>No plans added yet</div>
@@ -371,22 +359,8 @@ const Andrology = () => {
     <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#f9fafb", padding: "20px", gap: "20px", fontFamily: "'Montserrat', sans-serif" }}>
       <div style={{ width: "512px", height: "840px", backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "14px", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "20px", borderBottom: "1px solid #e5e7eb" }}>
-          <IconButton
-            onClick={() => setView("list")}
-            sx={{
-              width: 24,
-              height: 24,
-              padding: "10px",
-              opacity: 1,
-              color: "#374151",
-              borderRadius: 1,
-              mr: 2,
-              mb: 1,
-              boxShadow: "3px 3px 6px rgba(0,0,0,0.2)",
-              backgroundColor: "#fff"
-            }}
-          >
-            <TurnLeftIcon sx={{ fontSize: 24, padding: "3px", }}/>
+          <IconButton onClick={() => setView("list")} sx={{ width: 24, height: 24, padding: "10px", color: "#374151", borderRadius: 1, mr: 2, mb: 1, boxShadow: "3px 3px 6px rgba(0,0,0,0.2)", backgroundColor: "#fff" }}>
+            <TurnLeftIcon sx={{ fontSize: 24, padding: "3px" }}/>
           </IconButton>
           <button style={{ background: "none", border: "none", fontSize: "18px", fontWeight: "700", color: "#232323", marginBottom: "16px" }}>Equipments</button>
           <div style={{ display: "inline-flex", backgroundColor: "#F2F2F2", padding: "4px", borderRadius: "12px", gap: "4px", width: "100%" }}>
@@ -395,31 +369,20 @@ const Andrology = () => {
             ))}
           </div>
         </div>
-
         <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "10px", overflowY: "auto", flex: 1 }}>
-          {activeTab === "To-Do" ? (
-            Object.keys(filteredGroupedEquipments).map((eqName) => {
-              const eqItems = filteredGroupedEquipments[eqName];
-              const itemsToShow = eqName === selectedEquipment ? eqItems.filter((item) => item.detailName === selectedRadio) : [eqItems[0]];
-              return itemsToShow.map((item) => {
-                const equipmentKey = `${item.name}-${item.detailName}`;
-                return (
-                  <EquipmentCard key={item.id} item={item} selected={selectedRadio === item.detailName} onClick={() => selectEquipment(item)} assignees={equipmentAssignees[equipmentKey] || []} onAddAssignee={() => handleAddAssignee(equipmentKey)} onRemoveAssignee={(id) => handleRemoveAssignee(equipmentKey, id)} />
-                );
-              });
-            })
-          ) : (
-            <div style={{ textAlign: "center", marginTop: "20px", color: "#94a3b8", fontSize: "14px" }}>No plans available</div>
-          )}
+          {activeTab === "To-Do" && Object.keys(filteredGroupedEquipments).map((eqName) => {
+            const eqItems = filteredGroupedEquipments[eqName];
+            const itemsToShow = eqName === selectedEquipment ? eqItems.filter((item) => item.detailName === selectedRadio) : [eqItems[0]];
+            return itemsToShow.map((item) => {
+              const equipmentKey = `${item.name}-${item.detailName}`;
+              return <EquipmentCard key={item.id} item={item} selected={selectedRadio === item.detailName} onClick={() => selectEquipment(item)} assignees={equipmentAssignees[equipmentKey] || []} onAddAssignee={() => handleAddAssignee(equipmentKey)} onRemoveAssignee={(id) => handleRemoveAssignee(equipmentKey, id)} />;
+            });
+          })}
         </div>
       </div>
-
       <div style={{ width: "994px" }}>
-        {activeTab === "To-Do" && ActiveForm && (
-          <ActiveForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} equipmentDetails={equipmentDetails} />
-        )}
+        {activeTab === "To-Do" && ActiveForm && <ActiveForm selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} equipmentDetails={equipmentDetails} />}
       </div>
-
       <AssigneeDialog open={assigneeDialogOpen} onClose={() => setAssigneeDialogOpen(false)} availableAssignees={andrologyAssignees} currentAssignees={equipmentAssignees[currentEquipmentId] || []} onAdd={handleAssigneesAdded} />
     </div>
   );
