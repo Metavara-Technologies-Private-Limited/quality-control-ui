@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   Box,
@@ -97,6 +98,69 @@ const CreateEvent = () => {
 
   const [fromTime, setFromTime] = useState<Dayjs | null>(dayjs());
   const [toTime, setToTime] = useState<Dayjs | null>(dayjs());
+
+  // Time validation handlers
+  const handleFromTimeChange = (time: Dayjs | null) => {
+    if (!time) {
+      setFromTime(null);
+      return;
+    }
+
+    // Check if selected time is in the past (only for today's date)
+    // Compare by minute to avoid millisecond precision issues
+    const now = dayjs();
+    if (startDate && startDate.isSame(now, 'day')) {
+      const selectedMinutes = time.hour() * 60 + time.minute();
+      const currentMinutes = now.hour() * 60 + now.minute();
+      
+      if (selectedMinutes < currentMinutes) {
+        toast.warn("From time cannot be in the past");
+        return;
+      }
+    }
+
+    // If toTime exists and fromTime is after or equal to toTime, reset toTime
+    if (toTime && time.isAfter(toTime)) {
+      toast.warn("From time cannot be after To time");
+      setToTime(null);
+    }
+
+    setFromTime(time);
+  };
+
+  const handleToTimeChange = (time: Dayjs | null) => {
+    if (!time) {
+      setToTime(null);
+      return;
+    }
+
+    // Check if selected time is in the past (only for today's date)
+    // Compare by minute to avoid millisecond precision issues
+    const now = dayjs();
+    if (startDate && startDate.isSame(now, 'day')) {
+      const selectedMinutes = time.hour() * 60 + time.minute();
+      const currentMinutes = now.hour() * 60 + now.minute();
+      
+      if (selectedMinutes < currentMinutes) {
+        toast.warn("To time cannot be in the past");
+        return;
+      }
+    }
+
+    // Check if toTime is before or equal to fromTime
+    if (fromTime) {
+      const toMinutes = time.hour() * 60 + time.minute();
+      const fromMinutes = fromTime.hour() * 60 + fromTime.minute();
+      
+      if (toMinutes <= fromMinutes) {
+        toast.warn("To time must be greater than From time");
+        return;
+      }
+    }
+
+    setToTime(time);
+  };
+
   const [startDate, setStartDate] = useState<Dayjs | null>(dayjs());
   const [endDate, setEndDate] = useState<Dayjs | null>(dayjs());
 
@@ -238,12 +302,12 @@ const CreateEvent = () => {
   const grouped = groupedEquipments();
 
   // Helper function to get only selected parameters for display
-  // const getSelectedParameters = (item: SelectedEquipmentData) => {
-  //   const selectedParamIds = item.parameters.map((p) => p.id);
-  //   return item.equipment.parameters.filter((p) =>
-  //     selectedParamIds.includes(p.id),
-  //   );
-  // };
+  const getSelectedParameters = (item: SelectedEquipmentData) => {
+    const selectedParamIds = item.parameters.map((p) => p.id);
+    return item.equipment.parameters.filter((p) =>
+      selectedParamIds.includes(p.id),
+    );
+  };
 
   const handleSave = async () => {
     if (
@@ -287,16 +351,11 @@ const CreateEvent = () => {
           type: scheduleTypeMap[schedule],
           from_time: fromTime.toISOString(),
           to_time: toTime.toISOString(),
-
           one_time_date:
             schedule === "one" ? startDate?.toISOString() : undefined,
-
           start_date: schedule !== "one" ? startDate?.toISOString() : undefined,
-
           end_date: schedule !== "one" ? endDate?.toISOString() : undefined,
-
           days: schedule === "weekly" ? selectedDays : undefined,
-
           recurring_duration:
             schedule === "weekly" ? Number(recurWeeks) : undefined,
         },
@@ -306,9 +365,14 @@ const CreateEvent = () => {
       setTimeout(() => {
         navigate("/configuration/events", { replace: true });
       }, 2000);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to create event");
+    } catch (err: any) {
+      console.error("Create event failed:", err);
+      const errorMsg =
+        err?.response?.data?.non_field_errors?.[0] ||
+        err?.response?.data?.detail ||
+        err?.message ||
+        "Failed to create event. Please check selected parameters.";
+      toast.error(errorMsg);
     }
   };
 
@@ -335,14 +399,11 @@ const CreateEvent = () => {
             >
               <TurnLeftIcon sx={{ fontSize: 24, padding: "3px" }} />
             </IconButton>
-
             <Divider />
-
             <Typography
               sx={{
                 fontFamily: "Montserrat",
                 fontWeight: 700,
-                fontStyle: "normal", // Bold is controlled by fontWeight
                 fontSize: "20px",
                 lineHeight: "145%",
                 letterSpacing: "0%",
@@ -358,12 +419,11 @@ const CreateEvent = () => {
           sx={{
             fontFamily: "Montserrat",
             fontWeight: 700,
-            fontStyle: "normal", // Bold handled by fontWeight
             fontSize: "16px",
             lineHeight: "100%",
             letterSpacing: "0%",
             mb: 3,
-            color: "#111827", // optional, remove if not needed
+            color: "#111827",
           }}
         >
           Event Name
@@ -537,7 +597,7 @@ const CreateEvent = () => {
                   <TimePicker
                     label="From Time"
                     value={fromTime}
-                    onChange={setFromTime}
+                    onChange={handleFromTimeChange}
                     slotProps={{
                       textField: {
                         fullWidth: true,
@@ -555,7 +615,7 @@ const CreateEvent = () => {
                   <TimePicker
                     label="To Time"
                     value={toTime}
-                    onChange={setToTime}
+                    onChange={handleToTimeChange}
                     slotProps={{
                       textField: {
                         fullWidth: true,
@@ -603,7 +663,7 @@ const CreateEvent = () => {
                   <TimePicker
                     label="From Time"
                     value={fromTime}
-                    onChange={setFromTime}
+                    onChange={handleFromTimeChange}
                     slotProps={{
                       textField: {
                         fullWidth: true,
@@ -617,7 +677,7 @@ const CreateEvent = () => {
                   <TimePicker
                     label="To Time"
                     value={toTime}
-                    onChange={setToTime}
+                    onChange={handleToTimeChange}
                     slotProps={{
                       textField: {
                         fullWidth: true,
@@ -695,7 +755,7 @@ const CreateEvent = () => {
                   <TimePicker
                     label="From Time"
                     value={fromTime}
-                    onChange={setFromTime}
+                    onChange={handleFromTimeChange}
                     slotProps={{
                       textField: {
                         fullWidth: true,
@@ -713,7 +773,7 @@ const CreateEvent = () => {
                   <TimePicker
                     label="To Time"
                     value={toTime}
-                    onChange={setToTime}
+                    onChange={handleToTimeChange}
                     slotProps={{
                       textField: {
                         fullWidth: true,
@@ -866,7 +926,7 @@ const CreateEvent = () => {
                   <TimePicker
                     label="From Time"
                     value={fromTime}
-                    onChange={setFromTime}
+                    onChange={handleFromTimeChange}
                     slotProps={{
                       textField: {
                         fullWidth: true,
@@ -887,7 +947,7 @@ const CreateEvent = () => {
                   <TimePicker
                     label="To Time"
                     value={toTime}
-                    onChange={setToTime}
+                    onChange={handleToTimeChange}
                     slotProps={{
                       textField: {
                         fullWidth: true,
@@ -937,27 +997,6 @@ const CreateEvent = () => {
                           <Radio
                             checked={monthDay === "select"}
                             onChange={() => setMonthDay("select")}
-                            size="small"
-                            sx={{
-                              color: "#D1D5DB",
-                              "&.Mui-checked": { color: "#F36F45" },
-                            }}
-                          />
-                        }
-                        label={
-                          <Typography
-                            sx={{ fontSize: "13px", color: "#111827" }}
-                          >
-                            Days
-                          </Typography>
-                        }
-                        sx={{ m: 0 }}
-                      />
-                      <FormControlLabel
-                        control={
-                          <Radio
-                            checked={monthDay === "on"}
-                            onChange={() => setMonthDay("on")}
                             size="small"
                             sx={{
                               color: "#D1D5DB",
@@ -1070,6 +1109,7 @@ const CreateEvent = () => {
                 >
                   Equipment Details
                 </TableCell>
+
                 <TableCell
                   sx={{
                     fontWeight: 600,
@@ -1083,6 +1123,7 @@ const CreateEvent = () => {
                 </TableCell>
               </TableRow>
             </TableHead>
+
             <TableBody>
               {grouped.length === 0 ? (
                 <TableRow>
@@ -1099,7 +1140,7 @@ const CreateEvent = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                grouped.map((group, _index) => {
+                grouped.map((group, index) => {
                   const selectedParams = group.equipment.parameters.filter(
                     (p) => group.parameters.includes(p.id),
                   );

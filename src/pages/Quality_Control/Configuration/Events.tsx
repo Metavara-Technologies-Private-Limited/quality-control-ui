@@ -51,17 +51,17 @@ const formatDate = (isoString: string) => {
   return new Date(isoString).toLocaleDateString("en-GB");
 };
 
-// const buildEquipmentParameterMap = (clinic: any) => {
-//   const map: Record<number, Set<number>> = {};
+const buildEquipmentParameterMap = (clinic: any) => {
+  const map: Record<number, Set<number>> = {};
 
-//   clinic?.department?.forEach((d: any) => {
-//     d.equipments?.forEach((e: any) => {
-//       map[e.id] = new Set((e.parameters || []).map((p: any) => p.id));
-//     });
-//   });
+  clinic?.department?.forEach((d: any) => {
+    d.equipments?.forEach((e: any) => {
+      map[e.id] = new Set((e.parameters || []).map((p: any) => p.id));
+    });
+  });
 
-//   return map;
-// };
+  return map;
+};
 
 const EventsHeader = ({ onCreate, onSearch }: any) => (
   <Stack
@@ -364,7 +364,7 @@ const EventDetailView = ({ event, onBack }: any) => (
             <TableHead sx={{ bgcolor: COLORS.bgLight }}>
               <TableRow>
                 <TableCell sx={{ fontSize: 13, fontWeight: 600, py: 2 }}>
-                  Equipment Name
+                  Equipment Details
                 </TableCell>
                 <TableCell sx={{ fontSize: 13, fontWeight: 600, py: 2 }}>
                   Parameters
@@ -375,9 +375,26 @@ const EventDetailView = ({ event, onBack }: any) => (
               {event.equipmentsDetails && event.equipmentsDetails.length > 0 ? (
                 event.equipmentsDetails.map((eq: any, idx: number) => (
                   <TableRow key={idx}>
-                    <TableCell sx={{ fontSize: 14, width: "30%" }}>
-                      {eq.equipment_name}
+                    <TableCell sx={{ width: "30%" }}>
+                      <Typography
+                        fontSize={14}
+                        fontWeight={600} // slightly bold
+                        color={COLORS.textPrimary}
+                      >
+                        {eq.equipment_name}
+                      </Typography>
+
+                      {eq.units.length > 0 && (
+                        <Typography
+                          fontSize={13}
+                          color={COLORS.textSecondary}
+                          mt={0.5}
+                        >
+                          {eq.units.join(", ")}
+                        </Typography>
+                      )}
                     </TableCell>
+
                     <TableCell>
                       <Stack direction="row" spacing={1} flexWrap="wrap">
                         {eq.parameters && eq.parameters.length > 0 ? (
@@ -559,7 +576,7 @@ const EventsTable = ({
 };
 
 const mapEventToRow = (e: any) => {
-  // group by parent equipment, but DISPLAY units
+  // 1️⃣ Group equipment_details by parent equipment
   const equipmentMap = new Map<
     number,
     {
@@ -569,27 +586,25 @@ const mapEventToRow = (e: any) => {
     }
   >();
 
-  // 1️⃣ group equipment_details
   (e.equipments || []).forEach((ed: any) => {
-    const parentEqId = ed.equipment_details__equipment__id;
-    if (!parentEqId) return;
+    const eqId = ed.equipment_details__equipment__id;
+    if (!eqId) return;
 
-    if (!equipmentMap.has(parentEqId)) {
-      equipmentMap.set(parentEqId, {
+    if (!equipmentMap.has(eqId)) {
+      equipmentMap.set(eqId, {
         equipment_name: ed.equipment_details__equipment__equipment_name || "-",
         units: [],
         parameters: [],
       });
     }
 
-    const group = equipmentMap.get(parentEqId)!;
-
+    const group = equipmentMap.get(eqId)!;
     if (ed.equipment_details__equipment_num) {
       group.units.push(ed.equipment_details__equipment_num);
     }
   });
 
-  // 2️⃣ parameters apply to all units
+  // 2️⃣ Parameters apply to all equipment units
   const parameters =
     e.parameters?.map((p: any) => ({
       name: p.parameter__parameter_name || "-",
@@ -599,10 +614,7 @@ const mapEventToRow = (e: any) => {
     group.parameters = parameters;
   });
 
-  const equipmentsDetails = Array.from(equipmentMap.values()).map((g) => ({
-    equipment_name: `${g.equipment_name} (${g.units.join(", ")})`,
-    parameters: g.parameters,
-  }));
+  const equipmentsDetails = Array.from(equipmentMap.values());
 
   return {
     id: e.id,
@@ -631,7 +643,7 @@ const mapEventToRow = (e: any) => {
 
     recurDuration: e.schedule?.recurring_duration,
 
-    // 👇 FIXED COUNTS
+    // ✅ FIXED COUNTS
     equipmentCount: e.equipments?.length || 0,
     parameterCount: parameters.length,
 
