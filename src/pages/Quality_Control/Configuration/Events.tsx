@@ -749,5 +749,4 @@ const Events = () => {
     </Box>
   );
 };
-
 export default Events;
