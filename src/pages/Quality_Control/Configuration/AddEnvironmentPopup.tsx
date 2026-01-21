@@ -39,7 +39,6 @@ const AddEnvironmentPopup: React.FC<{
       return;
     }
 
-    const tempEnvironmentId = crypto.randomUUID();
     const departmentName =
       departments.find((d) => d.id === departmentId)?.name || "";
 
