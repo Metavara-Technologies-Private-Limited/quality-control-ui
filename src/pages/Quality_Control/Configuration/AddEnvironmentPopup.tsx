@@ -13,6 +13,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+import { toast } from "react-toastify";
 
 const DEFAULT_ENVIRONMENT_NAME = "Environment Details";
 
@@ -27,6 +28,11 @@ const AddEnvironmentPopup: React.FC<{
 
   const [departmentId, setDepartmentId] = useState<number | "">("");
 
+  const hasEnvironment = (deptId: number) => {
+    const dept = departments.find((d) => d.id === deptId);
+    return (dept?.environments?.length ?? 0) > 0;
+  };
+
   useEffect(() => {
     if (!open) {
       setDepartmentId("");
@@ -34,8 +40,10 @@ const AddEnvironmentPopup: React.FC<{
   }, [open]);
 
   const handleAdd = () => {
-    if (!departmentId) {
-      alert("Please select department");
+    if (!departmentId) return;
+
+    if (hasEnvironment(departmentId)) {
+      toast.info("Environment already exists for this department");
       return;
     }
 
@@ -43,7 +51,6 @@ const AddEnvironmentPopup: React.FC<{
       departments.find((d) => d.id === departmentId)?.name || "";
 
     onClose();
-
     navigate("/configuration/environment/add-parameter", {
       state: {
         environmentName: DEFAULT_ENVIRONMENT_NAME,
@@ -118,11 +125,29 @@ const AddEnvironmentPopup: React.FC<{
         >
           {departments
             .filter((d) => d.is_active)
-            .map((dept) => (
-              <MenuItem key={dept.id} value={dept.id}>
-                {dept.name}
-              </MenuItem>
-            ))}
+            .map((dept) => {
+              const disabled = hasEnvironment(dept.id);
+
+              return (
+                <MenuItem
+                  key={dept.id}
+                  value={dept.id}
+                  disabled={disabled}
+                  sx={{
+                    opacity: disabled ? 0.5 : 1,
+                    display: "flex",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <span>{dept.name}</span>
+                  {disabled && (
+                    <span style={{ fontSize: 11, color: "#9CA3AF" }}>
+                      Already added
+                    </span>
+                  )}
+                </MenuItem>
+              );
+            })}
         </TextField>
 
         {/* ACTIONS */}

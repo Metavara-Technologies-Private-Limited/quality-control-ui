@@ -3,6 +3,7 @@ import clinicReducer from "./clinicSlice";
 import assigneeReducer from "./assigneeSlice";
 import taskReducer from "./taskSlice";
 import eventReducer from "./eventSlice";
+import taskEventReducer from "./taskEventSlice";
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     assignees: assigneeReducer,
     tasks: taskReducer,
     events: eventReducer,
+    taskEvents: taskEventReducer,
   },
 });
 

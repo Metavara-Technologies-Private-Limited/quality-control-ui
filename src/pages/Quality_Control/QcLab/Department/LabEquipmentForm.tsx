@@ -93,6 +93,7 @@ export default function LabEquipmentForm({
             parameter: param.id,
             equipment_details: currentEquipment.equipment_id,
             content: value,
+            log_time: new Date(logDateTime).toISOString(),
           }),
         );
       });

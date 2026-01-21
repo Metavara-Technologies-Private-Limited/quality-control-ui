@@ -21,7 +21,7 @@ export default function ParameterInput({
     fullWidth: true,
     value: value ?? "",
     onChange: (e: any) => onChange(e.target.value),
-    label: `${parameter.parameter_name}${
+    label: `${parameter.parameter_name || parameter.env_parameter_name}${
       cfg.unit ? ` (${cfg.unit})` : ""
     }`,
     placeholder: "Type here",
@@ -38,28 +38,15 @@ export default function ParameterInput({
   switch (cfg.data_type) {
     case "Integer":
     case "Decimal":
-      return (
-        <TextField
-          {...commonProps}
-          type="number"
-        />
-      );
+      return <TextField {...commonProps} type="number" />;
 
     case "Text":
-      return (
-        <TextField
-          {...commonProps}
-          type="text"
-        />
-      );
+      return <TextField {...commonProps} type="text" />;
 
     case "Dropdown":
     case "Select":
       return (
-        <TextField
-          {...commonProps}
-          select
-        >
+        <TextField {...commonProps} select>
           <MenuItem value="">Select</MenuItem>
           {(cfg.dropdown || []).map((opt: string) => (
             <MenuItem key={opt} value={opt}>
@@ -71,10 +58,7 @@ export default function ParameterInput({
 
     case "Boolean":
       return (
-        <TextField
-          {...commonProps}
-          select
-        >
+        <TextField {...commonProps} select>
           <MenuItem value="">Select</MenuItem>
           <MenuItem value="Yes">Yes</MenuItem>
           <MenuItem value="No">No</MenuItem>

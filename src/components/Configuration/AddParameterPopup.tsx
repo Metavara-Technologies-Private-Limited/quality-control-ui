@@ -111,24 +111,40 @@ const AddParameterPopup: React.FC<Props> = ({
     if (dataType === "Integer") {
       // Try multiple possible field names for default value
       const defaultVal =
-        initialData.default_value ||
-        initialData.integer_value ||
-        initialData.int_value ||
+        initialData.default_value ??
+        initialData.integer_value ??
+        initialData.int_value ??
         "";
 
       setIntegerDefault(String(defaultVal));
       setIntegerUnit(initialData.unit || "");
-      setIntegerMin(String(initialData.min_value || ""));
-      setIntegerMax(String(initialData.max_value || ""));
+      setIntegerMin(
+        initialData.min_value !== null && initialData.min_value !== undefined
+          ? String(initialData.min_value)
+          : "",
+      );
+      setIntegerMax(
+        initialData.max_value !== null && initialData.max_value !== undefined
+          ? String(initialData.max_value)
+          : "",
+      );
     } else if (dataType === "Decimal") {
       // Try multiple possible field names for default value
       const defaultVal =
-        initialData.default_value || initialData.decimal_value || "";
+        initialData.default_value ?? initialData.decimal_value ?? "";
 
       setDecimalDefault(String(defaultVal));
       setDecimalUnit(initialData.unit || "");
-      setDecimalMin(String(initialData.min_value || ""));
-      setDecimalMax(String(initialData.max_value || ""));
+      setDecimalMin(
+        initialData.min_value !== null && initialData.min_value !== undefined
+          ? String(initialData.min_value)
+          : "",
+      );
+      setDecimalMax(
+        initialData.max_value !== null && initialData.max_value !== undefined
+          ? String(initialData.max_value)
+          : "",
+      );
     } else if (dataType === "Text") {
       setTextType(initialData.text_type || "single");
       setTextValue(initialData.text || "");
@@ -190,30 +206,30 @@ const AddParameterPopup: React.FC<Props> = ({
     }
 
     if (fieldType === "Integer") {
-      if (!integerDefault.trim()) {
+      if (integerDefault === "") {
         toast.error("Please enter Default Value for Integer");
         return false;
       }
-      if (!integerMin.trim()) {
+      if (integerMin === "") {
         toast.error("Please enter Minimum Value");
         return false;
       }
-      if (!integerMax.trim()) {
+      if (integerMax === "") {
         toast.error("Please enter Maximum Value");
         return false;
       }
     }
 
     if (fieldType === "Decimal") {
-      if (!decimalDefault.trim()) {
+      if (decimalDefault === "") {
         toast.error("Please enter Default Value for Decimal");
         return false;
       }
-      if (!decimalMin.trim()) {
+      if (decimalMin === "") {
         toast.error("Please enter Minimum Value");
         return false;
       }
-      if (!decimalMax.trim()) {
+      if (decimalMax === "") {
         toast.error("Please enter Maximum Value");
         return false;
       }

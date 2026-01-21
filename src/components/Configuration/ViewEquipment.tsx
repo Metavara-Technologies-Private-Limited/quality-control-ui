@@ -81,23 +81,25 @@ const ViewEquipment = () => {
   let departmentName = "";
 
   if (isEnvironment) {
-    const department = clinic.department.find(
-      (d) => d.environment?.id === entityId,
+    const department = clinic.department.find((d) =>
+      d.environments?.some((env) => env.id === entityId),
     );
 
-    if (!department?.environment) return null;
+    const environment = department?.environments?.find(
+      (env) => env.id === entityId,
+    );
 
-    name = department.environment.environment_name;
-    parameters = department.environment.parameters ?? [];
+    if (!environment || !department) return null;
+
+    name = environment.environment_name;
+    parameters = environment.parameters ?? [];
     departmentName = department.name;
   } else {
     const department = clinic.department.find((d) =>
       d.equipments.some((e) => e.id === entityId),
     );
 
-    const equipment = department?.equipments.find(
-      (e) => e.id === entityId,
-    );
+    const equipment = department?.equipments.find((e) => e.id === entityId);
 
     if (!equipment || !department) return null;
 
@@ -134,9 +136,7 @@ const ViewEquipment = () => {
 
       {/* Title */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}>
-        <Typography sx={{ fontWeight: 700, fontSize: 18 }}>
-          {name}
-        </Typography>
+        <Typography sx={{ fontWeight: 700, fontSize: 18 }}>{name}</Typography>
         <Chip
           label={departmentName}
           size="small"

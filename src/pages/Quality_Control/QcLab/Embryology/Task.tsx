@@ -23,13 +23,17 @@ import { ArrowRightRounded } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import { fetchTasksByClinic, selectUITasks } from "@/store/taskSlice";
-import { fetchEventsByClinic } from "@/store/eventSlice";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import LayersIcon from "@mui/icons-material/Layers";
 import { UITask } from "@/types";
 import { useLocation } from "react-router-dom";
+import { taskEventApi } from "@/services/api";
+import {
+  fetchTaskEventsByDepartment,
+  selectUITaskEvents,
+} from "@/store/taskEventSlice";
 
 function Task() {
   const location = useLocation();
@@ -41,17 +45,9 @@ function Task() {
   const { data: clinic } = useSelector((s: RootState) => s.clinic);
   const allTasks = useSelector(selectUITasks);
   const taskLoading = useSelector((s: RootState) => s.tasks.loading);
-  const rawEvents = useSelector((s: RootState) =>
-    [...s.events.data].sort((a, b) =>
-      (a.event_name ?? "").localeCompare(b.event_name ?? "", undefined, {
-        sensitivity: "base",
-      }),
-    ),
-  );
-  const events = rawEvents.filter(
-    (item) => item.department.toLowerCase() === deptName.toLowerCase(),
-  );
-  const eventLoading = useSelector((s: RootState) => s.events.loading);
+  const events = useSelector(selectUITaskEvents);
+  const eventLoading = useSelector((s: RootState) => s.taskEvents.loading);
+
   const assignees = useSelector((state: RootState) => state.assignees.data);
 
   const [activeFilter, setActiveFilter] = useState("All");
@@ -70,6 +66,15 @@ function Task() {
   // const [taskDetails, setTaskDetails] = useState("");
   const [eventError, setEventError] = useState("");
   const [_now, setNow] = useState(Date.now());
+  const departmentId = useMemo(() => {
+    if (!clinic?.department?.length) return null;
+
+    const dep = clinic.department.find(
+      (d) => d.name.toLowerCase() === deptName.toLowerCase(),
+    );
+
+    return dep?.id ?? null;
+  }, [clinic?.department, deptName]);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -80,9 +85,10 @@ function Task() {
   }, []);
 
   useEffect(() => {
-    if (clinic?.id)
-      if (!events.length) dispatch(fetchEventsByClinic(clinic.id));
-  }, [clinic?.id, events.length, dispatch]);
+    if (departmentId) {
+      dispatch(fetchTaskEventsByDepartment(departmentId));
+    }
+  }, [departmentId, dispatch]);
 
   useEffect(() => {
     if (events.length && selectedEventId === null) {
@@ -97,33 +103,31 @@ function Task() {
   }, [clinic?.id, dispatch]);
 
   const handleCreateEvent = async (name: string) => {
-    if (!clinic?.id || !name) return;
+    if (!departmentId) return;
 
     try {
-      // await taskApi.createEvent({
-      //   event_name: name,
-      //   clinic: clinic.id,
-      //   department: deptName,
-      // });
+      await taskEventApi.create({
+        name,
+        dep: departmentId,
+      });
 
-      toast.success("Event created");
-      dispatch(fetchEventsByClinic(clinic.id));
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to create event");
+      toast.success("Task Event created");
+      dispatch(fetchTaskEventsByDepartment(departmentId));
+    } catch {
+      toast.error("Failed to create Task Event");
     }
   };
 
   const tasks = useMemo(() => {
     if (!selectedEventId) return [];
-    return allTasks.filter((t) => t.event === selectedEventId);
+    return allTasks.filter((t) => t.task_event === selectedEventId);
   }, [allTasks, selectedEventId]);
 
   const eventTaskCounts = useMemo(() => {
     const counts: Record<number, { assigned: number; unassigned: number }> = {};
 
     allTasks.forEach((t) => {
-      const eventId = t.event;
+      const eventId = t.task_event;
       if (!counts[eventId]) counts[eventId] = { assigned: 0, unassigned: 0 };
 
       if (t.assignment) {
@@ -271,11 +275,12 @@ function Task() {
                         }}
                       >
                         <Stack direction="row" justifyContent="space-between">
+                          <Typography fontWeight={600}>{e.name}</Typography>
                           <Typography fontWeight={600}>
-                            {e.event_name}
-                          </Typography>
-                          <Typography fontWeight={600}>
-                            {allTasks.filter((t) => t.event === e.id).length}
+                            {
+                              allTasks.filter((t) => t.task_event === e.id)
+                                .length
+                            }
                           </Typography>
                         </Stack>
 
@@ -296,7 +301,7 @@ function Task() {
 
             <Box flex={1} minWidth={0}>
               <Typography fontSize={20} fontWeight={700} mb={2}>
-                {selectedEvent?.event_name}
+                {selectedEvent?.name}
               </Typography>
 
               <Stack direction="row" justifyContent="space-between" mb={2}>
@@ -604,14 +609,15 @@ function Task() {
           <AddTaskDialog
             open={openAddTask}
             onClose={() => setOpenAddTask(false)}
-            // events={events}
-            initialSelectedEvent={selectedEvent}
+            taskEvents={events}
+            initialSelectedEvent={selectedEvent?.id ?? null}
             onTaskCreated={() => {
               if (clinic?.id) {
-                dispatch(fetchTasksByClinic(clinic.id)); // 🔄 reload tasks
+                dispatch(fetchTasksByClinic(clinic.id));
               }
             }}
           />
+
           <TaskDetailsDialog
             open={openTaskDetails}
             onClose={() => setOpenTaskDetails(false)}

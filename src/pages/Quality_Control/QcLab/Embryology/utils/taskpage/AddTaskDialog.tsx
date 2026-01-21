@@ -45,24 +45,30 @@ import { TASK_STATUS_MAP, TaskStatus } from "@/types";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { formatDueDateDisplay } from "./formatDueDateDisplay";
-import { useLocation } from "react-router-dom";
+// import { useLocation } from "react-router-dom";
+// import { selectUITaskEvents } from "@/store/taskEventSlice";
 
 interface AddTaskDialogProps {
   open: boolean;
   onClose: () => void;
-  initialSelectedEvent: string;
+  taskEvents: {
+    id: number;
+    name: string;
+  }[];
+  initialSelectedEvent: number | null;
   onTaskCreated: (newTask: any, eventName: string) => void;
 }
 
 const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   open,
   onClose,
+  taskEvents,
   initialSelectedEvent,
   onTaskCreated,
 }) => {
-  const location = useLocation();
-  const parts = location.pathname.split("/").filter(Boolean);
-  const deptName = parts[1].toString();
+  // const location = useLocation();
+  // const parts = location.pathname.split("/").filter(Boolean);
+  // const deptName = parts[1].toString();
 
   const assignees = useSelector((state: RootState) => state.assignees.data);
   const [step, setStep] = useState(1);
@@ -88,16 +94,16 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   // const [events, setEvents] = useState<any[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<number | "">("");
 
-  const rawEvents = useSelector((s: RootState) =>
-    [...s.events.data].sort((a, b) =>
-      (a.event_name ?? "").localeCompare(b.event_name ?? "", undefined, {
-        sensitivity: "base",
-      }),
-    ),
-  );
-  const events = rawEvents.filter(
-    (item) => item.department.toLowerCase() === deptName.toLowerCase(),
-  );
+  // const rawEvents = useSelector((s: RootState) =>
+  //   [...s.events.data].sort((a, b) =>
+  //     (a.event_name ?? "").localeCompare(b.event_name ?? "", undefined, {
+  //       sensitivity: "base",
+  //     }),
+  //   ),
+  // );
+  // const events = rawEvents.filter(
+  //   (item) => item.department.toLowerCase() === deptName.toLowerCase(),
+  // );
 
   // Step 3 - sub tasks
   const [subTasks, setSubTasks] = useState<any[]>([]);
@@ -296,7 +302,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   const handleSaveTask = async () => {
     try {
       const payload: any = {
-        event: Number(selectedEventId),
+        task_event: Number(selectedEventId),
         assignment: assignee === "" ? null : assignee,
         name: name.trim(),
         description: descriptionHtml,
@@ -312,7 +318,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
         })),
       };
 
-      if (!payload.event || !payload.assignment) {
+      if (!payload.task_event || !payload.assignment) {
         toast.error("Event or assignee missing");
         return;
       }
@@ -417,9 +423,9 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
                       <MenuItem value="" disabled>
                         Select Event
                       </MenuItem>
-                      {events.map((e) => (
+                      {taskEvents.map((e) => (
                         <MenuItem key={e.id} value={e.id}>
-                          {e.event_name}
+                          {e.name}
                         </MenuItem>
                       ))}
                     </Select>

@@ -292,7 +292,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
     if (!task) return;
 
     const payload: TaskUpdatePayload = {
-      event: task.event,
+      task_event: task.task_event,
       assignment: task.assignment ?? null,
 
       name: task.name,

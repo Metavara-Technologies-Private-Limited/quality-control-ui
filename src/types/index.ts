@@ -5,10 +5,11 @@ export interface Clinic {
   department: Department[];
 }
 
-export interface Environment{
+export interface Environment {
   id: number;
   environment_name: string;
   is_active: boolean;
+  created_at: string;
   parameters: Parameter[];
 }
 
@@ -19,7 +20,7 @@ export interface Department {
   clinic_id: number;
   created_at: string;
   equipments: Equipment[];
-  environment?: Environment;
+  environments?: Environment[];
 }
 
 export interface Equipment {
@@ -150,6 +151,7 @@ export type CreateParameterPayload = {
 export interface Parameter {
   id: number;
   parameter_name: string;
+  env_parameter_name?: string;
   is_active: boolean;
   config?: ParameterContent | null;
   is_deleted: boolean;
@@ -251,26 +253,26 @@ export enum TaskStatus {
 export interface Task {
   id: number;
   name: string;
-  description: string;        // plain text or HTML (backend allows)
-  status: TaskStatus;         // ✅ numeric enum
-  due_date: string;           // ISO string
-  time?: string;
+  description: string;
+  status: TaskStatus;
+  due_date: string;
+
   timer_status?: "IDLE" | "RUNNING" | "PAUSED" | "STOPPED";
   total_tracked_sec?: number;
   timer_started_at?: string | null;
 
-  event: number;              // ✅ event ID
-  assignment?: number | null; // ✅ employee ID
+  task_event: number; // ✅ FIX (replace event)
+  assignment?: number | null;
 
   sub_tasks: SubTask[];
   documents?: Document[];
 }
 
 export interface SubTask {
-  id?: number;                // optional on create
+  id?: number; // optional on create
   name: string;
-  status: TaskStatus;         // ✅ numeric enum
-  due_date: string;           // ISO
+  status: TaskStatus; // ✅ numeric enum
+  due_date: string; // ISO
   assignment?: number | null; // optional
 }
 
@@ -306,7 +308,7 @@ export interface SubTaskUpdatePayload {
 }
 
 export interface TaskUpdatePayload {
-  event: number;
+  task_event: number;
   assignment: number | null;
   name: string;
   description: string;
@@ -320,7 +322,7 @@ export interface TaskUpdatePayload {
   }[];
 }
 export interface Document {
-  id: number;               // ✅ REQUIRED
+  id: number;
   document_name: string;
   created_at: string;
 }

@@ -47,7 +47,6 @@ type EquipmentUIItem =
       environment_name: string;
     });
 
-
 const EquipmentPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -59,10 +58,11 @@ const EquipmentPage = () => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
-  const entityType: "equipment" | "environment" =
-    location.pathname.includes("/environment")
-      ? "environment"
-      : "equipment";
+  const entityType: "equipment" | "environment" = location.pathname.includes(
+    "/environment",
+  )
+    ? "environment"
+    : "equipment";
 
   const isEnvironment = entityType === "environment";
 
@@ -79,16 +79,12 @@ const EquipmentPage = () => {
 
     return clinic.department.flatMap<EquipmentUIItem>((dep) => {
       if (isEnvironment) {
-        return dep.environment
-          ? [
-              {
-                ...dep.environment,
-                department: dep,
-                entityType: "environment",
-                created_at: dep.created_at, // 👈 fallback
-              },
-            ]
-          : [];
+        return (dep.environments || []).map((env) => ({
+          ...env,
+          department: dep,
+          entityType: "environment",
+          created_at: env.created_at ?? dep.created_at,
+        }));
       }
 
       return (dep.equipments || []).map((eq) => ({
@@ -132,10 +128,7 @@ const EquipmentPage = () => {
         await environmentApi.delete(selectedItem.id);
         toast.success("Environment deleted successfully!");
       } else {
-        await equipmentApi.delete(
-          selectedItem.department.id,
-          selectedItem.id,
-        );
+        await equipmentApi.delete(selectedItem.department.id, selectedItem.id);
         toast.success("Equipment deleted successfully!");
       }
 
@@ -239,9 +232,7 @@ const EquipmentPage = () => {
 
                     <Box>
                       <Typography fontSize={14} color="#9CA3AF">
-                        {item.entityType === "environment"
-                          ? "Environment Parameters:"
-                          : "Parameters:"}
+                        Parameters:
                       </Typography>
                       <Typography fontSize={16} fontWeight={500}>
                         {String(item.parameters.length).padStart(2, "0")}
@@ -263,7 +254,9 @@ const EquipmentPage = () => {
                 >
                   <Typography fontSize={14} color="#4B5563">
                     <span style={{ color: "#9CA3AF" }}>Created Date:</span>{" "}
-                    {getCreatedDate(item.created_at ?? item.department.created_at)}
+                    {getCreatedDate(
+                      item.created_at ?? item.department.created_at,
+                    )}
                   </Typography>
 
                   <Box sx={{ display: "flex", gap: 1 }}>
@@ -317,7 +310,11 @@ const EquipmentPage = () => {
 
       {/* Menu + Dialogs (unchanged behavior) */}
 
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => setAnchorEl(null)}
+      >
         {selectedItem?.is_active ? (
           <MenuItem onClick={() => setDialogs({ ...dialogs, inactive: true })}>
             Inactivate
@@ -335,7 +332,10 @@ const EquipmentPage = () => {
         </MenuItem>
       </Menu>
 
-      <Dialog open={dialogs.delete} onClose={() => setDialogs({ ...dialogs, delete: false })}>
+      <Dialog
+        open={dialogs.delete}
+        onClose={() => setDialogs({ ...dialogs, delete: false })}
+      >
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <Typography>Are you sure you want to delete this?</Typography>
@@ -350,7 +350,10 @@ const EquipmentPage = () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={dialogs.inactive} onClose={() => setDialogs({ ...dialogs, inactive: false })}>
+      <Dialog
+        open={dialogs.inactive}
+        onClose={() => setDialogs({ ...dialogs, inactive: false })}
+      >
         <DialogTitle>Confirm Inactivate</DialogTitle>
         <DialogActions>
           <Button onClick={() => setDialogs({ ...dialogs, inactive: false })}>
@@ -362,7 +365,10 @@ const EquipmentPage = () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={dialogs.active} onClose={() => setDialogs({ ...dialogs, active: false })}>
+      <Dialog
+        open={dialogs.active}
+        onClose={() => setDialogs({ ...dialogs, active: false })}
+      >
         <DialogTitle>Confirm Activate</DialogTitle>
         <DialogActions>
           <Button onClick={() => setDialogs({ ...dialogs, active: false })}>

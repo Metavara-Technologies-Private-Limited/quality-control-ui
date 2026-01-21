@@ -82,6 +82,7 @@ const AddParameterPage = () => {
   const [editingParamIndex, setEditingParamIndex] = useState<number | null>(
     null,
   );
+  const [environmentId, setEnvironmentId] = useState<number | null>(null);
 
   const [deleteParamDialogOpen, setDeleteParamDialogOpen] = useState(false);
   const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
@@ -105,13 +106,56 @@ const AddParameterPage = () => {
   };
 
   useEffect(() => {
-    const passedEquipment = location.state?.equipment;
-    if (isEnvironment) {
-      setEquipmentName(
-        location.state?.environmentName || "Environment Details"
+    const equipmentId = location.state?.equipmentId;
+    const environmentId = location.state?.environmentId;
+
+    /* ---------------- ENVIRONMENT EDIT ---------------- */
+    if (isEnvironment && environmentId && clinic) {
+      const department = clinic.department.find((d) =>
+        d.environments?.some((env) => env.id === environmentId),
       );
-    }    
-    const equipmentId = passedEquipment?.id;
+
+      const environment = department?.environments?.find(
+        (env) => env.id === environmentId,
+      );
+
+      if (!environment || !department) return;
+
+      setEnvironmentId(environment.id); // ✅ ADD THIS
+      setIsEditMode(true);
+      setEquipmentName(environment.environment_name);
+      setDepartmentName(department.name);
+      setDepartmentId(department.id);
+
+      const loadedParams = environment.parameters.map((p: any) => {
+        let cfg = p.config || {};
+        if (cfg.history?.length) {
+          cfg = cfg.history[cfg.history.length - 1];
+        }
+
+        return {
+          id: p.id,
+          name: p.env_parameter_name,
+          title: p.env_parameter_name,
+          data_type: cfg.data_type,
+          field_type: cfg.data_type,
+          unit: cfg.unit ?? "",
+          min_value: cfg.min_value ?? "",
+          max_value: cfg.max_value ?? "",
+          text: cfg.text ?? "",
+          text_type: cfg.text_type ?? "single",
+          boolean_type: cfg.boolean_type ?? "yesno",
+          dropdown: normalizeDropdownValue(cfg.dropdown),
+          selection_type: cfg.selection_type ?? "single",
+          percentage: cfg.percentage ?? null,
+        };
+      });
+
+      setParameters(loadedParams);
+      return; // ⛔ STOP here for environment
+    }
+
+    /* ---------------- EQUIPMENT EDIT (✅ RESTORED) ---------------- */
     const storeEquipment = clinic?.department
       .flatMap((d) => d.equipments)
       .find((e) => e.id === equipmentId);
@@ -128,7 +172,6 @@ const AddParameterPage = () => {
       setDepartmentName(dept?.name || "");
       setDepartmentId(dept?.id || null);
 
-      // ✅ FIXED: Load equipment details with make and model
       const loadedEquipmentTable = (storeEquipment.equipment_details || []).map(
         (detail: any, index: number) => {
           const numMatch = detail.equipment_num?.match(/-(\d+)$/);
@@ -147,22 +190,17 @@ const AddParameterPage = () => {
       setEquipmentTable(loadedEquipmentTable);
 
       if (loadedEquipmentTable.length > 0) {
-        const maxSrNo = Math.max(
-          ...loadedEquipmentTable.map((item: any) => item.sr),
-        );
+        const maxSrNo = Math.max(...loadedEquipmentTable.map((i) => i.sr));
         setCount(maxSrNo);
-        setSelected([]);
         setNextSrNo(maxSrNo + 1);
       }
+
       const loadedParams = storeEquipment.parameters.map((p: any) => {
         let cfg = p.config || {};
-
-        // Get the latest config from history if it exists
         if (cfg.history?.length) {
           cfg = cfg.history[cfg.history.length - 1];
         }
 
-        // Create the base parameter object
         const param: any = {
           id: p.id,
           name: p.parameter_name,
@@ -172,72 +210,64 @@ const AddParameterPage = () => {
           mandatory: p.mandatory || false,
         };
 
-        // Handle different data types
         switch (cfg.data_type) {
           case "Integer":
             param.default_value = cfg.default_value || cfg.integer_value || "";
-            param.integer_value = cfg.integer_value || cfg.default_value || "";
+            param.integer_value = cfg.integer_value || "";
             param.unit = cfg.unit || "";
             param.min_value = cfg.min_value || "";
             param.max_value = cfg.max_value || "";
             break;
-
           case "Decimal":
             param.default_value = cfg.default_value || "";
             param.unit = cfg.unit || "";
             param.min_value = cfg.min_value || "";
             param.max_value = cfg.max_value || "";
             break;
-
           case "Text":
             param.text_type = cfg.text_type || "single";
             param.text = cfg.text || "";
             break;
-
           case "Boolean":
             param.boolean_type = cfg.boolean_type || "yesno";
             break;
-
           case "Dropdown":
-            // Ensure dropdown is properly formatted as array
             param.dropdown = normalizeDropdownValue(cfg.dropdown);
             param.selection_type = cfg.selection_type || "single";
             break;
         }
 
-        // Keep original values for display
         param.percentage = cfg.percentage || null;
-
         return param;
       });
 
       setParameters(loadedParams);
       localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
-
-      setParameters(loadedParams);
-      localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
-    } else {
-      setIsEditMode(false);
-      if (isEquipment) {
-        setEquipmentName(location.state?.equipmentName || "");
-      }
-    
-      if (isEnvironment) {
-        setEquipmentName(
-          location.state?.environmentName || "Environment Details"
-        );
-      }
-      setDepartmentName(location.state?.departmentName || "");
-
-      const dept = clinic?.department.find(
-        (d) =>
-          d.name.toLowerCase() ===
-          location.state?.departmentName?.toLowerCase(),
-      );
-      setDepartmentId(dept?.id || null);
-
-      setParameters(loadParametersFromLocalStorage());
+      return;
     }
+
+    /* ---------------- ADD MODE ---------------- */
+    setIsEditMode(false);
+
+    if (isEquipment) {
+      setEquipmentName(location.state?.equipmentName || "");
+    }
+
+    if (isEnvironment) {
+      setEquipmentName(
+        location.state?.environmentName || "Environment Details",
+      );
+    }
+
+    setDepartmentName(location.state?.departmentName || "");
+
+    const dept = clinic?.department.find(
+      (d) =>
+        d.name.toLowerCase() === location.state?.departmentName?.toLowerCase(),
+    );
+
+    setDepartmentId(dept?.id || null);
+    setParameters(loadParametersFromLocalStorage());
   }, [location, clinic]);
 
   useEffect(() => {
@@ -315,11 +345,11 @@ const AddParameterPage = () => {
         data_type: param.data_type || param.field_type,
 
         // Integer
-        default_value: param.default_value || param.integer_value || "",
+        default_value: param.default_value ?? param.integer_value ?? "",
         unit: param.unit || "",
-        min_value: param.min_value || "",
-        max_value: param.max_value || "",
-        integer_value: param.integer_value || "",
+        min_value: param.min_value ?? "",
+        max_value: param.max_value ?? "",
+        integer_value: param.integer_value ?? "",
 
         // Decimal (same structure as integer)
 
@@ -468,7 +498,7 @@ const AddParameterPage = () => {
       toast.error("Environment name is missing");
       return;
     }
-    
+
     if (parameters.length === 0) {
       toast.error("Please add at least one parameter");
       return;
@@ -505,11 +535,11 @@ const AddParameterPage = () => {
               data_type: p.data_type || p.field_type || "",
               default_value:
                 p.data_type === "Integer"
-                  ? p.default_value || p.integer_value || null
+                  ? (p.default_value ?? p.integer_value ?? null)
                   : p.data_type === "Decimal"
-                    ? p.default_value || null
+                    ? (p.default_value ?? null)
                     : p.data_type === "Text"
-                      ? p.text || null
+                      ? (p.text ?? null)
                       : null,
               min_value: p.min_value ?? null,
               max_value: p.max_value ?? null,
@@ -548,6 +578,7 @@ const AddParameterPage = () => {
             env_parameter_name: p.name || p.title || "",
             is_active: true,
             config: {
+              default_value: p.default_value ?? null,
               data_type: p.data_type || p.field_type || "",
               min_value: p.min_value ?? null,
               max_value: p.max_value ?? null,
@@ -562,8 +593,13 @@ const AddParameterPage = () => {
           })),
         };
 
-        await environmentApi.create(departmentId, environmentPayload);
-        toast.success("Environment created successfully!");
+        if (isEditMode && environmentId) {
+          await environmentApi.update(environmentId, environmentPayload);
+          toast.success("Environment updated successfully!");
+        } else {
+          await environmentApi.create(departmentId, environmentPayload);
+          toast.success("Environment created successfully!");
+        }
       }
 
       /* ---------------- COMMON ---------------- */
@@ -601,8 +637,8 @@ const AddParameterPage = () => {
           <Typography
             sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
           >
-            Min {config.min_value || "-"} {config.unit || ""} – Max{" "}
-            {config.max_value || "-"} {config.unit || ""}
+            Min {config.min_value ?? "-"} {config.unit ?? ""} – Max{" "}
+            {config.max_value ?? "-"} {config.unit ?? ""}
           </Typography>
         );
       case "Decimal":
@@ -610,8 +646,8 @@ const AddParameterPage = () => {
           <Typography
             sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
           >
-            Min {config.min_value || "-"} {config.unit || ""} – Max{" "}
-            {config.max_value || "-"} {config.unit || ""}
+            Min {config.min_value ?? "-"} {config.unit ?? ""} – Max{" "}
+            {config.max_value ?? "-"} {config.unit ?? ""}
           </Typography>
         );
       case "Min/Max":
@@ -619,8 +655,8 @@ const AddParameterPage = () => {
           <Typography
             sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
           >
-            Min {config.min_value || "-"} – Max {config.max_value || "-"}{" "}
-            {config.unit ? config.unit : ""}
+            Min {config.min_value ?? "-"} {config.unit ?? ""} – Max{" "}
+            {config.max_value ?? "-"} {config.unit ?? ""}
           </Typography>
         );
       case "Percentage":
@@ -628,7 +664,7 @@ const AddParameterPage = () => {
           <Typography
             sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
           >
-            {config.percentage}%
+            {config.percentage ?? "-"}%
           </Typography>
         );
       case "Text":
@@ -636,7 +672,7 @@ const AddParameterPage = () => {
           <Typography
             sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}
           >
-            {config.text}
+            {config.text ?? "-"}
           </Typography>
         );
       case "Boolean":

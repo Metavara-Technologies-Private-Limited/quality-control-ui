@@ -196,16 +196,39 @@ export const taskApi = {
   stopTimer: (taskId: number) => http.post(`/tasks/${taskId}/timer/stop`),
 };
 
-// APIs related to parameter values (logs)
+// APIs related to task events
+export const taskEventApi = {
+  listByClinic: (clinicId: number) =>
+    http.get(`/clinics/${clinicId}/tasks-events/`), // ⚠️ confirm path if needed
+
+  listByDepartment: (depId: number) =>
+    http.get(`/task-events/`, { params: { dep_id: depId } }),
+
+  getById: (id: number) => http.get(`/task-events/${id}/`),
+
+  create: (data: {
+    name: string;
+    dep: number; // Department ID
+  }) => http.post(`/task-events/create/`, data),
+};
+
 export const parameterValueApi = {
   create: (data: {
     parameter: number;
     equipment_details: number;
     content: string | number;
+    log_time?: string;
   }) => http.post("/parameter-values/", data),
 
-  listByParameter: (parameterId: number) =>
-    http.get(`/parameters/${parameterId}/values/`),
+  listByParameter: async (parameterId: number) => {
+    const res = await http.get(`/parameters/${parameterId}/values/`);
+    const normalized = (res.data || []).map((row: any) => ({
+      ...row,
+      created_at: row.log_time ?? row.created_at,
+    }));
+
+    return { ...res, data: normalized };
+  },
 };
 
 export const environmentApi = {
@@ -226,4 +249,25 @@ export const environmentApi = {
 
   getById: (environmentId: number) =>
     http.get(`/environments/${environmentId}/get/`),
+};
+
+export const environmentParameterValueApi = {
+  create: (data: {
+    environment: number;
+    environment_parameter: number;
+    content: string | number;
+    log_time?: string;
+  }) => http.post("/environment-parameter-values/", data),
+  listByParameter: async (parameterId: number) => {
+    const res = await http.get(
+      `/environment-parameters/${parameterId}/values/`,
+    );
+
+    const normalized = (res.data || []).map((row: any) => ({
+      ...row,
+      created_at: row.log_time ?? row.created_at,
+    }));
+
+    return { ...res, data: normalized };
+  },
 };
