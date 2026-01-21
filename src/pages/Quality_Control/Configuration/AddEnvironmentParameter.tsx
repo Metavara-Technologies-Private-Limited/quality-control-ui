@@ -17,11 +17,14 @@ import { MoreHoriz } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
+// ... existing imports
+import AddEnvParameterPopup from "@/pages/Quality_Control/Configuration/AddEnvParameterPopup"; // Adjust the path as needed
 import { equipmentApi } from "@/services/api";
 import { useDispatch } from "react-redux";
 import { fetchClinic } from "@/store/clinicSlice";
 import type { AppDispatch } from "@/store";
+
+
 
 const ENVIRONMENT_NAME = "Environment Details";
 
@@ -319,7 +322,16 @@ const AddEnvironmentParameter = () => {
       </Dialog>
 
       {/* Add Parameter Popup */}
-
+<AddEnvParameterPopup
+        open={openParamPopup}
+        onClose={() => {
+          setOpenParamPopup(false);
+          setParamToEdit(null);
+          setEditingIndex(null);
+        }}
+        onAdd={handleAddParameter}
+        initialData={paramToEdit}
+      />
     </Box>
   );
 };

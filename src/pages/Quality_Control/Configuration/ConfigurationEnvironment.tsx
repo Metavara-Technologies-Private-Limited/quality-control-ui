@@ -1,945 +1,442 @@
-import React, { useState } from 'react';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { useMemo, useState } from "react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-} from 'recharts';
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  IconButton,
+  Button,
+  TextField,
+  Menu,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
+} from "@mui/material";
+import { useOutletContext } from "react-router-dom";
+import { MoreHoriz } from "@mui/icons-material";
+import ViewIcon from "@/assets/icons/eye.jpg";
+import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/store";
+import { fetchClinic } from "@/store/clinicSlice";
+import { equipmentApi } from "@/services/api";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const ConfigurationEnvironment = () => {
-  const [activeTab, setActiveTab] = useState('details');
-  const [formData, setFormData] = useState({
-    temperature: '',
-    humidity: '',
-    airQuality: '',
-    gasMeasure: '',
-    lightCondition: '',
-    noiseLevel: '',
-    comments: '',
-    status: 'Within Range',
+  const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+const { searchQuery } = useOutletContext<{ searchQuery: string }>();
+
+  const { data: clinic } = useSelector((state: RootState) => state.clinic);
+
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState<number | null>(
+    null,
+  );
+
+  const [dialogs, setDialogs] = useState({
+    delete: false,
+    inactive: false,
+    active: false,
   });
 
-  const [logs, setLogs] = useState<any[]>([]);
+  /* ------------------ Derived Data ------------------ */
 
-  const activityData = [
-    { day: 'Mon', compliant: 34, nonCompliant: -23 },
-    { day: 'Tue', compliant: 28, nonCompliant: -22 },
-    { day: 'Wed', compliant: 22, nonCompliant: -36 },
-    { day: 'Thu', compliant: 36, nonCompliant: -12 },
-    { day: 'Fri', compliant: 29, nonCompliant: -28 },
-    { day: 'Sat', compliant: 15, nonCompliant: -33 },
-    { day: 'Sun', compliant: 25, nonCompliant: -25 },
-  ];
+const equipments = useMemo(() => {
+    if (!clinic?.department) return [];
 
-  const isValidDecimal = (value: string) => {
-    return /^\d{0,3}(\.\d{0,3})?$/.test(value);
+    return clinic.department.flatMap((dep) =>
+      dep.equipments
+        // ADD THIS LINE: Only keep items that are named exactly "Environment Details"
+        .filter((eq: any) => eq.equipment_name === "Environment Details")
+        .map((eq: any) => ({ ...eq, department: dep }))
+    );
+  }, [clinic]);
+
+  const filteredEquipments = useMemo(
+    () =>
+      equipments.filter((eq) =>
+        eq.equipment_name.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [equipments, searchQuery],
+  );
+
+  const selectedEquipment = useMemo(
+    () => equipments.find((e) => e.id === selectedEquipmentId),
+    [equipments, selectedEquipmentId],
+  );
+
+  /* ------------------ Helpers ------------------ */
+
+  const getCreatedDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("en-GB");
+
+  /* ------------------ API Actions ------------------ */
+
+  const confirmDelete = async () => {
+    if (!selectedEquipment) return;
+
+    const { id, department } = selectedEquipment;
+
+    try {
+      await equipmentApi.delete(department.id, id);
+      dispatch(fetchClinic(1));
+      setDialogs({ delete: false, inactive: false, active: false });
+      toast.success("Equipment deleted successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete equipment.");
+    }
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
+  const toggleEquipment = async (active: boolean) => {
+    if (!selectedEquipment) return;
 
-    if (name === 'comments' || name === 'status') {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-      return;
-    }
+    const { id, department } = selectedEquipment;
 
-    if (name === 'gasMeasure') {
-      const parts = value.split(',');
-
-      if (parts.length > 2) {
-        toast.error('Enter Digits and Decimals only');
-        return;
+    try {
+      if (active) {
+        await equipmentApi.activate(id);
+        toast.success("Equipment activated successfully!");
+      } else {
+        await equipmentApi.inactive(department.id, id);
+        toast.success("Equipment inactivated successfully!");
       }
 
-      for (let part of parts) {
-        if (part.trim() && !isValidDecimal(part.trim())) {
-          toast.error('Enter Digits and Decimals only');
-          return;
-        }
-      }
-
-      setFormData((prev) => ({ ...prev, gasMeasure: value }));
-      return;
+      dispatch(fetchClinic(1));
+      setDialogs({ delete: false, inactive: false, active: false });
+    } catch (err) {
+      console.error(err);
+      toast.error(`Failed to ${active ? "activate" : "inactivate"} equipment.`);
     }
-
-    if (!isValidDecimal(value)) {
-      toast.error('Enter Digits and Decimals only');
-      return;
-    }
-
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSave = () => {
-    const hasValue =
-      formData.temperature ||
-      formData.humidity ||
-      formData.airQuality ||
-      formData.gasMeasure ||
-      formData.lightCondition ||
-      formData.noiseLevel;
-
-    if (!hasValue) {
-      toast.error('Please fill atleast 1 field');
-      return;
-    }
-
-    const [o2Value, co2Value] = formData.gasMeasure
-      ? formData.gasMeasure.split(',').map((v) => v.trim())
-      : ['', ''];
-
-    const newLog = {
-      dateTime: new Date().toLocaleString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true,
-      }),
-      temperature: formData.temperature,
-      humidity: formData.humidity,
-      airQuality: formData.airQuality,
-      gasMeasure: { o2: o2Value, co2: co2Value },
-      lightCondition: formData.lightCondition,
-      noiseLevel: formData.noiseLevel,
-      status: formData.status,
-      comments: formData.comments,
-    };
-
-    setLogs((prev) => [newLog, ...prev]);
-
-    setFormData({
-      temperature: '',
-      humidity: '',
-      airQuality: '',
-      gasMeasure: '',
-      lightCondition: '',
-      noiseLevel: '',
-      comments: '',
-      status: 'Within Range',
-    });
-
-    toast.success('Environmental data Saved Successfully');
-  };
-
-  const handleClear = () => {
-    setFormData({
-      temperature: '',
-      humidity: '',
-      airQuality: '',
-      gasMeasure: '',
-      lightCondition: '',
-      noiseLevel: '',
-      comments: '',
-      status: 'Within Range',
-    });
   };
 
   return (
-    <div
-      style={{
-        padding: '20px',
-        backgroundColor: '#f9fafb',
-        minHeight: '100vh',
-        fontFamily: "system-ui, -apple-system, sans-serif",
-      }}
-    >
+    <Box>
+      {/* Toast Container */}
       <ToastContainer
         position="top-right"
-        autoClose={2000}
+        autoClose={3000}
         hideProgressBar={false}
-        closeOnClick
-        pauseOnHover
-        draggable
-        theme="colored"
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
-        {/* Left Section - Parameters with Tabs */}
-        <div
-          style={{
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            padding: '24px',
-            border: '2px solid #e5e7eb',
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: '100vh',
-          }}
-        >
-          <div style={{ flex: 1 }}>
-            {/* Heading */}
-            <h2
-              style={{
-                fontWeight: 700,
-                marginBottom: '24px',
-                fontSize: '16px',
-                color: '#232323',
-                margin: 0,
-              }}
-            >
-              Environmental Parameters
-            </h2>
 
-            {/* Tabs */}
-            <div
-              style={{
-                display: 'inline-flex',
-                backgroundColor: '#F2F2F2',
-                borderRadius: '12px',
-                padding: '4px',
-                marginBottom: '24px',
-                gap: '4px',
-              }}
-            >
-              <button
-                onClick={() => setActiveTab('details')}
-                style={{
-                  padding: '8px 32px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: activeTab === 'details' ? '700' : '600',
-                  backgroundColor:
-                    activeTab === 'details' ? '#FFFFFF' : 'transparent',
-                  color: activeTab === 'details' ? '#E17E61' : '#94a3b8',
+      {/* Cards */}
+      <Grid container spacing={2}>
+        {filteredEquipments.map((item) => {
+          const isInactive = item.is_active === false;
+
+          return (
+            <Grid item xs={12} sm={6} md={4} lg={3} key={item.id}>
+              <Card
+                sx={{
+                  position: "relative",
+                  borderRadius: "12px",
+                  border: "1px solid #E5E7EB",
+                  boxShadow: "none",
+                  opacity: isInactive ? 0.5 : 1,
+                  backgroundColor: isInactive ? "#F5F5F5" : "#fff",
+                  transition: "all 0.3s ease",
                 }}
               >
-                Details
-              </button>
-
-              <button
-                onClick={() => setActiveTab('logs')}
-                style={{
-                  padding: '8px 32px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: activeTab === 'logs' ? '700' : '600',
-                  backgroundColor:
-                    activeTab === 'logs' ? '#FFFFFF' : 'transparent',
-                  color: activeTab === 'logs' ? '#E17E61' : '#94a3b8',
-                }}
-              >
-                Logs
-              </button>
-            </div>
-
-            {/* Details Tab */}
-            {activeTab === 'details' && (
-              <>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr 1fr',
-                    gap: '20px',
+                {/* Status Badge Top-Right */}
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    background: isInactive ? "#ffcccc" : "#d4f8d4",
+                    color: isInactive ? "#b30000" : "#47B35F",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    px: 1.3,
+                    py: 0.5,
+                    borderRadius: 20,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
                   }}
                 >
-                  {/* Temperature */}
-                  <div style={{ marginBottom: '16px', position: 'relative' }}>
-                    <input
-                      type="text"
-                      placeholder="Type Here"
-                      name="temperature"
-                      value={formData.temperature}
-                      onChange={handleChange}
-                      style={{
-                        width: '100%',
-                        height: '50px',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '8px',
-                        fontSize: '16px',
-                        fontWeight: 500,
-                        color: '#9E9E9E',
-                        padding: '10px 12px',
-                        outline: 'none',
-                        boxSizing: 'border-box',
-                      }}
-                    />
-                    <label
-                      style={{
-                        position: 'absolute',
-                        left: '12px',
-                        top: '-8px',
-                        backgroundColor: '#fff',
-                        padding: '0 4px',
-                        fontSize: '14px',
-                        color: '#232323',
-                      }}
-                    >
-                      Temperature (°C)
-                    </label>
-                    <p
-                      style={{
-                        fontSize: '11px',
-                        color: '#94a3b8',
-                        marginTop: '8px',
-                        margin: '4px 0 0 0',
-                        fontWeight: '500',
-                      }}
-                    >
-                      Range: 36.5 °C - 37.5 °C
-                    </p>
-                  </div>
+                  {isInactive ? "Inactive" : "Active"}
+                </Box>
 
-                  {/* Humidity */}
-                  <div style={{ marginBottom: '16px', position: 'relative' }}>
-                    <input
-                      type="text"
-                      placeholder="Type Here"
-                      name="humidity"
-                      value={formData.humidity}
-                      onChange={handleChange}
-                      style={{
-                        width: '100%',
-                        height: '50px',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '8px',
-                        fontSize: '16px',
-                        fontWeight: 500,
-                        color: '#9E9E9E',
-                        padding: '10px 12px',
-                        outline: 'none',
-                        boxSizing: 'border-box',
-                      }}
-                    />
-                    <label
-                      style={{
-                        position: 'absolute',
-                        left: '12px',
-                        top: '-8px',
-                        backgroundColor: '#fff',
-                        padding: '0 4px',
-                        fontSize: '14px',
-                        color: '#232323',
-                      }}
-                    >
-                      Humidity Levels (%)
-                    </label>
-                    <p
-                      style={{
-                        fontSize: '11px',
-                        color: '#94a3b8',
-                        marginTop: '8px',
-                        margin: '4px 0 0 0',
-                        fontWeight: '500',
-                      }}
-                    >
-                      Range: 30% - 60%
-                    </p>
-                  </div>
+                <CardContent sx={{ pb: 1 }}>
+                  <Typography
+                    sx={{ fontWeight: 700, fontSize: "16px", color: "#232323" }}
+                  >
+                    <b>{item.equipment_name}</b>
+                  </Typography>
 
-                  {/* Air Quality */}
-                  <div style={{ marginBottom: '16px', position: 'relative' }}>
-                    <input
-                      type="text"
-                      placeholder="Type Here"
-                      name="airQuality"
-                      value={formData.airQuality}
-                      onChange={handleChange}
-                      style={{
-                        width: '100%',
-                        height: '50px',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '8px',
-                        fontSize: '16px',
-                        fontWeight: 500,
-                        color: '#9E9E9E',
-                        padding: '10px 12px',
-                        outline: 'none',
-                        boxSizing: 'border-box',
-                      }}
-                    />
-                    <label
-                      style={{
-                        position: 'absolute',
-                        left: '12px',
-                        top: '-8px',
-                        backgroundColor: '#fff',
-                        padding: '0 4px',
-                        fontSize: '14px',
-                        color: '#232323',
-                      }}
-                    >
-                      Air Quality
-                    </label>
-                    <p
-                      style={{
-                        fontSize: '11px',
-                        color: '#94a3b8',
-                        marginTop: '8px',
-                        margin: '4px 0 0 0',
-                        fontWeight: '500',
-                      }}
-                    >
-                      Range: &lt;100 Particles/M³
-                    </p>
-                  </div>
-
-                  {/* Gas Mixture */}
-                  <div style={{ marginBottom: '16px', position: 'relative' }}>
-                    <input
-                      type="text"
-                      placeholder="Type Here"
-                      name="gasMeasure"
-                      value={formData.gasMeasure}
-                      onChange={handleChange}
-                      style={{
-                        width: '100%',
-                        height: '50px',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '8px',
-                        fontSize: '16px',
-                        fontWeight: 500,
-                        color: '#9E9E9E',
-                        padding: '10px 12px',
-                        outline: 'none',
-                        boxSizing: 'border-box',
-                      }}
-                    />
-                    <label
-                      style={{
-                        position: 'absolute',
-                        left: '12px',
-                        top: '-8px',
-                        backgroundColor: '#fff',
-                        padding: '0 4px',
-                        fontSize: '14px',
-                        color: '#232323',
-                      }}
-                    >
-                      Gas Mixture (% O2, CO2)
-                    </label>
-                    <p
-                      style={{
-                        fontSize: '11px',
-                        color: '#94a3b8',
-                        marginTop: '8px',
-                        margin: '4px 0 0 0',
-                        fontWeight: '500',
-                      }}
-                    >
-                      Range: O2 - 20, CO2 - 5
-                    </p>
-                  </div>
-
-                  {/* Lighting */}
-                  <div style={{ marginBottom: '16px', position: 'relative' }}>
-                    <input
-                      type="text"
-                      placeholder="Type Here"
-                      name="lightCondition"
-                      value={formData.lightCondition}
-                      onChange={handleChange}
-                      style={{
-                        width: '100%',
-                        height: '50px',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '8px',
-                        fontSize: '16px',
-                        fontWeight: 500,
-                        color: '#9E9E9E',
-                        padding: '10px 12px',
-                        outline: 'none',
-                        boxSizing: 'border-box',
-                      }}
-                    />
-                    <label
-                      style={{
-                        position: 'absolute',
-                        left: '12px',
-                        top: '-8px',
-                        backgroundColor: '#fff',
-                        padding: '0 4px',
-                        fontSize: '14px',
-                        color: '#232323',
-                      }}
-                    >
-                      Lighting Condition (Lux)
-                    </label>
-                    <p
-                      style={{
-                        fontSize: '11px',
-                        color: '#94a3b8',
-                        marginTop: '8px',
-                        margin: '4px 0 0 0',
-                        fontWeight: '500',
-                      }}
-                    >
-                      Range: 300 - 500 For Embryo Culture
-                    </p>
-                  </div>
-
-                  {/* Noise */}
-                  <div style={{ marginBottom: '16px', position: 'relative' }}>
-                    <input
-                      type="text"
-                      placeholder="Type Here"
-                      name="noiseLevel"
-                      value={formData.noiseLevel}
-                      onChange={handleChange}
-                      style={{
-                        width: '100%',
-                        height: '50px',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '8px',
-                        fontSize: '16px',
-                        fontWeight: 500,
-                        color: '#9E9E9E',
-                        padding: '10px 12px',
-                        outline: 'none',
-                        boxSizing: 'border-box',
-                      }}
-                    />
-                    <label
-                      style={{
-                        position: 'absolute',
-                        left: '12px',
-                        top: '-8px',
-                        backgroundColor: '#fff',
-                        padding: '0 4px',
-                        fontSize: '14px',
-                        color: '#232323',
-                      }}
-                    >
-                      Noise Levels (DB)
-                    </label>
-                    <p
-                      style={{
-                        fontSize: '11px',
-                        color: '#94a3b8',
-                        marginTop: '8px',
-                        margin: '4px 0 0 0',
-                        fontWeight: '500',
-                      }}
-                    >
-                      Range: &lt; 5
-                    </p>
-                  </div>
-
-                  {/* Comments and Status Row */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: '20px',
-                      gridColumn: '1 / -1',
-                      marginTop: '16px',
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      mt: 2,
                     }}
                   >
-                    <div style={{ flex: 1, position: 'relative' }}>
-                      <textarea
-                        placeholder="Type Here"
-                        name="comments"
-                        value={formData.comments}
-                        onChange={handleChange}
-                        rows={1}
+                    <Box>
+                      <Typography fontSize={14} color="#9CA3AF">
+                        Department:
+                      </Typography>
+                      <Typography fontSize={16} fontWeight={500}>
+                        {item.department?.name}
+                      </Typography>
+                    </Box>
+
+                    <Box>
+                      <Typography fontSize={14} color="#9CA3AF">
+                        Parameters:
+                      </Typography>
+                      <Typography fontSize={16} fontWeight={500}>
+                        {String(item.parameters.length).padStart(2, "0")}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+
+                <Divider />
+
+                {/* Bottom Icons */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    p: 2,
+                    pt: 1,
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontSize: 16,
+                      fontWeight: 500,
+                      color: "#4B5563",
+                      gap: 1,
+                      mr: 1,
+                    }}
+                  >
+                    <span style={{ color: "#9CA3AF", fontSize: 14 }}>
+                      Created Date:
+                    </span>{" "}
+                    <span style={{ fontSize: 14, fontWeight: 500 }}>
+                      {getCreatedDate(item.created_at)}
+                    </span>
+                  </Typography>
+
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    <IconButton
+                      disabled={isInactive}
+                      onClick={() =>
+                        navigate("/configuration/environment/view", {
+                          state: { environmentId: item.id },
+                        })
+                      }
+
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        border: "1px solid #E5E7EB",
+                        borderRadius: "8px",
+                        cursor: isInactive ? "not-allowed" : "pointer",
+                        pointerEvents: isInactive ? "none" : "auto",
+                        opacity: isInactive ? 0.4 : 1,
+                      }}
+                    >
+                      <img
+                        src={ViewIcon}
+                        alt="view"
                         style={{
-                          width: '100%',
-                          minHeight: '50px',
-                          border: '2px solid #e5e7eb',
-                          borderRadius: '8px',
-                          fontSize: '16px',
-                          padding: '10px 12px',
-                          outline: 'none',
-                          resize: 'none',
-                          color: '#9E9E9E',
-                          boxSizing: 'border-box',
+                          width: 18,
+                          height: 18,
+                          filter: isInactive ? "grayscale(100%)" : "none",
                         }}
                       />
-                      <label
-                        style={{
-                          position: 'absolute',
-                          left: '12px',
-                          top: '-8px',
-                          backgroundColor: '#fff',
-                          padding: '0 4px',
-                          fontSize: '14px',
-                          color: '#232323',
-                        }}
-                      >
-                        Comments
-                      </label>
-                    </div>
-                    <div style={{ flex: 1, position: 'relative' }}>
-                      <select
-                        name="status"
-                        value={formData.status}
-                        onChange={handleChange}
-                        style={{
-                          width: '100%',
-                          height: '50px',
-                          border: '2px solid #e5e7eb',
-                          borderRadius: '8px',
-                          fontSize: '16px',
-                          padding: '10px 12px',
-                          outline: 'none',
-                          color: '#232323',
-                          cursor: 'pointer',
-                          boxSizing: 'border-box',
-                        }}
-                      >
-                        <option value="Within Range">Within Range</option>
-                        <option value="Out of Range">Out of Range</option>
-                        <option value="Critical">Critical</option>
-                      </select>
-                      <label
-                        style={{
-                          position: 'absolute',
-                          left: '12px',
-                          top: '-8px',
-                          backgroundColor: '#fff',
-                          padding: '0 4px',
-                          fontSize: '14px',
-                          color: '#232323',
-                        }}
-                      >
-                        Status
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
+                    </IconButton>
 
-            {/* Logs Tab */}
-            {activeTab === 'logs' && (
-              <div style={{ overflowX: 'auto' }}>
-                {logs.length === 0 ? (
-                  <p
-                    style={{
-                      textAlign: 'center',
-                      color: '#94a3b8',
-                      padding: '40px 20px',
-                      fontSize: '13px',
-                    }}
-                  >
-                    No logs yet. Fill in the details form and click Save to see
-                    entries here.
-                  </p>
-                ) : (
-                  <table
-                    style={{
-                      width: '100%',
-                      borderCollapse: 'collapse',
-                      fontSize: '13px',
-                    }}
-                  >
-                    <thead
-                      style={{
-                        backgroundColor: '#F9FAFB',
-                        color: '#64748b',
-                        fontWeight: 600,
-                        whiteSpace: 'nowrap',
+                    <IconButton
+                      onClick={(e) => {
+                        setAnchorEl(e.currentTarget);
+                        setSelectedEquipmentId(item.id);
+                      }}
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        border: isInactive
+                          ? "2px solid #ffffff"
+                          : "1px solid #E5E7EB",
+                        borderRadius: "8px",
+                        backgroundColor: isInactive
+                          ? "#505050"
+                          : "2px solid #232323",
+                        "&:hover": {
+                          backgroundColor: isInactive
+                            ? "#000000ff"
+                            : "rgba(0, 0, 0, 0.04)",
+                        },
                       }}
                     >
-                      <tr>
-                        <th style={{ padding: '12px', textAlign: 'left' }}>
-                          Date & Time
-                        </th>
-                        <th style={{ padding: '12px', textAlign: 'left' }}>
-                          Temp.
-                        </th>
-                        <th style={{ padding: '12px', textAlign: 'left' }}>
-                          Humidity
-                        </th>
-                        <th style={{ padding: '12px', textAlign: 'left' }}>
-                          Air Quality
-                        </th>
-                        <th style={{ padding: '12px', textAlign: 'left' }}>
-                          Gas Mixture
-                        </th>
-                        <th style={{ padding: '12px', textAlign: 'left' }}>
-                          Lighting
-                        </th>
-                        <th style={{ padding: '12px', textAlign: 'left' }}>
-                          Noise
-                        </th>
-                        <th style={{ padding: '12px', textAlign: 'left' }}>
-                          Status
-                        </th>
-                        <th style={{ padding: '12px', textAlign: 'left' }}>
-                          Comments
-                        </th>
-                      </tr>
-                    </thead>
+                      <MoreHoriz
+                        fontSize="small"
+                        sx={{
+                          color: isInactive ? "#ffffff" : "inherit",
+                          fontWeight: isInactive ? 700 : 400,
+                        }}
+                      />
+                    </IconButton>
+                  </Box>
+                </Box>
+              </Card>
+            </Grid>
+          );
+        })}
+      </Grid>
 
-                    <tbody style={{ fontSize: '13px' }}>
-                      {logs.map((log: any, index: number) => (
-                        <tr
-                          key={index}
-                          style={{ borderBottom: '1px solid #e5e7eb' }}
-                        >
-                          <td
-                            style={{
-                              padding: '12px',
-                              color: '#232323',
-                              fontWeight: '600',
-                            }}
-                          >
-                            {log.dateTime}
-                          </td>
-                          <td style={{ padding: '12px', color: '#232323' }}>
-                            {log.temperature ? `${log.temperature} °C` : '-'}
-                          </td>
-                          <td style={{ padding: '12px', color: '#232323' }}>
-                            {log.humidity ? `${log.humidity} %` : '-'}
-                          </td>
-                          <td style={{ padding: '12px', color: '#232323' }}>
-                            {log.airQuality ? `${log.airQuality} P/M³` : '-'}
-                          </td>
-                          <td
-                            style={{
-                              padding: '12px',
-                              color: '#232323',
-                              lineHeight: '1.6',
-                            }}
-                          >
-                            {log.gasMeasure?.o2 ? (
-                              <>
-                                <div>O2 : {log.gasMeasure.o2}%</div>
-                                <div>CO2 : {log.gasMeasure.co2}%</div>
-                              </>
-                            ) : (
-                              '-'
-                            )}
-                          </td>
-                          <td style={{ padding: '12px', color: '#232323' }}>
-                            {log.lightCondition
-                              ? `${log.lightCondition} Lux`
-                              : '-'}
-                          </td>
-                          <td style={{ padding: '12px', color: '#232323' }}>
-                            {log.noiseLevel ? `${log.noiseLevel} dB` : '-'}
-                          </td>
-                          <td style={{ padding: '12px' }}>
-                            <span
-                              style={{
-                                padding: '5px 15px',
-                                borderRadius: '999px',
-                                fontSize: '12px',
-                                fontWeight: 700,
-                                whiteSpace: 'nowrap',
-                                textAlign: 'center',
-                                display: 'inline-block',
-                                color:
-                                  log.status === 'Within Range'
-                                    ? '#47B35F'
-                                    : log.status === 'Out of Range'
-                                    ? '#F25B5B'
-                                    : '#7A0C0C',
-                                border:
-                                  log.status === 'Within Range'
-                                    ? '2px solid #47B35F'
-                                    : log.status === 'Out of Range'
-                                    ? '2px solid #F25B5B'
-                                    : '2px solid #7A0C0C',
-                                backgroundColor:
-                                  log.status === 'Within Range'
-                                    ? '#F1FFF5'
-                                    : log.status === 'Out of Range'
-                                    ? '#FFF1F1'
-                                    : '#FDECEC',
-                              }}
-                            >
-                              {log.status === 'Within Range'
-                                ? 'In Range'
-                                : log.status === 'Out of Range'
-                                ? 'Out of Range'
-                                : 'Critical'}
-                            </span>
-                          </td>
-                          <td
-                            style={{
-                              padding: '12px',
-                              color: '#232323',
-                              maxWidth: '200px',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'normal',
-                              wordBreak: 'break-word',
-                            }}
-                          >
-                            {log.comments || '-'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Buttons */}
-          {activeTab === 'details' && (
-            <div
-              style={{
-                display: 'flex',
-                gap: '12px',
-                justifyContent: 'flex-end',
-                marginTop: '32px',
-              }}
-            >
-              <button
-                onClick={handleClear}
-                style={{
-                  padding: '10px 24px',
-                  border: '1px solid #505050',
-                  borderRadius: '8px',
-                  backgroundColor: 'white',
-                  cursor: 'pointer',
-                  fontWeight: 700,
-                  fontSize: '14px',
-                  color: '#505050',
-                }}
-              >
-                Clear
-              </button>
-              <button
-                onClick={handleSave}
-                style={{
-                  padding: '10px 24px',
-                  border: 'none',
-                  borderRadius: '8px',
-                  backgroundColor: '#505050',
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontWeight: 700,
-                  fontSize: '14px',
-                }}
-              >
-                Save
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Right Section - Activity Chart */}
-        <div
-          style={{
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            padding: '24px',
-            border: '2px solid #e5e7eb',
-            minHeight: '100vh',
-            position: 'relative',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              marginBottom: '20px',
+      {/* Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => setAnchorEl(null)}
+      >
+        {selectedEquipment?.is_active ? (
+          <MenuItem
+            onClick={() => {
+              setDialogs({ ...dialogs, inactive: true });
+              setAnchorEl(null);
             }}
           >
-            <h4
-              style={{
-                fontWeight: 700,
-                fontSize: '16px',
-                margin: 0,
-                color: '#0f172a',
-              }}
-            >
-              Activity
-            </h4>
-            <div
-              style={{
-                marginLeft: 'auto',
-                display: 'flex',
-                gap: '20px',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div
-                  style={{
-                    width: '10px',
-                    height: '10px',
-                    backgroundColor: '#6c6c6c',
-                    borderRadius: '50%',
-                  }}
-                />
-                <span style={{ fontSize: '12px', color: '#949494' }}>
-                  Compliant
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div
-                  style={{
-                    width: '10px',
-                    height: '10px',
-                    backgroundColor: '#EF9685',
-                    borderRadius: '50%',
-                  }}
-                />
-                <span style={{ fontSize: '12px', color: '#949494' }}>
-                  Non - Compliant
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <hr
-            style={{
-              border: 'none',
-              borderTop: '1px solid #E2E3E5',
-              margin: '0 0 16px 0',
+            Inactivate
+          </MenuItem>
+        ) : (
+          <MenuItem
+            onClick={() => {
+              setDialogs({ ...dialogs, active: true });
+              setAnchorEl(null);
             }}
-          />
+          >
+            Activate
+          </MenuItem>
+        )}
+        <MenuItem
+          sx={{ color: "error.main" }}
+          onClick={() => {
+            setDialogs({ ...dialogs, delete: true });
+            setAnchorEl(null);
+          }}
+        >
+          Delete
+        </MenuItem>
+      </Menu>
 
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart
-              data={activityData}
-              stackOffset="sign"
-              margin={{ top: 20, right: 30, left: 45, bottom: 20 }}
-            >
-              <XAxis
-                dataKey="day"
-                tick={{ fontSize: 12, fill: '#8c8c8c' }}
-                axisLine={{ stroke: '#E0E0E0' }}
-                tickLine={false}
-              />
-              <YAxis
-                domain={['auto', 'auto']}
-                tickCount={9}
-                tick={{ fontSize: 12, fill: '#9e9e9e' }}
-                axisLine={{ stroke: '#E0E0E0' }}
-                tickLine={false}
-                tickFormatter={(value) => (value === 0 ? '' : value)}
-                label={{
-                  value: 'No of Parameters',
-                  angle: -90,
-                  position: 'insideLeft',
-                  offset: -35,
-                  dy: 40,
-                  style: {
-                    textAnchor: 'middle',
-                    fill: '#9e9e9e',
-                    fontWeight: 500,
-                    fontSize: '12px',
-                  },
-                }}
-              />
-              <Tooltip />
-              <ReferenceLine y={0} stroke="#E0E0E0" />
-              <Bar dataKey="compliant" fill="#6c6c6c" />
-              <Bar dataKey="nonCompliant" fill="#EF9685" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    </div>
+      {/* Delete Dialog */}
+      <Dialog
+        open={dialogs.delete}
+        onClose={() => setDialogs({ ...dialogs, delete: false })}
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this equipment?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setDialogs({ ...dialogs, delete: false })}
+            sx={{
+              color: "#232323",
+              border: "1px solid #505050",
+              "&:hover": {
+                border: "1px solid #232323",
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmDelete}
+            variant="contained"
+            color="error"
+            sx={{ background: "#505050", "&:hover": { background: "#232323" } }}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Inactive Dialog */}
+      <Dialog
+        open={dialogs.inactive}
+        onClose={() => setDialogs({ ...dialogs, inactive: false })}
+      >
+        <DialogTitle>Confirm Inactivate</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to Inactivate this equipment?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setDialogs({ ...dialogs, inactive: false })}
+            sx={{
+              color: "#232323",
+              border: "1px solid #505050",
+              "&:hover": {
+                border: "1px solid #232323",
+              },
+            }}
+          >
+            Cancel
+          </Button>
+
+          <Button
+            onClick={() => toggleEquipment(false)}
+            variant="contained"
+            sx={{ background: "#505050", "&:hover": { background: "#232323" } }}
+          >
+            Inactivate
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Activate Dialog */}
+      <Dialog
+        open={dialogs.active}
+        onClose={() => setDialogs({ ...dialogs, active: false })}
+      >
+        <DialogTitle>Confirm Activate</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to activate this equipment?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setDialogs({ ...dialogs, active: false })}
+            variant="outlined"
+            sx={{
+              color: "#232323",
+              border: "1px solid #505050",
+              "&:hover": {
+                border: "1px solid #232323",
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => toggleEquipment(true)}
+            variant="contained"
+            sx={{ background: "#505050", "&:hover": { background: "#232323" } }}
+          >
+            Activate
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+    </Box>
   );
 };
 
