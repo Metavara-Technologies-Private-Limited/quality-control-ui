@@ -51,18 +51,6 @@ const formatDate = (isoString: string) => {
   return new Date(isoString).toLocaleDateString("en-GB");
 };
 
-const buildEquipmentParameterMap = (clinic: any) => {
-  const map: Record<number, Set<number>> = {};
-
-  clinic?.department?.forEach((d: any) => {
-    d.equipments?.forEach((e: any) => {
-      map[e.id] = new Set((e.parameters || []).map((p: any) => p.id));
-    });
-  });
-
-  return map;
-};
-
 const EventsHeader = ({ onCreate, onSearch }: any) => (
   <Stack
     direction="row"
@@ -378,7 +366,7 @@ const EventDetailView = ({ event, onBack }: any) => (
                     <TableCell sx={{ width: "30%" }}>
                       <Typography
                         fontSize={14}
-                        fontWeight={600} // slightly bold
+                        fontWeight={600}
                         color={COLORS.textPrimary}
                       >
                         {eq.equipment_name}
@@ -575,14 +563,31 @@ const EventsTable = ({
   );
 };
 
-const mapEventToRow = (e: any) => {
-  // 1️⃣ Group equipment_details by parent equipment
+const mapEventToRow = (e: any, clinic: any) => {
+  // Build equipment->parameter mapping from clinic data
+  const equipmentParameterMap: Record<number, Set<number>> = {};
+  
+  clinic?.department?.forEach((dept: any) => {
+    dept.equipments?.forEach((eq: any) => {
+      equipmentParameterMap[eq.id] = new Set(
+        (eq.parameters || []).map((p: any) => p.id)
+      );
+    });
+  });
+
+  // Get event's selected parameter IDs
+  const eventParameterIds = new Set(
+    (e.parameters || []).map((p: any) => p.parameter__id)
+  );
+
+  // Group equipment_details by parent equipment
   const equipmentMap = new Map<
     number,
     {
+      equipment_id: number;
       equipment_name: string;
       units: string[];
-      parameters: { name: string }[];
+      parameterIds: Set<number>;
     }
   >();
 
@@ -592,9 +597,10 @@ const mapEventToRow = (e: any) => {
 
     if (!equipmentMap.has(eqId)) {
       equipmentMap.set(eqId, {
+        equipment_id: eqId,
         equipment_name: ed.equipment_details__equipment__equipment_name || "-",
         units: [],
-        parameters: [],
+        parameterIds: new Set(),
       });
     }
 
@@ -604,17 +610,33 @@ const mapEventToRow = (e: any) => {
     }
   });
 
-  // 2️⃣ Parameters apply to all equipment units
-  const parameters =
-    e.parameters?.map((p: any) => ({
-      name: p.parameter__parameter_name || "-",
-    })) || [];
+  // For each equipment, filter parameters that belong to it AND are selected in event
+  const equipmentsDetails = Array.from(equipmentMap.values()).map((group) => {
+    const equipmentParamIds = equipmentParameterMap[group.equipment_id] || new Set();
+    
+    // Find parameters that are both: in this equipment AND selected for this event
+    const validParameterIds = Array.from(eventParameterIds).filter((paramId) =>
+      equipmentParamIds.has(paramId)
+    );
 
-  equipmentMap.forEach((group) => {
-    group.parameters = parameters;
+    // Map parameter IDs to names
+    const parameters = validParameterIds.map((paramId) => {
+      const param = e.parameters?.find((p: any) => p.parameter__id === paramId);
+      return {
+        id: paramId,
+        name: param?.parameter__parameter_name || "-",
+      };
+    });
+
+    return {
+      equipment_name: group.equipment_name,
+      units: group.units,
+      parameters,
+    };
   });
 
-  const equipmentsDetails = Array.from(equipmentMap.values());
+  // Count unique equipment (by parent equipment ID, not units)
+  const uniqueEquipmentCount = equipmentMap.size;
 
   return {
     id: e.id,
@@ -643,9 +665,9 @@ const mapEventToRow = (e: any) => {
 
     recurDuration: e.schedule?.recurring_duration,
 
-    // ✅ FIXED COUNTS
-    equipmentCount: e.equipments?.length || 0,
-    parameterCount: parameters.length,
+    // Fixed counts
+    equipmentCount: uniqueEquipmentCount,
+    parameterCount: eventParameterIds.size,
 
     equipmentsDetails,
   };
@@ -671,7 +693,7 @@ const Events = () => {
     }
   }, [clinic?.id, dispatch]);
 
-  const events = rawEvents.map((e) => mapEventToRow(e));
+  const events = rawEvents.map((e) => mapEventToRow(e, clinic));
 
   const filteredEvents = events.filter((e) =>
     e.name.toLowerCase().includes(search.toLowerCase()),
