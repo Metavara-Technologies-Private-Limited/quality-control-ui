@@ -12,20 +12,19 @@ const ConfigurationLayout = () => {
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  // ✅ SEPARATE STATES (VERY IMPORTANT)
+  // SEPARATE STATES
   const [openAddEquipmentPopup, setOpenAddEquipmentPopup] = useState(false);
   const [openAddEnvironmentPopup, setOpenAddEnvironmentPopup] = useState(false);
 
-  const isEquipment = location.pathname.startsWith("/configuration/equipment");
-  const isEnvironment = location.pathname.startsWith(
-    "/configuration/environment",
-  );
-
+  // Consolidated path detection
   const isEquipment = location.pathname.includes("/configuration/equipment");
   const isEnvironment = location.pathname.includes("/configuration/environment");
 
+  // Define showHeader (logic: show if we are in one of the two main config sections)
+  const showHeader = isEquipment || isEnvironment;
+
   return (
-    <Box>
+    <Box sx={{ p: 3 }}>
       {/* HEADER */}
       {showHeader && (
         <Box
@@ -120,24 +119,19 @@ const ConfigurationLayout = () => {
         </Box>
       )}
 
-      {/* CHILD ROUTES */}
+      {/* CHILD ROUTES - passing search query to children */}
       <Outlet context={{ searchQuery }} />
 
-      {/* ADD EQUIPMENT POPUP */}
-      {isEquipment && (
-        <AddEquipmentPopup
-          open={openAddEquipmentPopup}
-          onClose={() => setOpenAddEquipmentPopup(false)}
-        />
-      )}
+      {/* POPUPS */}
+      <AddEquipmentPopup
+        open={openAddEquipmentPopup}
+        onClose={() => setOpenAddEquipmentPopup(false)}
+      />
 
-      {/* ADD ENVIRONMENT POPUP */}
-      {isEnvironment && (
-        <AddEnvironmentPopup
-          open={openAddEnvironmentPopup}
-          onClose={() => setOpenAddEnvironmentPopup(false)}
-        />
-      )}
+      <AddEnvironmentPopup
+        open={openAddEnvironmentPopup}
+        onClose={() => setOpenAddEnvironmentPopup(false)}
+      />
     </Box>
   );
 };
