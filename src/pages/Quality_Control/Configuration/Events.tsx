@@ -51,18 +51,6 @@ const formatDate = (isoString: string) => {
   return new Date(isoString).toLocaleDateString("en-GB");
 };
 
-// const buildEquipmentParameterMap = (clinic: any) => {
-//   const map: Record<number, Set<number>> = {};
-
-//   clinic?.department?.forEach((d: any) => {
-//     d.equipments?.forEach((e: any) => {
-//       map[e.id] = new Set((e.parameters || []).map((p: any) => p.id));
-//     });
-//   });
-
-//   return map;
-// };
-
 const EventsHeader = ({ onCreate, onSearch }: any) => (
   <Stack
     direction="row"
@@ -364,7 +352,7 @@ const EventDetailView = ({ event, onBack }: any) => (
             <TableHead sx={{ bgcolor: COLORS.bgLight }}>
               <TableRow>
                 <TableCell sx={{ fontSize: 13, fontWeight: 600, py: 2 }}>
-                  Equipment Name
+                  Equipment Details
                 </TableCell>
                 <TableCell sx={{ fontSize: 13, fontWeight: 600, py: 2 }}>
                   Parameters
@@ -375,9 +363,26 @@ const EventDetailView = ({ event, onBack }: any) => (
               {event.equipmentsDetails && event.equipmentsDetails.length > 0 ? (
                 event.equipmentsDetails.map((eq: any, idx: number) => (
                   <TableRow key={idx}>
-                    <TableCell sx={{ fontSize: 14, width: "30%" }}>
-                      {eq.equipment_name}
+                    <TableCell sx={{ width: "30%" }}>
+                      <Typography
+                        fontSize={14}
+                        fontWeight={600}
+                        color={COLORS.textPrimary}
+                      >
+                        {eq.equipment_name}
+                      </Typography>
+
+                      {eq.units.length > 0 && (
+                        <Typography
+                          fontSize={13}
+                          color={COLORS.textSecondary}
+                          mt={0.5}
+                        >
+                          {eq.units.join(", ")}
+                        </Typography>
+                      )}
                     </TableCell>
+
                     <TableCell>
                       <Stack direction="row" spacing={1} flexWrap="wrap">
                         {eq.parameters && eq.parameters.length > 0 ? (
@@ -558,51 +563,80 @@ const EventsTable = ({
   );
 };
 
-const mapEventToRow = (e: any) => {
-  // group by parent equipment, but DISPLAY units
+const mapEventToRow = (e: any, clinic: any) => {
+  // Build equipment->parameter mapping from clinic data
+  const equipmentParameterMap: Record<number, Set<number>> = {};
+  
+  clinic?.department?.forEach((dept: any) => {
+    dept.equipments?.forEach((eq: any) => {
+      equipmentParameterMap[eq.id] = new Set(
+        (eq.parameters || []).map((p: any) => p.id)
+      );
+    });
+  });
+
+  // Get event's selected parameter IDs
+  const eventParameterIds = new Set(
+    (e.parameters || []).map((p: any) => p.parameter__id)
+  );
+
+  // Group equipment_details by parent equipment
   const equipmentMap = new Map<
     number,
     {
+      equipment_id: number;
       equipment_name: string;
       units: string[];
-      parameters: { name: string }[];
+      parameterIds: Set<number>;
     }
   >();
 
-  // 1️⃣ group equipment_details
   (e.equipments || []).forEach((ed: any) => {
-    const parentEqId = ed.equipment_details__equipment__id;
-    if (!parentEqId) return;
+    const eqId = ed.equipment_details__equipment__id;
+    if (!eqId) return;
 
-    if (!equipmentMap.has(parentEqId)) {
-      equipmentMap.set(parentEqId, {
+    if (!equipmentMap.has(eqId)) {
+      equipmentMap.set(eqId, {
+        equipment_id: eqId,
         equipment_name: ed.equipment_details__equipment__equipment_name || "-",
         units: [],
-        parameters: [],
+        parameterIds: new Set(),
       });
     }
 
-    const group = equipmentMap.get(parentEqId)!;
-
+    const group = equipmentMap.get(eqId)!;
     if (ed.equipment_details__equipment_num) {
       group.units.push(ed.equipment_details__equipment_num);
     }
   });
 
-  // 2️⃣ parameters apply to all units
-  const parameters =
-    e.parameters?.map((p: any) => ({
-      name: p.parameter__parameter_name || "-",
-    })) || [];
+  // For each equipment, filter parameters that belong to it AND are selected in event
+  const equipmentsDetails = Array.from(equipmentMap.values()).map((group) => {
+    const equipmentParamIds = equipmentParameterMap[group.equipment_id] || new Set();
+    
+    // Find parameters that are both: in this equipment AND selected for this event
+    const validParameterIds = Array.from(eventParameterIds).filter((paramId) =>
+      equipmentParamIds.has(paramId)
+    );
 
-  equipmentMap.forEach((group) => {
-    group.parameters = parameters;
+    // Map parameter IDs to names
+    const parameters = validParameterIds.map((paramId) => {
+      const param = e.parameters?.find((p: any) => p.parameter__id === paramId);
+      return {
+        id: paramId,
+        name: param?.parameter__parameter_name || "-",
+      };
+    });
+
+    return {
+      equipment_name: group.equipment_name,
+      units: group.units,
+      parameters,
+    };
   });
 
-  const equipmentsDetails = Array.from(equipmentMap.values()).map((g) => ({
-    equipment_name: `${g.equipment_name} (${g.units.join(", ")})`,
-    parameters: g.parameters,
-  }));
+  // Count unique equipment (by parent equipment ID, not units)
+  const uniqueEquipmentCount = equipmentMap.size;
 
   return {
     id: e.id,
@@ -631,9 +665,9 @@ const mapEventToRow = (e: any) => {
 
     recurDuration: e.schedule?.recurring_duration,
 
-    // 👇 FIXED COUNTS
-    equipmentCount: e.equipments?.length || 0,
-    parameterCount: parameters.length,
+    // Fixed counts
+    equipmentCount: uniqueEquipmentCount,
+    parameterCount: eventParameterIds.size,
 
     equipmentsDetails,
   };
@@ -659,7 +693,7 @@ const Events = () => {
     }
   }, [clinic?.id, dispatch]);
 
-  const events = rawEvents.map((e) => mapEventToRow(e));
+  const events = rawEvents.map((e) => mapEventToRow(e, clinic));
 
   const filteredEvents = events.filter((e) =>
     e.name.toLowerCase().includes(search.toLowerCase()),
