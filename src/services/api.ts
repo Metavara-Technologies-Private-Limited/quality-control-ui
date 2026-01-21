@@ -155,7 +155,7 @@ export const eventApi = {
     department_id: number;
     event_name: string;
     description: string;
-    equipment_ids?: number[];
+    equipment_details_ids?: number[];
     parameter_ids?: number[];
     assignment_id?: number | null;
     schedule: {
@@ -206,4 +206,24 @@ export const parameterValueApi = {
 
   listByParameter: (parameterId: number) =>
     http.get(`/parameters/${parameterId}/values/`),
+};
+
+export const environmentApi = {
+  create: (departmentId: number, data: any) =>
+    http.post(`/departments/${departmentId}/environments/`, data),
+
+  update: (environmentId: number, data: any) =>
+    http.put(`/environments/${environmentId}/`, data),
+
+  activate: (environmentId: number) =>
+    http.post(`/environments/${environmentId}/activate/`),
+
+  inactive: (environmentId: number) =>
+    http.patch(`/environments/${environmentId}/inactivate/`),
+
+  delete: (environmentId: number) =>
+    http.patch(`/environments/${environmentId}/delete/`),
+
+  getById: (environmentId: number) =>
+    http.get(`/environments/${environmentId}/get/`),
 };

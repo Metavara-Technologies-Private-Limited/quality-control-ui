@@ -1,33 +1,28 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import {
-  Box,
-  Button,
-  TextField,
-} from "@mui/material";
+import { Box, Button, TextField } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { useState } from "react";
 import AddEquipmentPopup from "@/components/Configuration/AddEquipmentPopup";
 import AddEnvironmentPopup from "@/pages/Quality_Control/Configuration/AddEnvironmentPopup";
-
 
 const ConfigurationLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [openAddEquipmentPopup, setOpenAddEquipmentPopup] = useState(false);
+  const [openAddPopup, setOpenAddPopup] = useState(false);
 
-  const isEquipmentSection =
-    location.pathname.includes("/configuration/equipment") ||
-    location.pathname.includes("/configuration/environment");
+  const isEquipment = location.pathname.startsWith("/configuration/equipment");
+  const isEnvironment = location.pathname.startsWith(
+    "/configuration/environment",
+  );
 
-  const isEquipment = location.pathname.includes("/equipment");
-  const isEnvironment = location.pathname.includes("/environment");
+  const showHeader = isEquipment || isEnvironment;
 
   return (
     <Box>
       {/* HEADER */}
-      {isEquipmentSection && (
+      {showHeader && (
         <Box
           sx={{
             display: "flex",
@@ -37,48 +32,47 @@ const ConfigurationLayout = () => {
           }}
         >
           {/* LEFT BUTTONS */}
-<div
-  style={{
-    display: "inline-flex",
-    backgroundColor: "#F2F2F2",
-    padding: "4px",
-    borderRadius: "12px",
-    gap: "4px",
-  }}
->
-  {["Equipments", "Environment"].map((tab) => {
-    const isActive =
-      (tab === "Equipments" && isEquipment) ||
-      (tab === "Environment" && isEnvironment);
+          <div
+            style={{
+              display: "inline-flex",
+              backgroundColor: "#F2F2F2",
+              padding: "4px",
+              borderRadius: "12px",
+              gap: "4px",
+            }}
+          >
+            {["Equipments", "Environment"].map((tab) => {
+              const isActive =
+                (tab === "Equipments" && isEquipment) ||
+                (tab === "Environment" && isEnvironment);
 
-    return (
-      <button
-        key={tab}
-        onClick={() =>
-          navigate(
-            tab === "Equipments"
-              ? "/configuration/equipment"
-              : "/configuration/environment"
-          )
-        }
-        style={{
-          width: "166px",
-          height: "36px",
-          borderRadius: "10px",
-          border: "none",
-          cursor: "pointer",
-          fontSize: "14px",
-          fontWeight: "700",
-          backgroundColor: isActive ? "#FFFFFF" : "transparent",
-          color: isActive ? "#E17E61" : "#94a3b8",
-        }}
-      >
-        {tab}
-      </button>
-    );
-  })}
-</div>
-
+              return (
+                <button
+                  key={tab}
+                  onClick={() =>
+                    navigate(
+                      tab === "Equipments"
+                        ? "/configuration/equipment"
+                        : "/configuration/environment",
+                    )
+                  }
+                  style={{
+                    width: "166px",
+                    height: "36px",
+                    borderRadius: "10px",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: "700",
+                    backgroundColor: isActive ? "#FFFFFF" : "transparent",
+                    color: isActive ? "#E17E61" : "#94a3b8",
+                  }}
+                >
+                  {tab}
+                </button>
+              );
+            })}
+          </div>
 
           {/* RIGHT ACTIONS */}
           <Box sx={{ display: "flex", gap: 2 }}>
@@ -105,7 +99,7 @@ const ConfigurationLayout = () => {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={() => setOpenAddEquipmentPopup(true)}
+              onClick={() => setOpenAddPopup(true)}
               sx={{
                 background: "#505050",
                 textTransform: "none",
@@ -121,22 +115,20 @@ const ConfigurationLayout = () => {
       {/* CHILD */}
       <Outlet context={{ searchQuery }} />
 
-      {/* ADD EQUIPMENT POPUP */}
-{isEquipment && (
-  <AddEquipmentPopup
-    open={openAddEquipmentPopup}
-    onClose={() => setOpenAddEquipmentPopup(false)}
-  />
-)}
+      {/* POPUPS */}
+      {isEquipment && (
+        <AddEquipmentPopup
+          open={openAddPopup}
+          onClose={() => setOpenAddPopup(false)}
+        />
+      )}
 
-{/* ADD ENVIRONMENT POPUP */}
-{isEnvironment && (
-  <AddEnvironmentPopup
-    open={openAddEquipmentPopup}
-    onClose={() => setOpenAddEquipmentPopup(false)}
-  />
-)}
-
+      {isEnvironment && (
+        <AddEnvironmentPopup
+          open={openAddPopup}
+          onClose={() => setOpenAddPopup(false)}
+        />
+      )}
     </Box>
   );
 };

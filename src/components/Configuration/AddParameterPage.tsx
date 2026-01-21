@@ -24,7 +24,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store";
 
 import { fetchClinic } from "@/store/clinicSlice";
-import { equipmentApi } from "@/services/api";
+import { environmentApi, equipmentApi } from "@/services/api";
 import { ParameterContent } from "@/types";
 
 const PARAM_DRAFT_STORAGE_KEY = "equipment_parameters_draft";
@@ -47,6 +47,15 @@ const AddParameterPage = () => {
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
   const { data: clinic } = useSelector((state: RootState) => state.clinic);
+
+  const entityType: "equipment" | "environment" = location.pathname.includes(
+    "/environment",
+  )
+    ? "environment"
+    : "equipment";
+
+  const isEnvironment = entityType === "environment";
+  const isEquipment = entityType === "equipment";
 
   const [equipmentName, setEquipmentName] = useState("");
   const [departmentName, setDepartmentName] = useState("");
@@ -97,6 +106,11 @@ const AddParameterPage = () => {
 
   useEffect(() => {
     const passedEquipment = location.state?.equipment;
+    if (isEnvironment) {
+      setEquipmentName(
+        location.state?.environmentName || "Environment Details"
+      );
+    }    
     const equipmentId = passedEquipment?.id;
     const storeEquipment = clinic?.department
       .flatMap((d) => d.equipments)
@@ -204,7 +218,15 @@ const AddParameterPage = () => {
       localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
     } else {
       setIsEditMode(false);
-      setEquipmentName(location.state?.equipmentName || "");
+      if (isEquipment) {
+        setEquipmentName(location.state?.equipmentName || "");
+      }
+    
+      if (isEnvironment) {
+        setEquipmentName(
+          location.state?.environmentName || "Environment Details"
+        );
+      }
       setDepartmentName(location.state?.departmentName || "");
 
       const dept = clinic?.department.find(
@@ -442,12 +464,17 @@ const AddParameterPage = () => {
   // In AddParameterPage.tsx - Update the handleFinalSave function
 
   const handleFinalSave = async () => {
+    if (isEnvironment && !equipmentName.trim()) {
+      toast.error("Environment name is missing");
+      return;
+    }
+    
     if (parameters.length === 0) {
       toast.error("Please add at least one parameter");
       return;
     }
 
-    if (equipmentTable.length === 0) {
+    if (isEquipment && equipmentTable.length === 0) {
       toast.error("Please add equipment details (Make and Model)");
       return;
     }
@@ -458,50 +485,35 @@ const AddParameterPage = () => {
     }
 
     try {
-      const equipmentPayload = {
-        equipment_name: equipmentName,
-        is_active: true,
-        equipment_details: equipmentTable.map((row) => ({
-          id: row.id ?? undefined,
-          equipment_num: `${equipmentName}-${row.equipmentNum}`,
-          make: row.make || "",
-          model: row.model || "",
+      /* ---------------- EQUIPMENT ---------------- */
+      if (isEquipment) {
+        const equipmentPayload = {
+          equipment_name: equipmentName,
           is_active: true,
-        })),
-        parameters: parameters.map((p) => {
-          // Determine the correct default value based on data type
-          let defaultValue = null;
-
-          switch (p.data_type || p.field_type) {
-            case "Integer":
-              defaultValue = p.default_value || p.integer_value || null;
-              break;
-            case "Decimal":
-              defaultValue = p.default_value || null;
-              break;
-            case "Text":
-              defaultValue = p.text || null;
-              break;
-            case "Boolean":
-              defaultValue = null; // Booleans don't have default values
-              break;
-            case "Dropdown":
-              defaultValue = null; // Dropdowns don't have default values
-              break;
-            default:
-              defaultValue = null;
-          }
-
-          return {
+          equipment_details: equipmentTable.map((row) => ({
+            id: row.id ?? undefined,
+            equipment_num: `${equipmentName}-${row.equipmentNum}`,
+            make: row.make || "",
+            model: row.model || "",
+            is_active: true,
+          })),
+          parameters: parameters.map((p) => ({
             id: p.id ?? undefined,
             parameter_name: p.name || p.title || "",
             is_active: true,
             config: {
               data_type: p.data_type || p.field_type || "",
-              default_value: defaultValue, // ✅ EXPLICITLY INCLUDE DEFAULT VALUE
+              default_value:
+                p.data_type === "Integer"
+                  ? p.default_value || p.integer_value || null
+                  : p.data_type === "Decimal"
+                    ? p.default_value || null
+                    : p.data_type === "Text"
+                      ? p.text || null
+                      : null,
               min_value: p.min_value ?? null,
               max_value: p.max_value ?? null,
-              integer_value: p.integer_value ?? p.default_value ?? null,
+              integer_value: p.integer_value ?? null,
               unit: p.unit ?? null,
               percentage: p.percentage ?? null,
               text: p.text ?? null,
@@ -510,34 +522,62 @@ const AddParameterPage = () => {
               dropdown: p.dropdown ?? [],
               selection_type: p.selection_type ?? null,
             },
-          };
-        }),
-      };
+          })),
+        };
 
-      if (isEditMode && originalEquipment?.id) {
-        await equipmentApi.update(
-          departmentId,
-          originalEquipment.id,
-          equipmentPayload,
-        );
-        toast.success("Equipment updated successfully!", {
-          position: "top-right",
-          autoClose: 2000,
-        });
-      } else {
-        await equipmentApi.create(departmentId, equipmentPayload);
-        toast.success("Equipment created successfully!", {
-          position: "top-right",
-          autoClose: 2000,
-          theme: "colored",
-        });
+        if (isEditMode && originalEquipment?.id) {
+          await equipmentApi.update(
+            departmentId,
+            originalEquipment.id,
+            equipmentPayload,
+          );
+          toast.success("Equipment updated successfully!");
+        } else {
+          await equipmentApi.create(departmentId, equipmentPayload);
+          toast.success("Equipment created successfully!");
+        }
       }
+
+      /* ---------------- ENVIRONMENT ---------------- */
+      if (isEnvironment) {
+        const environmentPayload = {
+          environment_name: equipmentName.trim(), // reused variable
+          is_active: true,
+          parameters: parameters.map((p) => ({
+            id: p.id ?? undefined,
+            env_parameter_name: p.name || p.title || "",
+            is_active: true,
+            config: {
+              data_type: p.data_type || p.field_type || "",
+              min_value: p.min_value ?? null,
+              max_value: p.max_value ?? null,
+              unit: p.unit ?? null,
+              percentage: p.percentage ?? null,
+              text: p.text ?? null,
+              text_type: p.text_type ?? null,
+              boolean_type: p.boolean_type ?? null,
+              dropdown: p.dropdown ?? [],
+              selection_type: p.selection_type ?? null,
+            },
+          })),
+        };
+
+        await environmentApi.create(departmentId, environmentPayload);
+        toast.success("Environment created successfully!");
+      }
+
+      /* ---------------- COMMON ---------------- */
       localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
       dispatch(fetchClinic(1));
 
       setTimeout(() => {
-        navigate("/configuration/equipment", { replace: true });
-      }, 2000);
+        navigate(
+          isEnvironment
+            ? "/configuration/environment"
+            : "/configuration/equipment",
+          { replace: true },
+        );
+      }, 1500);
     } catch (error) {
       console.error("Save failed:", error);
       toast.error("Save failed! Please check console.");
@@ -659,7 +699,13 @@ const AddParameterPage = () => {
             <TurnLeftIcon sx={{ fontSize: 24, padding: "3px" }} />
           </IconButton>
           <Typography sx={{ fontWeight: 700, fontSize: "20px" }}>
-            {isEditMode ? "Edit Equipment" : "Add Equipment"}
+            {isEditMode
+              ? isEnvironment
+                ? "Edit Environment"
+                : "Edit Equipment"
+              : isEnvironment
+                ? "Add Environment"
+                : "Add Equipment"}
           </Typography>
         </Box>
 
@@ -785,131 +831,139 @@ const AddParameterPage = () => {
         <Box sx={{ height: "1px", background: "#E5E7EB", mt: 2 }}></Box>
 
         {/* Quantity Controls */}
-        <Box sx={{ mt: 3 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Typography sx={{ fontSize: "14px", fontWeight: 600 }}>
-              #No. of {equipmentName}s :
-            </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                bgcolor: "#FAFAFA",
-                border: "1px solid #E2E3E5",
-                borderRadius: 1,
-                height: "30px",
-                width: "97px",
-              }}
-            >
-              <Button
-                variant="text"
-                onClick={() => setCount((c) => (c > 1 ? c - 1 : c))}
-                sx={{
-                  flex: 1,
-                  fontWeight: 500,
-                  color: "#565656",
-                  fontSize: "20px",
-                  p: 0,
-                  minWidth: 0,
-                }}
-              >
-                –
-              </Button>
-
-              <Box
-                sx={{
-                  flex: 1,
-                  textAlign: "center",
-                  fontWeight: 600,
-                  color: "#565656",
-                  fontSize: "15px",
-                }}
-              >
-                {String(count).padStart(2, "0")}
-              </Box>
-
-              <Button
-                variant="text"
-                onClick={() => setCount((c) => c + 1)}
-                sx={{
-                  flex: 1,
-                  fontWeight: 500,
-                  color: "#565656",
-                  fontSize: "20px",
-                  p: 0,
-                  minWidth: 0,
-                }}
-              >
-                +
-              </Button>
-            </Box>
-          </Box>
-        </Box>
-
-        {/* Selection Chips */}
-        <Typography sx={{ fontSize: "14px", fontWeight: 600, mt: 3 }}>
-          Select {equipmentName}s
-        </Typography>
-        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mt: 1 }}>
-          {equipmentQuantity.map((num) => (
-            <Box
-              key={num}
-              onClick={() => toggleSelection(num)}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                px: 2,
-                height: "36px",
-                borderRadius: "8px",
-                cursor: "pointer",
-                borderColor: "#E2E3E5",
-                background: "#FAFAFA",
-              }}
-            >
-              {selected.includes(num) ? (
+        {isEquipment && (
+          <>
+            <Box sx={{ mt: 3 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Typography sx={{ fontSize: "14px", fontWeight: 600 }}>
+                  #No. of {equipmentName}s :
+                </Typography>
                 <Box
                   sx={{
-                    width: "20px",
-                    height: "20px",
-                    borderRadius: "6px",
-                    background: "#DEEFE1",
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center",
+                    gap: 1,
+                    bgcolor: "#FAFAFA",
+                    border: "1px solid #E2E3E5",
+                    borderRadius: 1,
+                    height: "30px",
+                    width: "97px",
                   }}
                 >
-                  <svg
-                    width="13"
-                    height="13"
-                    fill="#3D8B61"
-                    viewBox="0 0 24 24"
+                  <Button
+                    variant="text"
+                    onClick={() => setCount((c) => (c > 1 ? c - 1 : c))}
+                    sx={{
+                      flex: 1,
+                      fontWeight: 500,
+                      color: "#565656",
+                      fontSize: "20px",
+                      p: 0,
+                      minWidth: 0,
+                    }}
                   >
-                    <path d="M20.285 6.708l-11.285 11.292-5.285-5.292 1.414-1.414 3.871 3.879 9.871-9.878z" />
-                  </svg>
+                    –
+                  </Button>
+
+                  <Box
+                    sx={{
+                      flex: 1,
+                      textAlign: "center",
+                      fontWeight: 600,
+                      color: "#565656",
+                      fontSize: "15px",
+                    }}
+                  >
+                    {String(count).padStart(2, "0")}
+                  </Box>
+
+                  <Button
+                    variant="text"
+                    onClick={() => setCount((c) => c + 1)}
+                    sx={{
+                      flex: 1,
+                      fontWeight: 500,
+                      color: "#565656",
+                      fontSize: "20px",
+                      p: 0,
+                      minWidth: 0,
+                    }}
+                  >
+                    +
+                  </Button>
                 </Box>
-              ) : (
-                <Box
-                  sx={{
-                    width: "20px",
-                    height: "20px",
-                    borderRadius: "6px",
-                    border: "1.8px solid #D1D5DB",
-                  }}
-                />
-              )}
-              <Typography
-                sx={{ fontSize: "14px", fontWeight: 500, color: "#4B5563" }}
-              >
-                {equipmentName} {num}
-              </Typography>
+              </Box>
             </Box>
-          ))}
-        </Box>
+          </>
+        )}
+
+        {/* Selection Chips */}
+        {isEquipment && (
+          <>
+            <Typography sx={{ fontSize: "14px", fontWeight: 600, mt: 3 }}>
+              Select {equipmentName}s
+            </Typography>
+            <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mt: 1 }}>
+              {equipmentQuantity.map((num) => (
+                <Box
+                  key={num}
+                  onClick={() => toggleSelection(num)}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    px: 2,
+                    height: "36px",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    borderColor: "#E2E3E5",
+                    background: "#FAFAFA",
+                  }}
+                >
+                  {selected.includes(num) ? (
+                    <Box
+                      sx={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "6px",
+                        background: "#DEEFE1",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <svg
+                        width="13"
+                        height="13"
+                        fill="#3D8B61"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M20.285 6.708l-11.285 11.292-5.285-5.292 1.414-1.414 3.871 3.879 9.871-9.878z" />
+                      </svg>
+                    </Box>
+                  ) : (
+                    <Box
+                      sx={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "6px",
+                        border: "1.8px solid #D1D5DB",
+                      }}
+                    />
+                  )}
+                  <Typography
+                    sx={{ fontSize: "14px", fontWeight: 500, color: "#4B5563" }}
+                  >
+                    {equipmentName} {num}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </>
+        )}
 
         {/* Make & Model Inputs */}
-        {selected.length > 0 && (
+        {isEquipment && selected.length > 0 && (
           <>
             <Typography
               sx={{ mt: 4, fontSize: "15px", fontWeight: 600, mb: 2 }}
@@ -974,7 +1028,7 @@ const AddParameterPage = () => {
         )}
 
         {/* Table Section */}
-        {equipmentTable.length > 0 && (
+        {isEquipment && equipmentTable.length > 0 && (
           <Box
             sx={{
               mt: 4,

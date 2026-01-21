@@ -201,14 +201,49 @@ const CreateEvent = () => {
       setAssigneeDialogOpen(false);
     }
   };
+  // GROUP EQUIPMENTS (ONE ROW PER EQUIPMENT)
+  const groupedEquipments = () => {
+    const map = new Map<
+      number,
+      {
+        equipment: SelectedEquipmentData["equipment"];
+        units: SelectedEquipmentData["equipment_detail"][];
+        parameters: number[];
+      }
+    >();
+
+    addedEquipments.forEach((item) => {
+      const eqId = item.equipment.id;
+      if (!map.has(eqId)) {
+        map.set(eqId, {
+          equipment: item.equipment,
+          units: [],
+          parameters: [],
+        });
+      }
+      const group = map.get(eqId)!;
+      if (!group.units.find((u) => u.id === item.equipment_detail.id)) {
+        group.units.push(item.equipment_detail);
+      }
+      item.parameters.forEach((p) => {
+        if (!group.parameters.includes(p.id)) {
+          group.parameters.push(p.id);
+        }
+      });
+    });
+
+    return Array.from(map.values());
+  };
+
+  const grouped = groupedEquipments();
 
   // Helper function to get only selected parameters for display
-  const getSelectedParameters = (item: SelectedEquipmentData) => {
-    const selectedParamIds = item.parameters.map((p) => p.id);
-    return item.equipment.parameters.filter((p) =>
-      selectedParamIds.includes(p.id),
-    );
-  };
+  // const getSelectedParameters = (item: SelectedEquipmentData) => {
+  //   const selectedParamIds = item.parameters.map((p) => p.id);
+  //   return item.equipment.parameters.filter((p) =>
+  //     selectedParamIds.includes(p.id),
+  //   );
+  // };
 
   const handleSave = async () => {
     if (
@@ -226,21 +261,28 @@ const CreateEvent = () => {
     }
 
     try {
+      // Prepare payload: one entry per equipment_detail_id
+      // const payload = addedEquipments.map((item) => ({
+      //   equipment_details_id: item.equipment_detail.id, // singular, matches DB
+      //   parameter_ids: item.parameters.map((p) => p.id), // only parameters for this unit
+      // }));
+
+      const equipmentDetailsIds = Array.from(
+        new Set(addedEquipments.map((e) => e.equipment_detail.id)),
+      );
+
+      const parameterIds = Array.from(
+        new Set(addedEquipments.flatMap((e) => e.parameters.map((p) => p.id))),
+      );
+
       await eventApi.create({
         department_id: selectedDepartmentId,
         event_name: eventName,
         description,
-
         assignment_id: addedAssignee?.id ?? null,
-
-        // Only send selected equipment IDs
-        equipment_ids: addedEquipments.map((e) => e.equipment.id),
-
-        // Only send selected parameter IDs
-        parameter_ids: addedEquipments.flatMap((e) =>
-          e.parameters.map((p) => p.id),
-        ),
-
+        // equipments: payload, // correct payload
+        equipment_details_ids: equipmentDetailsIds,
+        parameter_ids: parameterIds,
         schedule: {
           type: scheduleTypeMap[schedule],
           from_time: fromTime.toISOString(),
@@ -1005,7 +1047,7 @@ const CreateEvent = () => {
           </Button>
         </Box>
 
-        {/* Equipment Table - ONLY SELECTED PARAMETERS */}
+        {/* EQUIPMENT TABLE - GROUPED BY EQUIPMENT */}
         <TableContainer
           sx={{
             border: "1px solid #E5E7EB",
@@ -1022,11 +1064,11 @@ const CreateEvent = () => {
                     fontSize: "14px",
                     color: "#6B7280",
                     borderBottom: "1px solid #E5E7EB",
-                    width: "200px",
+                    width: "260px",
                     py: 1.5,
                   }}
                 >
-                  Equipment Name
+                  Equipment Details
                 </TableCell>
                 <TableCell
                   sx={{
@@ -1042,7 +1084,7 @@ const CreateEvent = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {addedEquipments.length === 0 ? (
+              {grouped.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={2}
@@ -1057,46 +1099,39 @@ const CreateEvent = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                addedEquipments.map((item, index) => {
-                  // Get only the selected parameters
-                  const selectedParams = getSelectedParameters(item);
+                grouped.map((group, _index) => {
+                  const selectedParams = group.equipment.parameters.filter(
+                    (p) => group.parameters.includes(p.id),
+                  );
 
                   return (
                     <TableRow
-                      key={item.equipment.id}
+                      key={group.equipment.id}
                       sx={{
-                        "&:last-child td": {
-                          borderBottom: "none",
-                        },
-                        "&:hover": {
-                          backgroundColor: "#F9FAFB",
-                        },
+                        "&:hover": { backgroundColor: "#F9FAFB" },
                       }}
                     >
+                      {/* LEFT COLUMN – EQUIPMENT + UNITS */}
                       <TableCell
                         sx={{
                           fontSize: "14px",
                           fontWeight: 500,
                           color: "#111827",
-                          borderBottom:
-                            index === addedEquipments.length - 1
-                              ? "none"
-                              : "1px solid #F1F5F9",
-                          py: 1.5,
                           verticalAlign: "top",
-                        }}
-                      >
-                        {item.equipment.equipment_name}
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          borderBottom:
-                            index === addedEquipments.length - 1
-                              ? "none"
-                              : "1px solid #F1F5F9",
                           py: 1.5,
                         }}
                       >
+                        <Typography fontWeight={600}>
+                          {group.equipment.equipment_name}
+                        </Typography>
+
+                        <Typography fontSize={12} color="#6B7280" mt={0.5}>
+                          {group.units.map((u) => u.name).join(", ")}
+                        </Typography>
+                      </TableCell>
+
+                      {/* RIGHT COLUMN – PARAMETERS */}
+                      <TableCell sx={{ py: 1.5 }}>
                         <Box display="flex" gap={1} flexWrap="wrap">
                           {selectedParams.length > 0 ? (
                             selectedParams.map((p) => (
@@ -1111,9 +1146,6 @@ const CreateEvent = () => {
                                   color: "#374151",
                                   height: "28px",
                                   borderRadius: "6px",
-                                  "& .MuiChip-label": {
-                                    px: 1.5,
-                                  },
                                 }}
                               />
                             ))
@@ -1352,12 +1384,14 @@ const CreateEvent = () => {
             setAddedEquipments((prev) => {
               const map = new Map<number, SelectedEquipmentData>();
 
+              // keep existing rows (each unit separately)
               prev.forEach((e) => {
-                map.set(e.equipment.id, e);
+                map.set(e.equipment_detail.id, e);
               });
 
+              // add new rows (each unit separately)
               items.forEach((e) => {
-                map.set(e.equipment.id, e);
+                map.set(e.equipment_detail.id, e);
               });
 
               return Array.from(map.values());

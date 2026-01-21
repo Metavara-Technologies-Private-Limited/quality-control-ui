@@ -7,7 +7,6 @@ import {
   Typography,
   IconButton,
   Button,
-  TextField,
   Menu,
   MenuItem,
   Dialog,
@@ -16,30 +15,56 @@ import {
   DialogActions,
   Divider,
 } from "@mui/material";
-import { useOutletContext } from "react-router-dom";
-import AddIcon from "@mui/icons-material/Add";
+import { useOutletContext, useLocation, useNavigate } from "react-router-dom";
 import { MoreHoriz } from "@mui/icons-material";
 import ViewIcon from "@/assets/icons/eye.jpg";
-import { useNavigate } from "react-router-dom";
-import AddEquipmentPopup from "./AddEquipmentPopup";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import { fetchClinic } from "@/store/clinicSlice";
-import { equipmentApi } from "@/services/api";
+import { equipmentApi, environmentApi } from "@/services/api";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+import { Department, Parameter, EquipmentDetail } from "@/types";
+
+/* ------------------ UI Union Type ------------------ */
+type BaseUIItem = {
+  id: number;
+  is_active: boolean;
+  parameters: Parameter[];
+  department: Department;
+  created_at?: string; // 👈 optional for environment
+};
+
+type EquipmentUIItem =
+  | (BaseUIItem & {
+      entityType: "equipment";
+      equipment_name: string;
+      equipment_details: EquipmentDetail[];
+    })
+  | (BaseUIItem & {
+      entityType: "environment";
+      environment_name: string;
+    });
+
+
 const EquipmentPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
-const { searchQuery } = useOutletContext<{ searchQuery: string }>();
 
+  const { searchQuery } = useOutletContext<{ searchQuery: string }>();
   const { data: clinic } = useSelector((state: RootState) => state.clinic);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const [selectedEquipmentId, setSelectedEquipmentId] = useState<number | null>(
-    null,
-  );
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+
+  const entityType: "equipment" | "environment" =
+    location.pathname.includes("/environment")
+      ? "environment"
+      : "equipment";
+
+  const isEnvironment = entityType === "environment";
 
   const [dialogs, setDialogs] = useState({
     delete: false,
@@ -49,25 +74,47 @@ const { searchQuery } = useOutletContext<{ searchQuery: string }>();
 
   /* ------------------ Derived Data ------------------ */
 
-  const equipments = useMemo(() => {
+  const items = useMemo<EquipmentUIItem[]>(() => {
     if (!clinic?.department) return [];
 
-    return clinic.department.flatMap((dep) =>
-      dep.equipments.map((eq) => ({ ...eq, department: dep })),
-    );
-  }, [clinic]);
+    return clinic.department.flatMap<EquipmentUIItem>((dep) => {
+      if (isEnvironment) {
+        return dep.environment
+          ? [
+              {
+                ...dep.environment,
+                department: dep,
+                entityType: "environment",
+                created_at: dep.created_at, // 👈 fallback
+              },
+            ]
+          : [];
+      }
 
-  const filteredEquipments = useMemo(
+      return (dep.equipments || []).map((eq) => ({
+        ...eq,
+        department: dep,
+        entityType: "equipment",
+      }));
+    });
+  }, [clinic, isEnvironment]);
+
+  const filteredItems = useMemo(
     () =>
-      equipments.filter((eq) =>
-        eq.equipment_name.toLowerCase().includes(searchQuery.toLowerCase()),
-      ),
-    [equipments, searchQuery],
+      items.filter((item) => {
+        const name =
+          item.entityType === "environment"
+            ? item.environment_name
+            : item.equipment_name;
+
+        return name?.toLowerCase().includes(searchQuery.toLowerCase());
+      }),
+    [items, searchQuery],
   );
 
-  const selectedEquipment = useMemo(
-    () => equipments.find((e) => e.id === selectedEquipmentId),
-    [equipments, selectedEquipmentId],
+  const selectedItem = useMemo(
+    () => items.find((i) => i.id === selectedItemId),
+    [items, selectedItemId],
   );
 
   /* ------------------ Helpers ------------------ */
@@ -78,56 +125,59 @@ const { searchQuery } = useOutletContext<{ searchQuery: string }>();
   /* ------------------ API Actions ------------------ */
 
   const confirmDelete = async () => {
-    if (!selectedEquipment) return;
-
-    const { id, department } = selectedEquipment;
+    if (!selectedItem) return;
 
     try {
-      await equipmentApi.delete(department.id, id);
-      dispatch(fetchClinic(1));
-      setDialogs({ delete: false, inactive: false, active: false });
-      toast.success("Equipment deleted successfully!");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to delete equipment.");
-    }
-  };
-
-  const toggleEquipment = async (active: boolean) => {
-    if (!selectedEquipment) return;
-
-    const { id, department } = selectedEquipment;
-
-    try {
-      if (active) {
-        await equipmentApi.activate(id);
-        toast.success("Equipment activated successfully!");
+      if (selectedItem.entityType === "environment") {
+        await environmentApi.delete(selectedItem.id);
+        toast.success("Environment deleted successfully!");
       } else {
-        await equipmentApi.inactive(department.id, id);
-        toast.success("Equipment inactivated successfully!");
+        await equipmentApi.delete(
+          selectedItem.department.id,
+          selectedItem.id,
+        );
+        toast.success("Equipment deleted successfully!");
       }
 
       dispatch(fetchClinic(1));
       setDialogs({ delete: false, inactive: false, active: false });
-    } catch (err) {
-      console.error(err);
-      toast.error(`Failed to ${active ? "activate" : "inactivate"} equipment.`);
+    } catch {
+      toast.error("Delete failed");
     }
   };
 
+  const toggleActive = async (active: boolean) => {
+    if (!selectedItem) return;
+
+    try {
+      if (selectedItem.entityType === "environment") {
+        active
+          ? await environmentApi.activate(selectedItem.id)
+          : await environmentApi.inactive(selectedItem.id);
+      } else {
+        active
+          ? await equipmentApi.activate(selectedItem.id)
+          : await equipmentApi.inactive(
+              selectedItem.department.id,
+              selectedItem.id,
+            );
+      }
+
+      dispatch(fetchClinic(1));
+      setDialogs({ delete: false, inactive: false, active: false });
+    } catch {
+      toast.error(`Failed to ${active ? "activate" : "inactivate"}`);
+    }
+  };
+
+  /* ------------------ UI ------------------ */
+
   return (
     <Box>
-      {/* Toast Container */}
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-      />
+      <ToastContainer position="top-right" autoClose={3000} />
 
-
-      {/* Cards */}
       <Grid container spacing={2}>
-        {filteredEquipments.map((item) => {
+        {filteredItems.map((item) => {
           const isInactive = item.is_active === false;
 
           return (
@@ -143,7 +193,6 @@ const { searchQuery } = useOutletContext<{ searchQuery: string }>();
                   transition: "all 0.3s ease",
                 }}
               >
-                {/* Status Badge Top-Right */}
                 <Box
                   sx={{
                     position: "absolute",
@@ -164,10 +213,12 @@ const { searchQuery } = useOutletContext<{ searchQuery: string }>();
                 </Box>
 
                 <CardContent sx={{ pb: 1 }}>
-                  <Typography
-                    sx={{ fontWeight: 700, fontSize: "16px", color: "#232323" }}
-                  >
-                    <b>{item.equipment_name}</b>
+                  <Typography sx={{ fontWeight: 700, fontSize: 16 }}>
+                    <b>
+                      {item.entityType === "environment"
+                        ? item.environment_name
+                        : item.equipment_name}
+                    </b>
                   </Typography>
 
                   <Box
@@ -182,13 +233,15 @@ const { searchQuery } = useOutletContext<{ searchQuery: string }>();
                         Department:
                       </Typography>
                       <Typography fontSize={16} fontWeight={500}>
-                        {item.department?.name}
+                        {item.department.name}
                       </Typography>
                     </Box>
 
                     <Box>
                       <Typography fontSize={14} color="#9CA3AF">
-                        Parameters:
+                        {item.entityType === "environment"
+                          ? "Environment Parameters:"
+                          : "Parameters:"}
                       </Typography>
                       <Typography fontSize={16} fontWeight={500}>
                         {String(item.parameters.length).padStart(2, "0")}
@@ -199,7 +252,6 @@ const { searchQuery } = useOutletContext<{ searchQuery: string }>();
 
                 <Divider />
 
-                {/* Bottom Icons */}
                 <Box
                   sx={{
                     display: "flex",
@@ -209,81 +261,51 @@ const { searchQuery } = useOutletContext<{ searchQuery: string }>();
                     pt: 1,
                   }}
                 >
-                  <Typography
-                    sx={{
-                      fontSize: 16,
-                      fontWeight: 500,
-                      color: "#4B5563",
-                      gap: 1,
-                      mr: 1,
-                    }}
-                  >
-                    <span style={{ color: "#9CA3AF", fontSize: 14 }}>
-                      Created Date:
-                    </span>{" "}
-                    <span style={{ fontSize: 14, fontWeight: 500 }}>
-                      {getCreatedDate(item.created_at)}
-                    </span>
+                  <Typography fontSize={14} color="#4B5563">
+                    <span style={{ color: "#9CA3AF" }}>Created Date:</span>{" "}
+                    {getCreatedDate(item.created_at ?? item.department.created_at)}
                   </Typography>
 
                   <Box sx={{ display: "flex", gap: 1 }}>
                     <IconButton
                       disabled={isInactive}
                       onClick={() =>
-                        navigate("/configuration/equipment/view", {
-                          state: { equipmentId: item.id },
-                        })
+                        navigate(
+                          item.entityType === "environment"
+                            ? "/configuration/environment/add-parameter"
+                            : "/configuration/equipment/view",
+                          {
+                            state:
+                              item.entityType === "environment"
+                                ? { environmentId: item.id }
+                                : { equipmentId: item.id },
+                          },
+                        )
                       }
                       sx={{
                         width: 32,
                         height: 32,
                         border: "1px solid #E5E7EB",
                         borderRadius: "8px",
-                        cursor: isInactive ? "not-allowed" : "pointer",
-                        pointerEvents: isInactive ? "none" : "auto",
                         opacity: isInactive ? 0.4 : 1,
                       }}
                     >
-                      <img
-                        src={ViewIcon}
-                        alt="view"
-                        style={{
-                          width: 18,
-                          height: 18,
-                          filter: isInactive ? "grayscale(100%)" : "none",
-                        }}
-                      />
+                      <img src={ViewIcon} alt="view" width={18} height={18} />
                     </IconButton>
 
                     <IconButton
                       onClick={(e) => {
                         setAnchorEl(e.currentTarget);
-                        setSelectedEquipmentId(item.id);
+                        setSelectedItemId(item.id);
                       }}
                       sx={{
                         width: 32,
                         height: 32,
-                        border: isInactive
-                          ? "2px solid #ffffff"
-                          : "1px solid #E5E7EB",
+                        border: "1px solid #E5E7EB",
                         borderRadius: "8px",
-                        backgroundColor: isInactive
-                          ? "#505050"
-                          : "2px solid #232323",
-                        "&:hover": {
-                          backgroundColor: isInactive
-                            ? "#000000ff"
-                            : "rgba(0, 0, 0, 0.04)",
-                        },
                       }}
                     >
-                      <MoreHoriz
-                        fontSize="small"
-                        sx={{
-                          color: isInactive ? "#ffffff" : "inherit",
-                          fontWeight: isInactive ? 700 : 400,
-                        }}
-                      />
+                      <MoreHoriz fontSize="small" />
                     </IconButton>
                   </Box>
                 </Box>
@@ -293,147 +315,64 @@ const { searchQuery } = useOutletContext<{ searchQuery: string }>();
         })}
       </Grid>
 
-      {/* Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
-      >
-        {selectedEquipment?.is_active ? (
-          <MenuItem
-            onClick={() => {
-              setDialogs({ ...dialogs, inactive: true });
-              setAnchorEl(null);
-            }}
-          >
+      {/* Menu + Dialogs (unchanged behavior) */}
+
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+        {selectedItem?.is_active ? (
+          <MenuItem onClick={() => setDialogs({ ...dialogs, inactive: true })}>
             Inactivate
           </MenuItem>
         ) : (
-          <MenuItem
-            onClick={() => {
-              setDialogs({ ...dialogs, active: true });
-              setAnchorEl(null);
-            }}
-          >
+          <MenuItem onClick={() => setDialogs({ ...dialogs, active: true })}>
             Activate
           </MenuItem>
         )}
         <MenuItem
           sx={{ color: "error.main" }}
-          onClick={() => {
-            setDialogs({ ...dialogs, delete: true });
-            setAnchorEl(null);
-          }}
+          onClick={() => setDialogs({ ...dialogs, delete: true })}
         >
           Delete
         </MenuItem>
       </Menu>
 
-      {/* Delete Dialog */}
-      <Dialog
-        open={dialogs.delete}
-        onClose={() => setDialogs({ ...dialogs, delete: false })}
-      >
+      <Dialog open={dialogs.delete} onClose={() => setDialogs({ ...dialogs, delete: false })}>
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
-          <Typography>
-            Are you sure you want to delete this equipment?
-          </Typography>
+          <Typography>Are you sure you want to delete this?</Typography>
         </DialogContent>
         <DialogActions>
-          <Button
-            onClick={() => setDialogs({ ...dialogs, delete: false })}
-            sx={{
-              color: "#232323",
-              border: "1px solid #505050",
-              "&:hover": {
-                border: "1px solid #232323",
-              },
-            }}
-          >
+          <Button onClick={() => setDialogs({ ...dialogs, delete: false })}>
             Cancel
           </Button>
-          <Button
-            onClick={confirmDelete}
-            variant="contained"
-            color="error"
-            sx={{ background: "#505050", "&:hover": { background: "#232323" } }}
-          >
+          <Button onClick={confirmDelete} variant="contained">
             Delete
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Inactive Dialog */}
-      <Dialog
-        open={dialogs.inactive}
-        onClose={() => setDialogs({ ...dialogs, inactive: false })}
-      >
+      <Dialog open={dialogs.inactive} onClose={() => setDialogs({ ...dialogs, inactive: false })}>
         <DialogTitle>Confirm Inactivate</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to Inactivate this equipment?
-          </Typography>
-        </DialogContent>
         <DialogActions>
-          <Button
-            onClick={() => setDialogs({ ...dialogs, inactive: false })}
-            sx={{
-              color: "#232323",
-              border: "1px solid #505050",
-              "&:hover": {
-                border: "1px solid #232323",
-              },
-            }}
-          >
+          <Button onClick={() => setDialogs({ ...dialogs, inactive: false })}>
             Cancel
           </Button>
-
-          <Button
-            onClick={() => toggleEquipment(false)}
-            variant="contained"
-            sx={{ background: "#505050", "&:hover": { background: "#232323" } }}
-          >
+          <Button onClick={() => toggleActive(false)} variant="contained">
             Inactivate
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Activate Dialog */}
-      <Dialog
-        open={dialogs.active}
-        onClose={() => setDialogs({ ...dialogs, active: false })}
-      >
+      <Dialog open={dialogs.active} onClose={() => setDialogs({ ...dialogs, active: false })}>
         <DialogTitle>Confirm Activate</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to activate this equipment?
-          </Typography>
-        </DialogContent>
         <DialogActions>
-          <Button
-            onClick={() => setDialogs({ ...dialogs, active: false })}
-            variant="outlined"
-            sx={{
-              color: "#232323",
-              border: "1px solid #505050",
-              "&:hover": {
-                border: "1px solid #232323",
-              },
-            }}
-          >
+          <Button onClick={() => setDialogs({ ...dialogs, active: false })}>
             Cancel
           </Button>
-          <Button
-            onClick={() => toggleEquipment(true)}
-            variant="contained"
-            sx={{ background: "#505050", "&:hover": { background: "#232323" } }}
-          >
+          <Button onClick={() => toggleActive(true)} variant="contained">
             Activate
           </Button>
         </DialogActions>
       </Dialog>
-
     </Box>
   );
 };

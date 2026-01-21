@@ -51,17 +51,17 @@ const formatDate = (isoString: string) => {
   return new Date(isoString).toLocaleDateString("en-GB");
 };
 
-const buildEquipmentParameterMap = (clinic: any) => {
-  const map: Record<number, Set<number>> = {};
+// const buildEquipmentParameterMap = (clinic: any) => {
+//   const map: Record<number, Set<number>> = {};
 
-  clinic?.department?.forEach((d: any) => {
-    d.equipments?.forEach((e: any) => {
-      map[e.id] = new Set((e.parameters || []).map((p: any) => p.id));
-    });
-  });
+//   clinic?.department?.forEach((d: any) => {
+//     d.equipments?.forEach((e: any) => {
+//       map[e.id] = new Set((e.parameters || []).map((p: any) => p.id));
+//     });
+//   });
 
-  return map;
-};
+//   return map;
+// };
 
 const EventsHeader = ({ onCreate, onSearch }: any) => (
   <Stack
@@ -558,47 +558,51 @@ const EventsTable = ({
   );
 };
 
-const mapEventToRow = (e: any, clinic: any) => {
-  let equipmentsDetails: any[] = [];
+const mapEventToRow = (e: any) => {
+  // group by parent equipment, but DISPLAY units
+  const equipmentMap = new Map<
+    number,
+    {
+      equipment_name: string;
+      units: string[];
+      parameters: { name: string }[];
+    }
+  >();
 
-  // ✅ PRIMARY: Use event_equipments with nested parameters
-  if (
-    e.event_equipments &&
-    Array.isArray(e.event_equipments) &&
-    e.event_equipments.length > 0
-  ) {
-    equipmentsDetails = e.event_equipments.map((eventEq: any) => ({
-      equipment_name: eventEq.equipment__equipment_name || "-",
-      parameters: (eventEq.parameters || []).map((p: any) => ({
-        name: p.parameter__parameter_name || p.name || "-",
-      })),
-    }));
-  }
-  // ⚠️ FALLBACK: If no relationship data, show all parameters for all equipment
-  else if (e.equipments && e.equipments.length > 0) {
-    const equipmentParamMap = buildEquipmentParameterMap(clinic);
+  // 1️⃣ group equipment_details
+  (e.equipments || []).forEach((ed: any) => {
+    const parentEqId = ed.equipment_details__equipment__id;
+    if (!parentEqId) return;
 
-    equipmentsDetails = e.equipments.map((equipment: any) => {
-      const allowedParams =
-        equipmentParamMap[equipment.equipment__id] || new Set();
+    if (!equipmentMap.has(parentEqId)) {
+      equipmentMap.set(parentEqId, {
+        equipment_name: ed.equipment_details__equipment__equipment_name || "-",
+        units: [],
+        parameters: [],
+      });
+    }
 
-      const parameters = (e.parameters || [])
-        .filter((p: any) => allowedParams.has(p.parameter__id))
-        .map((p: any) => ({
-          name: p.parameter__parameter_name || "-",
-        }));
+    const group = equipmentMap.get(parentEqId)!;
 
-      return {
-        equipment_name: equipment.equipment__equipment_name || "-",
-        parameters,
-      };
-    });
-  }
+    if (ed.equipment_details__equipment_num) {
+      group.units.push(ed.equipment_details__equipment_num);
+    }
+  });
 
-  const parameterCount = equipmentsDetails.reduce(
-    (total: number, eq: any) => total + (eq.parameters?.length || 0),
-    0,
-  );
+  // 2️⃣ parameters apply to all units
+  const parameters =
+    e.parameters?.map((p: any) => ({
+      name: p.parameter__parameter_name || "-",
+    })) || [];
+
+  equipmentMap.forEach((group) => {
+    group.parameters = parameters;
+  });
+
+  const equipmentsDetails = Array.from(equipmentMap.values()).map((g) => ({
+    equipment_name: `${g.equipment_name} (${g.units.join(", ")})`,
+    parameters: g.parameters,
+  }));
 
   return {
     id: e.id,
@@ -606,14 +610,16 @@ const mapEventToRow = (e: any, clinic: any) => {
     description: e.description,
     createdBy: e.assignment ?? "-",
     createdDate: formatDate(e.created_at),
+
     scheduleType:
-      e.schedule?.type === 3
-        ? "Weekly"
-        : e.schedule?.type === 1
-          ? "One Time"
-          : e.schedule?.type === 2
-            ? "Daily"
+      e.schedule?.type === 1
+        ? "One Time"
+        : e.schedule?.type === 2
+          ? "Daily"
+          : e.schedule?.type === 3
+            ? "Weekly"
             : "Monthly",
+
     fromTime: formatTime(e.schedule?.from_time),
     toTime: formatTime(e.schedule?.to_time),
     startDate: formatDate(e.schedule?.start_date || e.schedule?.one_time_date),
@@ -622,10 +628,14 @@ const mapEventToRow = (e: any, clinic: any) => {
       e.schedule?.days && e.schedule.days.length > 0
         ? e.schedule.days.join(", ")
         : "-",
+
     recurDuration: e.schedule?.recurring_duration,
+
+    // 👇 FIXED COUNTS
     equipmentCount: e.equipments?.length || 0,
-    parameterCount: parameterCount,
-    equipmentsDetails: equipmentsDetails,
+    parameterCount: parameters.length,
+
+    equipmentsDetails,
   };
 };
 
@@ -649,7 +659,7 @@ const Events = () => {
     }
   }, [clinic?.id, dispatch]);
 
-  const events = rawEvents.map((e) => mapEventToRow(e, clinic));
+  const events = rawEvents.map((e) => mapEventToRow(e));
 
   const filteredEvents = events.filter((e) =>
     e.name.toLowerCase().includes(search.toLowerCase()),
