@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import { useOutletContext } from "react-router-dom";
 import { RootState } from "@/store";
 import LabEquipmentForm from "./LabEquipmentForm";
+import LabPlanPage from "./LabPlanPage";
 
 /* ---------------- Utils ---------------- */
 
@@ -104,6 +105,7 @@ export default function LabEquipments() {
       const active = eq.parameters?.filter((p) => p.is_active).length ?? 0;
 
       return eq.equipment_details.map((detail) => ({
+        equipment_id: detail.id,
         id: detail.id!,
         name: eq.equipment_name,
         detailName: detail.equipment_num,
@@ -263,16 +265,7 @@ export default function LabEquipments() {
               </div>
             ))
           ) : (
-            <div
-              style={{
-                textAlign: "center",
-                marginTop: "100px",
-                color: "#94a3b8",
-                fontSize: "14px",
-              }}
-            >
-              No plans added yet
-            </div>
+            <LabPlanPage />
           )}
         </div>
 
