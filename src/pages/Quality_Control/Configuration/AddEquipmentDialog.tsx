@@ -48,7 +48,7 @@ interface Equipment {
 
 export type SelectedEquipmentData = {
   equipment: Equipment;
-  units: number[];
+  equipment_detail: EquipmentUnit;
   parameters: { id: number; value?: number }[];
 };
 
@@ -178,7 +178,13 @@ export default function AddEquipmentDialog({
   };
 
   /* ===== STATE ===== */
-  const [selected, setSelected] = useState<SelectedEquipmentData[]>([]);
+  const [selected, setSelected] = useState<
+    {
+      equipment: Equipment;
+      units: number[];
+      parameters: { id: number; value?: number }[];
+    }[]
+  >([]);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [popupOpen, setPopupOpen] = useState(false);
 
@@ -206,7 +212,7 @@ export default function AddEquipmentDialog({
         {
           equipment: eq,
           units: eq.units.map((u) => u.id),
-          parameters: eq.parameters.map((p) => ({ id: p.id })), // ✅ AUTO SELECT PARAMETERS
+          parameters: eq.parameters.map((p) => ({ id: p.id })),
         },
       ];
     });
@@ -250,16 +256,28 @@ export default function AddEquipmentDialog({
     const invalid = selected.some(
       (s) => s.units.length > 0 && s.parameters.length === 0,
     );
+
     if (invalid) {
       setPopupOpen(true);
       return;
     }
 
-    const cleaned = selected.filter(
-      (s) => s.units.length > 0 && s.parameters.length > 0,
-    );
+    const rows: SelectedEquipmentData[] = [];
 
-    onAdd(cleaned);
+    selected.forEach((s) => {
+      s.units.forEach((unitId) => {
+        const unit = s.equipment.units.find((u) => u.id === unitId);
+        if (!unit) return;
+
+        rows.push({
+          equipment: s.equipment,
+          equipment_detail: unit,
+          parameters: s.parameters,
+        });
+      });
+    });
+
+    onAdd(rows);
     onClose();
   };
 

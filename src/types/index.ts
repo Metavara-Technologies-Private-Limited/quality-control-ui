@@ -5,6 +5,13 @@ export interface Clinic {
   department: Department[];
 }
 
+export interface Environment{
+  id: number;
+  environment_name: string;
+  is_active: boolean;
+  parameters: Parameter[];
+}
+
 export interface Department {
   id: number;
   name: string;
@@ -12,6 +19,7 @@ export interface Department {
   clinic_id: number;
   created_at: string;
   equipments: Equipment[];
+  environment?: Environment;
 }
 
 export interface Equipment {

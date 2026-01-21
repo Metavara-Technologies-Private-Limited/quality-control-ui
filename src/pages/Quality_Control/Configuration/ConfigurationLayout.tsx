@@ -16,9 +16,10 @@ const ConfigurationLayout = () => {
   const [openAddEquipmentPopup, setOpenAddEquipmentPopup] = useState(false);
   const [openAddEnvironmentPopup, setOpenAddEnvironmentPopup] = useState(false);
 
-  const isEquipmentSection =
-    location.pathname.includes("/configuration/equipment") ||
-    location.pathname.includes("/configuration/environment");
+  const isEquipment = location.pathname.startsWith("/configuration/equipment");
+  const isEnvironment = location.pathname.startsWith(
+    "/configuration/environment",
+  );
 
   const isEquipment = location.pathname.includes("/configuration/equipment");
   const isEnvironment = location.pathname.includes("/configuration/environment");
@@ -26,7 +27,7 @@ const ConfigurationLayout = () => {
   return (
     <Box>
       {/* HEADER */}
-      {isEquipmentSection && (
+      {showHeader && (
         <Box
           sx={{
             display: "flex",

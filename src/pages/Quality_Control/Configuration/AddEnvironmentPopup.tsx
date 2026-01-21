@@ -43,14 +43,14 @@ const AddEnvironmentPopup: React.FC<{
       departments.find((d) => d.id === departmentId)?.name || "";
 
     onClose();
-    navigate("/configuration/environment/add-parameter", {
-    state: {
-    environmentName: "Environment Details",
-    departmentName,
-    departmentId,
-  },
-});
 
+    navigate("/configuration/environment/add-parameter", {
+      state: {
+        environmentName: DEFAULT_ENVIRONMENT_NAME,
+        departmentName,
+        departmentId,
+      },
+    });
   };
 
   return (
@@ -126,7 +126,9 @@ const AddEnvironmentPopup: React.FC<{
         </TextField>
 
         {/* ACTIONS */}
-        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3, gap: 2 }}>
+        <Box
+          sx={{ display: "flex", justifyContent: "flex-end", mt: 3, gap: 2 }}
+        >
           <Button
             variant="outlined"
             onClick={onClose}

@@ -133,10 +133,11 @@ function App() {
             path="equipment/add-parameter"
             element={<AddParameterPage />}
           />
-          <Route path="environment" element={<ConfigurationEnvironment />} />
+          <Route path="environment" element={<EquipmentPage />} />
+          <Route path="environment/view" element={<ViewEquipment />} />
           <Route
             path="environment/add-parameter"
-            element={<AddEnvironmentParameter />}
+            element={<AddParameterPage />}
           />
           <Route
             path="environment/view"
