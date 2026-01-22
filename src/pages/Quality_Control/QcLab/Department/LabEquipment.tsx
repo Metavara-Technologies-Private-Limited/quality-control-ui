@@ -26,7 +26,7 @@ type EquipmentItem = {
   make: string;
   model: string;
   paramsCount: string;
-  assigneeName?: string;
+  assigneeNames?: string[];
 };
 
 /* ---------------- Equipment Card ---------------- */
@@ -60,31 +60,43 @@ const EquipmentCard = ({
         transition: "all 0.2s ease",
       }}
     >
-      {/* Top-right assignee avatar */}
+      {/* -------- Top-right assignees (FIGMA STYLE) -------- */}
       <div
-        title={item.assigneeName}
         style={{
           position: "absolute",
-          top: 8,
-          right: 8,
-          width: 28,
-          height: 28,
-          borderRadius: "50%",
-          backgroundColor: "#E17E61",
-          color: "#fff",
-          fontSize: 12,
-          fontWeight: 700,
+          top: 10,
+          right: 10,
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
         }}
       >
-        {getInitials(item.assigneeName || "NA")}
+        {item.assigneeNames?.slice(0, 4).map((name, index) => (
+          <div
+            key={index}
+            title={name}
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: "50%",
+              backgroundColor: "#E17E61",
+              color: "#fff",
+              fontSize: 11,
+              fontWeight: 700,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginLeft: index === 0 ? 0 : -6,
+              border: "2px solid #fff",
+            }}
+          >
+            {getInitials(name)}
+          </div>
+        ))}
       </div>
 
       {/* Equipment number */}
       <div style={{ fontSize: 13, fontWeight: 700 }}>
-        {item.detailName} : <span style={{ fontWeight: 500 }}>{item.paramsCount}</span>
+        {item.detailName} :{" "}
+        <span style={{ fontWeight: 500 }}>{item.paramsCount}</span>
       </div>
 
       {/* Footer */}
@@ -97,7 +109,9 @@ const EquipmentCard = ({
           fontSize: 12,
         }}
       >
-        <span style={{ fontWeight: 700, color: percentColor }}>{percent}%</span>
+        <span style={{ fontWeight: 700, color: percentColor }}>
+          {percent}%
+        </span>
         <span style={{ color: "#94a3b8", fontWeight: 500 }}>
           {item.make} · {item.model}
         </span>
@@ -117,23 +131,30 @@ export default function LabEquipments() {
   const events = useSelector((s: RootState) => s.events.data);
 
   const [activeTab, setActiveTab] = useState<"To-Do" | "Plan">("To-Do");
-  const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(null);
+  const [selectedEquipment, setSelectedEquipment] =
+    useState<EquipmentItem | null>(null);
   const [selectedRadio, setSelectedRadio] = useState("");
 
   const department = clinic?.department.find(
     (d) => normalize(d.name) === normalize(departmentName)
   );
 
-  /* -------- Build equipment → latest assignee map from events -------- */
+  /* -------- Build equipment → assignees map (MULTIPLE) -------- */
   const assigneeByEquipmentId = useMemo(() => {
-    const map: Record<string, string> = {};
+    const map: Record<number, string[]> = {};
+
     events?.forEach((event: any) => {
-      event.equipments.forEach((eq: any) => {
-        if (eq.equipment_details__id != null && event.assignment) {
-          map[String(eq.equipment_details__id)] = event.assignment;
+      event.equipments?.forEach((eq: any) => {
+        const id = eq.equipment_details__id;
+        if (!id || !event.assignment) return;
+
+        if (!map[id]) map[id] = [];
+        if (!map[id].includes(event.assignment)) {
+          map[id].push(event.assignment);
         }
       });
     });
+
     return map;
   }, [events]);
 
@@ -153,7 +174,7 @@ export default function LabEquipments() {
         make: detail.make,
         model: detail.model,
         paramsCount: `${formatCount(active)}/${formatCount(total)}`,
-        assigneeName: assigneeByEquipmentId[String(detail.id)] ?? "Unassigned",
+        assigneeNames: assigneeByEquipmentId[detail.id] ?? [],
       }));
     });
   }, [department, assigneeByEquipmentId]);
@@ -201,10 +222,27 @@ export default function LabEquipments() {
   return (
     <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
       {/* HEADER */}
-      <div style={{ display: "flex", alignItems: "center", marginBottom: 24, gap: 24 }}>
-        <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Equipments</h1>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          marginBottom: 24,
+          gap: 24,
+        }}
+      >
+        <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
+          Equipments
+        </h1>
 
-        <div style={{ display: "inline-flex", backgroundColor: "#F2F2F2", padding: 4, borderRadius: 12, gap: 4 }}>
+        <div
+          style={{
+            display: "inline-flex",
+            backgroundColor: "#F2F2F2",
+            padding: 4,
+            borderRadius: 12,
+            gap: 4,
+          }}
+        >
           {["To-Do", "Plan"].map((tab) => (
             <button
               key={tab}
@@ -217,8 +255,10 @@ export default function LabEquipments() {
                 cursor: "pointer",
                 fontSize: 14,
                 fontWeight: 700,
-                backgroundColor: activeTab === tab ? "#FFFFFF" : "transparent",
-                color: activeTab === tab ? "#E17E61" : "#94a3b8",
+                backgroundColor:
+                  activeTab === tab ? "#FFFFFF" : "transparent",
+                color:
+                  activeTab === tab ? "#E17E61" : "#94a3b8",
               }}
             >
               {tab}
@@ -246,11 +286,22 @@ export default function LabEquipments() {
           {activeTab === "To-Do" ? (
             Object.keys(groupedEquipments).map((eqName) => (
               <div key={eqName} style={{ marginBottom: 20 }}>
-                <h3 style={{ marginBottom: 12, fontSize: 16, fontWeight: 700 }}>{eqName}</h3>
+                <h3
+                  style={{
+                    marginBottom: 12,
+                    fontSize: 16,
+                    fontWeight: 700,
+                  }}
+                >
+                  {eqName}
+                </h3>
+
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: selectedEquipment ? "1fr" : "repeat(auto-fill, minmax(320px, 1fr))",
+                    gridTemplateColumns: selectedEquipment
+                      ? "1fr"
+                      : "repeat(auto-fill, minmax(320px, 1fr))",
                     gap: 12,
                     transition: "all 0.25s ease",
                   }}
