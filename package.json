@@ -16,7 +16,7 @@
     "@hookform/resolvers": "^3.3.2",
     "@mui/icons-material": "^5.18.0",
     "@mui/material": "^5.18.0",
-    "@mui/x-date-pickers": "^8.25.0",
+    "@mui/x-date-pickers": "^8.26.0",
     "@reduxjs/toolkit": "^2.11.2",
     "axios": "^1.6.2",
     "bootstrap": "^5.3.8",
