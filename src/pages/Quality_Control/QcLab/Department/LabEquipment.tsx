@@ -1,17 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useOutletContext } from "react-router-dom";
+
 import { RootState } from "@/store";
 import LabEquipmentForm from "./LabEquipmentForm";
 import LabPlanPage from "./LabPlanPage";
 
 /* ---------------- Utils ---------------- */
-
 const normalize = (v: string) => v?.replace(/\s+/g, "").toLowerCase();
 const formatCount = (v: number) => String(v).padStart(2, "0");
+const getInitials = (name: string) =>
+  name
+    ?.split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
 /* ---------------- Types ---------------- */
-
 type EquipmentItem = {
   id: number;
   name: string;
@@ -20,10 +26,10 @@ type EquipmentItem = {
   make: string;
   model: string;
   paramsCount: string;
+  assigneeName?: string;
 };
 
-/* ---------------- Card ---------------- */
-
+/* ---------------- Equipment Card ---------------- */
 const EquipmentCard = ({
   item,
   selected,
@@ -42,8 +48,9 @@ const EquipmentCard = ({
     <div
       onClick={onClick}
       style={{
-        padding: "16px",
-        borderRadius: "12px",
+        position: "relative",
+        padding: 16,
+        borderRadius: 12,
         cursor: "pointer",
         backgroundColor: selected ? "#fef3f2" : "#fff",
         border: selected ? "2px solid #f97316" : "1px solid #e5e7eb",
@@ -53,11 +60,34 @@ const EquipmentCard = ({
         transition: "all 0.2s ease",
       }}
     >
-      <div style={{ fontSize: "13px", fontWeight: 700 }}>
-        {item.detailName} :{" "}
-        <span style={{ fontWeight: 500 }}>{item.paramsCount}</span>
+      {/* Top-right assignee avatar */}
+      <div
+        title={item.assigneeName}
+        style={{
+          position: "absolute",
+          top: 8,
+          right: 8,
+          width: 28,
+          height: 28,
+          borderRadius: "50%",
+          backgroundColor: "#E17E61",
+          color: "#fff",
+          fontSize: 12,
+          fontWeight: 700,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {getInitials(item.assigneeName || "NA")}
       </div>
 
+      {/* Equipment number */}
+      <div style={{ fontSize: 13, fontWeight: 700 }}>
+        {item.detailName} : <span style={{ fontWeight: 500 }}>{item.paramsCount}</span>
+      </div>
+
+      {/* Footer */}
       <div
         style={{
           marginTop: 12,
@@ -76,8 +106,7 @@ const EquipmentCard = ({
   );
 };
 
-/* ---------------- Main ---------------- */
-
+/* ---------------- Main Component ---------------- */
 export default function LabEquipments() {
   const { departmentName, searchText } = useOutletContext<{
     departmentName: string;
@@ -85,18 +114,30 @@ export default function LabEquipments() {
   }>();
 
   const { data: clinic } = useSelector((s: RootState) => s.clinic);
+  const events = useSelector((s: RootState) => s.events.data);
 
   const [activeTab, setActiveTab] = useState<"To-Do" | "Plan">("To-Do");
-  const [selectedEquipment, setSelectedEquipment] =
-    useState<EquipmentItem | null>(null);
+  const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(null);
   const [selectedRadio, setSelectedRadio] = useState("");
 
   const department = clinic?.department.find(
-    (d) => normalize(d.name) === normalize(departmentName),
+    (d) => normalize(d.name) === normalize(departmentName)
   );
 
-  /* -------- Build equipment list -------- */
+  /* -------- Build equipment → latest assignee map from events -------- */
+  const assigneeByEquipmentId = useMemo(() => {
+    const map: Record<string, string> = {};
+    events?.forEach((event: any) => {
+      event.equipments.forEach((eq: any) => {
+        if (eq.equipment_details__id != null && event.assignment) {
+          map[String(eq.equipment_details__id)] = event.assignment;
+        }
+      });
+    });
+    return map;
+  }, [events]);
 
+  /* -------- Build raw equipment data -------- */
   const rawEquipmentData = useMemo(() => {
     if (!department) return [];
 
@@ -105,7 +146,6 @@ export default function LabEquipments() {
       const active = eq.parameters?.filter((p) => p.is_active).length ?? 0;
 
       return eq.equipment_details.map((detail) => ({
-        equipment_id: detail.id,
         id: detail.id!,
         name: eq.equipment_name,
         detailName: detail.equipment_num,
@@ -113,12 +153,12 @@ export default function LabEquipments() {
         make: detail.make,
         model: detail.model,
         paramsCount: `${formatCount(active)}/${formatCount(total)}`,
+        assigneeName: assigneeByEquipmentId[String(detail.id)] ?? "Unassigned",
       }));
     });
-  }, [department]);
+  }, [department, assigneeByEquipmentId]);
 
   /* -------- Group by equipment name -------- */
-
   const groupedEquipments = useMemo(() => {
     const grouped: Record<string, EquipmentItem[]> = {};
 
@@ -137,7 +177,6 @@ export default function LabEquipments() {
   }, [rawEquipmentData, searchText]);
 
   /* -------- Right panel data -------- */
-
   const equipmentDetails = useMemo(() => {
     if (!selectedEquipment) return [];
 
@@ -158,42 +197,26 @@ export default function LabEquipments() {
     }
   }, [equipmentDetails, selectedRadio]);
 
+  /* ---------------- UI ---------------- */
   return (
     <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
-      {/* ---------- HEADER ---------- */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          marginBottom: "24px",
-          gap: "24px",
-        }}
-      >
-        <h1 style={{ fontSize: "18px", fontWeight: 700, margin: 0 }}>
-          Equipments
-        </h1>
+      {/* HEADER */}
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 24, gap: 24 }}>
+        <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Equipments</h1>
 
-        <div
-          style={{
-            display: "inline-flex",
-            backgroundColor: "#F2F2F2",
-            padding: "4px",
-            borderRadius: "12px",
-            gap: "4px",
-          }}
-        >
+        <div style={{ display: "inline-flex", backgroundColor: "#F2F2F2", padding: 4, borderRadius: 12, gap: 4 }}>
           {["To-Do", "Plan"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab as any)}
               style={{
-                width: "166px",
-                height: "36px",
-                borderRadius: "10px",
+                width: 166,
+                height: 36,
+                borderRadius: 10,
                 border: "none",
                 cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: "700",
+                fontSize: 14,
+                fontWeight: 700,
                 backgroundColor: activeTab === tab ? "#FFFFFF" : "transparent",
                 color: activeTab === tab ? "#E17E61" : "#94a3b8",
               }}
@@ -204,24 +227,17 @@ export default function LabEquipments() {
         </div>
       </div>
 
-      {/* ---------- BODY ---------- */}
-      <div
-        style={{
-          display: "flex",
-          gap: 20,
-          alignItems: "flex-start",
-          width: "100%",
-        }}
-      >
+      {/* BODY */}
+      <div style={{ display: "flex", gap: 20 }}>
         {/* LEFT */}
         <div
           style={{
-            width: selectedEquipment ? "520px" : "100%",
-            maxWidth: selectedEquipment ? "520px" : "100%",
+            width: selectedEquipment ? 520 : "100%",
+            maxWidth: selectedEquipment ? 520 : "100%",
             transition: "width 0.25s ease",
             background: "#fff",
             border: "1px solid #e5e7eb",
-            borderRadius: "14px",
+            borderRadius: 14,
             overflowY: "auto",
             padding: 16,
             height: "calc(100vh - 220px)",
@@ -230,22 +246,11 @@ export default function LabEquipments() {
           {activeTab === "To-Do" ? (
             Object.keys(groupedEquipments).map((eqName) => (
               <div key={eqName} style={{ marginBottom: 20 }}>
-                <h3
-                  style={{
-                    marginBottom: 12,
-                    fontSize: "16px",
-                    fontWeight: 700,
-                  }}
-                >
-                  {eqName}
-                </h3>
-
+                <h3 style={{ marginBottom: 12, fontSize: 16, fontWeight: 700 }}>{eqName}</h3>
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: selectedEquipment
-                      ? "1fr" // when right panel open → single column
-                      : "repeat(auto-fill, minmax(320px, 1fr))", // when full width → cards grid
+                    gridTemplateColumns: selectedEquipment ? "1fr" : "repeat(auto-fill, minmax(320px, 1fr))",
                     gap: 12,
                     transition: "all 0.25s ease",
                   }}
