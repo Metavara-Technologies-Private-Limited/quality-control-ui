@@ -26,9 +26,8 @@ type EquipmentItem = {
   make: string;
   model: string;
   paramsCount: string;
-  assigneeName?: string;
+  assigneeNames?: string[];
 };
-
 /* ---------------- Equipment Card ---------------- */
 const EquipmentCard = ({
   item,
@@ -52,39 +51,85 @@ const EquipmentCard = ({
         padding: 16,
         borderRadius: 12,
         cursor: "pointer",
-        backgroundColor: selected ? "#fef3f2" : "#fff",
-        border: selected ? "2px solid #f97316" : "1px solid #e5e7eb",
+        backgroundColor: "#ffffff",
+        // Logic for selected state colors
+        border: selected ? "2px solid #F97316" : "1px solid #e5e7eb",
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
         transition: "all 0.2s ease",
+        boxShadow: "0px 2px 4px rgba(0,0,0,0.02)",
       }}
     >
-      {/* Top-right assignee avatar */}
+      {/* -------- Top-right Section: Label + Assignees -------- */}
       <div
-        title={item.assigneeName}
         style={{
           position: "absolute",
-          top: 8,
-          right: 8,
-          width: 28,
-          height: 28,
-          borderRadius: "50%",
-          backgroundColor: "#E17E61",
-          color: "#fff",
-          fontSize: 12,
-          fontWeight: 700,
+          top: 10,
+          right: 10,
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          alignItems: "center", // Ensures text and avatars align vertically
+          gap: "8px",
         }}
       >
-        {getInitials(item.assigneeName || "NA")}
+        {/* Added Assignees Label */}
+        <span style={{ 
+          fontSize: "12px", 
+          fontWeight: 700, 
+          color: "#4B5563" // Match the grey title theme
+        }}>
+          Assignees :
+        </span>
+
+        <div style={{ display: "flex" }}>
+          {item.assigneeNames?.slice(0, 3).map((name, index) => (
+            <div
+              key={index}
+              title={name}
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: "50%",
+                backgroundColor: "#E17E61",
+                color: "#fff",
+                fontSize: 10,
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginLeft: index === 0 ? 0 : -8, // Overlap effect
+                border: "2px solid #fff",
+              }}
+            >
+              {getInitials(name)}
+            </div>
+          ))}
+          {/* Show count if more than 3 assignees */}
+          {item.assigneeNames && item.assigneeNames.length > 3 && (
+            <div style={{
+              width: 24,
+              height: 24,
+              borderRadius: "50%",
+              backgroundColor: "#6B7280",
+              color: "#fff",
+              fontSize: 10,
+              fontWeight: 700,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginLeft: -8,
+              border: "2px solid #fff",
+            }}>
+              +{item.assigneeNames.length - 3}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Equipment number */}
-      <div style={{ fontSize: 13, fontWeight: 700 }}>
-        {item.detailName} : <span style={{ fontWeight: 500 }}>{item.paramsCount}</span>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "#4B5563" }}>
+         {item.detailName} :{" "}
+        <span style={{ fontWeight: 500, color: "#6B7280" }}>Parameters : {item.paramsCount}</span>
       </div>
 
       {/* Footer */}
@@ -97,7 +142,9 @@ const EquipmentCard = ({
           fontSize: 12,
         }}
       >
-        <span style={{ fontWeight: 700, color: percentColor }}>{percent}%</span>
+        <span style={{ fontWeight: 700, color: percentColor }}>
+          {percent}%
+        </span>
         <span style={{ color: "#94a3b8", fontWeight: 500 }}>
           {item.make} · {item.model}
         </span>
@@ -105,7 +152,6 @@ const EquipmentCard = ({
     </div>
   );
 };
-
 /* ---------------- Main Component ---------------- */
 export default function LabEquipments() {
   const { departmentName, searchText } = useOutletContext<{
@@ -117,23 +163,30 @@ export default function LabEquipments() {
   const events = useSelector((s: RootState) => s.events.data);
 
   const [activeTab, setActiveTab] = useState<"To-Do" | "Plan">("To-Do");
-  const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(null);
+  const [selectedEquipment, setSelectedEquipment] =
+    useState<EquipmentItem | null>(null);
   const [selectedRadio, setSelectedRadio] = useState("");
 
   const department = clinic?.department.find(
     (d) => normalize(d.name) === normalize(departmentName)
   );
 
-  /* -------- Build equipment → latest assignee map from events -------- */
+  /* -------- Build equipment → assignees map (MULTIPLE) -------- */
   const assigneeByEquipmentId = useMemo(() => {
-    const map: Record<string, string> = {};
+    const map: Record<number, string[]> = {};
+
     events?.forEach((event: any) => {
-      event.equipments.forEach((eq: any) => {
-        if (eq.equipment_details__id != null && event.assignment) {
-          map[String(eq.equipment_details__id)] = event.assignment;
+      event.equipments?.forEach((eq: any) => {
+        const id = eq.equipment_details__id;
+        if (!id || !event.assignment) return;
+
+        if (!map[id]) map[id] = [];
+        if (!map[id].includes(event.assignment)) {
+          map[id].push(event.assignment);
         }
       });
     });
+
     return map;
   }, [events]);
 
@@ -153,7 +206,7 @@ export default function LabEquipments() {
         make: detail.make,
         model: detail.model,
         paramsCount: `${formatCount(active)}/${formatCount(total)}`,
-        assigneeName: assigneeByEquipmentId[String(detail.id)] ?? "Unassigned",
+        assigneeNames: assigneeByEquipmentId[detail.id] ?? [],
       }));
     });
   }, [department, assigneeByEquipmentId]);
@@ -197,18 +250,99 @@ export default function LabEquipments() {
     }
   }, [equipmentDetails, selectedRadio]);
 
-  /* ---------------- UI ---------------- */
+  /* Handle tab change */
+  const handleTabChange = (tab: "To-Do" | "Plan") => {
+    setActiveTab(tab);
+    setSelectedEquipment(null);
+    setSelectedRadio("");
+  };
+
+  /* ============ PLAN VIEW - FULL SCREEN ============ */
+  if (activeTab === "Plan") {
+    return (
+      <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
+        {/* HEADER */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: 24,
+            gap: 24,
+          }}
+        >
+          <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
+            Equipments
+          </h1>
+
+          <div
+            style={{
+              display: "inline-flex",
+              backgroundColor: "#F2F2F2",
+              padding: 4,
+              borderRadius: 12,
+              gap: 4,
+            }}
+          >
+            {["To-Do", "Plan"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => handleTabChange(tab as any)}
+                style={{
+                  width: 166,
+                  height: 36,
+                  borderRadius: 10,
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  backgroundColor:
+                    activeTab === tab ? "#FFFFFF" : "transparent",
+                  color:
+                    activeTab === tab ? "#E17E61" : "#94a3b8",
+                }}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ width: "100%" }}>
+          <LabPlanPage />
+        </div>
+      </div>
+    );
+  }
+
+  /* ============ TO-DO VIEW ============ */
   return (
     <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
       {/* HEADER */}
-      <div style={{ display: "flex", alignItems: "center", marginBottom: 24, gap: 24 }}>
-        <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Equipments</h1>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          marginBottom: 24,
+          gap: 24,
+        }}
+      >
+        <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
+          Equipments
+        </h1>
 
-        <div style={{ display: "inline-flex", backgroundColor: "#F2F2F2", padding: 4, borderRadius: 12, gap: 4 }}>
+        <div
+          style={{
+            display: "inline-flex",
+            backgroundColor: "#F2F2F2",
+            padding: 4,
+            borderRadius: 12,
+            gap: 4,
+          }}
+        >
           {["To-Do", "Plan"].map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab as any)}
+              onClick={() => handleTabChange(tab as any)}
               style={{
                 width: 166,
                 height: 36,
@@ -217,8 +351,10 @@ export default function LabEquipments() {
                 cursor: "pointer",
                 fontSize: 14,
                 fontWeight: 700,
-                backgroundColor: activeTab === tab ? "#FFFFFF" : "transparent",
-                color: activeTab === tab ? "#E17E61" : "#94a3b8",
+                backgroundColor:
+                  activeTab === tab ? "#FFFFFF" : "transparent",
+                color:
+                  activeTab === tab ? "#E17E61" : "#94a3b8",
               }}
             >
               {tab}
@@ -236,21 +372,45 @@ export default function LabEquipments() {
             maxWidth: selectedEquipment ? 520 : "100%",
             transition: "width 0.25s ease",
             background: "#fff",
-            border: "1px solid #e5e7eb",
+              
             borderRadius: 14,
             overflowY: "auto",
             padding: 16,
             height: "calc(100vh - 220px)",
           }}
         >
-          {activeTab === "To-Do" ? (
-            Object.keys(groupedEquipments).map((eqName) => (
-              <div key={eqName} style={{ marginBottom: 20 }}>
-                <h3 style={{ marginBottom: 12, fontSize: 16, fontWeight: 700 }}>{eqName}</h3>
+          {Object.keys(groupedEquipments).map((eqName, groupIndex) => {
+            const borderColors: string | any[] = [ ];
+            const borderColor = borderColors[groupIndex % borderColors.length];
+
+            return (
+              <div
+                key={eqName}
+                style={{
+                  marginBottom: 20,
+                  backgroundColor: "#F2F2F2",
+                  padding: "12px",
+                  borderRadius: "12px",
+                  border: `2px solid ${borderColor}`,
+                }}
+              >
+                <h3
+                  style={{
+                    marginBottom: 12,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: "#0f172a",
+                  }}
+                >
+                  {eqName}
+                </h3>
+
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: selectedEquipment ? "1fr" : "repeat(auto-fill, minmax(320px, 1fr))",
+                    gridTemplateColumns: selectedEquipment
+                      ? "1fr"
+                      : "repeat(auto-fill, minmax(320px, 1fr))",
                     gap: 12,
                     transition: "all 0.25s ease",
                   }}
@@ -268,10 +428,8 @@ export default function LabEquipments() {
                   ))}
                 </div>
               </div>
-            ))
-          ) : (
-            <LabPlanPage />
-          )}
+            );
+          })}
         </div>
 
         {/* RIGHT */}
