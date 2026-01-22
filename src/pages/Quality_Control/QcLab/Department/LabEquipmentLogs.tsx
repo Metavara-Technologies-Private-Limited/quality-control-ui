@@ -115,6 +115,12 @@ export default function LabEquipmentLogs({ equipment }: Props) {
           </Box>
 
           {/* Table */}
+          <Box
+  sx={{
+    maxHeight: "260px", // 👈 height for ~5 rows
+    overflowY: "auto",
+  }}
+>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#fafafa" }}>
@@ -133,6 +139,7 @@ export default function LabEquipmentLogs({ equipment }: Props) {
               ))}
             </tbody>
           </table>
+          </Box>
         </Box>
       ))}
     </Box>

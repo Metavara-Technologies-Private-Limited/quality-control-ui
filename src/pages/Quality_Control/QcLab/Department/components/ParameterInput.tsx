@@ -18,22 +18,72 @@ export default function ParameterInput({
   if (!cfg) return null;
 
   const commonProps = {
-    fullWidth: true,
-    value: value ?? "",
-    onChange: (e: any) => onChange(e.target.value),
-    label: `${parameter.parameter_name || parameter.env_parameter_name}${
-      cfg.unit ? ` (${cfg.unit})` : ""
-    }`,
-    placeholder: "Type here",
-    InputLabelProps: { shrink: true },
-    sx: {
-      "& .MuiOutlinedInput-root": {
-        height: 50,
-        fontSize: 16,
-        fontWeight: 500,
+  fullWidth: true,
+  value: value ?? "",
+  onChange: (e: any) => onChange(e.target.value),
+  label: `${parameter.parameter_name || parameter.env_parameter_name}${
+    cfg.unit ? ` (${cfg.unit})` : ""
+  }`,
+  placeholder: "Type here",
+  InputLabelProps: { shrink: true },
+
+  sx: {
+    /* ---------------------INPUT BOX ---------------*/
+    "& .MuiOutlinedInput-root": {
+      height: "48px",
+      borderRadius: "10px",
+      fontSize: "16px",
+      fontWeight: 500,
+      backgroundColor: "#FFFFFF",
+
+      "& fieldset": {
+        borderColor: "#9e9e9e",
+        borderWidth: "1.5px",
+      },
+
+      "&:hover fieldset": {
+        borderColor: "#232323",
+      },
+
+      "&.Mui-focused fieldset": {
+        borderColor: '#828282', 
       },
     },
-  };
+
+    /* INPUT TEXT */
+    "& .MuiInputBase-input": {
+      padding: "12px 14px",
+      color: "#0F172A",
+    },
+
+    /* PLACEHOLDER */
+    "& .MuiInputBase-input::placeholder": {
+      color: "#9e9e9e",
+      opacity: 1,
+      fontWeight: 500,
+      fontSize: "16px",
+    },
+
+    /* LABEL */
+    "& .MuiInputLabel-root": {
+  fontSize: "16px",
+  fontWeight: 400,
+  color: "#232323",
+  textTransform: "capitalize",
+},
+
+"& .MuiInputLabel-root.Mui-focused": {
+  color: "#232323", 
+},
+
+    /* DROPDOWN ICON */
+    "& .MuiSelect-icon": {
+      color: "#232323",
+      right: 10,
+    },
+  },
+};
+
 
   switch (cfg.data_type) {
     case "Integer":
