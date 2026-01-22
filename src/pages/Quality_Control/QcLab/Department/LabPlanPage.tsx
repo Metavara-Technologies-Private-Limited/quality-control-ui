@@ -36,10 +36,10 @@ const getScheduleLabel = (type: any) => {
     typeof type === "number"
       ? type
       : typeof type === "string"
-        ? Number(type)
-        : typeof type === "object"
-          ? Number(type?.id)
-          : NaN;
+      ? Number(type)
+      : typeof type === "object"
+      ? Number(type?.id)
+      : NaN;
 
   return SCHEDULE_LABEL[t] ?? "Others";
 };
@@ -54,12 +54,15 @@ const getInitials = (name: string) =>
 
 /* ---------------- Component ---------------- */
 
+type ScheduleTab = "One Time" | "Daily" | "Weekly" | "Monthly";
+
 export default function LabPlanPage() {
-  const { departmentName, selectedAssigneeIds, searchText } = useOutletContext<{
-    departmentName: string;
-    selectedAssigneeIds: number[];
-    searchText: string;
-  }>();
+  const { departmentName, selectedAssigneeIds, searchText } =
+    useOutletContext<{
+      departmentName: string;
+      selectedAssigneeIds: number[];
+      searchText: string;
+    }>();
 
   const { data: clinic } = useSelector((s: RootState) => s.clinic);
   const events = useSelector((s: RootState) => s.events.data);
@@ -67,6 +70,7 @@ export default function LabPlanPage() {
 
   const [selectedItem, setSelectedItem] = useState<PlanItem | null>(null);
   const [selectedRadio, setSelectedRadio] = useState("");
+  const [activeTab, setActiveTab] = useState<ScheduleTab>("One Time");
 
   /* -------- Assignee Name → ID Map -------- */
 
@@ -84,7 +88,6 @@ export default function LabPlanPage() {
 
       const assigneeId = assigneeIdMap[event.assignment];
 
-      // only filter when event actually has an assignee
       if (
         selectedAssigneeIds.length > 0 &&
         assigneeId != null &&
@@ -101,7 +104,8 @@ export default function LabPlanPage() {
         eventName: event.event_name,
         assignment: event.assignment,
         scheduleLabel: getScheduleLabel(event.schedule?.type),
-        equipmentName: eq.equipment_details__equipment__equipment_name,
+        equipmentName:
+          eq.equipment_details__equipment__equipment_name,
         equipmentUnit: eq.equipment_details__equipment_num,
         equipmentDetailId: eq.equipment_details__id,
       }));
@@ -115,8 +119,12 @@ export default function LabPlanPage() {
 
     planItems.forEach((item) => {
       const matchesSearch =
-        item.equipmentName.toLowerCase().includes(searchText.toLowerCase()) ||
-        item.equipmentUnit.toLowerCase().includes(searchText.toLowerCase());
+        item.equipmentName
+          .toLowerCase()
+          .includes(searchText.toLowerCase()) ||
+        item.equipmentUnit
+          .toLowerCase()
+          .includes(searchText.toLowerCase());
 
       if (!matchesSearch) return;
 
@@ -127,7 +135,13 @@ export default function LabPlanPage() {
     return grouped;
   }, [planItems, searchText]);
 
-  /* -------- Right Panel Data (🔥 FIXED) -------- */
+  /* -------- Active Tab Items -------- */
+
+  const activeTabItems = useMemo(() => {
+    return groupedBySchedule[activeTab] ?? [];
+  }, [groupedBySchedule, activeTab]);
+
+  /* -------- Right Panel Data -------- */
 
   const equipmentDetails = useMemo(() => {
     if (!selectedItem || !clinic) return [];
@@ -138,7 +152,9 @@ export default function LabPlanPage() {
     if (!department) return [];
 
     const equipment = department.equipments.find((e) =>
-      e.equipment_details.some((d) => d.id === selectedItem.equipmentDetailId),
+      e.equipment_details.some(
+        (d) => d.id === selectedItem.equipmentDetailId,
+      ),
     );
     if (!equipment) return [];
 
@@ -149,7 +165,7 @@ export default function LabPlanPage() {
 
     return [
       {
-        equipment_id: detail.id!, // ✅ ASSERT NON-NULL
+        equipment_id: detail.id!,
         equipment_num: detail.equipment_num,
         make: detail.make,
         model: detail.model,
@@ -175,89 +191,127 @@ export default function LabPlanPage() {
           overflowY: "auto",
         }}
       >
-        {Object.keys(groupedBySchedule).length === 0 ? (
+        {/* TABS */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          {(["One Time", "Daily", "Weekly", "Monthly"] as ScheduleTab[]).map(
+            (tab) => (
+              <button
+                key={tab}
+                onClick={() => {
+                  setActiveTab(tab);
+                  setSelectedItem(null);
+                  setSelectedRadio("");
+                }}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: 10,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  border:
+                    activeTab === tab
+                      ? "2px solid #f97316"
+                      : "1px solid #e5e7eb",
+                  backgroundColor:
+                    activeTab === tab ? "#fff7ed" : "#fff",
+                  color:
+                    activeTab === tab ? "#ea580c" : "#374151",
+                }}
+              >
+                {tab}
+              </button>
+            ),
+          )}
+        </div>
+
+        {activeTabItems.length === 0 ? (
           <div
-            style={{ textAlign: "center", marginTop: 100, color: "#94a3b8" }}
+            style={{
+              textAlign: "center",
+              marginTop: 100,
+              color: "#94a3b8",
+            }}
           >
             No plans found
           </div>
         ) : (
-          Object.entries(groupedBySchedule).map(([schedule, items]) => (
-            <div key={schedule} style={{ marginBottom: 24 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700 }}>{schedule}</h3>
-
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: selectedItem
+                ? "1fr"
+                : "repeat(auto-fill, minmax(320px, 1fr))",
+              gap: 12,
+            }}
+          >
+            {activeTabItems.map((item) => (
               <div
+                key={item.key}
+                onClick={() => {
+                  setSelectedItem(item);
+                  setSelectedRadio(item.equipmentUnit);
+                }}
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: selectedItem
-                    ? "1fr"
-                    : "repeat(auto-fill, minmax(320px, 1fr))",
-                  gap: 12,
+                  padding: 16,
+                  borderRadius: 12,
+                  cursor: "pointer",
+                  backgroundColor:
+                    selectedRadio === item.equipmentUnit
+                      ? "#fef3f2"
+                      : "#fff",
+                  border:
+                    selectedRadio === item.equipmentUnit
+                      ? "2px solid #f97316"
+                      : "1px solid #e5e7eb",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  gap: 8,
                 }}
               >
-                {items.map((item) => (
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>
+                    {item.equipmentUnit}
+                  </div>
                   <div
-                    key={item.key}
-                    onClick={() => {
-                      setSelectedItem(item);
-                      setSelectedRadio(item.equipmentUnit);
-                    }}
                     style={{
-                      padding: 16,
-                      borderRadius: 12,
-                      cursor: "pointer",
-                      backgroundColor:
-                        selectedRadio === item.equipmentUnit
-                          ? "#fef3f2"
-                          : "#fff",
-                      border:
-                        selectedRadio === item.equipmentUnit
-                          ? "2px solid #f97316"
-                          : "1px solid #e5e7eb",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      gap: 8,
+                      fontSize: 12,
+                      color: "#6b7280",
                     }}
                   >
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 700 }}>
-                        {item.equipmentUnit}
-                      </div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>
-                        {item.equipmentName}
-                      </div>
-                      <div style={{ marginTop: 6, fontSize: 12 }}>
-                        <strong>Event:</strong> {item.eventName}
-                      </div>
-                    </div>
-                    {/* <div style={{ fontSize: 12 }}>
-                      <strong>Assignee:</strong> {item.assignment}
-                    </div> */}
-                    <div
-                      title={item.assignment}
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "50%",
-                        backgroundColor: "#E17E61",
-                        color: "#fff",
-                        fontSize: 12,
-                        fontWeight: 700,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {getInitials(item.assignment)}
-                    </div>
+                    {item.equipmentName}
                   </div>
-                ))}
+                  <div
+                    style={{
+                      marginTop: 6,
+                      fontSize: 12,
+                    }}
+                  >
+                    <strong>Event:</strong> {item.eventName}
+                  </div>
+                </div>
+
+                <div
+                  title={item.assignment}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    backgroundColor: "#E17E61",
+                    color: "#fff",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  {getInitials(item.assignment)}
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
 

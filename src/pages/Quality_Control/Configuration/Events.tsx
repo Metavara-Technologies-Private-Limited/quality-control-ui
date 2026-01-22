@@ -20,11 +20,14 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
+
 import TurnLeftIcon from "@mui/icons-material/TurnLeft";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+
 import { AppDispatch, RootState } from "@/store";
 import { fetchEventsByClinic } from "@/store/eventSlice";
 
@@ -566,18 +569,18 @@ const EventsTable = ({
 const mapEventToRow = (e: any, clinic: any) => {
   // Build equipment->parameter mapping from clinic data
   const equipmentParameterMap: Record<number, Set<number>> = {};
-  
+
   clinic?.department?.forEach((dept: any) => {
     dept.equipments?.forEach((eq: any) => {
       equipmentParameterMap[eq.id] = new Set(
-        (eq.parameters || []).map((p: any) => p.id)
+        (eq.parameters || []).map((p: any) => p.id),
       );
     });
   });
 
   // Get event's selected parameter IDs
   const eventParameterIds = new Set(
-    (e.parameters || []).map((p: any) => p.parameter__id)
+    (e.parameters || []).map((p: any) => p.parameter__id),
   );
 
   // Group equipment_details by parent equipment
@@ -612,11 +615,12 @@ const mapEventToRow = (e: any, clinic: any) => {
 
   // For each equipment, filter parameters that belong to it AND are selected in event
   const equipmentsDetails = Array.from(equipmentMap.values()).map((group) => {
-    const equipmentParamIds = equipmentParameterMap[group.equipment_id] || new Set();
-    
+    const equipmentParamIds =
+      equipmentParameterMap[group.equipment_id] || new Set();
+
     // Find parameters that are both: in this equipment AND selected for this event
     const validParameterIds = Array.from(eventParameterIds).filter((paramId) =>
-      equipmentParamIds.has(paramId)
+      equipmentParamIds.has(paramId),
     );
 
     // Map parameter IDs to names
