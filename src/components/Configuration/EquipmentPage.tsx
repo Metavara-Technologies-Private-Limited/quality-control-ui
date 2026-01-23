@@ -72,6 +72,13 @@ const EquipmentPage = () => {
     active: false,
   });
 
+  const darkButtonSx = {
+  backgroundColor: "#505050",
+  "&:hover": {
+    backgroundColor: "#232323",
+  },
+};
+
   /* ------------------ Derived Data ------------------ */
 
   const items = useMemo<EquipmentUIItem[]>(() => {
@@ -344,7 +351,7 @@ const EquipmentPage = () => {
           <Button onClick={() => setDialogs({ ...dialogs, delete: false })}>
             Cancel
           </Button>
-          <Button onClick={confirmDelete} variant="contained">
+          <Button sx={darkButtonSx} variant="contained" onClick={confirmDelete}>
             Delete
           </Button>
         </DialogActions>
@@ -359,7 +366,7 @@ const EquipmentPage = () => {
           <Button onClick={() => setDialogs({ ...dialogs, inactive: false })}>
             Cancel
           </Button>
-          <Button onClick={() => toggleActive(false)} variant="contained">
+          <Button sx={darkButtonSx} onClick={() => toggleActive(false)} variant="contained">
             Inactivate
           </Button>
         </DialogActions>
@@ -374,7 +381,7 @@ const EquipmentPage = () => {
           <Button onClick={() => setDialogs({ ...dialogs, active: false })}>
             Cancel
           </Button>
-          <Button onClick={() => toggleActive(true)} variant="contained">
+          <Button sx={darkButtonSx} onClick={() => toggleActive(true)} variant="contained">
             Activate
           </Button>
         </DialogActions>
