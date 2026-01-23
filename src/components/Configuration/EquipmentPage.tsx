@@ -73,11 +73,11 @@ const EquipmentPage = () => {
   });
 
   const darkButtonSx = {
-  backgroundColor: "#505050",
-  "&:hover": {
-    backgroundColor: "#232323",
-  },
-};
+    backgroundColor: "#505050",
+    "&:hover": {
+      backgroundColor: "#232323",
+    },
+  };
 
   /* ------------------ Derived Data ------------------ */
 
@@ -267,6 +267,7 @@ const EquipmentPage = () => {
                   </Typography>
 
                   <Box sx={{ display: "flex", gap: 1 }}>
+                    {/* View Icon Button */}
                     <IconButton
                       disabled={isInactive}
                       onClick={() =>
@@ -287,7 +288,8 @@ const EquipmentPage = () => {
                         height: 32,
                         border: "1px solid #E5E7EB",
                         borderRadius: "8px",
-                        opacity: isInactive ? 0.4 : 1,
+
+                        opacity: isInactive ? 0.2 : 1,
                       }}
                     >
                       <img src={ViewIcon} alt="view" width={18} height={18} />
@@ -302,6 +304,7 @@ const EquipmentPage = () => {
                         width: 32,
                         height: 32,
                         border: isInactive
+<<<<<<< Updated upstream
                           ? "2px solid #ffffff"
                           : "1px solid #E5E7EB",
                         borderRadius: "8px",
@@ -313,6 +316,19 @@ const EquipmentPage = () => {
                             ? "#000000ff"
                             : "rgba(0, 0, 0, 0.04)",
                         },
+=======
+                          ? "1px solid #505050"
+                          : "1px solid #E5E7EB",
+                        borderRadius: "8px",
+                        backgroundColor: isInactive ? "#141313" : "transparent",
+                        opacity: 1,
+                        zIndex: 2,
+                        "&:hover": {
+                          backgroundColor: isInactive ? "#f0f0f0" : "#F3F4F6",
+                          color: isInactive ? "#0c0404" : "inherit",
+                        },
+                        color: isInactive ? "#ffffff" : "inherit",
+>>>>>>> Stashed changes
                       }}
                     >
                       <MoreHoriz
@@ -339,29 +355,33 @@ const EquipmentPage = () => {
         onClose={() => setAnchorEl(null)}
       >
         {selectedItem?.is_active ? (
-<MenuItem
-      onClick={() => {
-        setAnchorEl(null); 
-        setDialogs({ ...dialogs, inactive: true });
-      }}
-    >            Inactivate
+          <MenuItem
+            onClick={() => {
+              setAnchorEl(null);
+              setDialogs({ ...dialogs, inactive: true });
+            }}
+          >
+            {" "}
+            Inactivate
           </MenuItem>
         ) : (
-<MenuItem
-      onClick={() => {
-        setAnchorEl(null); 
-        setDialogs({ ...dialogs, active: true });
-      }}
-    >            Activate
+          <MenuItem
+            onClick={() => {
+              setAnchorEl(null);
+              setDialogs({ ...dialogs, active: true });
+            }}
+          >
+            {" "}
+            Activate
           </MenuItem>
         )}
         <MenuItem
-    sx={{ color: "error.main" }}
-    onClick={() => {
-      setAnchorEl(null); 
-      setDialogs({ ...dialogs, delete: true });
-    }}
-  >
+          sx={{ color: "error.main" }}
+          onClick={() => {
+            setAnchorEl(null);
+            setDialogs({ ...dialogs, delete: true });
+          }}
+        >
           Delete
         </MenuItem>
       </Menu>
@@ -396,7 +416,11 @@ const EquipmentPage = () => {
           <Button onClick={() => setDialogs({ ...dialogs, inactive: false })}>
             Cancel
           </Button>
-          <Button sx={darkButtonSx} onClick={() => toggleActive(false)} variant="contained">
+          <Button
+            sx={darkButtonSx}
+            onClick={() => toggleActive(false)}
+            variant="contained"
+          >
             Inactivate
           </Button>
         </DialogActions>
@@ -414,7 +438,11 @@ const EquipmentPage = () => {
           <Button onClick={() => setDialogs({ ...dialogs, active: false })}>
             Cancel
           </Button>
-          <Button sx={darkButtonSx} onClick={() => toggleActive(true)} variant="contained">
+          <Button
+            sx={darkButtonSx}
+            onClick={() => toggleActive(true)}
+            variant="contained"
+          >
             Activate
           </Button>
         </DialogActions>
