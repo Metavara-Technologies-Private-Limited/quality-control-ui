@@ -1,6 +1,7 @@
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { Box, CircularProgress } from "@mui/material";
 import { environmentParameterValueApi } from "@/services/api";
+import dayjs from "dayjs";
 
 type Props = {
   environment: {
@@ -59,7 +60,7 @@ export default function LabEnvironmentLogs({ environment }: Props) {
 
       return {
         id: log.id,
-        date: new Date(log.log_time ?? log.created_at).toLocaleString(),
+        date: dayjs(log.log_time ?? log.created_at).format("DD/MM/YYYY HH:mm"),
         parameter: param.name,
         unit: param.unit,
         value: log.content,
@@ -107,7 +108,7 @@ export default function LabEnvironmentLogs({ environment }: Props) {
       </Box>
 
       {/* Table */}
-      <Box sx={{ maxHeight: "520px", overflowY: "auto" }}>
+      <Box sx={{ maxHeight: "420px", overflowY: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "#fafafa" }}>

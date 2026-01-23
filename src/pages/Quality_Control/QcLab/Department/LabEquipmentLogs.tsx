@@ -5,6 +5,7 @@ import { Box, CircularProgress } from "@mui/material";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { parameterValueApi } from "@/services/api";
+import dayjs from "dayjs";
 
 type Props = {
   equipment: {
@@ -72,7 +73,7 @@ export default function LabEquipmentLogs({ equipment }: Props) {
 
       result.push({
         id: log.id,
-        date: new Date(log.created_at).toLocaleString(),
+        date: dayjs(log.created_at).format("DD/MM/YYYY HH:mm"),
         equipment:
           equipmentDetailMap.get(log.equipment_details_id) ?? "Unknown",
         parameter: param.name,

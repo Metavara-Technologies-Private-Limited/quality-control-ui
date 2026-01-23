@@ -32,6 +32,22 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ departmentName,equipmentI
   /* -------------------------------------------------
      BUILD: equipment → assignees map (SOURCE OF TRUTH)
   -------------------------------------------------- */
+  const equipmentName = useMemo(() => {
+    if (!equipmentId) return "";
+  
+    for (const event of events) {
+      const eq = event.equipments?.find(
+        (e: any) => e.equipment_details__equipment__id === equipmentId
+      );
+  
+      if (eq) {
+        return eq.equipment_details__equipment__equipment_name;
+      }
+    }
+  
+    return "";
+  }, [events, equipmentId]);
+  
   const assigneesUsedInEvents = useMemo(() => {
     if (!equipmentId) return new Set<string>();
   
@@ -88,7 +104,7 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ departmentName,equipmentI
         }}
       >
         <Typography fontWeight={700}>
-          {departmentName} Assignees
+        {equipmentName} Assignees
         </Typography>
 
         <IconButton

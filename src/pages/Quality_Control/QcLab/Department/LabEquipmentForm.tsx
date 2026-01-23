@@ -56,7 +56,7 @@ export default function LabEquipmentForm({
 }: Props) {
   const [activeTab, setActiveTab] = useState<"Form" | "Logs">("Form");
   const [logValues, setLogValues] = useState<Record<string, string>>({});
-const [logDateTime, setLogDateTime] = useState<Dayjs | null>(dayjs());
+  const [logDateTime, setLogDateTime] = useState<Dayjs | null>(dayjs());
   const [isSaving, setIsSaving] = useState(false);
   const [refreshChartKey, setRefreshChartKey] = useState(0);
 
@@ -97,7 +97,7 @@ const [logDateTime, setLogDateTime] = useState<Dayjs | null>(dayjs());
             parameter: param.id,
             equipment_details: currentEquipment.equipment_id,
             content: value,
-log_time: logDateTime?.toISOString(),
+            log_time: logDateTime?.toISOString(),
           }),
         );
       });
@@ -170,79 +170,76 @@ log_time: logDateTime?.toISOString(),
             p: "24px",
           }}
         >
-
           {/* ---------- EQUIPMENT RADIOs ---------- */}
-     <Box
-  sx={{
-    display: "flex",
-    gap: "24px",
-    pb: "20px",
-    mb: "24px",
-    borderBottom: "2px solid #f1f5f9",
-  }}
->
-  {equipmentDetails.map((ed) => {
-    const checked = selectedRadio === ed.equipment_num;
+          <Box
+            sx={{
+              display: "flex",
+              gap: "24px",
+              pb: "20px",
+              mb: "24px",
+              borderBottom: "2px solid #f1f5f9",
+            }}
+          >
+            {equipmentDetails.map((ed) => {
+              const checked = selectedRadio === ed.equipment_num;
 
-    return (
-      <label
-        key={ed.equipment_id}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          cursor: "pointer",
-        }}
-      >
-        {/* HIDDEN RADIO */}
-        <input
-          type="radio"
-          name="equipment"
-          checked={checked}
-          onChange={() => setSelectedRadio(ed.equipment_num)}
-          style={{ display: "none" }}
-        />
+              return (
+                <label
+                  key={ed.equipment_id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    cursor: "pointer",
+                  }}
+                >
+                  {/* HIDDEN RADIO */}
+                  <input
+                    type="radio"
+                    name="equipment"
+                    checked={checked}
+                    onChange={() => setSelectedRadio(ed.equipment_num)}
+                    style={{ display: "none" }}
+                  />
 
-        {/* CUSTOM RADIO */}
-        <span
-          style={{
-            width: "16px",
-            height: "16px",
-            borderRadius: "50%",
-            border: "2px solid #1f1f1f", // outer black ring
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {checked && (
-            <span
-              style={{
-                width: "9px",
-                height: "9px",
-                borderRadius: "50%",
-                backgroundColor: "#E17E61", 
-              }}
-            />
-          )}
-        </span>
+                  {/* CUSTOM RADIO */}
+                  <span
+                    style={{
+                      width: "16px",
+                      height: "16px",
+                      borderRadius: "50%",
+                      border: "2px solid #1f1f1f", // outer black ring
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {checked && (
+                      <span
+                        style={{
+                          width: "9px",
+                          height: "9px",
+                          borderRadius: "50%",
+                          backgroundColor: "#E17E61",
+                        }}
+                      />
+                    )}
+                  </span>
 
-        {/* LABEL TEXT */}
-        <span
-          style={{
-            fontSize: "14px",
-            fontWeight: 600,
-            color: "#0f172a",
-          }}
-        >
-          {ed.equipment_num}
-        </span>
-      </label>
-    );
-  })}
-</Box>
-
-
+                  {/* LABEL TEXT */}
+                  <span
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#0f172a",
+                    }}
+                  >
+                    {ed.equipment_num}
+                  </span>
+                </label>
+              );
+            })}
+          </Box>
 
           {/* ---------- PARAMETERS GRID ---------- */}
           <Box
@@ -287,58 +284,58 @@ log_time: logDateTime?.toISOString(),
           </Box>
 
           {/* ---------- DATE TIME ---------- */}
-<Box sx={{ mt: "24px", width: "260px" }}>
-  <LocalizationProvider dateAdapter={AdapterDayjs}>
-<DateTimePicker
-  label="Date & Time"
-  value={logDateTime}
-  onChange={(newValue) => setLogDateTime(newValue)}
-  slotProps={{
-    textField: {
-      fullWidth: true,
-      InputLabelProps: { shrink: true },
-      sx: {
-        "& .MuiOutlinedInput-root": {
-          height: 50,
-          fontSize: 16,
-          fontWeight: 500,
-          borderRadius: "10px",
-          backgroundColor: "#FFFFFF",
-        },
+          <Box sx={{ mt: "24px", width: "260px" }}>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DateTimePicker
+                label="Date & Time"
+                value={logDateTime}
+                onChange={(newValue) => setLogDateTime(newValue)}
+                format="DD/MM/YYYY HH:mm"
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    InputLabelProps: { shrink: true },
+                    sx: {
+                      "& .MuiOutlinedInput-root": {
+                        height: 50,
+                        fontSize: 16,
+                        fontWeight: 500,
+                        borderRadius: "10px",
+                        backgroundColor: "#FFFFFF",
+                      },
 
-        "& .MuiOutlinedInput-notchedOutline": {
-          borderColor: "#9e9e9e",
-          borderWidth: "1.5px",
-        },
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#9e9e9e",
+                        borderWidth: "1.5px",
+                      },
 
-        "&:hover .MuiOutlinedInput-notchedOutline": {
-          borderColor: "#232323",
-        },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#232323",
+                      },
 
-        "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
-          borderColor: "#828282",
-        },
+                      "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
+                        {
+                          borderColor: "#828282",
+                        },
 
-        /* 🔥 REAL FIX FOR GREEN 00 */
-        "& .MuiPickersSectionList-section.Mui-focused": {
-          backgroundColor: "#E5E7EB",
-        },
+                      /* 🔥 REAL FIX FOR GREEN 00 */
+                      "& .MuiPickersSectionList-section.Mui-focused": {
+                        backgroundColor: "#E5E7EB",
+                      },
 
-        "& .MuiInputLabel-root": {
-          color: "#232323",
-        },
+                      "& .MuiInputLabel-root": {
+                        color: "#232323",
+                      },
 
-        "& .MuiInputLabel-root.Mui-focused": {
-          color: "#232323",
-        },
-      },
-    },
-  }}
-/>
-
-  </LocalizationProvider>
-</Box>
-
+                      "& .MuiInputLabel-root.Mui-focused": {
+                        color: "#232323",
+                      },
+                    },
+                  },
+                }}
+              />
+            </LocalizationProvider>
+          </Box>
 
           {/* ---------- FOOTER (INCUBATOR STYLE) ---------- */}
           <div
@@ -391,28 +388,28 @@ log_time: logDateTime?.toISOString(),
               </button>
 
               <button
-  onClick={handleSave}
-  disabled={isSaving}
-  onMouseEnter={(e) => {
-    if (!isSaving) e.currentTarget.style.backgroundColor = "#232323";
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.backgroundColor = "#505050";
-  }}
-  style={{
-    padding: "10px 24px",
-    backgroundColor: "#505050",
-    color: "#fff",
-    border: "none",
-    borderRadius: "8px",
-    cursor: isSaving ? "not-allowed" : "pointer",
-    fontSize: "14px",
-    opacity: isSaving ? 0.6 : 1,
-  }}
->
-  {isSaving ? "Saving..." : "Save"}
-</button>
-
+                onClick={handleSave}
+                disabled={isSaving}
+                onMouseEnter={(e) => {
+                  if (!isSaving)
+                    e.currentTarget.style.backgroundColor = "#232323";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#505050";
+                }}
+                style={{
+                  padding: "10px 24px",
+                  backgroundColor: "#505050",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: isSaving ? "not-allowed" : "pointer",
+                  fontSize: "14px",
+                  opacity: isSaving ? 0.6 : 1,
+                }}
+              >
+                {isSaving ? "Saving..." : "Save"}
+              </button>
             </div>
           </div>
           <Box sx={{ mt: 3 }}>

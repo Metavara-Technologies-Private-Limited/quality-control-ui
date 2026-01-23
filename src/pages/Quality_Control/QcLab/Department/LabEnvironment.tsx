@@ -44,7 +44,7 @@ export default function LabEnvironment() {
   if (!selectedEnv) {
     return (
       <div style={{ padding: 24, color: "#94a3b8", textAlign: "center" }}>
-        No environment found
+        No environment parameters found
       </div>
     );
   }

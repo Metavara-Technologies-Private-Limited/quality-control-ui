@@ -48,7 +48,7 @@ export default function LabEnvironmentForm({ environment, onSaved }: Props) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   // const [refreshKey, setRefreshKey] = useState(0);
-const [logDateTime, setLogDateTime] = useState<Dayjs | null>(dayjs());
+  const [logDateTime, setLogDateTime] = useState<Dayjs | null>(dayjs());
 
   const setValue = (k: string, v: string) =>
     setValues((p) => ({ ...p, [k]: v }));
@@ -72,7 +72,7 @@ const [logDateTime, setLogDateTime] = useState<Dayjs | null>(dayjs());
             environment: environment.id,
             environment_parameter: p.id,
             content: value,
-log_time: logDateTime?.toISOString(),
+            log_time: logDateTime?.toISOString(),
           });
         }),
       );
@@ -176,47 +176,48 @@ log_time: logDateTime?.toISOString(),
           </Box>
 
           {/* DATE TIME */}
-<Box sx={{ mt: 3, width: 260 }}>
-  <LocalizationProvider dateAdapter={AdapterDayjs}>
-    <DateTimePicker
-      label="Date & Time"
-      value={logDateTime}
-      onChange={(newValue) => setLogDateTime(newValue)}
-      slotProps={{
-        textField: {
-          fullWidth: true,
-          InputLabelProps: { shrink: true },
-          sx: {
-            "& .MuiOutlinedInput-root": {
-              height: 50,
-              fontSize: 16,
-              fontWeight: 500,
-              borderRadius: "10px",
-              backgroundColor: "#FFFFFF",
-            },
-            "& .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#9e9e9e",
-              borderWidth: "1.5px",
-            },
-            "&:hover .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#232323",
-            },
-            "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#828282",
-            },
-            "& .MuiInputLabel-root": {
-              color: "#232323",
-            },
-            "& .MuiInputLabel-root.Mui-focused": {
-              color: "#232323",
-            },
-          },
-        },
-      }}
-    />
-  </LocalizationProvider>
-</Box>
-
+          <Box sx={{ mt: 3, width: 260 }}>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DateTimePicker
+                label="Date & Time"
+                value={logDateTime}
+                onChange={(newValue) => setLogDateTime(newValue)}
+                format="DD/MM/YYYY HH:mm"
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    InputLabelProps: { shrink: true },
+                    sx: {
+                      "& .MuiOutlinedInput-root": {
+                        height: 50,
+                        fontSize: 16,
+                        fontWeight: 500,
+                        borderRadius: "10px",
+                        backgroundColor: "#FFFFFF",
+                      },
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#9e9e9e",
+                        borderWidth: "1.5px",
+                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#232323",
+                      },
+                      "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
+                        {
+                          borderColor: "#828282",
+                        },
+                      "& .MuiInputLabel-root": {
+                        color: "#232323",
+                      },
+                      "& .MuiInputLabel-root.Mui-focused": {
+                        color: "#232323",
+                      },
+                    },
+                  },
+                }}
+              />
+            </LocalizationProvider>
+          </Box>
 
           {/* FOOTER */}
           <div

@@ -20,10 +20,21 @@ type PlanItem = {
 
 /* ---------------- Schedule Map ---------------- */
 const avatarColors = [
-  "#FF5630", "#FF7452", "#FF8B00", "#FFC400",
-  "#36B37E", "#00B8D9", "#2684FF", "#6554C0",
-  "#8777D9", "#998DD9", "#0052CC", "#172B4D",
-  "#42526E", "#6B778C", "#091E42",
+  "#FF5630",
+  "#FF7452",
+  "#FF8B00",
+  "#FFC400",
+  "#36B37E",
+  "#00B8D9",
+  "#2684FF",
+  "#6554C0",
+  "#8777D9",
+  "#998DD9",
+  "#0052CC",
+  "#172B4D",
+  "#42526E",
+  "#6B778C",
+  "#091E42",
 ];
 
 const getAvatarColor = (name: string) => {
@@ -50,10 +61,10 @@ const getScheduleLabel = (type: any) => {
     typeof type === "number"
       ? type
       : typeof type === "string"
-      ? Number(type)
-      : typeof type === "object"
-      ? Number(type?.id)
-      : NaN;
+        ? Number(type)
+        : typeof type === "object"
+          ? Number(type?.id)
+          : NaN;
 
   return SCHEDULE_LABEL[t] ?? "Others";
 };
@@ -71,12 +82,11 @@ const getInitials = (name: string) =>
 type ScheduleTab = "One Time" | "Daily" | "Weekly" | "Monthly";
 
 export default function LabPlanPage() {
-  const { departmentName, selectedAssigneeIds, searchText } =
-    useOutletContext<{
-      departmentName: string;
-      selectedAssigneeIds: number[];
-      searchText: string;
-    }>();
+  const { departmentName, selectedAssigneeIds, searchText } = useOutletContext<{
+    departmentName: string;
+    selectedAssigneeIds: number[];
+    searchText: string;
+  }>();
 
   const { data: clinic } = useSelector((s: RootState) => s.clinic);
   const events = useSelector((s: RootState) => s.events.data);
@@ -118,8 +128,7 @@ export default function LabPlanPage() {
         eventName: event.event_name,
         assignment: event.assignment,
         scheduleLabel: getScheduleLabel(event.schedule?.type),
-        equipmentName:
-          eq.equipment_details__equipment__equipment_name,
+        equipmentName: eq.equipment_details__equipment__equipment_name,
         equipmentUnit: eq.equipment_details__equipment_num,
         equipmentDetailId: eq.equipment_details__id,
       }));
@@ -133,12 +142,8 @@ export default function LabPlanPage() {
 
     planItems.forEach((item) => {
       const matchesSearch =
-        item.equipmentName
-          .toLowerCase()
-          .includes(searchText.toLowerCase()) ||
-        item.equipmentUnit
-          .toLowerCase()
-          .includes(searchText.toLowerCase());
+        item.equipmentName.toLowerCase().includes(searchText.toLowerCase()) ||
+        item.equipmentUnit.toLowerCase().includes(searchText.toLowerCase());
 
       if (!matchesSearch) return;
 
@@ -148,6 +153,21 @@ export default function LabPlanPage() {
 
     return grouped;
   }, [planItems, searchText]);
+
+  const scheduleCounts = useMemo(() => {
+    const counts: Record<ScheduleTab, number> = {
+      "One Time": 0,
+      Daily: 0,
+      Weekly: 0,
+      Monthly: 0,
+    };
+
+    (Object.keys(counts) as ScheduleTab[]).forEach((tab) => {
+      counts[tab] = groupedBySchedule[tab]?.length ?? 0;
+    });
+
+    return counts;
+  }, [groupedBySchedule]);
 
   /* -------- Active Tab Items -------- */
 
@@ -166,9 +186,7 @@ export default function LabPlanPage() {
     if (!department) return [];
 
     const equipment = department.equipments.find((e) =>
-      e.equipment_details.some(
-        (d) => d.id === selectedItem.equipmentDetailId,
-      ),
+      e.equipment_details.some((d) => d.id === selectedItem.equipmentDetailId),
     );
     if (!equipment) return [];
 
@@ -226,13 +244,14 @@ export default function LabPlanPage() {
                     activeTab === tab
                       ? "2px solid #f97316"
                       : "1px solid #e5e7eb",
-                  backgroundColor:
-                    activeTab === tab ? "#fff7ed" : "#fff",
-                  color:
-                    activeTab === tab ? "#ea580c" : "#374151",
+                  backgroundColor: activeTab === tab ? "#fff7ed" : "#fff",
+                  color: activeTab === tab ? "#ea580c" : "#374151",
                 }}
               >
-                {tab}
+                {tab}{" "}
+                <span style={{ opacity: 0.6, fontWeight: 600 }}>
+                  ({scheduleCounts[tab]})
+                </span>
               </button>
             ),
           )}
@@ -270,9 +289,7 @@ export default function LabPlanPage() {
                   borderRadius: 12,
                   cursor: "pointer",
                   backgroundColor:
-                    selectedRadio === item.equipmentUnit
-                      ? "#fef3f2"
-                      : "#fff",
+                    selectedRadio === item.equipmentUnit ? "#fef3f2" : "#fff",
                   border:
                     selectedRadio === item.equipmentUnit
                       ? "2px solid #f97316"
