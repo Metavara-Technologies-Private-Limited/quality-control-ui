@@ -19,6 +19,20 @@ type PlanItem = {
 };
 
 /* ---------------- Schedule Map ---------------- */
+const avatarColors = [
+  "#FF5630", "#FF7452", "#FF8B00", "#FFC400",
+  "#36B37E", "#00B8D9", "#2684FF", "#6554C0",
+  "#8777D9", "#998DD9", "#0052CC", "#172B4D",
+  "#42526E", "#6B778C", "#091E42",
+];
+
+const getAvatarColor = (name: string) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return avatarColors[Math.abs(hash) % avatarColors.length];
+};
 
 const SCHEDULE_LABEL: Record<number, string> = {
   1: "One Time",
@@ -297,7 +311,7 @@ export default function LabPlanPage() {
                     width: 28,
                     height: 28,
                     borderRadius: "50%",
-                    backgroundColor: "#E17E61",
+                    backgroundColor: getAvatarColor(item.assignment),
                     color: "#fff",
                     fontSize: 12,
                     fontWeight: 700,

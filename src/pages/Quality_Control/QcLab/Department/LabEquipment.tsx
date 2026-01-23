@@ -6,6 +6,21 @@ import { RootState } from "@/store";
 import LabEquipmentForm from "./LabEquipmentForm";
 import LabPlanPage from "./LabPlanPage";
 
+const avatarColors = [
+  "#FF5630", "#FF7452", "#FF8B00", "#FFC400",
+  "#36B37E", "#00B8D9", "#2684FF", "#6554C0",
+  "#8777D9", "#998DD9", "#0052CC", "#172B4D",
+  "#42526E", "#6B778C", "#091E42",
+];
+
+const getAvatarColor = (name: string) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return avatarColors[Math.abs(hash) % avatarColors.length];
+};
+
 /* ---------------- Utils ---------------- */
 const normalize = (v: string) => v?.replace(/\s+/g, "").toLowerCase();
 const formatCount = (v: number) => String(v).padStart(2, "0");
@@ -51,7 +66,7 @@ const EquipmentCard = ({
         padding: 16,
         borderRadius: 12,
         cursor: "pointer",
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "#ffffff",
         // Logic for selected state colors
         border: selected ? "2px solid #F97316" : "1px solid #e5e7eb",
         display: "flex",
@@ -73,11 +88,14 @@ const EquipmentCard = ({
         }}
       >
         {/* Added Assignees Label */}
-        <span style={{ 
-          fontSize: "12px", 
-          fontWeight: 700, 
-          color: "#4B5563" // Match the grey title theme
-        }}>
+        <span
+          style={{
+            fontSize: "12px",
+            fontWeight: 700,
+            color: "#4B5563", // Match the grey title theme
+            display: selected ? "inline" : "none",
+          }}
+        >
           Assignees :
         </span>
 
@@ -90,7 +108,7 @@ const EquipmentCard = ({
                 width: 24,
                 height: 24,
                 borderRadius: "50%",
-                backgroundColor: "#E17E61",
+                backgroundColor: getAvatarColor(name),
                 color: "#fff",
                 fontSize: 10,
                 fontWeight: 700,
@@ -106,20 +124,22 @@ const EquipmentCard = ({
           ))}
           {/* Show count if more than 3 assignees */}
           {item.assigneeNames && item.assigneeNames.length > 3 && (
-            <div style={{
-              width: 24,
-              height: 24,
-              borderRadius: "50%",
-              backgroundColor: "#6B7280",
-              color: "#fff",
-              fontSize: 10,
-              fontWeight: 700,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginLeft: -8,
-              border: "2px solid #fff",
-            }}>
+            <div
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: "50%",
+                backgroundColor: "#6B7280",
+                color: "#fff",
+                fontSize: 10,
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginLeft: -8,
+                border: "2px solid #fff",
+              }}
+            >
               +{item.assigneeNames.length - 3}
             </div>
           )}
@@ -128,8 +148,10 @@ const EquipmentCard = ({
 
       {/* Equipment number */}
       <div style={{ fontSize: 13, fontWeight: 700, color: "#4B5563" }}>
-         {item.detailName} :{" "}
-        <span style={{ fontWeight: 500, color: "#232323", fontSize:"14px" }}>Parameters : {item.paramsCount}</span>
+        {item.detailName} :{" "}
+        <span style={{ fontWeight: 500, color: "#6B7280" }}>
+          Parameters : {item.paramsCount}
+        </span>
       </div>
 
       {/* Footer */}
@@ -142,9 +164,7 @@ const EquipmentCard = ({
           fontSize: 12,
         }}
       >
-        <span style={{ fontWeight: 700, color: percentColor }}>
-          {percent}%
-        </span>
+        <span style={{ fontWeight: 700, color: percentColor }}>{percent}%</span>
         <span style={{ color: "#94a3b8", fontWeight: 500 }}>
           {item.make} · {item.model}
         </span>
@@ -154,11 +174,14 @@ const EquipmentCard = ({
 };
 /* ---------------- Main Component ---------------- */
 export default function LabEquipments() {
-  const { departmentName, searchText } = useOutletContext<{
+  const { departmentName, searchText, selectedAssigneeIds } = useOutletContext<{
     departmentName: string;
     searchText: string;
+    selectedAssigneeIds: number[];
   }>();
+  const assignees = useSelector((state: RootState) => state.assignees.data);
 
+  console.log("cc:",assignees, selectedAssigneeIds);
   const { data: clinic } = useSelector((s: RootState) => s.clinic);
   const events = useSelector((s: RootState) => s.events.data);
 
@@ -168,9 +191,17 @@ export default function LabEquipments() {
   const [selectedRadio, setSelectedRadio] = useState("");
 
   const department = clinic?.department.find(
-    (d) => normalize(d.name) === normalize(departmentName)
+    (d) => normalize(d.name) === normalize(departmentName),
   );
 
+  const assigneeByName = useMemo(() => {
+    const map = new Map<string, number>();
+    assignees.forEach((a) => {
+      map.set(a.emp_name, a.id);
+    });
+    return map;
+  }, [assignees]);
+  
   /* -------- Build equipment → assignees map (MULTIPLE) -------- */
   const assigneeByEquipmentId = useMemo(() => {
     const map: Record<number, string[]> = {};
@@ -198,7 +229,26 @@ export default function LabEquipments() {
       const total = eq.parameters?.length ?? 0;
       const active = eq.parameters?.filter((p) => p.is_active).length ?? 0;
 
-      return eq.equipment_details.map((detail) => ({
+      return eq.equipment_details
+      .filter((detail) => {
+        // no assignee filter selected → show all
+        if (selectedAssigneeIds.length === 0) return true;
+    
+        const assigneeNames =
+          assigneeByEquipmentId[detail.id!] ?? [];
+    
+        // map assignee names → ids
+        const assigneeIdsForEq = assigneeNames
+  .map((name) => assigneeByName.get(name))
+  .filter(Boolean) as number[];
+
+    
+        // show equipment if ANY assignee matches
+        return assigneeIdsForEq.some((id) =>
+          selectedAssigneeIds.includes(id!),
+        );
+      })
+      .map((detail) => ({
         id: detail.id!,
         name: eq.equipment_name,
         detailName: detail.equipment_num,
@@ -206,10 +256,13 @@ export default function LabEquipments() {
         make: detail.make,
         model: detail.model,
         paramsCount: `${formatCount(active)}/${formatCount(total)}`,
-        assigneeNames: assigneeByEquipmentId[detail.id] ?? [],
+        assigneeNames:
+          detail.id !== undefined
+            ? (assigneeByEquipmentId[detail.id] ?? [])
+            : [],
       }));
     });
-  }, [department, assigneeByEquipmentId]);
+  }, [department, assigneeByEquipmentId, selectedAssigneeIds, assigneeByName]);
 
   /* -------- Group by equipment name -------- */
   const groupedEquipments = useMemo(() => {
@@ -277,7 +330,7 @@ export default function LabEquipments() {
           <div
             style={{
               display: "inline-flex",
-              backgroundColor: "#F2F2F2",
+              backgroundColor: "#F8F8F8",
               padding: 4,
               borderRadius: 12,
               gap: 4,
@@ -297,8 +350,7 @@ export default function LabEquipments() {
                   fontWeight: 700,
                   backgroundColor:
                     activeTab === tab ? "#FFFFFF" : "transparent",
-                  color:
-                    activeTab === tab ? "#E17E61" : "#94a3b8",
+                  color: activeTab === tab ? "#E17E61" : "#94a3b8",
                 }}
               >
                 {tab}
@@ -326,9 +378,7 @@ export default function LabEquipments() {
           gap: 24,
         }}
       >
-        <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
-          Equipments
-        </h1>
+        <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Equipments</h1>
 
         <div
           style={{
@@ -351,10 +401,8 @@ export default function LabEquipments() {
                 cursor: "pointer",
                 fontSize: 14,
                 fontWeight: 700,
-                backgroundColor:
-                  activeTab === tab ? "#FFFFFF" : "transparent",
-                color:
-                  activeTab === tab ? "#E17E61" : "#94a3b8",
+                backgroundColor: activeTab === tab ? "#FFFFFF" : "transparent",
+                color: activeTab === tab ? "#E17E61" : "#94a3b8",
               }}
             >
               {tab}
@@ -372,15 +420,14 @@ export default function LabEquipments() {
             maxWidth: selectedEquipment ? 470 : "100%",
             transition: "width 0.25s ease",
             background: "#fff",
-              
             borderRadius: 14,
             overflowY: "auto",
             padding: 16,
-            height: "calc(100vh - 220px)",
+            // height: "calc(100vh - 220px)",
           }}
         >
           {Object.keys(groupedEquipments).map((eqName, groupIndex) => {
-            const borderColors: string | any[] = [ ];
+            const borderColors: string | any[] = [];
             const borderColor = borderColors[groupIndex % borderColors.length];
 
             return (

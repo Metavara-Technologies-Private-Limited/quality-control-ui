@@ -15,6 +15,7 @@ type Props = {
 export default function LabEquipmentLogs({ equipment }: Props) {
   const clinic = useSelector((s: RootState) => s.clinic.data);
 
+  /* -------- Equipment Detail Map -------- */
   const equipmentDetailMap = useMemo(() => {
     const map = new Map<number, string>();
 
@@ -29,10 +30,10 @@ export default function LabEquipmentLogs({ equipment }: Props) {
     return map;
   }, [clinic]);
 
-  const [values, setValues] = useState<any[]>([]);
+  const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  /* -------- Load logs for ALL parameters of this equipment -------- */
+  /* -------- Load logs -------- */
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -41,15 +42,10 @@ export default function LabEquipmentLogs({ equipment }: Props) {
 
         for (const p of equipment.parameters) {
           const { data = [] } = await parameterValueApi.listByParameter(p.id);
-          all.push(
-            ...data.map((v: any) => ({
-              ...v,
-              parameter_name: p.parameter_name,
-            })),
-          );
+          all.push(...data);
         }
 
-        setValues(all);
+        setLogs(all);
       } finally {
         setLoading(false);
       }
@@ -58,19 +54,35 @@ export default function LabEquipmentLogs({ equipment }: Props) {
     load();
   }, [equipment]);
 
-  /* -------- Group by Equipment -------- */
-  const grouped = useMemo(() => {
-    const map: Record<string, any[]> = {};
+  /* -------- Build Parameter Meta -------- */
+  const parameterMeta = useMemo(() => {
+    return equipment.parameters.map((p) => ({
+      name: p.parameter_name,
+      unit: p.config?.unit ?? "-",
+    }));
+  }, [equipment]);
 
-    values.forEach((v) => {
-      const eqNum = equipmentDetailMap.get(v.equipment_details_id) ?? "Unknown";
+  /* -------- Transform Logs → Row-Based Table -------- */
+  const rows = useMemo(() => {
+    const result: any[] = [];
 
-      if (!map[eqNum]) map[eqNum] = [];
-      map[eqNum].push(v);
+    logs.forEach((log, index) => {
+      const paramIndex = index % parameterMeta.length;
+      const param = parameterMeta[paramIndex];
+
+      result.push({
+        id: log.id,
+        date: new Date(log.created_at).toLocaleString(),
+        equipment:
+          equipmentDetailMap.get(log.equipment_details_id) ?? "Unknown",
+        parameter: param.name,
+        unit: param.unit,
+        value: log.content,
+      });
     });
 
-    return map;
-  }, [values, equipmentDetailMap]);
+    return result;
+  }, [logs, parameterMeta, equipmentDetailMap]);
 
   if (loading) {
     return (
@@ -80,7 +92,7 @@ export default function LabEquipmentLogs({ equipment }: Props) {
     );
   }
 
-  if (!values.length) {
+  if (!rows.length) {
     return (
       <Box sx={{ textAlign: "center", py: 6, color: "#94a3b8" }}>
         No logs found
@@ -89,63 +101,44 @@ export default function LabEquipmentLogs({ equipment }: Props) {
   }
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      {Object.entries(grouped).map(([eqNum, rows]) => (
-        <Box
-          key={eqNum}
-          sx={{
-            border: "1px solid #e5e7eb",
-            borderRadius: "12px",
-            background: "#fff",
-            overflow: "hidden",
-          }}
-        >
-          {/* Header */}
-          <Box
-            sx={{
-              px: 2,
-              py: 1.5,
-              fontWeight: 700,
-              fontSize: "14px",
-              background: "#f9fafb",
-              borderBottom: "1px solid #e5e7eb",
-            }}
-          >
-            {eqNum}
-          </Box>
+    <Box
+      sx={{
+        border: "1px solid #e5e7eb",
+        borderRadius: "12px",
+        background: "#fff",
+        overflow: "hidden",
+      }}
+    >
+      <Box sx={{ maxHeight: "430px", overflowY: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ background: "#fafafa" }}>
+              <th style={th}>Date & Time</th>
+              <th style={th}>Equipment</th>
+              <th style={th}>Parameter</th>
+              <th style={th}>Unit</th>
+              <th style={th}>Value</th>
+            </tr>
+          </thead>
 
-          {/* Table */}
-          <Box
-  sx={{
-    maxHeight: "260px", // 👈 height for ~5 rows
-    overflowY: "auto",
-  }}
->
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#fafafa" }}>
-                <th style={th}>Parameter</th>
-                <th style={th}>Value</th>
-                <th style={th}>Recorded At</th>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id}>
+                <td style={td}>{r.date}</td>
+                <td style={td}>{r.equipment}</td>
+                <td style={td}>{r.parameter}</td>
+                <td style={td}>{r.unit}</td>
+                <td style={td}>{r.value}</td>
               </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id}>
-                  <td style={td}>{r.parameter_name}</td>
-                  <td style={td}>{r.content}</td>
-                  <td style={td}>{new Date(r.created_at).toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </Box>
-        </Box>
-      ))}
+            ))}
+          </tbody>
+        </table>
+      </Box>
     </Box>
   );
 }
 
+/* -------- Styles -------- */
 const th: CSSProperties = {
   textAlign: "left",
   padding: "10px",
@@ -153,6 +146,7 @@ const th: CSSProperties = {
   fontWeight: 600,
   color: "#4B5563",
   borderBottom: "1px solid #E5E7EB",
+  whiteSpace: "nowrap",
 };
 
 const td: CSSProperties = {
@@ -160,4 +154,5 @@ const td: CSSProperties = {
   fontSize: "13px",
   color: "#374151",
   borderBottom: "1px solid #F1F5F9",
+  whiteSpace: "nowrap",
 };

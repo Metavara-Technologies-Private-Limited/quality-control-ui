@@ -1,12 +1,12 @@
 // pages/Quality_Control/QcLab/Department/LabEnvironmentForm.tsx
 
-import { Box, TextField } from "@mui/material";
+import { Box } from "@mui/material";
 import { useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import { environmentParameterValueApi } from "@/services/api";
 import ParameterInput from "./components/ParameterInput";
 import LabEnvironmentLogs from "./LabEnvironmentLogs";
-import LabEnvironmentComplianceChart from "./LabEnvironmentComplianceChart";
+// import LabEnvironmentComplianceChart from "./LabEnvironmentComplianceChart";
 import dayjs, { Dayjs } from "dayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -26,11 +26,11 @@ const getRangeStatusColor = (value: string, cfg: any) => {
   return "#16a34a";
 };
 
-const getLocalDateTime = () => {
-  const now = new Date();
-  const tzOffset = now.getTimezoneOffset() * 60000;
-  return new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
-};
+// const getLocalDateTime = () => {
+//   const now = new Date();
+//   const tzOffset = now.getTimezoneOffset() * 60000;
+//   return new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
+// };
 
 /* ---------------- Component ---------------- */
 
@@ -40,13 +40,14 @@ type Props = {
     environment_name: string;
     parameters: any[];
   };
+  onSaved: () => void; // ✅ ADD
 };
 
-export default function LabEnvironmentForm({ environment }: Props) {
+export default function LabEnvironmentForm({ environment, onSaved }: Props) {
   const [activeTab, setActiveTab] = useState<"Form" | "Logs">("Form");
   const [values, setValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  // const [refreshKey, setRefreshKey] = useState(0);
 const [logDateTime, setLogDateTime] = useState<Dayjs | null>(dayjs());
 
   const setValue = (k: string, v: string) =>
@@ -78,7 +79,8 @@ log_time: logDateTime?.toISOString(),
 
       toast.success("Environment logs saved");
       setValues({});
-      setRefreshKey((k) => k + 1);
+      // setRefreshKey((k) => k + 1);
+      onSaved();
     } catch {
       toast.error("Failed to save logs");
     } finally {
@@ -94,11 +96,10 @@ log_time: logDateTime?.toISOString(),
       <div
         style={{
           display: "inline-flex",
-          backgroundColor: "#F2F2F2",
-          padding: "4px",
-          borderRadius: "12px",
-          gap: "4px",
           width: "fit-content",
+          background: "#F2F2F2",
+          padding: 4,
+          borderRadius: 12,
         }}
       >
         {["Form", "Logs"].map((t) => (
@@ -106,14 +107,12 @@ log_time: logDateTime?.toISOString(),
             key={t}
             onClick={() => setActiveTab(t as any)}
             style={{
-              width: "120px",
-              height: "36px",
-              borderRadius: "10px",
+              width: 120,
+              height: 36,
+              borderRadius: 10,
               border: "none",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "700",
-              backgroundColor: activeTab === t ? "#FFFFFF" : "transparent",
+              fontWeight: 700,
+              background: activeTab === t ? "#fff" : "transparent",
               color: activeTab === t ? "#E17E61" : "#94a3b8",
             }}
           >
@@ -258,13 +257,13 @@ log_time: logDateTime?.toISOString(),
             </button>
           </div>
 
-          <Box sx={{ mt: 3 }}>
+          {/* <Box sx={{ mt: 3 }}>
             <LabEnvironmentComplianceChart
               key={refreshKey}
               environmentId={environment.id}
               parameters={environment.parameters}
             />
-          </Box>
+          </Box> */}
         </Box>
       )}
     </Box>
