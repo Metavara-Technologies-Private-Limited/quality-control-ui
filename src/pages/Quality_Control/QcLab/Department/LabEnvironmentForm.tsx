@@ -7,6 +7,10 @@ import { environmentParameterValueApi } from "@/services/api";
 import ParameterInput from "./components/ParameterInput";
 import LabEnvironmentLogs from "./LabEnvironmentLogs";
 import LabEnvironmentComplianceChart from "./LabEnvironmentComplianceChart";
+import dayjs, { Dayjs } from "dayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 
 /* ---------------- Utils ---------------- */
 
@@ -41,9 +45,9 @@ type Props = {
 export default function LabEnvironmentForm({ environment }: Props) {
   const [activeTab, setActiveTab] = useState<"Form" | "Logs">("Form");
   const [values, setValues] = useState<Record<string, string>>({});
-  const [logDateTime, setLogDateTime] = useState(getLocalDateTime());
   const [saving, setSaving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+const [logDateTime, setLogDateTime] = useState<Dayjs | null>(dayjs());
 
   const setValue = (k: string, v: string) =>
     setValues((p) => ({ ...p, [k]: v }));
@@ -67,7 +71,7 @@ export default function LabEnvironmentForm({ environment }: Props) {
             environment: environment.id,
             environment_parameter: p.id,
             content: value,
-            log_time: new Date(logDateTime).toISOString(),
+log_time: logDateTime?.toISOString(),
           });
         }),
       );
@@ -117,7 +121,7 @@ export default function LabEnvironmentForm({ environment }: Props) {
       {activeTab === "Logs" ? (
         <LabEnvironmentLogs environment={environment} />
       ) : (
-        <Box sx={{ border: "1px solid #e5e7eb", borderRadius: 12, p: 3 }}>
+        <Box sx={{ border: "1px solid #e5e7eb", borderRadius: 2, p: 2 }}>
           {/* PARAMETERS GRID */}
           <Box
             sx={{
@@ -169,16 +173,47 @@ export default function LabEnvironmentForm({ environment }: Props) {
           </Box>
 
           {/* DATE TIME */}
-          <Box sx={{ mt: 3, width: 260 }}>
-            <TextField
-              fullWidth
-              type="datetime-local"
-              label="Date & Time"
-              value={logDateTime}
-              onChange={(e) => setLogDateTime(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Box>
+<Box sx={{ mt: 3, width: 260 }}>
+  <LocalizationProvider dateAdapter={AdapterDayjs}>
+    <DateTimePicker
+      label="Date & Time"
+      value={logDateTime}
+      onChange={(newValue) => setLogDateTime(newValue)}
+      slotProps={{
+        textField: {
+          fullWidth: true,
+          InputLabelProps: { shrink: true },
+          sx: {
+            "& .MuiOutlinedInput-root": {
+              height: 50,
+              fontSize: 16,
+              fontWeight: 500,
+              borderRadius: "10px",
+              backgroundColor: "#FFFFFF",
+            },
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#9e9e9e",
+              borderWidth: "1.5px",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#232323",
+            },
+            "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#828282",
+            },
+            "& .MuiInputLabel-root": {
+              color: "#232323",
+            },
+            "& .MuiInputLabel-root.Mui-focused": {
+              color: "#232323",
+            },
+          },
+        },
+      }}
+    />
+  </LocalizationProvider>
+</Box>
+
 
           {/* FOOTER */}
           <div
