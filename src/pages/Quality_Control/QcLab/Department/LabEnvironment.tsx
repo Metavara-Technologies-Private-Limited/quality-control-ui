@@ -1,19 +1,14 @@
-// pages/Quality_Control/QcLab/Department/LabEnvironment.tsx
-
 import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useOutletContext } from "react-router-dom";
 import { RootState } from "@/store";
-import LabPlanPage from "./LabPlanPage";
 import LabEnvironmentForm from "./LabEnvironmentForm";
 
 /* ---------------- Utils ---------------- */
-
 const normalize = (v: string) => v?.replace(/\s+/g, "").toLowerCase();
 const formatCount = (v: number) => String(v).padStart(2, "0");
 
-/* ---------------- Card ---------------- */
-
+/* ---------------- Card Component ---------------- */
 const EnvironmentCard = ({
   name,
   parameters,
@@ -34,34 +29,48 @@ const EnvironmentCard = ({
     <div
       onClick={onClick}
       style={{
-        padding: "16px",
-        borderRadius: "12px",
+        position: "relative",
+        padding: 16,
+        borderRadius: 12,
         cursor: "pointer",
-        backgroundColor: selected ? "#fef3f2" : "#fff",
-        border: selected ? "2px solid #f97316" : "1px solid #e5e7eb",
+        backgroundColor: "#FFFFFF",
+        border: selected ? "1px solid #F97316" : "1.5px solid #E5E7EB",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        transition: "all 0.2s ease",
+        boxShadow: "0px 2px 4px rgba(0,0,0,0.02)",
+        width: "400px", // Standardized width
+        height: "86px", // Standardized height
+        boxSizing: "border-box"
       }}
     >
-      <div style={{ fontSize: "14px", fontWeight: 700 }}>{name}</div>
+      <div style={{ fontSize: "13px", fontWeight: 700, color: "#4B5563" }}>
+        {name} :{" "}
+        <span style={{ fontWeight: 500, color: "#232323", fontSize: "14px" }}>
+          Parameters : {formatCount(active)}/{formatCount(total)}
+        </span>
+      </div>
 
       <div
         style={{
-          marginTop: 12,
+          marginTop: "auto",
           display: "flex",
           justifyContent: "space-between",
+          alignItems: "center",
           fontSize: 12,
         }}
       >
         <span style={{ fontWeight: 700, color: percentColor }}>{percent}%</span>
-        <span style={{ color: "#94a3b8" }}>
-          {formatCount(active)}/{formatCount(total)} Params
+        <span style={{ color: "#94a3b8", fontWeight: 500 }}>
+          {total} parameters
         </span>
       </div>
     </div>
   );
 };
 
-/* ---------------- Main ---------------- */
-
+/* ---------------- Main Component ---------------- */
 export default function LabEnvironment() {
   const { departmentName, searchText } = useOutletContext<{
     departmentName: string;
@@ -69,8 +78,6 @@ export default function LabEnvironment() {
   }>();
 
   const { data: clinic } = useSelector((s: RootState) => s.clinic);
-
-  const [activeTab, setActiveTab] = useState<"To-Do" | "Plan">("To-Do");
   const [selectedEnv, setSelectedEnv] = useState<any>(null);
 
   const department = clinic?.department.find(
@@ -86,10 +93,18 @@ export default function LabEnvironment() {
   }, [department, searchText]);
 
   return (
-    <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
-      {/* ---------- HEADER ---------- */}
-      <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
-        <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
+    <div style={{ fontFamily: "'Montserrat', sans-serif", padding: "12px", backgroundColor: "#F8F9FA", minHeight: "100vh" }}>
+      
+      {/* HEADER: Only To-Do remains */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          marginBottom: 24,
+          gap: 24,
+        }}
+      >
+        <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: "#232323" }}>
           Environment
         </h1>
 
@@ -99,53 +114,73 @@ export default function LabEnvironment() {
             backgroundColor: "#F2F2F2",
             padding: 4,
             borderRadius: 12,
-            gap: 4,
           }}
         >
-          {["To-Do", "Plan"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab as any)}
-              style={{
-                width: 166,
-                height: 36,
-                borderRadius: 10,
-                border: "none",
-                cursor: "pointer",
-                fontWeight: 700,
-                backgroundColor: activeTab === tab ? "#fff" : "transparent",
-                color: activeTab === tab ? "#E17E61" : "#94a3b8",
-              }}
-            >
-              {tab}
-            </button>
-          ))}
+          <button
+            style={{
+              width: 166,
+              height: 36,
+              borderRadius: 10,
+              border: "none",
+              cursor: "default",
+              fontSize: 14,
+              fontWeight: 700,
+              backgroundColor: "#FFFFFF",
+              color: "#E17E61",
+              boxShadow: "0px 2px 4px rgba(0,0,0,0.05)"
+            }}
+          >
+            To-Do
+          </button>
         </div>
       </div>
 
-      {/* ---------- BODY ---------- */}
+      {/* BODY */}
       <div style={{ display: "flex", gap: 20 }}>
-        {/* LEFT */}
+        
+        {/* LEFT PANEL */}
         <div
           style={{
-            width: selectedEnv ? 520 : "100%",
-            transition: "width 0.25s ease",
+            flex: selectedEnv ? "0 0 470px" : "1",
+            maxWidth: selectedEnv ? 470 : "100%",
+            transition: "all 0.25s ease",
             background: "#fff",
-            border: "1px solid #e5e7eb",
             borderRadius: 14,
-            padding: 16,
-            height: "calc(100vh - 220px)",
+            border: "1px solid #E5E7EB",
             overflowY: "auto",
+            padding: 16,
+            height: "calc(100vh - 200px)",
+               fontWeight:"700",
+                fontSize:"20px"
           }}
         >
-          {activeTab === "To-Do" ? (
+          <div
+            style={{
+              marginBottom: 20,
+              backgroundColor: "#F8F8F8",
+              padding: "16px",
+              borderRadius: "12px",
+            }}
+          >
+            <h3
+              style={{
+                marginBottom: 16,
+                fontSize: 16,
+                fontWeight: 700,
+                color: "#4B5563",
+              }}
+            >
+              Environment
+            </h3>
+
             <div
               style={{
                 display: "grid",
                 gridTemplateColumns: selectedEnv
                   ? "1fr"
-                  : "repeat(auto-fill,minmax(320px,1fr))",
-                gap: 12,
+                  : "repeat(auto-fill, minmax(400px, 1fr))",
+                gap: 16,
+             
               }}
             >
               {environments.map((env) => (
@@ -158,14 +193,12 @@ export default function LabEnvironment() {
                 />
               ))}
             </div>
-          ) : (
-            <LabPlanPage />
-          )}
+          </div>
         </div>
 
-        {/* RIGHT */}
+        {/* RIGHT PANEL: Form Details */}
         {selectedEnv && (
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, backgroundColor: "#FFFFFF", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "20px", height: "fit-content" }}>
             <LabEnvironmentForm environment={selectedEnv} />
           </div>
         )}

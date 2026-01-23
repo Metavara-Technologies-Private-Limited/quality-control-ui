@@ -51,7 +51,7 @@ const EquipmentCard = ({
         padding: 16,
         borderRadius: 12,
         cursor: "pointer",
-        backgroundColor: "#ffffff",
+        backgroundColor: "#FFFFFF",
         // Logic for selected state colors
         border: selected ? "2px solid #F97316" : "1px solid #e5e7eb",
         display: "flex",
@@ -129,7 +129,7 @@ const EquipmentCard = ({
       {/* Equipment number */}
       <div style={{ fontSize: 13, fontWeight: 700, color: "#4B5563" }}>
          {item.detailName} :{" "}
-        <span style={{ fontWeight: 500, color: "#6B7280" }}>Parameters : {item.paramsCount}</span>
+        <span style={{ fontWeight: 500, color: "#232323", fontSize:"14px" }}>Parameters : {item.paramsCount}</span>
       </div>
 
       {/* Footer */}
@@ -333,7 +333,7 @@ export default function LabEquipments() {
         <div
           style={{
             display: "inline-flex",
-            backgroundColor: "#F2F2F2",
+            backgroundColor: "#F8F8F8",
             padding: 4,
             borderRadius: 12,
             gap: 4,
@@ -368,8 +368,8 @@ export default function LabEquipments() {
         {/* LEFT */}
         <div
           style={{
-            width: selectedEquipment ? 520 : "100%",
-            maxWidth: selectedEquipment ? 520 : "100%",
+            width: selectedEquipment ? 470 : "100%",
+            maxWidth: selectedEquipment ? 470 : "100%",
             transition: "width 0.25s ease",
             background: "#fff",
               
@@ -388,7 +388,7 @@ export default function LabEquipments() {
                 key={eqName}
                 style={{
                   marginBottom: 20,
-                  backgroundColor: "#F2F2F2",
+                  backgroundColor: "#F8F8F8",
                   padding: "12px",
                   borderRadius: "12px",
                   border: `2px solid ${borderColor}`,

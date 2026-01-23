@@ -94,9 +94,11 @@ log_time: logDateTime?.toISOString(),
       <div
         style={{
           display: "inline-flex",
-          background: "#F2F2F2",
-          padding: 4,
-          borderRadius: 12,
+          backgroundColor: "#F2F2F2",
+          padding: "4px",
+          borderRadius: "12px",
+          gap: "4px",
+          width: "fit-content",
         }}
       >
         {["Form", "Logs"].map((t) => (
@@ -104,12 +106,14 @@ log_time: logDateTime?.toISOString(),
             key={t}
             onClick={() => setActiveTab(t as any)}
             style={{
-              width: 120,
-              height: 36,
-              borderRadius: 10,
+              width: "120px",
+              height: "36px",
+              borderRadius: "10px",
               border: "none",
-              fontWeight: 700,
-              background: activeTab === t ? "#fff" : "transparent",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "700",
+              backgroundColor: activeTab === t ? "#FFFFFF" : "transparent",
               color: activeTab === t ? "#E17E61" : "#94a3b8",
             }}
           >
