@@ -323,18 +323,29 @@ const EquipmentPage = () => {
         onClose={() => setAnchorEl(null)}
       >
         {selectedItem?.is_active ? (
-          <MenuItem onClick={() => setDialogs({ ...dialogs, inactive: true })}>
-            Inactivate
+<MenuItem
+      onClick={() => {
+        setAnchorEl(null); 
+        setDialogs({ ...dialogs, inactive: true });
+      }}
+    >            Inactivate
           </MenuItem>
         ) : (
-          <MenuItem onClick={() => setDialogs({ ...dialogs, active: true })}>
-            Activate
+<MenuItem
+      onClick={() => {
+        setAnchorEl(null); 
+        setDialogs({ ...dialogs, active: true });
+      }}
+    >            Activate
           </MenuItem>
         )}
         <MenuItem
-          sx={{ color: "error.main" }}
-          onClick={() => setDialogs({ ...dialogs, delete: true })}
-        >
+    sx={{ color: "error.main" }}
+    onClick={() => {
+      setAnchorEl(null); 
+      setDialogs({ ...dialogs, delete: true });
+    }}
+  >
           Delete
         </MenuItem>
       </Menu>
