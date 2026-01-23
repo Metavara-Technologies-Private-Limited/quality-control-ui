@@ -21,7 +21,12 @@ const ConfigurationLayout = () => {
   const isEnvironment = location.pathname.includes("/configuration/environment");
 
   // Define showHeader (logic: show if we are in one of the two main config sections)
-  const showHeader = isEquipment || isEnvironment;
+  const pathname = location.pathname;
+
+// show tabs ONLY on exact list pages
+const showHeader =
+  pathname === "/configuration/equipment" ||
+  pathname === "/configuration/environment";
 
   return (
     <Box sx={{ p: 3 }}>

@@ -8,8 +8,10 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  IconButton,
 } from "@mui/material";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+// import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import TurnLeftIcon from "@mui/icons-material/TurnLeft";
 import { useNavigate, useLocation } from "react-router-dom";
 import { EquipmentDetail, Parameter } from "@/types";
 import { useSelector } from "react-redux";
@@ -58,7 +60,7 @@ const ViewEquipment = () => {
   const location = useLocation();
   const { data: clinic } = useSelector((state: RootState) => state.clinic);
 
-  const isEnvironment = location.pathname.includes("/environment");
+  const isEnvironment = Boolean(location.state?.environmentId);
 
   const entityId = isEnvironment
     ? location.state?.environmentId
@@ -92,7 +94,10 @@ const ViewEquipment = () => {
     if (!environment || !department) return null;
 
     name = environment.environment_name;
-    parameters = environment.parameters ?? [];
+    parameters = (environment.parameters ?? []).map(p => ({
+      ...p,
+      parameter_name: p.env_parameter_name ?? "",
+    }));
     departmentName = department.name;
   } else {
     const department = clinic.department.find((d) =>
@@ -112,8 +117,8 @@ const ViewEquipment = () => {
   return (
     <Box sx={{ p: 3, background: "#FFFFFF", minHeight: "100vh" }}>
       {/* Header */}
-      <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-        <ArrowBackIcon
+      <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1 }}>
+        {/* <ArrowBackIcon
           onClick={() =>
             navigate(
               isEnvironment
@@ -128,7 +133,29 @@ const ViewEquipment = () => {
             borderRadius: "8px",
             padding: "4px",
           }}
-        />
+        /> */}
+        <IconButton
+          onClick={() =>
+            navigate(
+              isEnvironment
+                ? "/configuration/environment"
+                : "/configuration/equipment",
+            )
+          }       
+          sx={{
+            width: 24,
+            height: 24,
+            padding: "10px",
+            opacity: 1,
+            color: "#374151",
+            borderRadius: 1,
+            mr: 1,
+            boxShadow: "3px 3px 6px rgba(0,0,0,0.2)",
+            backgroundColor: "#fff",
+          }}
+        >
+          <TurnLeftIcon sx={{ fontSize: 24, padding: "3px" }} />
+        </IconButton>
         <Typography sx={{ fontWeight: 700, fontSize: 20 }}>
           {isEnvironment ? "Environment" : "Equipments"}
         </Typography>

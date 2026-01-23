@@ -51,21 +51,34 @@ export default function LabEnvironmentLogs({ environment }: Props) {
     }));
   }, [environment]);
 
+  const parameterMetaMap = useMemo(() => {
+    const map = new Map<number, { name: string; unit: string }>();
+  
+    environment.parameters.forEach((p) => {
+      map.set(p.id, {
+        name: p.env_parameter_name,
+        unit: p.config?.unit ?? "-",
+      });
+    });
+  
+    return map;
+  }, [environment]);  
+
   /* -------- Build Row-Based Table -------- */
   const rows = useMemo(() => {
     if (!parameterMeta.length) return [];
 
-    return logs.map((log, index) => {
-      const param = parameterMeta[index % parameterMeta.length];
-
+    return logs.map((log) => {
+      const param = parameterMetaMap.get(log.environment_parameter_id);
+    
       return {
         id: log.id,
         date: dayjs(log.log_time ?? log.created_at).format("DD/MM/YYYY HH:mm"),
-        parameter: param.name,
-        unit: param.unit,
+        parameter: param?.name ?? "-",
+        unit: param?.unit ?? "-",
         value: log.content,
       };
-    });
+    });    
   }, [logs, parameterMeta]);
 
   if (loading) {

@@ -63,24 +63,40 @@ export default function LabEquipmentLogs({ equipment }: Props) {
     }));
   }, [equipment]);
 
+  const parameterMetaMap = useMemo(() => {
+    const map = new Map<number, { name: string; unit: string }>();
+  
+    equipment.parameters.forEach((p) => {
+      map.set(p.id, {
+        name: p.parameter_name,
+        unit: p.config?.unit ?? "-",
+      });
+    });
+  
+    return map;
+  }, [equipment]);  
+
   /* -------- Transform Logs → Row-Based Table -------- */
   const rows = useMemo(() => {
     const result: any[] = [];
 
-    logs.forEach((log, index) => {
-      const paramIndex = index % parameterMeta.length;
-      const param = parameterMeta[paramIndex];
-
-      result.push({
-        id: log.id,
-        date: dayjs(log.created_at).format("DD/MM/YYYY HH:mm"),
-        equipment:
-          equipmentDetailMap.get(log.equipment_details_id) ?? "Unknown",
-        parameter: param.name,
-        unit: param.unit,
-        value: log.content,
-      });
-    });
+    [...logs]
+      .sort(
+        (a, b) => dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf(),
+      )
+      .forEach((log) => {
+        const param = parameterMetaMap.get(log.parameter_id);
+      
+        result.push({
+          id: log.id,
+          date: dayjs(log.created_at).format("DD/MM/YYYY HH:mm"),
+          equipment:
+            equipmentDetailMap.get(log.equipment_details_id) ?? "Unknown",
+          parameter: param?.name ?? "-",
+          unit: param?.unit ?? "-",
+          value: log.content,
+        });
+      });      
 
     return result;
   }, [logs, parameterMeta, equipmentDetailMap]);

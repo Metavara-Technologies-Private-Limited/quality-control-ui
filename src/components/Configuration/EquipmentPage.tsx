@@ -273,7 +273,7 @@ const EquipmentPage = () => {
                       onClick={() =>
                         navigate(
                           item.entityType === "environment"
-                            ? "/configuration/environment/add-parameter"
+                            ? "/configuration/environment/view"
                             : "/configuration/equipment/view",
                           {
                             state:
@@ -304,19 +304,6 @@ const EquipmentPage = () => {
                         width: 32,
                         height: 32,
                         border: isInactive
-<<<<<<< Updated upstream
-                          ? "2px solid #ffffff"
-                          : "1px solid #E5E7EB",
-                        borderRadius: "8px",
-                        backgroundColor: isInactive
-                          ? "#505050"
-                          : "2px solid #232323",
-                        "&:hover": {
-                          backgroundColor: isInactive
-                            ? "#000000ff"
-                            : "rgba(0, 0, 0, 0.04)",
-                        },
-=======
                           ? "1px solid #505050"
                           : "1px solid #E5E7EB",
                         borderRadius: "8px",
@@ -328,7 +315,6 @@ const EquipmentPage = () => {
                           color: isInactive ? "#0c0404" : "inherit",
                         },
                         color: isInactive ? "#ffffff" : "inherit",
->>>>>>> Stashed changes
                       }}
                     >
                       <MoreHoriz
