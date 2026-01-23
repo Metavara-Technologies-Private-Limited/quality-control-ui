@@ -7,10 +7,21 @@ import LabEquipmentForm from "./LabEquipmentForm";
 import LabPlanPage from "./LabPlanPage";
 
 const avatarColors = [
-  "#FF5630", "#FF7452", "#FF8B00", "#FFC400",
-  "#36B37E", "#00B8D9", "#2684FF", "#6554C0",
-  "#8777D9", "#998DD9", "#0052CC", "#172B4D",
-  "#42526E", "#6B778C", "#091E42",
+  "#FF5630",
+  "#FF7452",
+  "#FF8B00",
+  "#FFC400",
+  "#36B37E",
+  "#00B8D9",
+  "#2684FF",
+  "#6554C0",
+  "#8777D9",
+  "#998DD9",
+  "#0052CC",
+  "#172B4D",
+  "#42526E",
+  "#6B778C",
+  "#091E42",
 ];
 
 const getAvatarColor = (name: string) => {
@@ -181,7 +192,6 @@ export default function LabEquipments() {
   }>();
   const assignees = useSelector((state: RootState) => state.assignees.data);
 
-  console.log("cc:",assignees, selectedAssigneeIds);
   const { data: clinic } = useSelector((s: RootState) => s.clinic);
   const events = useSelector((s: RootState) => s.events.data);
 
@@ -201,7 +211,7 @@ export default function LabEquipments() {
     });
     return map;
   }, [assignees]);
-  
+
   /* -------- Build equipment → assignees map (MULTIPLE) -------- */
   const assigneeByEquipmentId = useMemo(() => {
     const map: Record<number, string[]> = {};
@@ -225,43 +235,42 @@ export default function LabEquipments() {
   const rawEquipmentData = useMemo(() => {
     if (!department) return [];
 
-    return department.equipments.flatMap((eq) => {
-      const total = eq.parameters?.length ?? 0;
-      const active = eq.parameters?.filter((p) => p.is_active).length ?? 0;
+    return department.equipments
+      .filter((eq) => eq.is_active)
+      .flatMap((eq) => {
+        const total = eq.parameters?.length ?? 0;
+        const active = eq.parameters?.filter((p) => p.is_active).length ?? 0;
 
-      return eq.equipment_details
-      .filter((detail) => {
-        // no assignee filter selected → show all
-        if (selectedAssigneeIds.length === 0) return true;
-    
-        const assigneeNames =
-          assigneeByEquipmentId[detail.id!] ?? [];
-    
-        // map assignee names → ids
-        const assigneeIdsForEq = assigneeNames
-  .map((name) => assigneeByName.get(name))
-  .filter(Boolean) as number[];
+        return eq.equipment_details
+          .filter((detail) => {
+            // no assignee filter selected → show all
+            if (selectedAssigneeIds.length === 0) return true;
 
-    
-        // show equipment if ANY assignee matches
-        return assigneeIdsForEq.some((id) =>
-          selectedAssigneeIds.includes(id!),
-        );
-      })
-      .map((detail) => ({
-        id: detail.id!,
-        name: eq.equipment_name,
-        detailName: detail.equipment_num,
-        parameters: eq.parameters || [],
-        make: detail.make,
-        model: detail.model,
-        paramsCount: `${formatCount(active)}/${formatCount(total)}`,
-        assigneeNames:
-          detail.id !== undefined
-            ? (assigneeByEquipmentId[detail.id] ?? [])
-            : [],
-      }));
-    });
+            const assigneeNames = assigneeByEquipmentId[detail.id!] ?? [];
+
+            // map assignee names → ids
+            const assigneeIdsForEq = assigneeNames
+              .map((name) => assigneeByName.get(name))
+              .filter(Boolean) as number[];
+            // show equipment if ANY assignee matches
+            return assigneeIdsForEq.some((id) =>
+              selectedAssigneeIds.includes(id!),
+            );
+          })
+          .map((detail) => ({
+            id: detail.id!,
+            name: eq.equipment_name,
+            detailName: detail.equipment_num,
+            parameters: eq.parameters || [],
+            make: detail.make,
+            model: detail.model,
+            paramsCount: `${formatCount(active)}/${formatCount(total)}`,
+            assigneeNames:
+              detail.id !== undefined
+                ? (assigneeByEquipmentId[detail.id] ?? [])
+                : [],
+          }));
+      });
   }, [department, assigneeByEquipmentId, selectedAssigneeIds, assigneeByName]);
 
   /* -------- Group by equipment name -------- */

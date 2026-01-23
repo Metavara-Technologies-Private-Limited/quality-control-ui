@@ -301,11 +301,27 @@ const EquipmentPage = () => {
                       sx={{
                         width: 32,
                         height: 32,
-                        border: "1px solid #E5E7EB",
+                        border: isInactive
+                          ? "2px solid #ffffff"
+                          : "1px solid #E5E7EB",
                         borderRadius: "8px",
+                        backgroundColor: isInactive
+                          ? "#505050"
+                          : "2px solid #232323",
+                        "&:hover": {
+                          backgroundColor: isInactive
+                            ? "#000000ff"
+                            : "rgba(0, 0, 0, 0.04)",
+                        },
                       }}
                     >
-                      <MoreHoriz fontSize="small" />
+                      <MoreHoriz
+                        fontSize="small"
+                        sx={{
+                          color: isInactive ? "#ffffff" : "inherit",
+                          fontWeight: isInactive ? 700 : 400,
+                        }}
+                      />
                     </IconButton>
                   </Box>
                 </Box>
@@ -373,6 +389,9 @@ const EquipmentPage = () => {
         onClose={() => setDialogs({ ...dialogs, inactive: false })}
       >
         <DialogTitle>Confirm Inactivate</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to inactivate?</Typography>
+        </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogs({ ...dialogs, inactive: false })}>
             Cancel
@@ -388,6 +407,9 @@ const EquipmentPage = () => {
         onClose={() => setDialogs({ ...dialogs, active: false })}
       >
         <DialogTitle>Confirm Activate</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to activate?</Typography>
+        </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogs({ ...dialogs, active: false })}>
             Cancel
