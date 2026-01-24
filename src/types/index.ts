@@ -93,6 +93,7 @@ export interface ParameterContent {
   is_deleted?: boolean;
   data_type?: string;
   field_type?: string;
+  is_active?: boolean;
   integer_value?: number | string;
   default_value?: number | string;
   text_type?: string;

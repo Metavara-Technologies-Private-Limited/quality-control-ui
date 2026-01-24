@@ -270,19 +270,22 @@ const EquipmentPage = () => {
                     {/* View Icon Button */}
                     <IconButton
                       disabled={isInactive}
-                      onClick={() =>
-                        navigate(
-                          item.entityType === "environment"
-                            ? "/configuration/environment/view"
-                            : "/configuration/equipment/view",
-                          {
-                            state:
-                              item.entityType === "environment"
-                                ? { environmentId: item.id }
-                                : { equipmentId: item.id },
-                          },
-                        )
-                      }
+                      onClick={() => {
+  if (item.entityType === "environment") {
+    navigate("/configuration/environment/add-parameter", {
+      state: {
+        environmentId: item.id,
+        departmentId: item.department.id,
+        departmentName: item.department.name,
+      },
+    });
+  } else {
+    navigate("/configuration/equipment/view", {
+      state: { equipmentId: item.id },
+    });
+  }
+}}
+
                       sx={{
                         width: 32,
                         height: 32,

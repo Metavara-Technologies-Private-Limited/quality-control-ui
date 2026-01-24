@@ -45,6 +45,8 @@ const AddEnvironmentParameter = () => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+const [toggleAction, setToggleAction] =
+  useState<"activate" | "inactivate" | null>(null);
 
   /* -------------------- MENU HANDLERS -------------------- */
 
@@ -58,8 +60,11 @@ const AddEnvironmentParameter = () => {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
-    setMenuIndex(null);
   };
+const resetMenuState = () => {
+  setAnchorEl(null);
+  setMenuIndex(null);
+};
 
   const handleEditParameter = () => {
     if (menuIndex === null) return;
@@ -79,25 +84,32 @@ const AddEnvironmentParameter = () => {
     setParameters((prev) => prev.filter((_, i) => i !== menuIndex));
     toast.info("Parameter deleted");
     setDeleteDialogOpen(false);
+    resetMenuState();
   };
 
   /* -------------------- PARAMETER ADD -------------------- */
 
-  const handleAddParameter = (data: any) => {
-    if (editingIndex !== null) {
-      setParameters((prev) =>
-        prev.map((p, i) => (i === editingIndex ? data : p)),
-      );
-      toast.success("Parameter updated");
-    } else {
-      setParameters((prev) => [...prev, data]);
-      toast.success("Parameter added");
-    }
-
-    setOpenParamPopup(false);
-    setParamToEdit(null);
-    setEditingIndex(null);
+const handleAddParameter = (data: any) => {
+  const paramWithStatus = {
+    ...data,
+    is_active: data.is_active ?? true, // 👈 DEFAULT ACTIVE
   };
+
+  if (editingIndex !== null) {
+    setParameters((prev) =>
+      prev.map((p, i) => (i === editingIndex ? paramWithStatus : p)),
+    );
+    toast.success("Parameter updated");
+  } else {
+    setParameters((prev) => [...prev, paramWithStatus]);
+    toast.success("Parameter added");
+  }
+
+  setOpenParamPopup(false);
+  setParamToEdit(null);
+  setEditingIndex(null);
+};
+
 
   /* -------------------- FINAL SAVE -------------------- */
 
@@ -226,6 +238,9 @@ const AddEnvironmentParameter = () => {
           mt: 4,
         }}
       >
+
+
+
         <Typography sx={{ fontWeight: 700, fontSize: "16px" }}>
           Parameters
         </Typography>
@@ -236,6 +251,7 @@ const AddEnvironmentParameter = () => {
             setParamToEdit(null);
             setEditingIndex(null);
             setOpenParamPopup(true);
+            resetMenuState();
           }}
         >
           <Typography sx={{ color: "#2563EB", fontSize: "14px" }}>+</Typography>
@@ -249,40 +265,75 @@ const AddEnvironmentParameter = () => {
       {parameters.length > 0 && (
         <Box sx={{ mt: 3, display: "flex", gap: 2, flexWrap: "wrap" }}>
           {parameters.map((p, index) => (
-            <Box
-              key={index}
-              sx={{
-                width: "260px",
-                border: "1px solid #E5E7EB",
-                borderRadius: "12px",
-                p: 2,
-              }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <Typography sx={{ fontWeight: 600 }}>
-                  {p.name || p.title}
-                </Typography>
+  <Box
+    key={index}
+    sx={{
+      width: "260px",
+      border: "1px solid #E5E7EB",
+      borderRadius: "12px",
+      p: 2,
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "space-between",
+      position: "relative",
+      opacity: p.is_active === false ? 0.5 : 1,
+    }}
+  >
+    {/* ACTIVE / INACTIVE PILL – ENVIRONMENT PARAMETERS */}
+<Box
+  sx={{
+    position: "absolute",
+    top: 12,
+    right: 12,
+    px: 1.2,
+    py: 0.4,
+    borderRadius: "999px",
+    fontSize: "10px",
+    fontWeight: 700,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
+    backgroundColor:
+      p.is_active === false ? "#FEE2E2" : "#DCFCE7",
+    color:
+      p.is_active === false ? "#B91C1C" : "#15803D",
+  }}
+>
+  {p.is_active === false ? "Inactive" : "Active"}
+</Box>
 
-                <IconButton
-                  size="small"
-                  onClick={(e) => handleMenuOpen(e, index)}
-                >
-                  <MoreHoriz fontSize="small" />
-                </IconButton>
-              </Box>
+    
+    {/* Top content */}
+    <Box>
+      <Typography sx={{ fontWeight: 600 }}>
+        {p.name || p.title}
+      </Typography>
 
-              <Typography sx={{ fontSize: "12px", color: "#6B7280" }}>
-                Data Type: {p.data_type || p.field_type}
-              </Typography>
-            </Box>
-          ))}
+      <Typography sx={{ fontSize: "12px", color: "#6B7280", mt: 0.5 }}>
+        Data Type: {p.data_type || p.field_type}
+      </Typography>
+    </Box>
+
+    {/* Bottom-right 3 dots (ENVIRONMENT ONLY) */}
+    <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+      <IconButton
+        size="small"
+        onClick={(e) => handleMenuOpen(e, index)}
+        sx={{
+          border: "1px solid #E5E7EB",
+          borderRadius: "8px",
+          width: 32,
+          height: 32,
+        }}
+      >
+        <MoreHoriz sx={{ fontSize: 18, color: "#6B7280" }} />
+      </IconButton>
+    </Box>
+  </Box>
+))}
+  
         </Box>
+  
+
       )}
 
       {/* Footer */}
@@ -302,10 +353,37 @@ const AddEnvironmentParameter = () => {
       </Box>
 
       {/* Menu */}
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        <MenuItem onClick={handleEditParameter}>Edit</MenuItem>
-        <MenuItem onClick={handleDeleteParameter}>Delete</MenuItem>
-      </Menu>
+<Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+  {menuIndex !== null && parameters[menuIndex]?.is_active !== false ? (
+    <MenuItem
+      onClick={() => {
+        setToggleAction("inactivate");
+        handleMenuClose();
+      }}
+    >
+      Inactivate
+    </MenuItem>
+  ) : (
+    <MenuItem
+      onClick={() => {
+        setToggleAction("activate");
+        handleMenuClose();
+      }}
+    >
+      Activate
+    </MenuItem>
+  )}
+
+  <MenuItem onClick={handleEditParameter}>Edit</MenuItem>
+
+  <MenuItem
+    onClick={handleDeleteParameter}
+    sx={{ color: "error.main" }}
+  >
+    Delete
+  </MenuItem>
+</Menu>
+
 
       {/* Delete Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
@@ -320,6 +398,63 @@ const AddEnvironmentParameter = () => {
           </Button>
         </DialogActions>
       </Dialog>
+{/* Activate and Inactivate Dialog */}
+<Dialog
+  open={toggleAction !== null}
+  onClose={() => {
+    setToggleAction(null);
+    resetMenuState();
+  }}
+>
+  <DialogTitle>
+    {toggleAction === "activate"
+      ? "Activate Parameter"
+      : "Inactivate Parameter"}
+  </DialogTitle>
+
+  <DialogContent>
+    <Typography>
+      Are you sure you want to{" "}
+      {toggleAction === "activate" ? "activate" : "inactivate"} this parameter?
+    </Typography>
+  </DialogContent>
+
+  <DialogActions>
+    <Button
+      onClick={() => {
+        setToggleAction(null);
+      }}
+    >
+      Cancel
+    </Button>
+
+    <Button
+      variant="contained"
+      onClick={() => {
+if (menuIndex === null) return;
+        setParameters((prev) =>
+          prev.map((p, i) =>
+            i === menuIndex
+              ? { ...p, is_active: toggleAction === "activate" }
+              : p,
+          ),
+        );
+
+        toast.success(
+          toggleAction === "activate"
+            ? "Parameter activated"
+            : "Parameter inactivated",
+        );
+
+        setToggleAction(null);
+        resetMenuState();
+      }}
+    >
+      {toggleAction === "activate" ? "Activate" : "Inactivate"}
+    </Button>
+  </DialogActions>
+</Dialog>
+
 
       {/* Add Parameter Popup */}
 <AddEnvParameterPopup

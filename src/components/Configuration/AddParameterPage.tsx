@@ -47,6 +47,14 @@ const AddParameterPage = () => {
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
   const { data: clinic } = useSelector((state: RootState) => state.clinic);
+const [toggleParamIndex, setToggleParamIndex] = useState<number | null>(null);
+const [toggleAction, setToggleAction] =
+  useState<"activate" | "inactivate" | null>(null);
+
+  const [paramDialogs, setParamDialogs] = useState({
+    activate: false,
+    inactivate: false,
+  });
 
   const entityType: "equipment" | "environment" = location.pathname.includes(
     "/environment",
@@ -327,10 +335,13 @@ const AddParameterPage = () => {
   };
 
   const handleClose = () => {
-    setAnchorEl(null);
-    setMenuParamIndex(null);
+resetMenuState();
   };
 
+  const resetMenuState = () => {
+  setAnchorEl(null);
+  setMenuParamIndex(null);
+};
   const handleEditParameter = () => {
     if (menuParamIndex !== null) {
       const param = parameters[menuParamIndex];
@@ -478,19 +489,28 @@ const AddParameterPage = () => {
   };
 
   const handleAddParameter = (data: any) => {
-    if (editingParamIndex !== null) {
-      setParameters((prev) =>
-        prev.map((p, i) => (i === editingParamIndex ? { ...p, ...data } : p)),
-      );
-      setEditingParamIndex(null);
-      setParamToEdit(null);
-      toast.success("Parameter updated!");
-    } else {
-      setParameters((prev) => [...prev, data]);
-      toast.success("Parameter added!");
-    }
-    setOpenParamPopup(false);
+  const paramWithStatus = {
+    ...data,
+    is_active: data.is_active ?? true, // ✅ DEFAULT ACTIVE
   };
+
+  if (editingParamIndex !== null) {
+    setParameters((prev) =>
+      prev.map((p, i) =>
+        i === editingParamIndex ? paramWithStatus : p,
+      ),
+    );
+    setEditingParamIndex(null);
+    setParamToEdit(null);
+    toast.success("Parameter updated!");
+  } else {
+    setParameters((prev) => [...prev, paramWithStatus]);
+    toast.success("Parameter added!");
+  }
+
+  setOpenParamPopup(false);
+};
+
   // In AddParameterPage.tsx - Update the handleFinalSave function
 
   const handleFinalSave = async () => {
@@ -711,6 +731,9 @@ const AddParameterPage = () => {
         return null;
     }
   };
+// ✅ Helper: currently selected parameter (safe for TS)
+const selectedParam =
+  menuParamIndex !== null ? parameters[menuParamIndex] : null;
 
   return (
     <Box>
@@ -722,7 +745,7 @@ const AddParameterPage = () => {
             onClick={() =>
               navigate(
                 isEnvironment
-                  ? "/configuration/environment/view"
+                  ? "/configuration/environment"
                   : "/configuration/equipment/view",
                 {
                   state: isEnvironment
@@ -830,36 +853,59 @@ const AddParameterPage = () => {
                   background: "#FFFFFF",
                   p: 2,
                   boxShadow: "0px 1px 2px rgba(0,0,0,0.04)",
+                  position: "relative",
+                  opacity: !isEnvironment
+                  ? 1
+                  : p.is_active === false
+                    ? 0.5
+                    : 1,
                 }}
               >
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <Typography sx={{ fontWeight: 600, fontSize: "15px" }}>
-                    {p.name || p.title || p.parameter_name}
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleMenuOpen(e, index)}
-                    sx={{
-                      p: "3px",
-                      borderRadius: "6px",
-                      border: "1px solid #E5E7EB",
-                      backgroundColor: "transaparent",
-                    }}
-                  >
-                    <MoreHoriz sx={{ fontSize: "18px", color: "#6B7280" }} />
-                  </IconButton>
-                </Box>
+
+{/* ENVIRONMENT – ACTIVE / INACTIVE PILL */}
+{isEnvironment && (
+  <Box
+    sx={{
+      position: "absolute",
+      top: 10,
+      right: 10,
+      px: 1.2,
+      py: 0.3,
+      borderRadius: "999px",
+      fontSize: "10px",
+      fontWeight: 700,
+      letterSpacing: "0.06em",
+      textTransform: "uppercase",
+      backgroundColor:
+        p.is_active === false ? "#FEE2E2" : "#DCFCE7",
+      color:
+        p.is_active === false ? "#B91C1C" : "#15803D",
+    }}
+  >
+    {p.is_active === false ? "Inactive" : "Active"}
+  </Box>
+)}
+
+<Box
+  sx={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  }}
+>
+  <Typography sx={{ fontWeight: 600 }}>
+    {p.name || p.title}
+  </Typography>
+
+</Box>
+
+
                 <Typography
                   sx={{ fontSize: "12px", color: "#6B7280", mt: 0.5 }}
                 >
                   Data Type : {p.data_type || p.field_type}
                 </Typography>
+               
                 <Box
                   sx={{
                     height: "1px",
@@ -869,7 +915,32 @@ const AddParameterPage = () => {
                     mx: -2,
                   }}
                 />
-                {renderParameterContent(p)}
+<Box sx={{ pr: isEnvironment ? 5 : 0 }}>
+  {renderParameterContent(p)}
+</Box>
+{/* ENVIRONMENT – 3 DOTS FIXED BOTTOM RIGHT */}
+
+{isEnvironment && (
+  <IconButton
+    size="small"
+    onClick={(e) => handleMenuOpen(e, index)}
+    sx={{
+      position: "absolute",
+      bottom: 12,
+      right: 12,
+      width: 32,
+      height: 32,
+      border: "1px solid #E5E7EB",
+      borderRadius: "8px",
+      backgroundColor: "#FFFFFF",
+    }}
+  >
+    <MoreHoriz fontSize="small" />
+  </IconButton>
+)}
+
+
+
               </Box>
             ))}
           </Box>
@@ -1188,15 +1259,60 @@ const AddParameterPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        PaperProps={{ sx: { width: "96px" } }}
-      >
-        <MenuItem onClick={handleEditParameter}>Edit</MenuItem>
-        <MenuItem onClick={handleDeleteParameter}>Delete</MenuItem>
-      </Menu>
+
+<Menu
+  anchorEl={anchorEl}
+  open={Boolean(anchorEl)}
+  onClose={resetMenuState}
+>
+  {/* Activate / Inactivate */}
+  {menuParamIndex !== null &&
+  parameters[menuParamIndex]?.is_active !== false ? (
+    <MenuItem
+      onClick={() => {
+        setParameters((prev) =>
+          prev.map((p, i) =>
+            i === menuParamIndex
+              ? { ...p, is_active: false }
+              : p,
+          ),
+        );
+        toast.success("Parameter inactivated");
+        resetMenuState();
+      }}
+    >
+      Inactivate
+    </MenuItem>
+  ) : (
+    <MenuItem
+      onClick={() => {
+        setParameters((prev) =>
+          prev.map((p, i) =>
+            i === menuParamIndex
+              ? { ...p, is_active: true }
+              : p,
+          ),
+        );
+        toast.success("Parameter activated");
+        resetMenuState();
+      }}
+    >
+      Activate
+    </MenuItem>
+  )}
+
+  <MenuItem onClick={handleEditParameter}>Edit</MenuItem>
+
+  <MenuItem
+    sx={{ color: "error.main" }}
+    onClick={handleDeleteParameter}
+  >
+    Delete
+  </MenuItem>
+</Menu>
+
+
+
       <AddParameterPopup
         open={openParamPopup}
         onClose={() => {
