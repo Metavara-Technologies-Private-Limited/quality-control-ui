@@ -1,7 +1,24 @@
-import { CSSProperties, useEffect, useMemo, useState } from "react";
-import { Box, CircularProgress } from "@mui/material";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Box,
+  CircularProgress,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TextField,
+  InputAdornment,
+} from "@mui/material";
 import { environmentParameterValueApi } from "@/services/api";
 import dayjs from "dayjs";
+import { Search, FileDownload, FileUpload } from "@mui/icons-material";
+import { toast } from "react-toastify";
+import * as XLSX from "xlsx";
+import ImportCSVPopup from "./ImportCSVPopup"; // Import the shared popup component
 
 type Props = {
   environment: {
@@ -13,73 +30,129 @@ type Props = {
 export default function LabEnvironmentLogs({ environment }: Props) {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   /* -------- Load logs for ALL environment parameters -------- */
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const all: any[] = [];
-
-        for (const p of environment.parameters) {
-          const { data = [] } =
-            await environmentParameterValueApi.listByParameter(p.id);
-
-          all.push(...data);
-        }
-
-        setLogs(
-          all.sort(
-            (a, b) =>
-              new Date(b.log_time ?? b.created_at).getTime() -
-              new Date(a.log_time ?? a.created_at).getTime()
-          )
-        );
-      } finally {
-        setLoading(false);
+  const loadLogs = async () => {
+    setLoading(true);
+    try {
+      const all: any[] = [];
+      // Filter for parameters that have IDs
+      const savedParameters = environment.parameters.filter((p) => p.id);
+      
+      for (const p of savedParameters) {
+        const { data = [] } = await environmentParameterValueApi.listByParameter(p.id);
+        all.push(...data);
       }
-    };
+      setLogs(all);
+    } catch (err) {
+      console.error("Failed to load environment logs:", err);
+      toast.error("Error loading logs");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    load();
+  useEffect(() => {
+    loadLogs();
   }, [environment]);
 
-  /* -------- Parameter Meta (name + unit) -------- */
-  const parameterMeta = useMemo(() => {
-    return environment.parameters.map((p) => ({
-      name: p.env_parameter_name,
-      unit: p.config?.unit ?? "-",
-    }));
-  }, [environment]);
-
+  /* -------- Build Parameter Meta Map -------- */
   const parameterMetaMap = useMemo(() => {
     const map = new Map<number, { name: string; unit: string }>();
-  
     environment.parameters.forEach((p) => {
       map.set(p.id, {
         name: p.env_parameter_name,
         unit: p.config?.unit ?? "-",
       });
     });
-  
     return map;
-  }, [environment]);  
+  }, [environment.parameters]);
 
-  /* -------- Build Row-Based Table -------- */
+  /* -------- Transform & Filter Rows -------- */
   const rows = useMemo(() => {
-    if (!parameterMeta.length) return [];
+    const allRows = [...logs]
+      .sort((a, b) => 
+        dayjs(b.log_time ?? b.created_at).valueOf() - dayjs(a.log_time ?? a.created_at).valueOf()
+      )
+      .map((log) => {
+        const param = parameterMetaMap.get(log.environment_parameter_id);
+        return {
+          id: log.id,
+          date: dayjs(log.log_time ?? log.created_at).format("DD/MM/YYYY HH:mm"),
+          parameter: param?.name ?? "-",
+          unit: param?.unit ?? "-",
+          value: log.content ?? "-",
+        };
+      });
 
-    return logs.map((log) => {
-      const param = parameterMetaMap.get(log.environment_parameter_id);
-    
-      return {
-        id: log.id,
-        date: dayjs(log.log_time ?? log.created_at).format("DD/MM/YYYY HH:mm"),
-        parameter: param?.name ?? "-",
-        unit: param?.unit ?? "-",
-        value: log.content,
-      };
-    });    
-  }, [logs, parameterMeta]);
+    if (!searchTerm) return allRows;
+
+    return allRows.filter((row) =>
+      Object.values(row).some((val) =>
+        String(val).toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+  }, [logs, parameterMetaMap, searchTerm]);
+
+  /* -------- Handle Import Logic -------- */
+  const handleImportCSV = async (importedData: any[]) => {
+    try {
+      const requests = importedData.map((log) => {
+        // Find environment parameter by name
+        const param = environment.parameters.find(
+          (p) => p.env_parameter_name.toLowerCase() === log.parameter.toLowerCase()
+        );
+        
+        if (!param?.id) return null;
+
+        const logDateTime = dayjs(log.dateTime, ["DD/MM/YYYY HH:mm", "YYYY-MM-DD HH:mm"]);
+        if (!logDateTime.isValid()) return null;
+
+        return environmentParameterValueApi.create({
+          environment_parameter: param.id,
+          content: log.value,
+          log_time: logDateTime.toISOString(),
+        });
+      }).filter(Boolean);
+
+      if (requests.length === 0) {
+        toast.warn("No valid environment logs to import");
+        return;
+      }
+
+      await Promise.all(requests);
+      toast.success(`${requests.length} logs imported successfully`);
+      await loadLogs(); // Refresh table
+    } catch (error) {
+      console.error("Import failed:", error);
+      toast.error("Failed to import environment logs");
+    }
+  };
+
+  /* -------- Export Logic -------- */
+  const handleExportExcel = () => {
+    if (rows.length === 0) {
+      toast.info("No data available to export");
+      return;
+    }
+
+    const excelData = rows.map((row) => ({
+      "Date & Time": row.date,
+      "Parameter": row.parameter,
+      "Unit": row.unit,
+      "Value": row.value,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Environment Logs");
+
+    const fileName = `Env_Logs_${dayjs().format("YYYY-MM-DD")}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+    toast.success("Logs exported successfully");
+  };
 
   if (loading) {
     return (
@@ -89,81 +162,120 @@ export default function LabEnvironmentLogs({ environment }: Props) {
     );
   }
 
-  if (!rows.length) {
-    return (
-      <Box sx={{ textAlign: "center", py: 6, color: "#94a3b8" }}>
-        No logs found
-      </Box>
-    );
-  }
-
   return (
-    <Box
-      sx={{
-        border: "1px solid #e5e7eb",
-        borderRadius: "12px",
-        background: "#fff",
-        overflow: "hidden",
-      }}
-    >
-      {/* Header */}
-      <Box
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {/* Header Actions */}
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
+        <TextField
+          placeholder="Filter environment logs..."
+          size="small"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          sx={{ width: 300, bgcolor: "#fff", borderRadius: "8px" }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search fontSize="small" />
+              </InputAdornment>
+            ),
+          }}
+        />
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button
+            variant="outlined"
+            startIcon={<FileDownload />}
+            onClick={handleExportExcel}
+            sx={{
+              borderRadius: "8px",
+              borderColor: "#505050",
+              color: "#505050",
+              textTransform: "none",
+              fontWeight: 600,
+              "&:hover": { borderColor: "#232323", backgroundColor: "#f5f5f5" },
+            }}
+          >
+            Export Excel
+          </Button>
+
+          <Button
+            variant="contained"
+            startIcon={<FileUpload />}
+            onClick={() => setImportDialogOpen(true)}
+            sx={{
+              borderRadius: "8px",
+              backgroundColor: "#505050",
+              textTransform: "none",
+              fontWeight: 600,
+              "&:hover": { backgroundColor: "#232323" },
+            }}
+          >
+            Import CSV
+          </Button>
+        </Box>
+      </Box>
+
+      {/* MUI Table Container (Fixed Height for ~10 rows) */}
+      <TableContainer
+        component={Paper}
         sx={{
-          px: 2,
-          py: 1.5,
-          fontWeight: 700,
-          fontSize: "14px",
-          background: "#f9fafb",
-          borderBottom: "1px solid #e5e7eb",
+          borderRadius: "12px",
+          border: "1px solid #e5e7eb",
+          boxShadow: "none",
+          height: 480, 
+          overflow: "auto",
         }}
       >
-        Environment Logs
-      </Box>
+        <Table stickyHeader sx={{ minWidth: 600 }}>
+          <TableHead>
+            <TableRow>
+              {["Date & Time", "Parameter", "Unit", "Value"].map((head) => (
+                <TableCell
+                  key={head}
+                  sx={{
+                    fontWeight: 700,
+                    backgroundColor: "#fafafa",
+                    color: "#4B5563",
+                    zIndex: 2,
+                  }}
+                >
+                  {head}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {rows.length > 0 ? (
+              rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  hover
+                  sx={{ "&:last-child td, &:last-child th": { border: 0 }, height: 44 }}
+                >
+                  <TableCell>{row.date}</TableCell>
+                  <TableCell>{row.parameter}</TableCell>
+                  <TableCell>{row.unit}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{row.value}</TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={4} align="center" sx={{ py: 6, color: "#94a3b8" }}>
+                  {searchTerm ? `No matches for "${searchTerm}"` : "No logs found"}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
-      {/* Table */}
-      <Box sx={{ maxHeight: "420px", overflowY: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ background: "#fafafa" }}>
-              <th style={th}>Date & Time</th>
-              <th style={th}>Parameter</th>
-              <th style={th}>Unit</th>
-              <th style={th}>Value</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.id}>
-                <td style={td}>{r.date}</td>
-                <td style={td}>{r.parameter}</td>
-                <td style={td}>{r.unit}</td>
-                <td style={td}>{r.value}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Box>
+      {/* Shared Import Popup */}
+      <ImportCSVPopup
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        // Map env_parameter_name to parameter_name so the shared popup can recognize labels
+        parameters={environment.parameters.map(p => ({ ...p, parameter_name: p.env_parameter_name }))}
+        onImport={handleImportCSV}
+      />
     </Box>
   );
 }
-
-/* ---------- Shared styles ---------- */
-
-const th: CSSProperties = {
-  textAlign: "left",
-  padding: "10px",
-  fontSize: "13px",
-  fontWeight: 600,
-  color: "#4B5563",
-  borderBottom: "1px solid #E5E7EB",
-  whiteSpace: "nowrap",
-};
-
-const td: CSSProperties = {
-  padding: "10px",
-  fontSize: "13px",
-  color: "#374151",
-  borderBottom: "1px solid #F1F5F9",
-  whiteSpace: "nowrap",
-};
