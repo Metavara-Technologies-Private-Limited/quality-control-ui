@@ -231,10 +231,15 @@ const equipments = useMemo(() => {
                     <IconButton
                       disabled={isInactive}
                       onClick={() =>
-                        navigate("/configuration/environment/view", {
-                          state: { environmentId: item.id },
-                        })
-                      }
+  navigate("/configuration/environment/add-parameter", {
+    state: {
+      environmentId: item.id,
+      departmentId: item.department.id,
+      departmentName: item.department.name,
+    },
+  })
+}
+
 
                       sx={{
                         width: 32,
