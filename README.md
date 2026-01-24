@@ -62,9 +62,10 @@ src/
 ---
 
 ## Packages needs to Install
+```bash
 - npm install papaparse
 - npm install --save-dev @types/papaparse
 - npm install xlsx
 - npm install react-redux @reduxjs/toolkit lucide-react @mui/x-date-pickers dayjs
-
+```
 **Version:** 1.0.0
