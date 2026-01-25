@@ -53,40 +53,34 @@ export default function LabEnvironmentForm({ environment, onSaved }: Props) {
   const setValue = (k: string, v: string) =>
     setValues((p) => ({ ...p, [k]: v }));
 
-  const handleSave = async () => {
-    const hasData = Object.values(values).some((v) => v?.trim());
-    if (!hasData) {
-      toast.warn("Please fill at least one field");
-      return;
-    }
+const handleSave = async () => {
+  const activeParams = environment.parameters.filter(
+    (p) => p.is_active !== false && !p.is_deleted
+  );
 
-    try {
-      setSaving(true);
+  try {
+    setSaving(true);
+    await Promise.all(
+      activeParams.map((p: any) => {
+        const value = values[p.env_parameter_name];
+        if (!value) return null;
 
-      await Promise.all(
-        environment.parameters.map((p: any) => {
-          const value = values[p.env_parameter_name];
-          if (!value) return null;
-
-          return environmentParameterValueApi.create({
-            environment: environment.id,
-            environment_parameter: p.id,
-            content: value,
-            log_time: logDateTime?.toISOString(),
-          });
-        }),
-      );
-
-      toast.success("Environment logs saved");
-      setValues({});
-      // setRefreshKey((k) => k + 1);
-      onSaved();
-    } catch {
-      toast.error("Failed to save logs");
-    } finally {
-      setSaving(false);
-    }
-  };
+        return environmentParameterValueApi.create({
+          environment: environment.id,
+          environment_parameter: p.id,
+          content: value,
+          log_time: logDateTime?.toISOString(),
+        });
+      })
+    );
+    toast.success("Logs saved successfully");
+    onSaved(); // This triggers the parent to refresh the data!
+  } catch (err) {
+    toast.error("Save failed");
+  } finally {
+    setSaving(false);
+  }
+};
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -133,46 +127,62 @@ export default function LabEnvironmentForm({ environment, onSaved }: Props) {
               gap: 3,
             }}
           >
-            {environment.parameters.map((param: any) => {
-              const cfg = param.config;
-              if (!cfg) return null;
+{environment.parameters.map((param: any) => {
+  console.log("Param Name:", param.env_parameter_name, "Active:", param.is_active);
+  const cfg = param.config;
+  if (param.is_deleted || !param.id) return null;
+  if (!cfg) return null;
 
-              const value = values[param.env_parameter_name] ?? "";
-              const color = getRangeStatusColor(value, cfg);
+  // ✅ 1. Logic to handle "Deleted" (Optional check if not filtered by API)
+  // If your backend still sends parameters with a 'deleted' flag, add:
+  // if (param.is_deleted) return null;
 
-              return (
-                <Box key={param.id}>
-                  <ParameterInput
-                    parameter={param}
-                    value={value}
-                    onChange={(v) => setValue(param.env_parameter_name, v)}
-                  />
+  const value = values[param.env_parameter_name] ?? "";
+  const color = getRangeStatusColor(value, cfg);
+  
+  // ✅ 2. Check if parameter is inactive
+// Inside LabEnvironmentForm.tsx loop
+const isInactive = param.is_active === false || param.is_active === 0 || param.status === "inactive";
+  return (
+    <Box 
+      key={param.id} 
+      sx={{ 
+        // Optional: reduce opacity for inactive parameters to make it visually clear
+        opacity: isInactive ? 0.6 : 1,
+        pointerEvents: isInactive ? "none" : "auto" // Prevents clicking dropdowns/etc
+      }}
+    >
+      <ParameterInput
+        parameter={param}
+        value={value}
+        onChange={(v) => setValue(param.env_parameter_name, v)}
+        // ✅ Pass disabled prop to your custom ParameterInput component
+        disabled={isInactive} 
+      />
 
-                  {/* ✅ Recommended */}
-                  {cfg.default_value && (
-                    <Box sx={{ fontSize: 12, color: "#9E9E9E", mt: "4px" }}>
-                      Recommended: {cfg.default_value}
-                      {cfg.unit || ""}
-                    </Box>
-                  )}
+      {/* ✅ Show "Inactive" label so user knows why it's disabled */}
+      {isInactive && (
+        <Box sx={{ fontSize: 11, color: "#f44336", fontWeight: 700, mt: 0.5 }}>
+          INACTIVE PARAMETER
+        </Box>
+      )}
 
-                  {/* ✅ Range */}
-                  {cfg.min_value != null && cfg.max_value != null && (
-                    <Box
-                      sx={{
-                        fontSize: 12,
-                        fontWeight: 500,
-                        color,
-                      }}
-                    >
-                      Range: {cfg.min_value}
-                      {cfg.unit || ""} – {cfg.max_value}
-                      {cfg.unit || ""}
-                    </Box>
-                  )}
-                </Box>
-              );
-            })}
+      {/* Recommended Section (Hide or dim if inactive) */}
+      {cfg.default_value && (
+        <Box sx={{ fontSize: 12, color: "#9E9E9E", mt: "4px" }}>
+          Recommended: {cfg.default_value} {cfg.unit || ""}
+        </Box>
+      )}
+
+      {/* Range Section (Hide or dim if inactive) */}
+      {cfg.min_value != null && cfg.max_value != null && (
+        <Box sx={{ fontSize: 12, fontWeight: 500, color: isInactive ? "#9E9E9E" : color }}>
+          Range: {cfg.min_value} {cfg.unit || ""} – {cfg.max_value} {cfg.unit || ""}
+        </Box>
+      )}
+    </Box>
+  );
+})}
           </Box>
 
           {/* DATE TIME */}

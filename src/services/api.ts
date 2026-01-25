@@ -232,6 +232,8 @@ export const parameterValueApi = {
 };
 
 export const environmentApi = {
+  /* ================= ENVIRONMENT ================= */
+
   create: (departmentId: number, data: any) =>
     http.post(`/departments/${departmentId}/environments/`, data),
 
@@ -249,7 +251,21 @@ export const environmentApi = {
 
   getById: (environmentId: number) =>
     http.get(`/environments/${environmentId}/get/`),
+
+  /* ================= ENVIRONMENT PARAMETER ================= */
+
+  // ✅ Soft delete parameter
+  softDeleteParameter: (parameterId: number) =>
+    http.patch(`/environment-parameters/${parameterId}/delete/`),
+
+  // ✅ Activate / Inactivate PARAMETER ITSELF (THIS IS THE KEY FIX)
+  updateParameterStatus: (parameterId: number, isActive: boolean) =>
+    http.patch(`/environment-parameters/${parameterId}/`, {
+      is_active: isActive,
+    }),
 };
+
+
 
 export const environmentParameterValueApi = {
   create: (data: {

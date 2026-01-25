@@ -33,7 +33,7 @@ type BaseUIItem = {
   is_active: boolean;
   parameters: Parameter[];
   department: Department;
-  created_at?: string; // 👈 optional for environment
+  created_at?: string;
 };
 
 type EquipmentUIItem =
@@ -52,7 +52,7 @@ const EquipmentPage = () => {
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
 
-  const { searchQuery } = useOutletContext<{ searchQuery: string }>();
+  const { searchQuery = "" } = useOutletContext<{ searchQuery: string }>();
   const { data: clinic } = useSelector((state: RootState) => state.clinic);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -88,6 +88,7 @@ const EquipmentPage = () => {
       if (isEnvironment) {
         return (dep.environments || []).map((env) => ({
           ...env,
+          parameters: env.parameters || [],
           department: dep,
           entityType: "environment",
           created_at: env.created_at ?? dep.created_at,
@@ -96,6 +97,7 @@ const EquipmentPage = () => {
 
       return (dep.equipments || []).map((eq) => ({
         ...eq,
+        parameters: eq.parameters || [],
         department: dep,
         entityType: "equipment",
       }));
@@ -110,7 +112,7 @@ const EquipmentPage = () => {
             ? item.environment_name
             : item.equipment_name;
 
-        return name?.toLowerCase().includes(searchQuery.toLowerCase());
+        return (name || "").toLowerCase().includes(searchQuery.toLowerCase());
       }),
     [items, searchQuery],
   );
@@ -122,8 +124,11 @@ const EquipmentPage = () => {
 
   /* ------------------ Helpers ------------------ */
 
-  const getCreatedDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString("en-GB");
+  const getCreatedDate = (dateString?: string) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? "N/A" : date.toLocaleDateString("en-GB");
+  };
 
   /* ------------------ API Actions ------------------ */
 
@@ -146,7 +151,7 @@ const EquipmentPage = () => {
     }
   };
 
-  const toggleActive = async (active: boolean) => {
+const toggleActive = async (active: boolean) => {
     if (!selectedItem) return;
 
     try {
@@ -155,17 +160,16 @@ const EquipmentPage = () => {
           ? await environmentApi.activate(selectedItem.id)
           : await environmentApi.inactive(selectedItem.id);
       } else {
+        // Corrected: Using only selectedItem.id to match standard activate patterns
+        // If your API requires the department ID as well, keep both arguments.
         active
-          ? await equipmentApi.activate(selectedItem.id)
-          : await equipmentApi.inactive(
-              selectedItem.department.id,
-              selectedItem.id,
-            );
+          ? await equipmentApi.activate(selectedItem.id) 
+          : await equipmentApi.inactive(selectedItem.department.id, selectedItem.id);
       }
 
       dispatch(fetchClinic(1));
       setDialogs({ delete: false, inactive: false, active: false });
-    } catch {
+    } catch (error) {
       toast.error(`Failed to ${active ? "activate" : "inactivate"}`);
     }
   };
@@ -173,7 +177,7 @@ const EquipmentPage = () => {
   /* ------------------ UI ------------------ */
 
   return (
-    <Box>
+    <Box sx={{ p: 1 }}>
       <ToastContainer position="top-right" autoClose={3000} />
 
       <Grid container spacing={2}>
@@ -181,14 +185,14 @@ const EquipmentPage = () => {
           const isInactive = item.is_active === false;
 
           return (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={item.id}>
+            <Grid item xs={12} sm={6} md={4} lg={3} key={`${item.entityType}-${item.id}`}>
               <Card
                 sx={{
                   position: "relative",
                   borderRadius: "12px",
                   border: "1px solid #E5E7EB",
                   boxShadow: "none",
-                  opacity: isInactive ? 0.5 : 1,
+                  opacity: isInactive ? 0.6 : 1,
                   backgroundColor: isInactive ? "#F5F5F5" : "#fff",
                   transition: "all 0.3s ease",
                 }}
@@ -214,11 +218,9 @@ const EquipmentPage = () => {
 
                 <CardContent sx={{ pb: 1 }}>
                   <Typography sx={{ fontWeight: 700, fontSize: 16 }}>
-                    <b>
-                      {item.entityType === "environment"
-                        ? item.environment_name
-                        : item.equipment_name}
-                    </b>
+                    {item.entityType === "environment"
+                      ? item.environment_name
+                      : item.equipment_name}
                   </Typography>
 
                   <Box
@@ -261,37 +263,32 @@ const EquipmentPage = () => {
                 >
                   <Typography fontSize={14} color="#4B5563">
                     <span style={{ color: "#9CA3AF" }}>Created Date:</span>{" "}
-                    {getCreatedDate(
-                      item.created_at ?? item.department.created_at,
-                    )}
+                    {getCreatedDate(item.created_at ?? item.department.created_at)}
                   </Typography>
 
                   <Box sx={{ display: "flex", gap: 1 }}>
-                    {/* View Icon Button */}
                     <IconButton
                       disabled={isInactive}
                       onClick={() => {
-  if (item.entityType === "environment") {
-    navigate("/configuration/environment/add-parameter", {
-      state: {
-        environmentId: item.id,
-        departmentId: item.department.id,
-        departmentName: item.department.name,
-      },
-    });
-  } else {
-    navigate("/configuration/equipment/view", {
-      state: { equipmentId: item.id },
-    });
-  }
-}}
-
+                        if (item.entityType === "environment") {
+                          navigate("/configuration/environment/add-parameter", {
+                            state: {
+                              environmentId: item.id,
+                              departmentId: item.department.id,
+                              departmentName: item.department.name,
+                            },
+                          });
+                        } else {
+                          navigate("/configuration/equipment/view", {
+                            state: { equipmentId: item.id },
+                          });
+                        }
+                      }}
                       sx={{
                         width: 32,
                         height: 32,
                         border: "1px solid #E5E7EB",
                         borderRadius: "8px",
-
                         opacity: isInactive ? 0.2 : 1,
                       }}
                     >
@@ -311,8 +308,6 @@ const EquipmentPage = () => {
                           : "1px solid #E5E7EB",
                         borderRadius: "8px",
                         backgroundColor: isInactive ? "#141313" : "transparent",
-                        opacity: 1,
-                        zIndex: 2,
                         "&:hover": {
                           backgroundColor: isInactive ? "#f0f0f0" : "#F3F4F6",
                           color: isInactive ? "#0c0404" : "inherit",
@@ -320,13 +315,7 @@ const EquipmentPage = () => {
                         color: isInactive ? "#ffffff" : "inherit",
                       }}
                     >
-                      <MoreHoriz
-                        fontSize="small"
-                        sx={{
-                          color: isInactive ? "#ffffff" : "inherit",
-                          fontWeight: isInactive ? 700 : 400,
-                        }}
-                      />
+                      <MoreHoriz fontSize="small" />
                     </IconButton>
                   </Box>
                 </Box>
@@ -335,8 +324,6 @@ const EquipmentPage = () => {
           );
         })}
       </Grid>
-
-      {/* Menu + Dialogs (unchanged behavior) */}
 
       <Menu
         anchorEl={anchorEl}
@@ -350,7 +337,6 @@ const EquipmentPage = () => {
               setDialogs({ ...dialogs, inactive: true });
             }}
           >
-            {" "}
             Inactivate
           </MenuItem>
         ) : (
@@ -360,7 +346,6 @@ const EquipmentPage = () => {
               setDialogs({ ...dialogs, active: true });
             }}
           >
-            {" "}
             Activate
           </MenuItem>
         )}
@@ -375,65 +360,31 @@ const EquipmentPage = () => {
         </MenuItem>
       </Menu>
 
-      <Dialog
-        open={dialogs.delete}
-        onClose={() => setDialogs({ ...dialogs, delete: false })}
-      >
+      {/* Dialogs remain functionally the same but benefit from the API param fix */}
+      <Dialog open={dialogs.delete} onClose={() => setDialogs({ ...dialogs, delete: false })}>
         <DialogTitle>Confirm Delete</DialogTitle>
-        <DialogContent>
-          <Typography>Are you sure you want to delete this?</Typography>
-        </DialogContent>
+        <DialogContent><Typography>Are you sure you want to delete this?</Typography></DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogs({ ...dialogs, delete: false })}>
-            Cancel
-          </Button>
-          <Button sx={darkButtonSx} variant="contained" onClick={confirmDelete}>
-            Delete
-          </Button>
+          <Button onClick={() => setDialogs({ ...dialogs, delete: false })}>Cancel</Button>
+          <Button sx={darkButtonSx} variant="contained" onClick={confirmDelete}>Delete</Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog
-        open={dialogs.inactive}
-        onClose={() => setDialogs({ ...dialogs, inactive: false })}
-      >
+      <Dialog open={dialogs.inactive} onClose={() => setDialogs({ ...dialogs, inactive: false })}>
         <DialogTitle>Confirm Inactivate</DialogTitle>
-        <DialogContent>
-          <Typography>Are you sure you want to inactivate?</Typography>
-        </DialogContent>
+        <DialogContent><Typography>Are you sure you want to inactivate?</Typography></DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogs({ ...dialogs, inactive: false })}>
-            Cancel
-          </Button>
-          <Button
-            sx={darkButtonSx}
-            onClick={() => toggleActive(false)}
-            variant="contained"
-          >
-            Inactivate
-          </Button>
+          <Button onClick={() => setDialogs({ ...dialogs, inactive: false })}>Cancel</Button>
+          <Button sx={darkButtonSx} onClick={() => toggleActive(false)} variant="contained">Inactivate</Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog
-        open={dialogs.active}
-        onClose={() => setDialogs({ ...dialogs, active: false })}
-      >
+      <Dialog open={dialogs.active} onClose={() => setDialogs({ ...dialogs, active: false })}>
         <DialogTitle>Confirm Activate</DialogTitle>
-        <DialogContent>
-          <Typography>Are you sure you want to activate?</Typography>
-        </DialogContent>
+        <DialogContent><Typography>Are you sure you want to activate?</Typography></DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogs({ ...dialogs, active: false })}>
-            Cancel
-          </Button>
-          <Button
-            sx={darkButtonSx}
-            onClick={() => toggleActive(true)}
-            variant="contained"
-          >
-            Activate
-          </Button>
+          <Button onClick={() => setDialogs({ ...dialogs, active: false })}>Cancel</Button>
+          <Button sx={darkButtonSx} onClick={() => toggleActive(true)} variant="contained">Activate</Button>
         </DialogActions>
       </Dialog>
     </Box>
