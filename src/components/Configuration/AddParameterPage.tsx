@@ -22,7 +22,6 @@ import AddParameterPopup from "./AddParameterPopup";
 import { MoreHoriz } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store";
-
 import { fetchClinic } from "@/store/clinicSlice";
 import { environmentApi, equipmentApi } from "@/services/api";
 import { ParameterContent } from "@/types";
@@ -129,7 +128,7 @@ const [toggleAction, setToggleAction] =
 
       if (!environment || !department) return;
 
-      setEnvironmentId(environment.id); // ✅ ADD THIS
+      setEnvironmentId(environment.id); 
       setIsEditMode(true);
       setEquipmentName(environment.environment_name);
       setDepartmentName(department.name);
@@ -797,7 +796,7 @@ const environmentPayload = {
         return null;
     }
   };
-// ✅ Helper: currently selected parameter (safe for TS)
+// Helper: currently selected parameter (safe for TS)
 const selectedParam =
   menuParamIndex !== null ? parameters[menuParamIndex] : null;
 
