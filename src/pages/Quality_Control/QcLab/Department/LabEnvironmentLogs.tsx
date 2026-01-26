@@ -114,6 +114,7 @@ export default function LabEnvironmentLogs({ environment }: Props) {
           environment_parameter: param.id,
           content: log.value,
           log_time: logDateTime.toISOString(),
+          environment: 0
         });
       }).filter(Boolean);
 
@@ -183,7 +184,7 @@ export default function LabEnvironmentLogs({ environment }: Props) {
         <Box sx={{ display: "flex", gap: 1 }}>
           <Button
             variant="outlined"
-            startIcon={<FileDownload />}
+            startIcon={<FileUpload />}
             onClick={handleExportExcel}
             sx={{
               borderRadius: "8px",
@@ -199,7 +200,7 @@ export default function LabEnvironmentLogs({ environment }: Props) {
 
           <Button
             variant="contained"
-            startIcon={<FileUpload />}
+            startIcon={<FileDownload />}
             onClick={() => setImportDialogOpen(true)}
             sx={{
               borderRadius: "8px",
