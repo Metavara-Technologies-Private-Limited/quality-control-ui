@@ -1,14 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import {
   Box,
   CircularProgress,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Paper,
   TextField,
   InputAdornment,
@@ -18,7 +13,7 @@ import dayjs from "dayjs";
 import { Search, FileDownload, FileUpload } from "@mui/icons-material";
 import { toast } from "react-toastify";
 import * as XLSX from "xlsx";
-import ImportCSVPopup from "./ImportCSVPopup"; // Import the shared popup component
+import ImportCSVPopup from "./ImportCSVPopup";
 
 type Props = {
   environment: {
@@ -32,6 +27,7 @@ export default function LabEnvironmentLogs({ environment }: Props) {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
 
   /* -------- Load logs for ALL environment parameters -------- */
   const loadLogs = async () => {
@@ -72,20 +68,16 @@ export default function LabEnvironmentLogs({ environment }: Props) {
 
   /* -------- Transform & Filter Rows -------- */
   const rows = useMemo(() => {
-    const allRows = [...logs]
-      .sort((a, b) => 
-        dayjs(b.log_time ?? b.created_at).valueOf() - dayjs(a.log_time ?? a.created_at).valueOf()
-      )
-      .map((log) => {
-        const param = parameterMetaMap.get(log.environment_parameter_id);
-        return {
-          id: log.id,
-          date: dayjs(log.log_time ?? log.created_at).format("DD/MM/YYYY HH:mm"),
-          parameter: param?.name ?? "-",
-          unit: param?.unit ?? "-",
-          value: log.content ?? "-",
-        };
-      });
+    const allRows = logs.map((log, index) => {
+      const param = parameterMetaMap.get(log.environment_parameter_id);
+      return {
+        id: log.id || index,
+        date: dayjs(log.log_time ?? log.created_at).format("DD/MM/YYYY HH:mm"),
+        parameter: param?.name ?? "-",
+        unit: param?.unit ?? "-",
+        value: log.content ?? "-",
+      };
+    });
 
     if (!searchTerm) return allRows;
 
@@ -125,7 +117,7 @@ export default function LabEnvironmentLogs({ environment }: Props) {
 
       await Promise.all(requests);
       toast.success(`${requests.length} logs imported successfully`);
-      await loadLogs(); // Refresh table
+      await loadLogs();
     } catch (error) {
       console.error("Import failed:", error);
       toast.error("Failed to import environment logs");
@@ -162,6 +154,34 @@ export default function LabEnvironmentLogs({ environment }: Props) {
       </Box>
     );
   }
+
+  const columns: GridColDef[] = [
+    { 
+      field: 'date', 
+      headerName: 'Date & Time', 
+      width: 180, 
+      sortable: true,
+    },
+    { 
+      field: 'parameter', 
+      headerName: 'Parameter', 
+      width: 150, 
+      sortable: true,
+    },
+    { 
+      field: 'unit', 
+      headerName: 'Unit', 
+      width: 100, 
+      sortable: true,
+    },
+    { 
+      field: 'value', 
+      headerName: 'Value', 
+      width: 120, 
+      sortable: true,
+      type: 'string',
+    },
+  ];
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -215,65 +235,58 @@ export default function LabEnvironmentLogs({ environment }: Props) {
         </Box>
       </Box>
 
-      {/* MUI Table Container (Fixed Height for ~10 rows) */}
-      <TableContainer
-        component={Paper}
+      {/* DataGrid Table */}
+      <Paper
         sx={{
+          height: 500,
+          width: "100%",
           borderRadius: "12px",
           border: "1px solid #e5e7eb",
           boxShadow: "none",
-          height: 480, 
-          overflow: "auto",
         }}
       >
-        <Table stickyHeader sx={{ minWidth: 600 }}>
-          <TableHead>
-            <TableRow>
-              {["Date & Time", "Parameter", "Unit", "Value"].map((head) => (
-                <TableCell
-                  key={head}
-                  sx={{
-                    fontWeight: 700,
-                    backgroundColor: "#fafafa",
-                    color: "#4B5563",
-                    zIndex: 2,
-                  }}
-                >
-                  {head}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.length > 0 ? (
-              rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  hover
-                  sx={{ "&:last-child td, &:last-child th": { border: 0 }, height: 44 }}
-                >
-                  <TableCell>{row.date}</TableCell>
-                  <TableCell>{row.parameter}</TableCell>
-                  <TableCell>{row.unit}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{row.value}</TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={4} align="center" sx={{ py: 6, color: "#94a3b8" }}>
-                  {searchTerm ? `No matches for "${searchTerm}"` : "No logs found"}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+        <DataGrid
+          rows={rows}
+          columns={columns}
+          pageSizeOptions={[5, 10, 25, 50]}
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
+          sx={{
+            border: 0,
+            "& .MuiDataGrid-columnHeaderTitle": {
+              fontWeight: 700,
+              fontSize: "0.95rem",
+            },
+            "& .MuiDataGrid-columnHeader": {
+              fontWeight: "bold",
+              position: "sticky",
+              top: 0,
+              zIndex: 10,
+            },
+            "& .MuiDataGrid-columnHeaders": {
+              position: "sticky",
+              top: 0,
+              zIndex: 10,
+            },
+            "& .MuiDataGrid-cell": {
+              borderBottom: "1px solid #e5e7eb",
+            },
+            "& .MuiDataGrid-row:hover": {
+              backgroundColor: "#f9fafb",
+            },
+            "& .MuiDataGrid-footerContainer": {
+              borderTop: "1px solid #e5e7eb",
+            },
+          }}
+          disableRowSelectionOnClick
+          density="standard"
+        />
+      </Paper>
 
       {/* Shared Import Popup */}
       <ImportCSVPopup
         open={importDialogOpen}
         onClose={() => setImportDialogOpen(false)}
-        // Map env_parameter_name to parameter_name so the shared popup can recognize labels
         parameters={environment.parameters.map(p => ({ ...p, parameter_name: p.env_parameter_name }))}
         onImport={handleImportCSV}
       />

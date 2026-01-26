@@ -1,14 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import {
   Box,
   CircularProgress,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Paper,
   TextField,
   InputAdornment,
@@ -17,10 +12,10 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { parameterValueApi } from "@/services/api";
 import dayjs from "dayjs";
-import { FileUpload, Search, FileDownload } from "@mui/icons-material"; 
+import { FileUpload, Search, FileDownload } from "@mui/icons-material";
 import ImportCSVPopup from "./ImportCSVPopup";
 import { toast } from "react-toastify";
-import * as XLSX from "xlsx"; 
+import * as XLSX from "xlsx";
 
 type Props = {
   equipment: {
@@ -36,6 +31,7 @@ export default function LabEquipmentLogs({ equipment }: Props) {
   const [loading, setLoading] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
 
   /* -------- Equipment Detail Map -------- */
   const equipmentDetailMap = useMemo(() => {
@@ -89,30 +85,35 @@ export default function LabEquipmentLogs({ equipment }: Props) {
     return map;
   }, [equipment.parameters]);
 
-  /* -------- Filtered Rows -------- */
+  /* -------- All Rows (before filtering) -------- */
+  const allRows = useMemo(() => {
+    return logs.map((log, index) => {
+      const param = parameterMetaMap.get(log.parameter_id);
+      return {
+        id: log.id || index,
+        date: dayjs(log.created_at).format("DD/MM/YYYY HH:mm"),
+        equipment: equipmentDetailMap.get(log.equipment_details_id) ?? "Unknown",
+        parameter: param?.name ?? "-",
+        unit: param?.unit ?? "-",
+        value: log.content ?? "-",
+      };
+    });
+  }, [logs, parameterMetaMap, equipmentDetailMap]);
+
+  /* -------- Filtered Rows with search -------- */
   const rows = useMemo(() => {
-    const allRows = [...logs]
-      .sort((a, b) => dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf())
-      .map((log) => {
-        const param = parameterMetaMap.get(log.parameter_id);
-        return {
-          id: log.id,
-          date: dayjs(log.created_at).format("DD/MM/YYYY HH:mm"),
-          equipment: equipmentDetailMap.get(log.equipment_details_id) ?? "Unknown",
-          parameter: param?.name ?? "-",
-          unit: param?.unit ?? "-",
-          value: log.content ?? "-",
-        };
-      });
+    let filtered = allRows;
 
-    if (!searchTerm) return allRows;
+    if (searchTerm) {
+      filtered = filtered.filter((row) =>
+        Object.values(row).some((val) =>
+          String(val).toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      );
+    }
 
-    return allRows.filter((row) =>
-      Object.values(row).some((val) =>
-        String(val).toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
-  }, [logs, parameterMetaMap, equipmentDetailMap, searchTerm]);
+    return filtered;
+  }, [allRows, searchTerm]);
 
   /* -------- Export to Excel Logic -------- */
   const handleExportExcel = () => {
@@ -121,7 +122,6 @@ export default function LabEquipmentLogs({ equipment }: Props) {
       return;
     }
 
-    // Map rows to match the table headers for the Excel sheet
     const excelData = rows.map((row) => ({
       "Date & Time": row.date,
       "Equipment": row.equipment,
@@ -134,7 +134,6 @@ export default function LabEquipmentLogs({ equipment }: Props) {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Equipment Logs");
 
-    // Generate filename based on equipment name and current date
     const fileName = `Logs_${equipment.equipment_num || "Equipment"}_${dayjs().format("YYYY-MM-DD")}.xlsx`;
 
     XLSX.writeFile(workbook, fileName);
@@ -145,7 +144,7 @@ export default function LabEquipmentLogs({ equipment }: Props) {
     try {
       const requests = importedData.map((log) => {
         const param = equipment.parameters.find((p) => p.parameter_name === log.parameter);
-        if (!param?.id) return null;
+        if (!param?.id || !equipment.equipment_id) return null;
 
         const logDateTime = dayjs(log.dateTime, ["DD/MM/YYYY HH:mm", "YYYY-MM-DD HH:mm"]);
         if (!logDateTime.isValid()) return null;
@@ -179,12 +178,47 @@ export default function LabEquipmentLogs({ equipment }: Props) {
     );
   }
 
+  const columns: GridColDef[] = [
+    { 
+      field: 'date', 
+      headerName: 'Date & Time', 
+      width: 180, 
+      sortable: true,
+    },
+    { 
+      field: 'equipment', 
+      headerName: 'Equipment', 
+      width: 150, 
+      sortable: true,
+    },
+    { 
+      field: 'parameter', 
+      headerName: 'Parameter', 
+      width: 150, 
+      sortable: true,
+    },
+    { 
+      field: 'unit', 
+      headerName: 'Unit', 
+      width: 100, 
+      sortable: true,
+    },
+    { 
+      field: 'value', 
+      headerName: 'Value', 
+      width: 120, 
+      sortable: true,
+      type: 'string',
+    },
+  ];
+
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {/* Header Actions */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
         <TextField
-          placeholder="Filter logs..."
+          placeholder="Search across all columns..."
           size="small"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -198,7 +232,6 @@ export default function LabEquipmentLogs({ equipment }: Props) {
           }}
         />
         <Box sx={{ display: "flex", gap: 1 }}>
-          {/* Export Button */}
           <Button
             variant="outlined"
             startIcon={<FileUpload />}
@@ -215,7 +248,6 @@ export default function LabEquipmentLogs({ equipment }: Props) {
             Export CSV
           </Button>
 
-          {/* Import Button */}
           <Button
             variant="contained"
             startIcon={<FileDownload />}
@@ -233,63 +265,53 @@ export default function LabEquipmentLogs({ equipment }: Props) {
         </Box>
       </Box>
 
-      {/* MUI Table with Fixed Height/Scroll */}
-      <TableContainer 
-        component={Paper} 
-        sx={{ 
-          borderRadius: "12px", 
-          border: "1px solid #e5e7eb", 
+      {/* DataGrid Table */}
+      <Paper
+        sx={{
+          height: 500,
+          width: "100%",
+          borderRadius: "12px",
+          border: "1px solid #e5e7eb",
           boxShadow: "none",
-          height: 480, 
-          overflow: "auto" 
         }}
       >
-        <Table stickyHeader sx={{ minWidth: 650 }}>
-          <TableHead>
-            <TableRow>
-              {["Date & Time", "Equipment", "Parameter", "Unit", "Value"].map((head) => (
-                <TableCell 
-                  key={head} 
-                  sx={{ 
-                    fontWeight: 700, 
-                    backgroundColor: "#fafafa", 
-                    color: "#4B5563",
-                    zIndex: 2 
-                  }}
-                >
-                  {head}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.length > 0 ? (
-              rows.map((row) => (
-                <TableRow 
-                  key={row.id} 
-                  hover 
-                  sx={{ 
-                    "&:last-child td, &:last-child th": { border: 0 },
-                    height: 44 
-                  }}
-                >
-                  <TableCell>{row.date}</TableCell>
-                  <TableCell>{row.equipment}</TableCell>
-                  <TableCell>{row.parameter}</TableCell>
-                  <TableCell>{row.unit}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{row.value}</TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 6, color: "#94a3b8" }}>
-                  {searchTerm ? `No matches for "${searchTerm}"` : "No logs found"}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+        <DataGrid
+          rows={rows}
+          columns={columns}
+          pageSizeOptions={[5, 10, 25, 50]}
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
+          sx={{
+            border: 0,
+            "& .MuiDataGrid-columnHeaderTitle": {
+              fontWeight: 700,
+              fontSize: "0.95rem",
+            },
+            "& .MuiDataGrid-columnHeader": {
+              fontWeight: "bold",
+              position: "sticky",
+              top: 0,
+              zIndex: 10,
+            },
+            "& .MuiDataGrid-columnHeaders": {
+              position: "sticky",
+              top: 0,
+              zIndex: 10,
+            },
+            "& .MuiDataGrid-cell": {
+              borderBottom: "1px solid #e5e7eb",
+            },
+            "& .MuiDataGrid-row:hover": {
+              backgroundColor: "#f9fafb",
+            },
+            "& .MuiDataGrid-footerContainer": {
+              borderTop: "1px solid #e5e7eb",
+            },
+          }}
+          disableRowSelectionOnClick
+          density="standard"
+        />
+      </Paper>
 
       <ImportCSVPopup
         open={importDialogOpen}
