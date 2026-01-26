@@ -445,7 +445,7 @@ else if (dataType === "Decimal") {
           <>
             <Box sx={{ display: "flex", gap: "16px" }}>
               <TextField
-                label="Default Value"
+                label="Recommended"
                 size="small"
                 value={integerDefault}
                 onChange={(e) => setIntegerDefault(e.target.value)}
@@ -497,7 +497,7 @@ else if (dataType === "Decimal") {
           <>
             <Box sx={{ display: "flex", gap: "16px" }}>
               <TextField
-                label="Default Value"
+                label="Recommended"
                 size="small"
                 value={decimalDefault}
                 onChange={(e) => setDecimalDefault(e.target.value)}
