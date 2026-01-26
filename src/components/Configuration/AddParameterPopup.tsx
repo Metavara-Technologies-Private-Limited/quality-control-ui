@@ -23,22 +23,8 @@ interface Props {
   initialData?: any;
 }
 
-const UNIT_OPTIONS = [
-  "°C",
-  "°F",
-  "m/s",
-  "µg/m³",
-  "%",
-  "ppm",
-  "pH",
-  "mg/L",
-  "ml",
-  "l",
-  "kg",
-  "g",
-  "m",
-  "cm",
-];
+const UNIT_OPTIONS = ["°C","°F","m/s","µg/m³","%",
+  "ppm","pH","mg/L","ml","l","kg","g","m","cm",];
 
 const FIELD_TYPES = ["Integer", "Decimal", "Text", "Boolean", "Dropdown"];
 
@@ -108,27 +94,28 @@ const AddParameterPopup: React.FC<Props> = ({
     console.log("Loading initial data:", initialData);
 
     // Load type-specific data
-    if (dataType === "Integer") {
-      // Try multiple possible field names for default value
-      const defaultVal =
-        initialData.default_value ??
-        initialData.integer_value ??
-        initialData.int_value ??
-        "";
+// Load type-specific data
+if (dataType === "Integer" || dataType === "Min/Max") {
+  const defaultVal =
+    initialData.default_value ??
+    initialData.integer_value ??
+    initialData.int_value ??
+    "";
 
-      setIntegerDefault(String(defaultVal));
-      setIntegerUnit(initialData.unit || "");
-      setIntegerMin(
-        initialData.min_value !== null && initialData.min_value !== undefined
-          ? String(initialData.min_value)
-          : "",
-      );
-      setIntegerMax(
-        initialData.max_value !== null && initialData.max_value !== undefined
-          ? String(initialData.max_value)
-          : "",
-      );
-    } else if (dataType === "Decimal") {
+  setIntegerDefault(String(defaultVal));
+  setIntegerUnit(initialData.unit || "");
+  setIntegerMin(
+    initialData.min_value !== null && initialData.min_value !== undefined
+      ? String(initialData.min_value)
+      : "",
+  );
+  setIntegerMax(
+    initialData.max_value !== null && initialData.max_value !== undefined
+      ? String(initialData.max_value)
+      : "",
+  );
+}
+else if (dataType === "Decimal") {
       // Try multiple possible field names for default value
       const defaultVal =
         initialData.default_value ?? initialData.decimal_value ?? "";

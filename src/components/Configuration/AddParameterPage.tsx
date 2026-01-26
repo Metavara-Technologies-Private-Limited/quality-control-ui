@@ -147,6 +147,7 @@ const [toggleAction, setToggleAction] =
           title: p.env_parameter_name,
           data_type: cfg.data_type,
           field_type: cfg.data_type,
+          default_value: cfg.default_value ?? "",
           unit: cfg.unit ?? "",
           min_value: cfg.min_value ?? "",
           max_value: cfg.max_value ?? "",
@@ -156,6 +157,7 @@ const [toggleAction, setToggleAction] =
           dropdown: normalizeDropdownValue(cfg.dropdown),
           selection_type: cfg.selection_type ?? "single",
           percentage: cfg.percentage ?? null,
+          is_active: p.is_active,
         };
       });
 
@@ -278,6 +280,48 @@ const [toggleAction, setToggleAction] =
     setParameters(loadParametersFromLocalStorage());
   }, [location, clinic]);
 
+useEffect(() => {
+  if (!isEnvironment || !environmentId || !clinic) return;
+
+  const department = clinic.department.find((d) =>
+    d.environments?.some((env) => env.id === environmentId),
+  );
+
+  const environment = department?.environments?.find(
+    (env) => env.id === environmentId,
+  );
+
+  if (!environment) return;
+
+  const syncedParams = environment.parameters.map((p: any) => {
+    let cfg = p.config || {};
+    if (cfg.history?.length) {
+      cfg = cfg.history[cfg.history.length - 1];
+    }
+
+    return {
+      id: p.id,
+      name: p.env_parameter_name,
+      title: p.env_parameter_name,
+      data_type: cfg.data_type,
+      field_type: cfg.data_type,
+      default_value: cfg.default_value ?? "",
+      unit: cfg.unit ?? "",
+      min_value: cfg.min_value ?? "",
+      max_value: cfg.max_value ?? "",
+      text: cfg.text ?? "",
+      text_type: cfg.text_type ?? "single",
+      boolean_type: cfg.boolean_type ?? "yesno",
+      dropdown: normalizeDropdownValue(cfg.dropdown),
+      selection_type: cfg.selection_type ?? "single",
+      percentage: cfg.percentage ?? null,
+      is_active: p.is_active, // ⭐ THIS is the key
+    };
+  });
+
+  setParameters(syncedParams);
+}, [clinic, environmentId, isEnvironment]);
+
   useEffect(() => {
     if (!isEditMode) {
       saveParametersToLocalStorage(parameters);
@@ -392,25 +436,43 @@ resetMenuState();
     handleClose();
   };
 
-  const confirmDeleteParameter = async () => {
-    if (paramIndexToDelete === null) return;
+const confirmDeleteParameter = async () => {
+  if (paramIndexToDelete === null) return;
 
-    const param = parameters[paramIndexToDelete];
+  const param = parameters[paramIndexToDelete];
 
-    try {
-      if (param.id) await equipmentApi.softDeleteParameter(param.id);
+  // ✅ remove from UI immediately
+  const updatedParams = parameters.filter(
+    (_, i) => i !== paramIndexToDelete
+  );
 
-      setParameters((prev) => prev.filter((_, i) => i !== paramIndexToDelete));
-      toast.info("Parameter deleted");
-      dispatch(fetchClinic(1));
-    } catch (err) {
-      toast.error("Failed to delete parameter");
-      console.error(err);
-    } finally {
-      setParamIndexToDelete(null);
-      setDeleteParamDialogOpen(false);
+  try {
+    if (param.id) {
+      if (isEnvironment) {
+        await environmentApi.softDeleteParameter(param.id);
+      } else {
+        await equipmentApi.softDeleteParameter(param.id);
+      }
     }
-  };
+
+    // ✅ update UI state
+    setParameters(updatedParams);
+
+    toast.success("Parameter deleted");
+    dispatch(fetchClinic(1));
+  } catch (err) {
+    console.error("Delete failed:", err);
+    toast.error("Delete failed");
+
+    // optional fallback UX
+    setParameters(updatedParams);
+  } finally {
+    setParamIndexToDelete(null);
+    setDeleteParamDialogOpen(false);
+  }
+};
+
+
 
   const handleSaveEquipmentDetails = () => {
     if (!make.trim() || !model.trim()) {
@@ -490,9 +552,12 @@ resetMenuState();
 
   const handleAddParameter = (data: any) => {
   const paramWithStatus = {
-    ...data,
-    is_active: data.is_active ?? true, // ✅ DEFAULT ACTIVE
-  };
+  ...data,
+  // ✅ IMPORTANT: explicitly persist default_value for environment
+  default_value: data.default_value ?? null,
+  is_active: data.is_active ?? true,
+};
+
 
   if (editingParamIndex !== null) {
     setParameters((prev) =>
@@ -550,7 +615,7 @@ resetMenuState();
           parameters: parameters.map((p) => ({
             id: p.id ?? undefined,
             parameter_name: p.name || p.title || "",
-            is_active: true,
+            is_active: p.is_active !== false,
             config: {
               data_type: p.data_type || p.field_type || "",
               default_value:
@@ -590,28 +655,29 @@ resetMenuState();
 
       /* ---------------- ENVIRONMENT ---------------- */
       if (isEnvironment) {
-        const environmentPayload = {
-          environment_name: equipmentName.trim(), // reused variable
-          is_active: true,
-          parameters: parameters.map((p) => ({
-            id: p.id ?? undefined,
-            env_parameter_name: p.name || p.title || "",
-            is_active: true,
-            config: {
-              default_value: p.default_value ?? null,
-              data_type: p.data_type || p.field_type || "",
-              min_value: p.min_value ?? null,
-              max_value: p.max_value ?? null,
-              unit: p.unit ?? null,
-              percentage: p.percentage ?? null,
-              text: p.text ?? null,
-              text_type: p.text_type ?? null,
-              boolean_type: p.boolean_type ?? null,
-              dropdown: p.dropdown ?? [],
-              selection_type: p.selection_type ?? null,
-            },
-          })),
-        };
+const environmentPayload = {
+  environment_name: equipmentName.trim(),
+  is_active: true,
+  parameters: parameters.map((p) => ({
+    id: p.id ?? undefined,
+    env_parameter_name: p.name || p.title || "",
+    is_active: p.is_active !== false, // ✅ FIXED
+    config: {
+      default_value: p.default_value ?? null,
+      data_type: p.data_type || p.field_type || "",
+      min_value: p.min_value ?? null,
+      max_value: p.max_value ?? null,
+      unit: p.unit ?? null,
+      percentage: p.percentage ?? null,
+      text: p.text ?? null,
+      text_type: p.text_type ?? null,
+      boolean_type: p.boolean_type ?? null,
+      dropdown: p.dropdown ?? [],
+      selection_type: p.selection_type ?? null,
+    },
+  })),
+};
+
 
         if (isEditMode && environmentId) {
           await environmentApi.update(environmentId, environmentPayload);
@@ -843,106 +909,115 @@ const selectedParam =
 
         {parameters.length > 0 && (
           <Box sx={{ mt: 3, display: "flex", flexWrap: "wrap", gap: 2 }}>
-            {parameters.map((p, index) => (
-              <Box
-                key={index}
-                sx={{
-                  width: "260px",
-                  border: "1px solid #E5E7EB",
-                  borderRadius: "12px",
-                  background: "#FFFFFF",
-                  p: 2,
-                  boxShadow: "0px 1px 2px rgba(0,0,0,0.04)",
-                  position: "relative",
-                  opacity: !isEnvironment
-                  ? 1
-                  : p.is_active === false
-                    ? 0.5
-                    : 1,
-                }}
-              >
-
-{/* ENVIRONMENT – ACTIVE / INACTIVE PILL */}
-{isEnvironment && (
+{parameters.map((p, index) => (
   <Box
+    key={index}
     sx={{
-      position: "absolute",
-      top: 10,
-      right: 10,
-      px: 1.2,
-      py: 0.3,
-      borderRadius: "999px",
-      fontSize: "10px",
-      fontWeight: 700,
-      letterSpacing: "0.06em",
-      textTransform: "uppercase",
-      backgroundColor:
-        p.is_active === false ? "#FEE2E2" : "#DCFCE7",
-      color:
-        p.is_active === false ? "#B91C1C" : "#15803D",
+      width: "260px",
+      border: "1px solid #E5E7EB",
+      borderRadius: "12px",
+      background: "#FFFFFF",
+      p: 2,
+      boxShadow: "0px 1px 2px rgba(0,0,0,0.04)",
+      position: "relative",
+      opacity: !isEnvironment
+        ? 1
+        : p.is_active === false
+          ? 0.5
+          : 1,
     }}
   >
-    {p.is_active === false ? "Inactive" : "Active"}
-  </Box>
-)}
+    {/* ENVIRONMENT – ACTIVE / INACTIVE PILL (Keep as is) */}
+    {isEnvironment && (
+      <Box
+        sx={{
+          position: "absolute",
+          top: 10,
+          right: 10, // Active and Inactive pill position in environmet
+          px: 1.2,
+          py: 0.3,
+          borderRadius: "999px",
+          fontSize: "10px",
+          fontWeight: 700,
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          backgroundColor: p.is_active === false ? "#FEE2E2" : "#DCFCE7",
+          color: p.is_active === false ? "#B91C1C" : "#15803D",
+        }}
+      >
+        {p.is_active === false ? "Inactive" : "Active"}
+      </Box>
+    )}
 
 <Box
   sx={{
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
   }}
 >
-  <Typography sx={{ fontWeight: 600 }}>
+  <Typography sx={{ fontWeight: 600, maxWidth: "80%" }}>
     {p.name || p.title}
   </Typography>
 
+  {/* ✅ Equipment only → top-right */}
+  {!isEnvironment && (
+    <IconButton
+      size="small"
+      onClick={(e) => handleMenuOpen(e, index)}
+      sx={{
+        mt: -0.5,
+        mr: -0.5,
+        width: 28,
+        height: 28,
+        border: "1px solid #E5E7EB",
+        borderRadius: "6px",
+      }}
+    >
+      <MoreHoriz fontSize="small" />
+    </IconButton>
+  )}
 </Box>
 
 
-                <Typography
-                  sx={{ fontSize: "12px", color: "#6B7280", mt: 0.5 }}
-                >
-                  Data Type : {p.data_type || p.field_type}
-                </Typography>
-               
-                <Box
-                  sx={{
-                    height: "1px",
-                    background: "#E5E7EB",
-                    mt: 1.2,
-                    mb: 1.2,
-                    mx: -2,
-                  }}
-                />
-<Box sx={{ pr: isEnvironment ? 5 : 0 }}>
-  {renderParameterContent(p)}
-</Box>
-{/* ENVIRONMENT – 3 DOTS FIXED BOTTOM RIGHT */}
+    <Typography sx={{ fontSize: "12px", color: "#6B7280", mt: 0.5 }}>
+      Data Type : {p.data_type || p.field_type}
+    </Typography>
 
+    <Box
+      sx={{
+        height: "1px",
+        background: "#E5E7EB",
+        mt: 1.2,
+        mb: 1.2,
+        mx: -2,
+      }}
+    />
+
+    <Box sx={{ pr: 1 }}>
+      {renderParameterContent(p)}
+      {/* Environment only → bottom-right 3 dots */}
 {isEnvironment && (
   <IconButton
     size="small"
     onClick={(e) => handleMenuOpen(e, index)}
     sx={{
       position: "absolute",
-      bottom: 12,
-      right: 12,
-      width: 32,
-      height: 32,
+      bottom: 8,
+      right: 8,
+      width: 28,
+      height: 28,
       border: "1px solid #E5E7EB",
-      borderRadius: "8px",
-      backgroundColor: "#FFFFFF",
+      borderRadius: "6px",
     }}
   >
     <MoreHoriz fontSize="small" />
   </IconButton>
 )}
 
-
-
-              </Box>
-            ))}
+    </Box>
+  </Box>
+))}
           </Box>
         )}
 
@@ -1265,44 +1340,59 @@ const selectedParam =
   open={Boolean(anchorEl)}
   onClose={resetMenuState}
 >
-  {/* Activate / Inactivate */}
-  {menuParamIndex !== null &&
-  parameters[menuParamIndex]?.is_active !== false ? (
-    <MenuItem
-      onClick={() => {
-        setParameters((prev) =>
-          prev.map((p, i) =>
-            i === menuParamIndex
-              ? { ...p, is_active: false }
-              : p,
-          ),
-        );
-        toast.success("Parameter inactivated");
-        resetMenuState();
-      }}
-    >
-      Inactivate
-    </MenuItem>
-  ) : (
-    <MenuItem
-      onClick={() => {
-        setParameters((prev) =>
-          prev.map((p, i) =>
-            i === menuParamIndex
-              ? { ...p, is_active: true }
-              : p,
-          ),
-        );
-        toast.success("Parameter activated");
-        resetMenuState();
-      }}
-    >
-      Activate
-    </MenuItem>
+  {/* ENVIRONMENT: Activate / Inactivate */}
+  {isEnvironment && menuParamIndex !== null && (
+    parameters[menuParamIndex]?.is_active !== false ? (
+<MenuItem
+  onClick={async () => {
+    try {
+      const param = parameters[menuParamIndex!];
+      if (!param?.id) return;
+
+      await environmentApi.updateParameterStatus(param.id, false);
+
+      toast.success("Parameter inactivated");
+      dispatch(fetchClinic(1)); // 🔥 reload real backend data
+    } catch (e) {
+      toast.error("Failed to inactivate parameter");
+    } finally {
+      resetMenuState();
+    }
+  }}
+>
+  Inactivate
+</MenuItem>
+
+
+    ) : (
+<MenuItem
+  onClick={async () => {
+    try {
+      const param = parameters[menuParamIndex!];
+      if (!param?.id) return;
+
+      await environmentApi.updateParameterStatus(param.id, true);
+
+      toast.success("Parameter activated");
+      dispatch(fetchClinic(1)); // 🔥 reload real backend data
+    } catch (e) {
+      toast.error("Failed to activate parameter");
+    } finally {
+      resetMenuState();
+    }
+  }}
+>
+  Activate
+</MenuItem>
+
+
+    )
   )}
 
+  {/* Always show Edit */}
   <MenuItem onClick={handleEditParameter}>Edit</MenuItem>
 
+  {/* Delete */}
   <MenuItem
     sx={{ color: "error.main" }}
     onClick={handleDeleteParameter}
@@ -1310,6 +1400,7 @@ const selectedParam =
     Delete
   </MenuItem>
 </Menu>
+
 
 
 

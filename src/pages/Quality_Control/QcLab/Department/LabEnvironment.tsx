@@ -23,13 +23,16 @@ export default function LabEnvironment() {
     (d) => normalize(d.name) === normalize(departmentName)
   );
 
-  const environments = useMemo(() => {
-    if (!department?.environments) return [];
+const environments = useMemo(() => {
+  if (!department?.environments) return [];
 
-    return department.environments.filter((env) =>
+  return department.environments
+    .filter((env) => env.is_active !== false) 
+    .filter((env) =>
       env.environment_name.toLowerCase().includes(searchText.toLowerCase())
     );
-  }, [department, searchText]);
+}, [department, searchText]);
+
 
   const [selectedEnv, setSelectedEnv] = useState<any>(null);
   const [refreshKey, setRefreshKey] = useState(0);
