@@ -24,22 +24,11 @@ import SearchIcon from "@mui/icons-material/Search";
 /* ---------------- Avatar Colors ---------------- */
 
 const avatarColors = [
-  "#FF5630",
-  "#FF7452",
-  "#FF8B00",
-  "#FFC400",
-  "#36B37E",
-  "#00B8D9",
-  "#2684FF",
-  "#6554C0",
-  "#8777D9",
-  "#998DD9",
-  "#0052CC",
-  "#172B4D",
-  "#42526E",
-  "#6B778C",
-  "#091E42",
+  "#091E42", "#172B4D", "#0052CC", "#0747A6", "#0065FF",
+  "#004F3D", "#006644", "#00875A", "#7A1FA2", "#403294",
+  "#5E4DB2", "#BF2600", "#DE350B", "#FF5630", "#FF8B00",
 ];
+
 
 const getInitials = (name: string) =>
   name
@@ -195,20 +184,29 @@ const DepartmentLayout = () => {
                     arrow
                     placement="bottom"
                   >
-                    <Avatar
-                      onClick={() => handleToggleAssignee(person.id)}
-                      sx={{
-                        backgroundColor: getAvatarColor(person.emp_name),
-                        outline: isSelected ? "2px solid #0052CC" : "none",
-                        outlineOffset: "2px",
-                        opacity:
-                          selectedAssigneeIds.length > 0 && !isSelected
-                            ? 0.5
-                            : 1,
-                      }}
-                    >
-                      {getInitials(person.emp_name)}
-                    </Avatar>
+<Avatar
+  onClick={() => handleToggleAssignee(person.id)}
+  sx={{
+    backgroundColor: getAvatarColor(person.emp_name),
+
+    outline: isSelected ? "none" : "none",
+    outlineOffset: "1px",
+
+    opacity:
+      selectedAssigneeIds.length > 0 && !isSelected ? 0.5 : 1,
+
+    transform: isSelected
+      ? "scale(1.35) translateY(-5px)"
+      : "scale(1)",
+
+    zIndex: isSelected ? 3 : 1,
+
+    transition: "all 0.2s ease-in-out",
+  }}
+>
+  {getInitials(person.emp_name)}
+</Avatar>
+
                   </Tooltip>
                 );
               })}

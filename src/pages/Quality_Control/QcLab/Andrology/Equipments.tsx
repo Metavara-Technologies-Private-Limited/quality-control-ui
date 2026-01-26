@@ -19,10 +19,9 @@ import RefrigeratorFreezerForm from "./RefrigeratorFreezerForm";
 const formatCount = (value: number) => String(value).padStart(2, "0");
 
 const avatarColors = [
-  '#F44336', '#E91E63', '#9C27B0', '#673AB7',
-  '#3F51B5', '#2196F3', '#03A9F4', '#00BCD4',
-  '#009688', '#4CAF50', '#8BC34A', '#FFC107',
-  '#FF9800', '#FF5722', '#795548', '#607D8B',
+  "#091E42", "#172B4D", "#0052CC", "#0747A6", "#0065FF",
+  "#004F3D", "#006644", "#00875A", "#7A1FA2", "#403294",
+  "#5E4DB2", "#BF2600", "#DE350B", "#FF5630", "#FF8B00",
 ];
 
 const getAvatarColor = (name: string) => {
