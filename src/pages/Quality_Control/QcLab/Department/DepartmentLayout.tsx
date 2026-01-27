@@ -157,60 +157,63 @@ const DepartmentLayout = () => {
               Assignees
             </Typography>
 
-            <AvatarGroup
-              max={5}
-              componentsProps={{
-                additionalAvatar: {
-                  onClick: (e) => setAnchorEl(e.currentTarget),
-                  sx: { cursor: "pointer" },
-                },
-              }}
-              sx={{
-                "& .MuiAvatar-root": {
-                  width: 32,
-                  height: 32,
-                  fontSize: 12,
-                  border: "2px solid #fff",
-                  cursor: "pointer",
-                },
-              }}
-            >
-              {departmentAssignees.map((person) => {
-                const isSelected = selectedAssigneeIds.includes(person.id);
-                return (
-                  <Tooltip
-                    key={person.id}
-                    title={person.emp_name}
-                    arrow
-                    placement="bottom"
-                  >
-<Avatar
-  onClick={() => handleToggleAssignee(person.id)}
+<AvatarGroup
+  max={5}
+  spacing={0}
+  componentsProps={{
+    additionalAvatar: {
+      onClick: (e) => setAnchorEl(e.currentTarget),
+      sx: { cursor: "pointer" },
+    },
+  }}
   sx={{
-    backgroundColor: getAvatarColor(person.emp_name),
-
-    outline: isSelected ? "none" : "none",
-    outlineOffset: "1px",
-
-    opacity:
-      selectedAssigneeIds.length > 0 && !isSelected ? 0.5 : 1,
-
-    transform: isSelected
-      ? "scale(1.35) translateY(-5px)"
-      : "scale(1)",
-
-    zIndex: isSelected ? 3 : 1,
-
-    transition: "all 0.2s ease-in-out",
+    "& .MuiAvatar-root": {
+      width: 32,
+      height: 32,
+      fontSize: 12,
+      border: "2px solid #fff",
+      cursor: "pointer",
+      transition: "all 0.25s ease",
+    },
   }}
 >
-  {getInitials(person.emp_name)}
-</Avatar>
+  {departmentAssignees.map((person) => {
+    const isSelected = selectedAssigneeIds.includes(person.id);
+    const hasSelection = selectedAssigneeIds.length > 0;
 
-                  </Tooltip>
-                );
-              })}
-            </AvatarGroup>
+    return (
+      <Tooltip key={person.id} title={person.emp_name} arrow placement="bottom">
+        <Avatar
+          onClick={() => handleToggleAssignee(person.id)}
+          sx={{
+            backgroundColor: getAvatarColor(person.emp_name),
+
+            /* opacity rule */
+            opacity: hasSelection && !isSelected ? 0.45 : 1,
+
+            /* 🔑 overlap vs spacing */
+            marginLeft: hasSelection
+              ? isSelected
+                ? "10px !important"   // selected → spaced
+                : "-10px !important"  // unselected → still overlapped
+              : "-10px !important",  // no selection → all overlapped
+
+            /* visual emphasis */
+            transform: isSelected ? "scale(1.25) translateY(-4px)" : "scale(1)",
+            zIndex: isSelected ? 20 : 1,
+
+            boxShadow: isSelected
+              ? "0 6px 14px rgba(0,0,0,0.25)"
+              : "none",
+          }}
+        >
+          {getInitials(person.emp_name)}
+        </Avatar>
+      </Tooltip>
+    );
+  })}
+</AvatarGroup>
+
 
             {/* ---------------- Popover ---------------- */}
             <Popover
