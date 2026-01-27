@@ -13,7 +13,7 @@ import { store } from "./store";
 import { TabProvider } from "./utils/tabContext";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
+  // <React.StrictMode>
     <BrowserRouter>
       <ThemeProvider theme={theme}>
         <CssBaseline />
@@ -27,6 +27,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           </ViewProvider>
         </Provider>
       </ThemeProvider>
-    </BrowserRouter>
-  </React.StrictMode>,
+    </BrowserRouter>,
+  // </React.StrictMode>,
 );

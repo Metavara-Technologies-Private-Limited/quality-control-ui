@@ -7,10 +7,37 @@ import LabEquipmentForm from "./LabEquipmentForm";
 import LabPlanPage from "./LabPlanPage";
 
 const avatarColors = [
-  "#091E42", "#172B4D", "#0052CC", "#0747A6", "#0065FF",
-  "#004F3D", "#006644", "#00875A", "#7A1FA2", "#403294",
-  "#5E4DB2", "#BF2600", "#DE350B", "#FF5630", "#FF8B00",
+  "#FF5630",
+  "#FF7452",
+  "#FF8B00",
+  "#FFC400",
+  "#36B37E",
+  "#00B8D9",
+  "#2684FF",
+  "#6554C0",
+  "#8777D9",
+  "#998DD9",
+  "#0052CC",
+  "#172B4D",
+  "#42526E",
+  "#6B778C",
+  "#091E42",
 ];
+
+const getRecurrenceLabel = (item: EquipmentItem) => {
+  switch (item.scheduleType) {
+    case 1:
+      return "One-time";
+    case 2:
+      return "Daily";
+    case 3:
+      return "Weekly";
+    case 4:
+      return "Monthly";
+    default:
+      return "";
+  }
+};
 
 const getAvatarColor = (name: string) => {
   let hash = 0;
@@ -20,7 +47,7 @@ const getAvatarColor = (name: string) => {
   return avatarColors[Math.abs(hash) % avatarColors.length];
 };
 
-/* ---------------- Utils ---------------- */
+/* -------- Utils -------- */
 const normalize = (v: string) => v?.replace(/\s+/g, "").toLowerCase();
 const formatCount = (v: number) => String(v).padStart(2, "0");
 const getInitials = (name: string) =>
@@ -31,7 +58,91 @@ const getInitials = (name: string) =>
     .slice(0, 2)
     .toUpperCase();
 
-/* ---------------- Types ---------------- */
+const formatDate = (date: string | Date) => {
+  if (!date) return "";
+  const d = new Date(date);
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+/* -------- Check if event is active TODAY -------- */
+const isEventActiveToday = (event: any): boolean => {
+  const schedule = event?.schedule;
+  if (!schedule) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  /* ---------- One-time event ---------- */
+  if (schedule.one_time_date) {
+    const oneTime = new Date(schedule.one_time_date);
+    oneTime.setHours(0, 0, 0, 0);
+    return today.getTime() === oneTime.getTime();
+  }
+
+  /* ---------- Date range validation (NOT for monthly) ---------- */
+  if (
+    schedule.start_date &&
+    schedule.end_date &&
+    schedule.type !== 4 // ⚠️ critical fix
+  ) {
+    const start = new Date(schedule.start_date);
+    const end = new Date(schedule.end_date);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+
+    if (today < start || today > end) return false;
+  }
+
+  /* ---------- Recurring logic ---------- */
+  switch (schedule.type) {
+    case 1: {
+      // ONE-TIME
+      if (!schedule.one_time_date) return false;
+      const d = new Date(schedule.one_time_date);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime() === today.getTime();
+    }
+  
+    case 2: {
+      // DAILY (date range based)
+      if (schedule.start_date && schedule.end_date) {
+        const start = new Date(schedule.start_date);
+        const end = new Date(schedule.end_date);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        return today >= start && today <= end;
+      }
+      return true;
+    }
+  
+    case 3: {
+      // WEEKLY
+      if (!schedule.days || schedule.days.length === 0) return true;
+      const todayDay = today.toLocaleDateString("en-US", { weekday: "short" });
+      return schedule.days.some((d: string) =>
+        normalize(d).startsWith(normalize(todayDay)),
+      );
+    }
+  
+    case 4: {
+      // MONTHLY
+      if (schedule.months?.length) {
+        return schedule.months.includes(today.getDate());
+      }
+      if (!schedule.start_date) return false;
+      return new Date(schedule.start_date).getDate() === today.getDate();
+    }
+  
+    default:
+      return false;
+  }  
+};
+
+/* -------- Types -------- */
 type EquipmentItem = {
   id: number;
   name: string;
@@ -41,16 +152,27 @@ type EquipmentItem = {
   model: string;
   paramsCount: string;
   assigneeNames?: string[];
+
+  // 🔽 ADD THESE
+  scheduleType?: number;
+  days?: string[];
+  months?: number[];
+  oneTimeDate?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  eventNames?: string[];
 };
-/* ---------------- Equipment Card ---------------- */
+/* -------- Equipment Card -------- */
 const EquipmentCard = ({
   item,
   selected,
   onClick,
+  showDates = false,
 }: {
   item: EquipmentItem;
   selected: boolean;
   onClick: () => void;
+  showDates?: boolean;
 }) => {
   const total = item.parameters.length || 0;
   const active = item.parameters.filter((p) => p.is_active).length;
@@ -66,7 +188,6 @@ const EquipmentCard = ({
         borderRadius: 12,
         cursor: "pointer",
         backgroundColor: "#ffffff",
-        // Logic for selected state colors
         border: selected ? "2px solid #F97316" : "1px solid #e5e7eb",
         display: "flex",
         flexDirection: "column",
@@ -75,23 +196,22 @@ const EquipmentCard = ({
         boxShadow: "0px 2px 4px rgba(0,0,0,0.02)",
       }}
     >
-      {/* -------- Top-right Section: Label + Assignees -------- */}
+      {/* Top-right: Assignees */}
       <div
         style={{
           position: "absolute",
           top: 10,
           right: 10,
           display: "flex",
-          alignItems: "center", // Ensures text and avatars align vertically
+          alignItems: "center",
           gap: "8px",
         }}
       >
-        {/* Added Assignees Label */}
         <span
           style={{
             fontSize: "12px",
             fontWeight: 700,
-            color: "#4B5563", // Match the grey title theme
+            color: "#4B5563",
             display: selected ? "inline" : "none",
           }}
         >
@@ -114,14 +234,13 @@ const EquipmentCard = ({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                marginLeft: index === 0 ? 0 : -8, // Overlap effect
+                marginLeft: index === 0 ? 0 : -8,
                 border: "2px solid #fff",
               }}
             >
               {getInitials(name)}
             </div>
           ))}
-          {/* Show count if more than 3 assignees */}
           {item.assigneeNames && item.assigneeNames.length > 3 && (
             <div
               style={{
@@ -145,13 +264,82 @@ const EquipmentCard = ({
         </div>
       </div>
 
-      {/* Equipment number */}
+      {/* Equipment info */}
       <div style={{ fontSize: 13, fontWeight: 700, color: "#4B5563" }}>
         {item.detailName} :{" "}
         <span style={{ fontWeight: 500, color: "#6B7280" }}>
           Parameters : {item.paramsCount}
         </span>
       </div>
+
+      {/* Dates */}
+      {/* Dates + Recurrence */}
+      {showDates && (
+        <div
+          style={{
+            marginTop: 8,
+            padding: "6px 8px",
+            backgroundColor: "#F8F8F8",
+            borderRadius: 6,
+          }}
+        >
+          {/* Event Name */}
+          {item.eventNames && item.eventNames.length > 0 && (
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: "#0f172a",
+                marginBottom: 2,
+              }}
+            >
+              {item.eventNames[0]}
+            </div>
+          )}
+
+          {/* Recurrence Type */}
+          {item.scheduleType && (
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: "#2563eb",
+                marginBottom: 2,
+              }}
+            >
+              {getRecurrenceLabel(item)}
+            </div>
+          )}
+
+          {/* Date Range */}
+          {item.startDate && item.endDate && (
+            <div style={{ fontSize: 11, color: "#6B7280" }}>
+              {formatDate(item.startDate)} → {formatDate(item.endDate)}
+            </div>
+          )}
+
+          {/* Weekly days */}
+          {item.days && item.days.length > 0 && (
+            <div style={{ fontSize: 11, color: "#6B7280" }}>
+              Days: {item.days.join(", ")}
+            </div>
+          )}
+
+          {/* Monthly dates */}
+          {item.months && item.months.length > 0 && (
+            <div style={{ fontSize: 11, color: "#6B7280" }}>
+              Date: {item.months.join(", ")}
+            </div>
+          )}
+
+          {/* One-time */}
+          {item.oneTimeDate && (
+            <div style={{ fontSize: 11, color: "#6B7280" }}>
+              On: {formatDate(item.oneTimeDate)}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Footer */}
       <div
@@ -171,7 +359,8 @@ const EquipmentCard = ({
     </div>
   );
 };
-/* ---------------- Main Component ---------------- */
+
+/* -------- Main Component -------- */
 export default function LabEquipments() {
   const { departmentName, searchText, selectedAssigneeIds } = useOutletContext<{
     departmentName: string;
@@ -179,11 +368,10 @@ export default function LabEquipments() {
     selectedAssigneeIds: number[];
   }>();
   const assignees = useSelector((state: RootState) => state.assignees.data);
-
   const { data: clinic } = useSelector((s: RootState) => s.clinic);
   const events = useSelector((s: RootState) => s.events.data);
 
-  const [activeTab, setActiveTab] = useState<"To-Do" | "Plan">("To-Do");
+  const [activeTab, setActiveTab] = useState<"All" | "To-Do" | "Plan">("All");
   const [selectedEquipment, setSelectedEquipment] =
     useState<EquipmentItem | null>(null);
   const [selectedRadio, setSelectedRadio] = useState("");
@@ -200,23 +388,72 @@ export default function LabEquipments() {
     return map;
   }, [assignees]);
 
-  /* -------- Build equipment → assignees map (MULTIPLE) -------- */
-  const assigneeByEquipmentId = useMemo(() => {
-    const map: Record<number, string[]> = {};
+  /* -------- Build equipment → assignees + dates + event names map -------- */
+  const equipmentMetadata = useMemo(() => {
+    const map: Record<
+      number,
+      {
+        names: string[];
+        scheduleType?: number;
+        days?: string[];
+        months?: number[];
+        oneTimeDate?: string | null;
+        startDate?: string | null;
+        endDate?: string | null;
+        eventNames: string[];
+      }
+    > = {};
 
     events?.forEach((event: any) => {
       event.equipments?.forEach((eq: any) => {
         const id = eq.equipment_details__id;
-        if (!id || !event.assignment) return;
+        if (!id) return;
 
-        if (!map[id]) map[id] = [];
-        if (!map[id].includes(event.assignment)) {
-          map[id].push(event.assignment);
+        if (!map[id]) {
+          map[id] = {
+            names: [],
+            eventNames: [],
+          };
+        }
+
+        // map[id].scheduleType = event.schedule?.type;
+        if (!map[id].scheduleType) {
+          map[id].scheduleType = event.schedule?.type;
+        }        
+        map[id].days = event.schedule?.days ?? [];
+        map[id].months = event.schedule?.months ?? [];
+        map[id].oneTimeDate = event.schedule?.one_time_date ?? null;
+        map[id].startDate = event.schedule?.start_date ?? null;
+        map[id].endDate = event.schedule?.end_date ?? null;
+
+        if (event.assignment && !map[id].names.includes(event.assignment)) {
+          map[id].names.push(event.assignment);
+        }
+
+        if (!map[id].eventNames.includes(event.event_name)) {
+          map[id].eventNames.push(event.event_name);
         }
       });
     });
 
     return map;
+  }, [events]);
+
+  /* -------- Get equipment IDs active TODAY -------- */
+  const todayActiveEquipmentIds = useMemo(() => {
+    const ids = new Set<number>();
+
+    events?.forEach((event: any) => {
+      if (isEventActiveToday(event)) {
+        event.equipments?.forEach((eq: any) => {
+          if (eq.equipment_details__id) {
+            ids.add(eq.equipment_details__id);
+          }
+        });
+      }
+    });
+
+    return ids;
   }, [events]);
 
   /* -------- Build raw equipment data -------- */
@@ -231,35 +468,63 @@ export default function LabEquipments() {
 
         return eq.equipment_details
           .filter((detail) => {
-            // no assignee filter selected → show all
+            // ALL TAB: Show all equipment
+            if (activeTab === "All") {
+              return true;
+            }
+
+            // TO-DO TAB: Only show today's equipment
+            if (activeTab === "To-Do") {
+              if (!todayActiveEquipmentIds.has(detail.id!)) {
+                return false;
+              }
+            }
+
+            // Apply assignee filter
             if (selectedAssigneeIds.length === 0) return true;
 
-            const assigneeNames = assigneeByEquipmentId[detail.id!] ?? [];
+            const metadata = equipmentMetadata[detail.id!];
+            const assigneeNames = metadata?.names ?? [];
 
-            // map assignee names → ids
             const assigneeIdsForEq = assigneeNames
               .map((name) => assigneeByName.get(name))
               .filter(Boolean) as number[];
-            // show equipment if ANY assignee matches
+
             return assigneeIdsForEq.some((id) =>
               selectedAssigneeIds.includes(id!),
             );
           })
-          .map((detail) => ({
-            id: detail.id!,
-            name: eq.equipment_name,
-            detailName: detail.equipment_num,
-            parameters: eq.parameters || [],
-            make: detail.make,
-            model: detail.model,
-            paramsCount: `${formatCount(active)}/${formatCount(total)}`,
-            assigneeNames:
-              detail.id !== undefined
-                ? (assigneeByEquipmentId[detail.id] ?? [])
-                : [],
-          }));
+          .map((detail) => {
+            const metadata = equipmentMetadata[detail.id!] || {};
+
+            return {
+              id: detail.id!,
+              name: eq.equipment_name,
+              detailName: detail.equipment_num,
+              parameters: eq.parameters || [],
+              make: detail.make,
+              model: detail.model,
+              paramsCount: `${formatCount(active)}/${formatCount(total)}`,
+
+              assigneeNames: metadata.names || [],
+              scheduleType: metadata.scheduleType,
+              days: metadata.days,
+              months: metadata.months,
+              oneTimeDate: metadata.oneTimeDate,
+              startDate: metadata.startDate,
+              endDate: metadata.endDate,
+              eventNames: metadata.eventNames || [],
+            };
+          });
       });
-  }, [department, assigneeByEquipmentId, selectedAssigneeIds, assigneeByName]);
+  }, [
+    department,
+    equipmentMetadata,
+    selectedAssigneeIds,
+    assigneeByName,
+    activeTab,
+    todayActiveEquipmentIds,
+  ]);
 
   /* -------- Group by equipment name -------- */
   const groupedEquipments = useMemo(() => {
@@ -300,18 +565,16 @@ export default function LabEquipments() {
     }
   }, [equipmentDetails, selectedRadio]);
 
-  /* Handle tab change */
-  const handleTabChange = (tab: "To-Do" | "Plan") => {
+  const handleTabChange = (tab: "All" | "To-Do" | "Plan") => {
     setActiveTab(tab);
     setSelectedEquipment(null);
     setSelectedRadio("");
   };
 
-  /* ============ PLAN VIEW - FULL SCREEN ============ */
+  /* ============ PLAN VIEW ============ */
   if (activeTab === "Plan") {
     return (
       <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
-        {/* HEADER */}
         <div
           style={{
             display: "flex",
@@ -333,12 +596,12 @@ export default function LabEquipments() {
               gap: 4,
             }}
           >
-            {["To-Do", "Plan"].map((tab) => (
+            {["All", "To-Do", "Plan"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => handleTabChange(tab as any)}
                 style={{
-                  width: 166,
+                  width: 100,
                   height: 36,
                   borderRadius: 10,
                   border: "none",
@@ -364,9 +627,149 @@ export default function LabEquipments() {
   }
 
   /* ============ TO-DO VIEW ============ */
+  if (activeTab === "To-Do") {
+    return (
+      <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: 24,
+            gap: 24,
+          }}
+        >
+          <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
+            Equipments
+          </h1>
+
+          <div
+            style={{
+              display: "inline-flex",
+              backgroundColor: "#F8F8F8",
+              padding: 4,
+              borderRadius: 12,
+              gap: 4,
+            }}
+          >
+            {["All", "To-Do", "Plan"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => handleTabChange(tab as any)}
+                style={{
+                  width: 100,
+                  height: 36,
+                  borderRadius: 10,
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  backgroundColor:
+                    activeTab === tab ? "#FFFFFF" : "transparent",
+                  color: activeTab === tab ? "#E17E61" : "#94a3b8",
+                }}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 20 }}>
+          <div
+            style={{
+              width: selectedEquipment ? 470 : "100%",
+              maxWidth: selectedEquipment ? 470 : "100%",
+              transition: "width 0.25s ease",
+              background: "#fff",
+              borderRadius: 14,
+              overflowY: "auto",
+              padding: 16,
+            }}
+          >
+            {Object.keys(groupedEquipments).length === 0 ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  color: "#94a3b8",
+                  paddingTop: 40,
+                }}
+              >
+                No equipment scheduled for today
+              </div>
+            ) : (
+              Object.keys(groupedEquipments).map((eqName, groupIndex) => {
+                const borderColors: string[] = [];
+                const borderColor =
+                  borderColors[groupIndex % borderColors.length] || "#e5e7eb";
+
+                return (
+                  <div
+                    key={eqName}
+                    style={{
+                      marginBottom: 20,
+                      backgroundColor: "#F8F8F8",
+                      padding: "12px",
+                      borderRadius: "12px",
+                      border: `2px solid ${borderColor}`,
+                    }}
+                  >
+                    <h3
+                      style={{
+                        marginBottom: 12,
+                        fontSize: 16,
+                        fontWeight: 700,
+                        color: "#0f172a",
+                      }}
+                    >
+                      {eqName}
+                    </h3>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: selectedEquipment
+                          ? "1fr"
+                          : "repeat(auto-fill, minmax(320px, 1fr))",
+                        gap: 12,
+                        transition: "all 0.25s ease",
+                      }}
+                    >
+                      {groupedEquipments[eqName].map((item) => (
+                        <EquipmentCard
+                          key={item.id}
+                          item={item}
+                          selected={selectedRadio === item.detailName}
+                          onClick={() => {
+                            setSelectedEquipment(item);
+                            setSelectedRadio(item.detailName);
+                          }}
+                          showDates={true}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {selectedEquipment && (
+            <div style={{ flex: 1 }}>
+              <LabEquipmentForm
+                equipmentDetails={equipmentDetails}
+                selectedRadio={selectedRadio}
+                setSelectedRadio={setSelectedRadio}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  /* ============ ALL VIEW (default) ============ */
   return (
     <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
-      {/* HEADER */}
       <div
         style={{
           display: "flex",
@@ -386,12 +789,12 @@ export default function LabEquipments() {
             gap: 4,
           }}
         >
-          {["To-Do", "Plan"].map((tab) => (
+          {["All", "To-Do", "Plan"].map((tab) => (
             <button
               key={tab}
               onClick={() => handleTabChange(tab as any)}
               style={{
-                width: 166,
+                width: 100,
                 height: 36,
                 borderRadius: 10,
                 border: "none",
@@ -408,9 +811,7 @@ export default function LabEquipments() {
         </div>
       </div>
 
-      {/* BODY */}
       <div style={{ display: "flex", gap: 20 }}>
-        {/* LEFT */}
         <div
           style={{
             width: selectedEquipment ? 470 : "100%",
@@ -420,63 +821,75 @@ export default function LabEquipments() {
             borderRadius: 14,
             overflowY: "auto",
             padding: 16,
-            // height: "calc(100vh - 220px)",
           }}
         >
-          {Object.keys(groupedEquipments).map((eqName, groupIndex) => {
-            const borderColors: string | any[] = [];
-            const borderColor = borderColors[groupIndex % borderColors.length];
+          {Object.keys(groupedEquipments).length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                color: "#94a3b8",
+                paddingTop: 40,
+              }}
+            >
+              No equipment found
+            </div>
+          ) : (
+            Object.keys(groupedEquipments).map((eqName, groupIndex) => {
+              const borderColors: string[] = [];
+              const borderColor =
+                borderColors[groupIndex % borderColors.length] || "#e5e7eb";
 
-            return (
-              <div
-                key={eqName}
-                style={{
-                  marginBottom: 20,
-                  backgroundColor: "#F8F8F8",
-                  padding: "12px",
-                  borderRadius: "12px",
-                  border: `2px solid ${borderColor}`,
-                }}
-              >
-                <h3
-                  style={{
-                    marginBottom: 12,
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: "#0f172a",
-                  }}
-                >
-                  {eqName}
-                </h3>
-
+              return (
                 <div
+                  key={eqName}
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: selectedEquipment
-                      ? "1fr"
-                      : "repeat(auto-fill, minmax(320px, 1fr))",
-                    gap: 12,
-                    transition: "all 0.25s ease",
+                    marginBottom: 20,
+                    backgroundColor: "#F8F8F8",
+                    padding: "12px",
+                    borderRadius: "12px",
+                    border: `2px solid ${borderColor}`,
                   }}
                 >
-                  {groupedEquipments[eqName].map((item) => (
-                    <EquipmentCard
-                      key={item.id}
-                      item={item}
-                      selected={selectedRadio === item.detailName}
-                      onClick={() => {
-                        setSelectedEquipment(item);
-                        setSelectedRadio(item.detailName);
-                      }}
-                    />
-                  ))}
+                  <h3
+                    style={{
+                      marginBottom: 12,
+                      fontSize: 16,
+                      fontWeight: 700,
+                      color: "#0f172a",
+                    }}
+                  >
+                    {eqName}
+                  </h3>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: selectedEquipment
+                        ? "1fr"
+                        : "repeat(auto-fill, minmax(320px, 1fr))",
+                      gap: 12,
+                      transition: "all 0.25s ease",
+                    }}
+                  >
+                    {groupedEquipments[eqName].map((item) => (
+                      <EquipmentCard
+                        key={item.id}
+                        item={item}
+                        selected={selectedRadio === item.detailName}
+                        onClick={() => {
+                          setSelectedEquipment(item);
+                          setSelectedRadio(item.detailName);
+                        }}
+                        showDates={false}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
 
-        {/* RIGHT */}
         {selectedEquipment && (
           <div style={{ flex: 1 }}>
             <LabEquipmentForm

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import Tooltip from "@mui/material/Tooltip";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   Box,
   Tabs,
@@ -46,17 +46,18 @@ const getAvatarColor = (name: string) => {
   return avatarColors[Math.abs(hash) % avatarColors.length];
 };
 
-const getDepartmentFromPath = (pathname: string) => {
-  const parts = pathname.split("/").filter(Boolean);
-  const qcLabIndex = parts.indexOf("qc-lab");
-  return qcLabIndex !== -1 ? (parts[qcLabIndex + 1] ?? "") : "";
-};
+// const getDepartmentFromPath = (pathname: string) => {
+//   const parts = pathname.split("/").filter(Boolean);
+//   const qcLabIndex = parts.indexOf("qc-lab");
+//   return qcLabIndex !== -1 ? (parts[qcLabIndex + 1] ?? "") : "";
+// };
 
 /* ---------------- Layout ---------------- */
 
 const DepartmentLayout = () => {
   const location = useLocation();
-  const departmentName = getDepartmentFromPath(location.pathname);
+  // const departmentName = getDepartmentFromPath(location.pathname);
+  const { department: departmentName = "" } = useParams();
   const navigate = useNavigate();
 
   const allAssignees = useSelector((state: RootState) => state.assignees.data);

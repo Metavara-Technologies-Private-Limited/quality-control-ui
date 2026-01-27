@@ -11,34 +11,34 @@ import RecentActivity from "@/components/Dashboard/RecentActivity";
 import IncidentsChart from "@/components/Dashboard/IncidentsChart";
 import AverageParameterCards from "@/components/Dashboard/AverageParameterCards";
 import AssigneePanel from "@/components/Dashboard/AssigneePanel";
-// import DashboardHeader from "@/components/Dashboard/DashboardHeader";
 
 import type { Equipment, Parameter } from "@/types";
 import { parameterValueApi } from "@/services/api";
 
 const Dashboard = () => {
-  // Pull clinic data + loading state from Redux
+  /** ------------------ REDUX STATE ------------------ **/
   const { data: clinic, loading } = useSelector(
     (state: RootState) => state.clinic,
   ) as RootState["clinic"];
-  console.info("data:", clinic);
 
+  /** ------------------ LOCAL UI STATE ------------------ **/
   const [departmentId, setDepartmentId] = useState<number | null>(null);
   const [equipmentId, setEquipmentId] = useState<number | null>(null);
   const [parameterId, setParameterId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [parameterValues, setParameterValues] = useState<any[]>([]);
   const [valuesLoading, setValuesLoading] = useState(false);
+  const [sortActive, setSortActive] = useState(false);
+  const [filterActive, setFilterActive] = useState(false);
+  const [sort, setSort] = useState<"asc" | "desc">("asc");
+  const [filter, setFilter] = useState<string | null>(null);
 
-  // Get All Departments
+  /** ------------------ DEPARTMENTS ------------------ **/
   const departments = clinic?.department ?? [];
-  // Set first department as selected initially
+
   useEffect(() => {
-    if (!departments.length) {
-      setDepartmentId(null);
-      return;
-    }
-    setDepartmentId(departments[0].id);
+    if (departments.length) setDepartmentId(departments[0].id);
+    else setDepartmentId(null);
   }, [departments]);
 
   const department = useMemo(
@@ -46,16 +46,27 @@ const Dashboard = () => {
     [departments, departmentId],
   );
 
-  // Get All Equipments
+  /** ------------------ EQUIPMENTS ------------------ **/
   const equipments = useMemo(() => {
     if (!department) return [];
 
-    if (!search.trim()) return department.equipments ?? [];
+    let list = department.equipments ?? [];
 
-    return (department.equipments ?? []).filter((eq) =>
-      eq.equipment_name.toLowerCase().includes(search.toLowerCase()),
+    // search
+    if (search.trim()) {
+      list = list.filter((eq) =>
+        eq.equipment_name.toLowerCase().includes(search.toLowerCase()),
+      );
+    }
+
+    list = [...list].sort((a, b) =>
+      sort === "asc"
+        ? a.equipment_name.localeCompare(b.equipment_name)
+        : b.equipment_name.localeCompare(a.equipment_name),
     );
-  }, [department, search]);
+
+    return list;
+  }, [department, search, sort, filter]);
 
   const equipment: Equipment | null = useMemo(
     () => equipments.find((e) => e.id === equipmentId) ?? null,
@@ -69,16 +80,13 @@ const Dashboard = () => {
       return;
     }
 
-    // if currently selected equipment is NOT in filtered list
-    const exists = equipments.some((eq) => eq.id === equipmentId);
-
-    if (!exists) {
+    if (!equipments.some((eq) => eq.id === equipmentId)) {
       setEquipmentId(equipments[0].id);
       setParameterId(equipments[0].parameters?.[0]?.id ?? null);
     }
   }, [equipments, equipmentId]);
 
-  // Get All parameters
+  /** ------------------ PARAMETERS ------------------ **/
   const parameters = equipment?.parameters ?? [];
 
   useEffect(() => {
@@ -86,18 +94,17 @@ const Dashboard = () => {
       setParameterId(null);
       return;
     }
-
-    const exists = parameters.some((p) => p.id === parameterId);
-    if (!exists) {
+    if (!parameters.some((p) => p.id === parameterId)) {
       setParameterId(parameters[0].id);
     }
-  }, [parameters]);
+  }, [parameters, parameterId]);
 
   const parameter: Parameter | null = useMemo(
     () => parameters.find((p) => p.id === parameterId) ?? null,
     [parameters, parameterId],
   );
 
+  /** ------------------ PARAMETER VALUES ------------------ **/
   useEffect(() => {
     if (!parameterId) {
       setParameterValues([]);
@@ -121,17 +128,32 @@ const Dashboard = () => {
   const equipmentDetails = equipment?.equipment_details ?? [];
   const activeValue = parameter?.config;
 
+  /** ------------------ RENDER ------------------ **/
   return (
     <Container maxWidth={false} disableGutters>
-      {/* <DashboardHeader /> */}
-
+      {/* Department Tabs */}
       <DepartmentTabs
-        departments={departments}
-        selected={departmentId}
-        onChange={setDepartmentId}
-        onSearch={(val) => setSearch(val)}
-      />
+  departments={departments}
+  selected={departmentId}
+  onChange={setDepartmentId}
+  onSearch={(value) => {
+    setSearch(value);
+    setFilterActive(!!value); // Filter lights up if search
+  }}
+  onSort={() => {
+    setSort((s) => (s === "asc" ? "desc" : "asc"));
+    setFilterActive(false); // Filter goes off
+  }}
+  onFilter={() => {
+    setFilter((f) => (f ? null : "active"));
+    setFilterActive((prev) => !prev); 
+  }}
+  sortActive={!!sort} // highlight if sort is applied
+  filterActive={filterActive}
+/>
 
+
+      {/* Equipment Cards */}
       <Box sx={{ overflowX: "auto", pb: 1 }}>
         <Box sx={{ display: "inline-flex", gap: 2 }}>
           {equipments.map((eq) => (
@@ -149,6 +171,7 @@ const Dashboard = () => {
         </Box>
       </Box>
 
+      {/* Parameter Tabs + Charts */}
       {equipment && parameter && (
         <>
           <ParameterTabs

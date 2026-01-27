@@ -25,15 +25,10 @@ const filterActiveClinicData = (clinic: Clinic | null): Clinic | null => {
       .filter((d) => d.is_active)
       .map((d) => ({
         ...d,
-        equipments: d.equipments
-          // .filter((e) => e.is_active)
-          .map((e) => ({
-            ...e,
-            // equipment_details: e.equipment_details.filter((ed) => ed.is_active),
-            parameters: e.parameters.filter(
-              (p) => p.is_active && !p.is_deleted
-            ),
-          })),
+        equipments: d.equipments.map((e) => ({
+          ...e,
+          parameters: e.parameters.filter((p) => !p.is_deleted),
+        })),
       })),
   };
 };
@@ -44,7 +39,7 @@ export const fetchClinic = createAsyncThunk(
   async (clinicId: number) => {
     const res = await clinicApi.getById(clinicId);
     return res.data;
-  }
+  },
 );
 
 const clinicSlice = createSlice({

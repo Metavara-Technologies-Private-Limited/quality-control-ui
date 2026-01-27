@@ -14,14 +14,31 @@ interface DepartmentTabsProps {
   selected: number | null;
   onChange: (departmentId: number) => void;
   onSearch?: (value: string) => void;
+  onSort?: () => void;
+  onFilter?: () => void;
+  sortActive?: boolean;
+  filterActive?: boolean;
 }
+
+const iconButtonSx = {
+  border: "1px solid #E5E7EB",
+  borderRadius: 2,
+  backgroundColor: "#fff",
+};
+const iconColor = "#6B7280";
 
 const DepartmentTabs = ({
   departments,
   selected,
   onChange,
   onSearch,
+  onSort,
+  onFilter,
+  sortActive,
+  filterActive,
 }: DepartmentTabsProps) => {
+  const activeDepartments = departments.filter((d) => d.is_active);
+
   return (
     <Box
       sx={{
@@ -38,11 +55,9 @@ const DepartmentTabs = ({
           value={selected ?? false}
           onChange={(_, value) => onChange(value as number)}
         >
-          {departments
-            .filter((d) => d.is_active)
-            .map((dept) => (
-              <Tab key={dept.id} label={dept.name} value={dept.id} />
-            ))}
+          {activeDepartments.map((dept) => (
+            <Tab key={dept.id} label={dept.name} value={dept.id} />
+          ))}
         </Tabs>
       </Box>
 
@@ -58,46 +73,36 @@ const DepartmentTabs = ({
             "& .MuiOutlinedInput-root": {
               backgroundColor: "#ffffff",
               borderRadius: 2,
-              "& fieldset": {
-                borderColor: "#e5e7eb",
-              },
-              "&:hover fieldset": {
-                borderColor: "#d1d5db",
-              },
-              "&.Mui-focused fieldset": {
-                borderColor: "#14b8a6",
-              },
+              "& fieldset": { borderColor: "#e5e7eb" },
+              "&:hover fieldset": { borderColor: "#d1d5db" },
+              "&.Mui-focused fieldset": { borderColor: "#14b8a6" },
             },
           }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <Search fontSize="small" sx={{ color: "#6B7280" }} />
+                <Search fontSize="small" sx={{ color: iconColor }} />
               </InputAdornment>
             ),
           }}
         />
 
-        <IconButton
-          size="small"
-          sx={{
-            border: "1px solid #E5E7EB",
-            borderRadius: 2,
-            backgroundColor: "#ffffff",
-          }}
-        >
-          <Sort fontSize="small" sx={{ color: "#6b7280" }} />
-        </IconButton>
-        <IconButton
-          size="small"
-          sx={{
-            border: "1px solid #E5E7EB",
-            borderRadius: 2,
-            backgroundColor: "#fff",
-          }}
-        >
-          <FilterList fontSize="small" sx={{ color: "#6B7280" }} />
-        </IconButton>
+<IconButton
+  size="small"
+  sx={{ ...iconButtonSx, ...(sortActive && { borderColor: "#14b8a6" }) }}
+  onClick={onSort}
+>
+  <Sort fontSize="small" sx={{ color: sortActive ? "#14b8a6" : iconColor }} />
+</IconButton>
+
+<IconButton
+  size="small"
+  sx={{ ...iconButtonSx, ...(filterActive && { borderColor: "#14b8a6" }) }}
+  onClick={onFilter}
+>
+  <FilterList fontSize="small" sx={{ color: filterActive ? "#14b8a6" : iconColor }} />
+</IconButton>
+
       </Box>
     </Box>
   );

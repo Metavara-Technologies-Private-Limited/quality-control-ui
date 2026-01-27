@@ -13,9 +13,43 @@ type PlanItem = {
   eventName: string;
   assignment: string;
   scheduleLabel: string;
+
+  // equipment
   equipmentName: string;
   equipmentUnit: string;
   equipmentDetailId: number;
+
+  // 🔽 ADD THESE
+  scheduleType?: number;
+  startDate?: string | null;
+  endDate?: string | null;
+  days?: string[] | null;
+  months?: number[] | null;
+  oneTimeDate?: string | null;
+};
+
+const formatScheduleInfo = (item: PlanItem) => {
+  switch (item.scheduleType) {
+    case 1:
+      return item.oneTimeDate
+        ? `On ${new Date(item.oneTimeDate).toDateString()}`
+        : "Daily";
+
+    case 3:
+      return item.days?.length
+        ? `Weekly: ${item.days.join(", ")}`
+        : "Weekly";
+
+    case 4:
+      return item.months?.length
+        ? `Monthly on ${item.months.join(", ")}`
+        : item.startDate
+          ? `Monthly on ${new Date(item.startDate).getDate()}`
+          : "Monthly";
+
+    default:
+      return "";
+  }
 };
 
 /* ---------------- Schedule Map ---------------- */
@@ -115,11 +149,20 @@ export default function LabPlanPage() {
         eventId: event.id,
         eventName: event.event_name,
         assignment: event.assignment,
+      
         scheduleLabel: getScheduleLabel(event.schedule?.type),
+        scheduleType: event.schedule?.type,
+      
+        startDate: event.schedule?.start_date ?? null,
+        endDate: event.schedule?.end_date ?? null,
+        days: event.schedule?.days ?? null,
+        months: event.schedule?.months ?? null,
+        oneTimeDate: event.schedule?.one_time_date ?? null,
+      
         equipmentName: eq.equipment_details__equipment__equipment_name,
         equipmentUnit: eq.equipment_details__equipment_num,
         equipmentDetailId: eq.equipment_details__id,
-      }));
+      }));      
     });
   }, [events, departmentName, selectedAssigneeIds, assigneeIdMap]);
 
@@ -308,6 +351,26 @@ export default function LabPlanPage() {
                   >
                     <strong>Event:</strong> {item.eventName}
                   </div>
+                    {/* Schedule info */}
+                    <div
+                      style={{
+                        marginTop: 6,
+                        fontSize: 11,
+                        color: "#6b7280",
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      <div><strong>Schedule:</strong> {item.scheduleLabel}</div>
+
+                      {item.startDate && item.endDate && (
+                        <div>
+                          {new Date(item.startDate).toDateString()} →{" "}
+                          {new Date(item.endDate).toDateString()}
+                        </div>
+                      )}
+
+                      <div>{formatScheduleInfo(item)}</div>
+                    </div>
                 </div>
 
                 <div
