@@ -68,8 +68,23 @@ export const equipmentApi = {
     ),
   activate: (equipmentId: number) =>
     http.post(`/equipment/${equipmentId}/activate/`),
-  softDeleteParameter: (parameterId: number) =>
+
+  inactivateParameter: (parameterId: number) =>
+  http.patch(`/parameters/inactivate/`, {
+    type: "equipment",
+    parameter_id: parameterId,
+  }),
+
+activateParameter: (parameterId: number) =>
+  http.post(`/parameters/activate/`, {
+    type: "equipment",
+    parameter_id: parameterId,
+  }),
+
+softDeleteParameter: (parameterId: number) =>
     http.patch(`/parameters/${parameterId}/soft-delete`),
+
+
 };
 
 // APIs related to equipment details

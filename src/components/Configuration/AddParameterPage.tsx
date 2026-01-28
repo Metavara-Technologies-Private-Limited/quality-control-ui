@@ -204,51 +204,54 @@ const [toggleAction, setToggleAction] =
         setNextSrNo(maxSrNo + 1);
       }
 
-      const loadedParams = storeEquipment.parameters.map((p: any) => {
-        let cfg = p.config || {};
-        if (cfg.history?.length) {
-          cfg = cfg.history[cfg.history.length - 1];
-        }
+const loadedParams = storeEquipment.parameters
+.filter((p: any) => !(p.is_deleted === true && p.is_active !== false))
+  .map((p: any) => {
+    let cfg = p.config || {};
+    if (cfg.history?.length) {
+      cfg = cfg.history[cfg.history.length - 1];
+    }
 
-        const param: any = {
-          id: p.id,
-          name: p.parameter_name,
-          title: p.parameter_name,
-          data_type: cfg.data_type,
-          field_type: cfg.data_type,
-          mandatory: p.mandatory || false,
-        };
+    const param: any = {
+      id: p.id,
+      name: p.parameter_name,
+      title: p.parameter_name,
+      data_type: cfg.data_type,
+      field_type: cfg.data_type,
+      mandatory: p.mandatory || false,
+    };
 
-        switch (cfg.data_type) {
-          case "Integer":
-            param.default_value = cfg.default_value || cfg.integer_value || "";
-            param.integer_value = cfg.integer_value || "";
-            param.unit = cfg.unit || "";
-            param.min_value = cfg.min_value || "";
-            param.max_value = cfg.max_value || "";
-            break;
-          case "Decimal":
-            param.default_value = cfg.default_value || "";
-            param.unit = cfg.unit || "";
-            param.min_value = cfg.min_value || "";
-            param.max_value = cfg.max_value || "";
-            break;
-          case "Text":
-            param.text_type = cfg.text_type || "single";
-            param.text = cfg.text || "";
-            break;
-          case "Boolean":
-            param.boolean_type = cfg.boolean_type || "yesno";
-            break;
-          case "Dropdown":
-            param.dropdown = normalizeDropdownValue(cfg.dropdown);
-            param.selection_type = cfg.selection_type || "single";
-            break;
-        }
+    switch (cfg.data_type) {
+      case "Integer":
+        param.default_value = cfg.default_value || cfg.integer_value || "";
+        param.integer_value = cfg.integer_value || "";
+        param.unit = cfg.unit || "";
+        param.min_value = cfg.min_value || "";
+        param.max_value = cfg.max_value || "";
+        break;
+      case "Decimal":
+        param.default_value = cfg.default_value || "";
+        param.unit = cfg.unit || "";
+        param.min_value = cfg.min_value || "";
+        param.max_value = cfg.max_value || "";
+        break;
+      case "Text":
+        param.text_type = cfg.text_type || "single";
+        param.text = cfg.text || "";
+        break;
+      case "Boolean":
+        param.boolean_type = cfg.boolean_type || "yesno";
+        break;
+      case "Dropdown":
+        param.dropdown = normalizeDropdownValue(cfg.dropdown);
+        param.selection_type = cfg.selection_type || "single";
+        break;
+    }
 
-        param.percentage = cfg.percentage || null;
-        return param;
-      });
+    param.percentage = cfg.percentage || null;
+    param.is_active = p.is_active;  // ✅ ADD THIS - CRITICAL!
+    return param;
+  });
 
       setParameters(loadedParams);
       localStorage.removeItem(PARAM_DRAFT_STORAGE_KEY);
@@ -320,7 +323,69 @@ useEffect(() => {
 
   setParameters(syncedParams);
 }, [clinic, environmentId, isEnvironment]);
+{/*}
+useEffect(() => {
+  if (!isEquipment || !originalEquipment?.id || !clinic) return;
 
+  const storeEquipment = clinic.department
+    .flatMap((d) => d.equipments)
+    .find((e) => e.id === originalEquipment.id);
+
+  if (storeEquipment) {
+    // ✅ CRITICAL: Filter out deleted parameters
+    const syncedParams = (storeEquipment.parameters || [])
+      .filter((p: any) => p.is_deleted !== true)  // ⭐ ADD THIS LINE
+      .map((p: any) => {
+        let cfg = p.config || {};
+        if (cfg.history?.length) {
+          cfg = cfg.history[cfg.history.length - 1];
+        }
+
+        const param: any = {
+          id: p.id,
+          name: p.parameter_name,
+          title: p.parameter_name,
+          data_type: cfg.data_type,
+          field_type: cfg.data_type,
+          mandatory: p.mandatory || false,
+        };
+
+        switch (cfg.data_type) {
+          case "Integer":
+            param.default_value = cfg.default_value || cfg.integer_value || "";
+            param.integer_value = cfg.integer_value || "";
+            param.unit = cfg.unit || "";
+            param.min_value = cfg.min_value || "";
+            param.max_value = cfg.max_value || "";
+            break;
+          case "Decimal":
+            param.default_value = cfg.default_value || "";
+            param.unit = cfg.unit || "";
+            param.min_value = cfg.min_value || "";
+            param.max_value = cfg.max_value || "";
+            break;
+          case "Text":
+            param.text_type = cfg.text_type || "single";
+            param.text = cfg.text || "";
+            break;
+          case "Boolean":
+            param.boolean_type = cfg.boolean_type || "yesno";
+            break;
+          case "Dropdown":
+            param.dropdown = normalizeDropdownValue(cfg.dropdown);
+            param.selection_type = cfg.selection_type || "single";
+            break;
+        }
+
+        param.percentage = cfg.percentage || null;
+        param.is_active = p.is_active;  // ⭐ Preserve is_active flag
+        return param;
+      });
+
+    setParameters(syncedParams);
+  }
+}, [clinic, originalEquipment?.id, isEquipment]);
+*/}
   useEffect(() => {
     if (!isEditMode) {
       saveParametersToLocalStorage(parameters);
@@ -910,43 +975,38 @@ const selectedParam =
           <Box sx={{ mt: 3, display: "flex", flexWrap: "wrap", gap: 2 }}>
 {parameters.map((p, index) => (
   <Box
-    key={index}
+  key={index}
+  sx={{
+    width: "260px",
+    border: "1px solid #E5E7EB",
+    borderRadius: "12px",
+    background: "#FFFFFF",
+    p: 2,
+    boxShadow: "0px 1px 2px rgba(0,0,0,0.04)",
+    position: "relative",
+    // Logic now applies to BOTH Equipment and Environment
+    opacity: p.is_active === false ? 0.5 : 1, 
+  }}
+>
+  {/* PILL - Now showing for BOTH types */}
+  <Box
     sx={{
-      width: "260px",
-      border: "1px solid #E5E7EB",
-      borderRadius: "12px",
-      background: "#FFFFFF",
-      p: 2,
-      boxShadow: "0px 1px 2px rgba(0,0,0,0.04)",
-      position: "relative",
-      opacity: !isEnvironment
-        ? 1
-        : p.is_active === false
-          ? 0.5
-          : 1,
+      position: "absolute",
+      top: 10,
+      right: 10,
+      px: 1.2,
+      py: 0.3,
+      borderRadius: "999px",
+      fontSize: "10px",
+      fontWeight: 700,
+      letterSpacing: "0.06em",
+      textTransform: "uppercase",
+      backgroundColor: p.is_active === false ? "#FEE2E2" : "#DCFCE7",
+      color: p.is_active === false ? "#B91C1C" : "#15803D",
     }}
   >
-    {/* ENVIRONMENT – ACTIVE / INACTIVE PILL (Keep as is) */}
-    {isEnvironment && (
-      <Box
-        sx={{
-          position: "absolute",
-          top: 10,
-          right: 10, // Active and Inactive pill position in environmet
-          px: 1.2,
-          py: 0.3,
-          borderRadius: "999px",
-          fontSize: "10px",
-          fontWeight: 700,
-          letterSpacing: "0.06em",
-          textTransform: "uppercase",
-          backgroundColor: p.is_active === false ? "#FEE2E2" : "#DCFCE7",
-          color: p.is_active === false ? "#B91C1C" : "#15803D",
-        }}
-      >
-        {p.is_active === false ? "Inactive" : "Active"}
-      </Box>
-    )}
+    {p.is_active === false ? "Inactive" : "Active"}
+  </Box>
 
 <Box
   sx={{
@@ -959,23 +1019,6 @@ const selectedParam =
     {p.name || p.title}
   </Typography>
 
-  {/* ✅ Equipment only → top-right */}
-  {!isEnvironment && (
-    <IconButton
-      size="small"
-      onClick={(e) => handleMenuOpen(e, index)}
-      sx={{
-        mt: -0.5,
-        mr: -0.5,
-        width: 28,
-        height: 28,
-        border: "1px solid #E5E7EB",
-        borderRadius: "6px",
-      }}
-    >
-      <MoreHoriz fontSize="small" />
-    </IconButton>
-  )}
 </Box>
 
 
@@ -983,38 +1026,50 @@ const selectedParam =
       Data Type : {p.data_type || p.field_type}
     </Typography>
 
-    <Box
-      sx={{
-        height: "1px",
-        background: "#E5E7EB",
-        mt: 1.2,
-        mb: 1.2,
-        mx: -2,
-      }}
-    />
+{/* 1. The Line: stays inside the card because mx: -2 is removed */}
+<Box
+  sx={{
+    height: "1px",
+    background: "#E5E7EB",
+    mt: 1,
+    mb: 0.5,
+  }}
+/>
 
-    <Box sx={{ pr: 1 }}>
-      {renderParameterContent(p)}
-      {/* Environment only → bottom-right 3 dots */}
-{isEnvironment && (
+{/* 2. The Container: Uses Flex to push the button to the right */}
+<Box 
+  sx={{ 
+    display: "flex", 
+    justifyContent: "space-between", 
+    alignItems: "center", 
+    minHeight: "35px",
+    pr: 0.5 
+  }}
+>
+  <Box sx={{ flexGrow: 1 }}>
+    {renderParameterContent(p)}
+  </Box>
+  
   <IconButton
     size="small"
     onClick={(e) => handleMenuOpen(e, index)}
     sx={{
-      position: "absolute",
-      bottom: 8,
-      right: 8,
-      width: 28,
-      height: 28,
+      // 3. Position absolute REMOVED to prevent overlapping the line
+      width: 32,
+      height: 32,
       border: "1px solid #E5E7EB",
-      borderRadius: "6px",
+      borderRadius: "8px",
+      backgroundColor: "#FFFFFF", 
+      zIndex: 2, 
+      ml: 1, // Adds space between text and button
+      "&:hover": {
+        backgroundColor: "#F9FAFB",
+      },
     }}
   >
     <MoreHoriz fontSize="small" />
   </IconButton>
-)}
-
-    </Box>
+</Box>
   </Box>
 ))}
           </Box>
@@ -1339,59 +1394,60 @@ const selectedParam =
   open={Boolean(anchorEl)}
   onClose={resetMenuState}
 >
-  {/* ENVIRONMENT: Activate / Inactivate */}
-  {isEnvironment && menuParamIndex !== null && (
-    parameters[menuParamIndex]?.is_active !== false ? (
-<MenuItem
-  onClick={async () => {
-    try {
-      const param = parameters[menuParamIndex!];
-      if (!param?.id) return;
+  {menuParamIndex !== null && (
+    <MenuItem
+      onClick={async () => {
+        const index = menuParamIndex;
+        const param = parameters[index!];
+        if (!param?.id) return;
 
-      await environmentApi.updateParameterStatus(param.id, false);
+        const isCurrentlyActive = param.is_active !== false;
+        const newStatus = !isCurrentlyActive;
 
-      toast.success("Parameter inactivated");
-      dispatch(fetchClinic(1)); // 🔥 reload real backend data
-    } catch (e) {
-      toast.error("Failed to inactivate parameter");
-    } finally {
-      resetMenuState();
-    }
-  }}
->
-  Inactivate
-</MenuItem>
+        try {
+          // ✅ DO NOT SYNC IMMEDIATELY - Update state first
+          if (isEnvironment) {
+            await environmentApi.updateParameterStatus(param.id, newStatus);
+          } else {
+            if (newStatus) {
+              await equipmentApi.activateParameter(param.id);
+            } else {
+              await equipmentApi.inactivateParameter(param.id);
+            }
+          }
 
+          // ✅ Update local state FIRST (not after sync)
+          setParameters((prev) => {
+            const updated = prev.map((p, i) =>
+              i === index ? { ...p, is_active: newStatus } : p
+            );
+            return updated;
+          });
 
-    ) : (
-<MenuItem
-  onClick={async () => {
-    try {
-      const param = parameters[menuParamIndex!];
-      if (!param?.id) return;
+          toast.success(
+            `Parameter ${newStatus ? "Activated" : "Inactivated"}`
+          );
 
-      await environmentApi.updateParameterStatus(param.id, true);
-
-      toast.success("Parameter activated");
-      dispatch(fetchClinic(1)); // 🔥 reload real backend data
-    } catch (e) {
-      toast.error("Failed to activate parameter");
-    } finally {
-      resetMenuState();
-    }
-  }}
->
-  Activate
-</MenuItem>
-
-
-    )
+          // ✅ Then sync - but state is already updated
+          setTimeout(() => {
+            dispatch(fetchClinic(1));
+          }, 500);  // Small delay to let UI update first
+        } catch (e) {
+          console.error("Parameter status update failed:", e);
+          toast.error("Status update failed");
+        } finally {
+          resetMenuState();
+        }
+      }}
+    >
+      {parameters[menuParamIndex!]?.is_active !== false
+        ? "Inactivate"
+        : "Activate"}
+    </MenuItem>
   )}
 
-  {/* Always show Edit */}
   <MenuItem onClick={handleEditParameter}>Edit</MenuItem>
 
-  {/* Delete */}
   <MenuItem
     sx={{ color: "error.main" }}
     onClick={handleDeleteParameter}
@@ -1399,9 +1455,6 @@ const selectedParam =
     Delete
   </MenuItem>
 </Menu>
-
-
-
 
       <AddParameterPopup
         open={openParamPopup}

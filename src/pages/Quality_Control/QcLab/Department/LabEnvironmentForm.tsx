@@ -163,7 +163,7 @@ const isInactive = param.is_active === false || param.is_active === 0 || param.s
       {/* ✅ Show "Inactive" label so user knows why it's disabled */}
       {isInactive && (
         <Box sx={{ fontSize: 11, color: "#f44336", fontWeight: 700, mt: 0.5 }}>
-          INACTIVE PARAMETER
+          Inactive Parameter
         </Box>
       )}
 

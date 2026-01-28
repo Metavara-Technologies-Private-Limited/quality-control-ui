@@ -1,6 +1,6 @@
 // pages/Quality_Control/QcLab/Department/LabEquipmentForm.tsx
 
-import { Box, TextField } from "@mui/material";
+import { Box, TextField, Typography } from "@mui/material";
 import { useState } from "react";
 import { parameterValueApi } from "@/services/api";
 import { toast, ToastContainer } from "react-toastify";
@@ -249,38 +249,74 @@ export default function LabEquipmentForm({
               gap: "20px",
             }}
           >
-            {currentEquipment.parameters.map((param) => {
-              const cfg = param.config;
-              if (!cfg) return null;
+{currentEquipment.parameters.map((param) => {
+  const cfg = param.config;
+  if (!cfg) return null;
 
-              const value = logValues[param.parameter_name] ?? "";
-              const color = getRangeStatusColor(value, cfg);
+  // ✅ Determine if the parameter is inactive
+  const isInactive = param.is_active === false;
+  const value = logValues[param.parameter_name] ?? "";
+  const color = getRangeStatusColor(value, cfg);
 
-              return (
-                <Box key={param.id}>
-                  <ParameterInput
-                    parameter={param}
-                    value={value}
-                    onChange={(val) => setValue(param.parameter_name, val)}
-                  />
+  return (
+    <Box key={param.id}>
+      {isInactive ? (
+        /* ✅ RED BOX UI: Shows when parameter is inactivated */
+        <Box 
+          sx={{ 
+            p: 1.5, 
+            bgcolor: '#FFF5F5', 
+            borderRadius: '10px', 
+            border: '1px solid #FED7D7',
+            minHeight: '48px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center'
+          }}
+        >
+          <Typography 
+            sx={{ 
+              color: '#E53E3E', 
+              fontWeight: 800, 
+              fontSize: '13px', 
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase'
+            }}
+          >
+            Inactive Parameter
+          </Typography>
+          <Typography sx={{ color: '#A0AEC0', fontSize: '11px' }}>
+            Range: -
+          </Typography>
+        </Box>
+      ) : (
+        /* ✅ ACTIVE UI: Normal input field */
+        <>
+          <ParameterInput
+            parameter={param}
+            value={value}
+            onChange={(val) => setValue(param.parameter_name, val)}
+          />
 
-                  {cfg.default_value && (
-                    <Box sx={{ fontSize: 12, color: "#9E9E9E", mt: "4px" }}>
-                      Recommended: {cfg.default_value}
-                      {cfg.unit || ""}
-                    </Box>
-                  )}
+          {cfg.default_value && (
+            <Box sx={{ fontSize: 12, color: "#9E9E9E", mt: "4px" }}>
+              Recommended: {cfg.default_value}
+              {cfg.unit || ""}
+            </Box>
+          )}
 
-                  {cfg.min_value != null && cfg.max_value != null && (
-                    <Box sx={{ fontSize: 12, fontWeight: 500, color }}>
-                      Range: {cfg.min_value}
-                      {cfg.unit || ""} – {cfg.max_value}
-                      {cfg.unit || ""}
-                    </Box>
-                  )}
-                </Box>
-              );
-            })}
+          {cfg.min_value != null && cfg.max_value != null && (
+            <Box sx={{ fontSize: 12, fontWeight: 500, color }}>
+              Range: {cfg.min_value}
+              {cfg.unit || ""} – {cfg.max_value}
+              {cfg.unit || ""}
+            </Box>
+          )}
+        </>
+      )}
+    </Box>
+  );
+})}
           </Box>
 
           {/* ---------- DATE TIME ---------- */}
