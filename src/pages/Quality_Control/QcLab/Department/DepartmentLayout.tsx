@@ -21,14 +21,23 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 
-/* ---------------- Avatar Colors ---------------- */
-
 const avatarColors = [
-  "#091E42", "#172B4D", "#0052CC", "#0747A6", "#0065FF",
-  "#004F3D", "#006644", "#00875A", "#7A1FA2", "#403294",
-  "#5E4DB2", "#BF2600", "#DE350B", "#FF5630", "#FF8B00",
+  "#091E42",
+  "#172B4D",
+  "#0052CC",
+  "#0747A6",
+  "#0065FF",
+  "#004F3D",
+  "#006644",
+  "#00875A",
+  "#7A1FA2",
+  "#403294",
+  "#5E4DB2",
+  "#BF2600",
+  "#DE350B",
+  "#FF5630",
+  "#FF8B00",
 ];
-
 
 const getInitials = (name: string) =>
   name
@@ -46,25 +55,15 @@ const getAvatarColor = (name: string) => {
   return avatarColors[Math.abs(hash) % avatarColors.length];
 };
 
-// const getDepartmentFromPath = (pathname: string) => {
-//   const parts = pathname.split("/").filter(Boolean);
-//   const qcLabIndex = parts.indexOf("qc-lab");
-//   return qcLabIndex !== -1 ? (parts[qcLabIndex + 1] ?? "") : "";
-// };
 
 /* ---------------- Layout ---------------- */
 
 const DepartmentLayout = () => {
   const location = useLocation();
-  // const departmentName = getDepartmentFromPath(location.pathname);
   const { department: departmentName = "" } = useParams();
   const navigate = useNavigate();
-
   const allAssignees = useSelector((state: RootState) => state.assignees.data);
-
-  /** 🔹 Only change: filter assignees dynamically */
   const normalize = (value: string) => value.replace(/\s+/g, "").toLowerCase();
-
   const departmentAssignees = allAssignees.filter(
     (a) =>
       a.department_name &&
@@ -152,69 +151,68 @@ const DepartmentLayout = () => {
             }}
           />
 
-          {/* ---------------- Assignees ---------------- */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
               Assignees
             </Typography>
 
-<AvatarGroup
-  max={5}
-  spacing={0}
-  componentsProps={{
-    additionalAvatar: {
-      onClick: (e) => setAnchorEl(e.currentTarget),
-      sx: { cursor: "pointer" },
-    },
-  }}
-  sx={{
-    "& .MuiAvatar-root": {
-      width: 32,
-      height: 32,
-      fontSize: 12,
-      border: "2px solid #fff",
-      cursor: "pointer",
-      transition: "all 0.25s ease",
-    },
-  }}
->
-  {departmentAssignees.map((person) => {
-    const isSelected = selectedAssigneeIds.includes(person.id);
-    const hasSelection = selectedAssigneeIds.length > 0;
+            <AvatarGroup
+              max={5}
+              spacing={0}
+              componentsProps={{
+                additionalAvatar: {
+                  onClick: (e) => setAnchorEl(e.currentTarget),
+                  sx: { cursor: "pointer" },
+                },
+              }}
+              sx={{
+                "& .MuiAvatar-root": {
+                  width: 32,
+                  height: 32,
+                  fontSize: 12,
+                  border: "2px solid #fff",
+                  cursor: "pointer",
+                  transition: "all 0.25s ease",
+                },
+              }}
+            >
+              {departmentAssignees.map((person) => {
+                const isSelected = selectedAssigneeIds.includes(person.id);
+                const hasSelection = selectedAssigneeIds.length > 0;
 
-    return (
-      <Tooltip key={person.id} title={person.emp_name} arrow placement="bottom">
-        <Avatar
-          onClick={() => handleToggleAssignee(person.id)}
-          sx={{
-            backgroundColor: getAvatarColor(person.emp_name),
+                return (
+                  <Tooltip
+                    key={person.id}
+                    title={person.emp_name}
+                    arrow
+                    placement="bottom"
+                  >
+                    <Avatar
+                      onClick={() => handleToggleAssignee(person.id)}
+                      sx={{
+                        backgroundColor: getAvatarColor(person.emp_name),
+                        opacity: hasSelection && !isSelected ? 0.45 : 1,
+                        marginLeft: hasSelection
+                          ? isSelected
+                            ? "10px !important" 
+                            : "-10px !important" 
+                          : "-10px !important", 
+                        transform: isSelected
+                          ? "scale(1.25) translateY(-4px)"
+                          : "scale(1)",
+                        zIndex: isSelected ? 20 : 1,
 
-            /* opacity rule */
-            opacity: hasSelection && !isSelected ? 0.45 : 1,
-
-            /* 🔑 overlap vs spacing */
-            marginLeft: hasSelection
-              ? isSelected
-                ? "10px !important"   // selected → spaced
-                : "-10px !important"  // unselected → still overlapped
-              : "-10px !important",  // no selection → all overlapped
-
-            /* visual emphasis */
-            transform: isSelected ? "scale(1.25) translateY(-4px)" : "scale(1)",
-            zIndex: isSelected ? 20 : 1,
-
-            boxShadow: isSelected
-              ? "0 6px 14px rgba(0,0,0,0.25)"
-              : "none",
-          }}
-        >
-          {getInitials(person.emp_name)}
-        </Avatar>
-      </Tooltip>
-    );
-  })}
-</AvatarGroup>
-
+                        boxShadow: isSelected
+                          ? "0 6px 14px rgba(0,0,0,0.25)"
+                          : "none",
+                      }}
+                    >
+                      {getInitials(person.emp_name)}
+                    </Avatar>
+                  </Tooltip>
+                );
+              })}
+            </AvatarGroup>
 
             {/* ---------------- Popover ---------------- */}
             <Popover

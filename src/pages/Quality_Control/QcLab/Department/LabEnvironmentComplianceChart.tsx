@@ -1,5 +1,3 @@
-// pages/Quality_Control/QcLab/Department/LabEnvironmentComplianceChart.tsx
-
 import { useEffect, useState } from "react";
 import {
   ResponsiveContainer,

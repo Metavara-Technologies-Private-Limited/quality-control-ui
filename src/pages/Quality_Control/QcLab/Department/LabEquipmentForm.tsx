@@ -1,6 +1,4 @@
-// pages/Quality_Control/QcLab/Department/LabEquipmentForm.tsx
-
-import { Box, TextField, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { useState } from "react";
 import { parameterValueApi } from "@/services/api";
 import { toast, ToastContainer } from "react-toastify";
@@ -88,7 +86,7 @@ export default function LabEquipmentForm({
             equipment_details: currentEquipment.equipment_id,
             content: logValues[param.parameter_name],
             log_time: logDateTime?.toISOString(),
-          })
+          }),
         );
 
       await Promise.all(requests);
@@ -156,7 +154,7 @@ export default function LabEquipmentForm({
             border: "1px solid #e5e7eb",
             borderRadius: "12px",
             p: "24px",
-            overflowY: "auto"
+            overflowY: "auto",
           }}
         >
           {/* ---------- EQUIPMENT SELECTION ---------- */}
@@ -210,7 +208,13 @@ export default function LabEquipmentForm({
                       />
                     )}
                   </span>
-                  <span style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>
+                  <span
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#0f172a",
+                    }}
+                  >
                     {ed.equipment_num}
                   </span>
                 </label>
@@ -226,71 +230,75 @@ export default function LabEquipmentForm({
               gap: "20px",
             }}
           >
-{currentEquipment.parameters.map((param) => {
-  const cfg = param.config;
-  if (!cfg) return null;
+            {currentEquipment.parameters.map((param) => {
+              const cfg = param.config;
+              if (!cfg) return null;
 
-  // Determine if the parameter is inactive
-  const isInactive = param.is_active === false || param.is_active === 0;
-  const value = logValues[param.parameter_name] ?? "";
-  const color = getRangeStatusColor(value, cfg);
+              // Determine if the parameter is inactive
+              const isInactive =
+                param.is_active === false || param.is_active === 0;
+              const value = logValues[param.parameter_name] ?? "";
+              const color = getRangeStatusColor(value, cfg);
 
-  return (
-    <Box 
-      key={param.id} 
-      sx={{ 
-        opacity: isInactive ? 0.7 : 1,
-        pointerEvents: isInactive ? "none" : "auto" 
-      }}
-    >
-      <ParameterInput
-        parameter={param}
-        value={value}
-        onChange={(val) => setValue(param.parameter_name, val)}
-        disabled={isInactive}
-      />
+              return (
+                <Box
+                  key={param.id}
+                  sx={{
+                    opacity: isInactive ? 0.7 : 1,
+                    pointerEvents: isInactive ? "none" : "auto",
+                  }}
+                >
+                  <ParameterInput
+                    parameter={param}
+                    value={value}
+                    onChange={(val) => setValue(param.parameter_name, val)}
+                    disabled={isInactive}
+                  />
 
-      {isInactive ? (
-        /* UI FOR INACTIVE STATE (Matches your image) */
-        <Box sx={{ mt: 0.5 }}>
-          <Typography 
-            sx={{ 
-              color: "#F25B5B", // Reddish color from your image
-              fontSize: "12px", 
-              fontWeight: 700, 
-              mb: 0.2 
-            }}
-          >
-            Inactive Parameter
-          </Typography>
-          <Typography 
-            sx={{ 
-              color: "#A0AEC0", 
-              fontSize: "11px" 
-            }}
-          >
-            Range: —
-          </Typography>
-        </Box>
-      ) : (
-        /* UI FOR ACTIVE STATE */
-        <Box sx={{ mt: 0.5 }}>
-          {cfg.default_value && (
-            <Typography sx={{ fontSize: 12, color: "#9E9E9E" }}>
-              Recommended: {cfg.default_value} {cfg.unit || ""}
-            </Typography>
-          )}
+                  {isInactive ? (
+                    /* UI FOR INACTIVE STATE (Matches your image) */
+                    <Box sx={{ mt: 0.5 }}>
+                      <Typography
+                        sx={{
+                          color: "#F25B5B", // Reddish color from your image
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          mb: 0.2,
+                        }}
+                      >
+                        Inactive Parameter
+                      </Typography>
+                      <Typography
+                        sx={{
+                          color: "#A0AEC0",
+                          fontSize: "11px",
+                        }}
+                      >
+                        Range: —
+                      </Typography>
+                    </Box>
+                  ) : (
+                    /* UI FOR ACTIVE STATE */
+                    <Box sx={{ mt: 0.5 }}>
+                      {cfg.default_value && (
+                        <Typography sx={{ fontSize: 12, color: "#9E9E9E" }}>
+                          Recommended: {cfg.default_value} {cfg.unit || ""}
+                        </Typography>
+                      )}
 
-          {cfg.min_value != null && cfg.max_value != null && (
-            <Typography sx={{ fontSize: 12, fontWeight: 500, color }}>
-              Range: {cfg.min_value} {cfg.unit || ""} – {cfg.max_value} {cfg.unit || ""}
-            </Typography>
-          )}
-        </Box>
-      )}
-    </Box>
-  );
-})}
+                      {cfg.min_value != null && cfg.max_value != null && (
+                        <Typography
+                          sx={{ fontSize: 12, fontWeight: 500, color }}
+                        >
+                          Range: {cfg.min_value} {cfg.unit || ""} –{" "}
+                          {cfg.max_value} {cfg.unit || ""}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+                </Box>
+              );
+            })}
           </Box>
 
           {/* ---------- DATE TIME ---------- */}
@@ -327,12 +335,18 @@ export default function LabEquipmentForm({
           >
             <Box sx={{ display: "flex", gap: "8px" }}>
               <span style={{ color: "#94a3b8" }}>Make :</span>
-              <span style={{ fontWeight: "600", color: "#0f172a" }}>{currentEquipment.make || "N/A"}</span>
+              <span style={{ fontWeight: "600", color: "#0f172a" }}>
+                {currentEquipment.make || "N/A"}
+              </span>
             </Box>
-            <Box sx={{ width: "1px", height: "14px", backgroundColor: "#e5e7eb" }} />
+            <Box
+              sx={{ width: "1px", height: "14px", backgroundColor: "#e5e7eb" }}
+            />
             <Box sx={{ display: "flex", gap: "8px" }}>
               <span style={{ color: "#94a3b8" }}>Model :</span>
-              <span style={{ fontWeight: "600", color: "#0f172a" }}>{currentEquipment.model || "N/A"}</span>
+              <span style={{ fontWeight: "600", color: "#0f172a" }}>
+                {currentEquipment.model || "N/A"}
+              </span>
             </Box>
 
             <Box sx={{ marginLeft: "auto", display: "flex", gap: "12px" }}>

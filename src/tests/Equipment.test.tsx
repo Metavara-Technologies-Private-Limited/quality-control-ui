@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import Environment from "./Environment";
+import Environment from "../pages/Quality_Control/QcLab/Embryology/Environment";
 
 describe("Environment Page", () => {
   it("should show Clear and Save buttons", () => {
