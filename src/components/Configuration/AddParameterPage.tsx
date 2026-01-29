@@ -323,69 +323,7 @@ useEffect(() => {
 
   setParameters(syncedParams);
 }, [clinic, environmentId, isEnvironment]);
-{/*}
-useEffect(() => {
-  if (!isEquipment || !originalEquipment?.id || !clinic) return;
 
-  const storeEquipment = clinic.department
-    .flatMap((d) => d.equipments)
-    .find((e) => e.id === originalEquipment.id);
-
-  if (storeEquipment) {
-    // ✅ CRITICAL: Filter out deleted parameters
-    const syncedParams = (storeEquipment.parameters || [])
-      .filter((p: any) => p.is_deleted !== true)  // ⭐ ADD THIS LINE
-      .map((p: any) => {
-        let cfg = p.config || {};
-        if (cfg.history?.length) {
-          cfg = cfg.history[cfg.history.length - 1];
-        }
-
-        const param: any = {
-          id: p.id,
-          name: p.parameter_name,
-          title: p.parameter_name,
-          data_type: cfg.data_type,
-          field_type: cfg.data_type,
-          mandatory: p.mandatory || false,
-        };
-
-        switch (cfg.data_type) {
-          case "Integer":
-            param.default_value = cfg.default_value || cfg.integer_value || "";
-            param.integer_value = cfg.integer_value || "";
-            param.unit = cfg.unit || "";
-            param.min_value = cfg.min_value || "";
-            param.max_value = cfg.max_value || "";
-            break;
-          case "Decimal":
-            param.default_value = cfg.default_value || "";
-            param.unit = cfg.unit || "";
-            param.min_value = cfg.min_value || "";
-            param.max_value = cfg.max_value || "";
-            break;
-          case "Text":
-            param.text_type = cfg.text_type || "single";
-            param.text = cfg.text || "";
-            break;
-          case "Boolean":
-            param.boolean_type = cfg.boolean_type || "yesno";
-            break;
-          case "Dropdown":
-            param.dropdown = normalizeDropdownValue(cfg.dropdown);
-            param.selection_type = cfg.selection_type || "single";
-            break;
-        }
-
-        param.percentage = cfg.percentage || null;
-        param.is_active = p.is_active;  // ⭐ Preserve is_active flag
-        return param;
-      });
-
-    setParameters(syncedParams);
-  }
-}, [clinic, originalEquipment?.id, isEquipment]);
-*/}
   useEffect(() => {
     if (!isEditMode) {
       saveParametersToLocalStorage(parameters);

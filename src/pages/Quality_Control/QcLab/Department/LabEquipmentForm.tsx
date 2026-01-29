@@ -41,12 +41,6 @@ const getRangeStatusColor = (value: string, cfg: any) => {
   return "#16a34a";
 };
 
-const getLocalDateTime = () => {
-  const now = new Date();
-  const tzOffset = now.getTimezoneOffset() * 60000;
-  return new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
-};
-
 /* ---------------- Component ---------------- */
 
 export default function LabEquipmentForm({
@@ -86,21 +80,16 @@ export default function LabEquipmentForm({
 
     setIsSaving(true);
     try {
-      const requests: Promise<any>[] = [];
-
-      currentEquipment.parameters.forEach((param) => {
-        const value = logValues[param.parameter_name];
-        if (!value) return;
-
-        requests.push(
+      const requests = currentEquipment.parameters
+        .filter((param) => logValues[param.parameter_name])
+        .map((param) =>
           parameterValueApi.create({
             parameter: param.id,
             equipment_details: currentEquipment.equipment_id,
-            content: value,
+            content: logValues[param.parameter_name],
             log_time: logDateTime?.toISOString(),
-          }),
+          })
         );
-      });
 
       await Promise.all(requests);
       toast.success("Logs saved successfully");
@@ -126,8 +115,8 @@ export default function LabEquipmentForm({
       <ToastContainer position="top-right" autoClose={3000} />
 
       {/* ---------- FORM / LOGS TABS ---------- */}
-      <div
-        style={{
+      <Box
+        sx={{
           display: "inline-flex",
           backgroundColor: "#F2F2F2",
           padding: "4px",
@@ -155,22 +144,22 @@ export default function LabEquipmentForm({
             {tab}
           </button>
         ))}
-      </div>
+      </Box>
 
-      {/* ---------- LOGS ---------- */}
+      {/* ---------- CONTENT ---------- */}
       {activeTab === "Logs" ? (
         <LabEquipmentLogs equipment={currentEquipment} />
       ) : (
-        /* ---------- FORM CARD ---------- */
         <Box
           sx={{
             background: "#fff",
             border: "1px solid #e5e7eb",
             borderRadius: "12px",
             p: "24px",
+            overflowY: "auto"
           }}
         >
-          {/* ---------- EQUIPMENT RADIOs ---------- */}
+          {/* ---------- EQUIPMENT SELECTION ---------- */}
           <Box
             sx={{
               display: "flex",
@@ -182,7 +171,6 @@ export default function LabEquipmentForm({
           >
             {equipmentDetails.map((ed) => {
               const checked = selectedRadio === ed.equipment_num;
-
               return (
                 <label
                   key={ed.equipment_id}
@@ -193,7 +181,6 @@ export default function LabEquipmentForm({
                     cursor: "pointer",
                   }}
                 >
-                  {/* HIDDEN RADIO */}
                   <input
                     type="radio"
                     name="equipment"
@@ -201,14 +188,12 @@ export default function LabEquipmentForm({
                     onChange={() => setSelectedRadio(ed.equipment_num)}
                     style={{ display: "none" }}
                   />
-
-                  {/* CUSTOM RADIO */}
                   <span
                     style={{
                       width: "16px",
                       height: "16px",
                       borderRadius: "50%",
-                      border: "2px solid #1f1f1f", // outer black ring
+                      border: "2px solid #1f1f1f",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -225,15 +210,7 @@ export default function LabEquipmentForm({
                       />
                     )}
                   </span>
-
-                  {/* LABEL TEXT */}
-                  <span
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      color: "#0f172a",
-                    }}
-                  >
+                  <span style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>
                     {ed.equipment_num}
                   </span>
                 </label>
@@ -245,7 +222,7 @@ export default function LabEquipmentForm({
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: "repeat(3,1fr)",
+              gridTemplateColumns: "repeat(3, 1fr)",
               gap: "20px",
             }}
           >
@@ -253,66 +230,63 @@ export default function LabEquipmentForm({
   const cfg = param.config;
   if (!cfg) return null;
 
-  // ✅ Determine if the parameter is inactive
-  const isInactive = param.is_active === false;
+  // Determine if the parameter is inactive
+  const isInactive = param.is_active === false || param.is_active === 0;
   const value = logValues[param.parameter_name] ?? "";
   const color = getRangeStatusColor(value, cfg);
 
   return (
-    <Box key={param.id}>
+    <Box 
+      key={param.id} 
+      sx={{ 
+        opacity: isInactive ? 0.7 : 1,
+        pointerEvents: isInactive ? "none" : "auto" 
+      }}
+    >
+      <ParameterInput
+        parameter={param}
+        value={value}
+        onChange={(val) => setValue(param.parameter_name, val)}
+        disabled={isInactive}
+      />
+
       {isInactive ? (
-        /* ✅ RED BOX UI: Shows when parameter is inactivated */
-        <Box 
-          sx={{ 
-            p: 1.5, 
-            bgcolor: '#FFF5F5', 
-            borderRadius: '10px', 
-            border: '1px solid #FED7D7',
-            minHeight: '48px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center'
-          }}
-        >
+        /* UI FOR INACTIVE STATE (Matches your image) */
+        <Box sx={{ mt: 0.5 }}>
           <Typography 
             sx={{ 
-              color: '#E53E3E', 
-              fontWeight: 800, 
-              fontSize: '13px', 
-              letterSpacing: '0.5px',
-              textTransform: 'uppercase'
+              color: "#F25B5B", // Reddish color from your image
+              fontSize: "12px", 
+              fontWeight: 700, 
+              mb: 0.2 
             }}
           >
             Inactive Parameter
           </Typography>
-          <Typography sx={{ color: '#A0AEC0', fontSize: '11px' }}>
-            Range: -
+          <Typography 
+            sx={{ 
+              color: "#A0AEC0", 
+              fontSize: "11px" 
+            }}
+          >
+            Range: —
           </Typography>
         </Box>
       ) : (
-        /* ✅ ACTIVE UI: Normal input field */
-        <>
-          <ParameterInput
-            parameter={param}
-            value={value}
-            onChange={(val) => setValue(param.parameter_name, val)}
-          />
-
+        /* UI FOR ACTIVE STATE */
+        <Box sx={{ mt: 0.5 }}>
           {cfg.default_value && (
-            <Box sx={{ fontSize: 12, color: "#9E9E9E", mt: "4px" }}>
-              Recommended: {cfg.default_value}
-              {cfg.unit || ""}
-            </Box>
+            <Typography sx={{ fontSize: 12, color: "#9E9E9E" }}>
+              Recommended: {cfg.default_value} {cfg.unit || ""}
+            </Typography>
           )}
 
           {cfg.min_value != null && cfg.max_value != null && (
-            <Box sx={{ fontSize: 12, fontWeight: 500, color }}>
-              Range: {cfg.min_value}
-              {cfg.unit || ""} – {cfg.max_value}
-              {cfg.unit || ""}
-            </Box>
+            <Typography sx={{ fontSize: 12, fontWeight: 500, color }}>
+              Range: {cfg.min_value} {cfg.unit || ""} – {cfg.max_value} {cfg.unit || ""}
+            </Typography>
           )}
-        </>
+        </Box>
       )}
     </Box>
   );
@@ -330,41 +304,9 @@ export default function LabEquipmentForm({
                 slotProps={{
                   textField: {
                     fullWidth: true,
-                    InputLabelProps: { shrink: true },
                     sx: {
                       "& .MuiOutlinedInput-root": {
-                        height: 50,
-                        fontSize: 16,
-                        fontWeight: 500,
                         borderRadius: "10px",
-                        backgroundColor: "#FFFFFF",
-                      },
-
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#9e9e9e",
-                        borderWidth: "1.5px",
-                      },
-
-                      "&:hover .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#232323",
-                      },
-
-                      "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
-                        {
-                          borderColor: "#828282",
-                        },
-
-                      /* 🔥 REAL FIX FOR GREEN 00 */
-                      "& .MuiPickersSectionList-section.Mui-focused": {
-                        backgroundColor: "#E5E7EB",
-                      },
-
-                      "& .MuiInputLabel-root": {
-                        color: "#232323",
-                      },
-
-                      "& .MuiInputLabel-root.Mui-focused": {
-                        color: "#232323",
                       },
                     },
                   },
@@ -373,9 +315,9 @@ export default function LabEquipmentForm({
             </LocalizationProvider>
           </Box>
 
-          {/* ---------- FOOTER (INCUBATOR STYLE) ---------- */}
-          <div
-            style={{
+          {/* ---------- FOOTER ---------- */}
+          <Box
+            sx={{
               display: "flex",
               alignItems: "center",
               gap: "24px",
@@ -383,29 +325,17 @@ export default function LabEquipmentForm({
               fontSize: "14px",
             }}
           >
-            <div style={{ display: "flex", gap: "8px" }}>
+            <Box sx={{ display: "flex", gap: "8px" }}>
               <span style={{ color: "#94a3b8" }}>Make :</span>
-              <span style={{ fontWeight: "600", color: "#0f172a" }}>
-                {currentEquipment.make || "N/A"}
-              </span>
-            </div>
-
-            <div
-              style={{
-                width: "1px",
-                height: "14px",
-                backgroundColor: "#e5e7eb",
-              }}
-            />
-
-            <div style={{ display: "flex", gap: "8px" }}>
+              <span style={{ fontWeight: "600", color: "#0f172a" }}>{currentEquipment.make || "N/A"}</span>
+            </Box>
+            <Box sx={{ width: "1px", height: "14px", backgroundColor: "#e5e7eb" }} />
+            <Box sx={{ display: "flex", gap: "8px" }}>
               <span style={{ color: "#94a3b8" }}>Model :</span>
-              <span style={{ fontWeight: "600", color: "#0f172a" }}>
-                {currentEquipment.model || "N/A"}
-              </span>
-            </div>
+              <span style={{ fontWeight: "600", color: "#0f172a" }}>{currentEquipment.model || "N/A"}</span>
+            </Box>
 
-            <div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
+            <Box sx={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
               <button
                 onClick={handleClear}
                 disabled={isSaving}
@@ -416,23 +346,13 @@ export default function LabEquipmentForm({
                   border: "1px solid #505050",
                   borderRadius: "8px",
                   cursor: isSaving ? "not-allowed" : "pointer",
-                  fontSize: "14px",
-                  opacity: isSaving ? 0.6 : 1,
                 }}
               >
                 Clear
               </button>
-
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                onMouseEnter={(e) => {
-                  if (!isSaving)
-                    e.currentTarget.style.backgroundColor = "#232323";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#505050";
-                }}
                 style={{
                   padding: "10px 24px",
                   backgroundColor: "#505050",
@@ -440,14 +360,13 @@ export default function LabEquipmentForm({
                   border: "none",
                   borderRadius: "8px",
                   cursor: isSaving ? "not-allowed" : "pointer",
-                  fontSize: "14px",
-                  opacity: isSaving ? 0.6 : 1,
                 }}
               >
                 {isSaving ? "Saving..." : "Save"}
               </button>
-            </div>
-          </div>
+            </Box>
+          </Box>
+
           <Box sx={{ mt: 3 }}>
             <LabEquipmentComplianceChart
               key={refreshChartKey}
