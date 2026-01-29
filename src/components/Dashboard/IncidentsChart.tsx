@@ -14,22 +14,13 @@ import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import RemoveIcon from "@mui/icons-material/Remove";
 
 import { EquipmentDetail, ParameterContent } from "@/types";
+import { getEquipmentColor } from "@/utils/constants";
 
 interface IncidentsChartProps {
   equipmentDetails: EquipmentDetail[];
   values: any[];
   parameterConfig: ParameterContent;
 }
-
-/* -----------------------------
-   EQUIPMENT COLORS (FIGMA)
------------------------------ */
-const EQUIPMENT_COLORS = [
-  "#6B7280", // Incubator A
-  "#9CA3AF", // Incubator B
-  "#FBCFE8", // Incubator C
-  "#FB7185", // Incubator D
-];
 
 /* -----------------------------
    STATUS COLORS
@@ -145,8 +136,9 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({
                     dataKey="value"
                     innerRadius={inner}
                     outerRadius={outer}
-                    fill={EQUIPMENT_COLORS[idx % EQUIPMENT_COLORS.length]}
-                    stroke="none"
+                    fill={getEquipmentColor(ed.equipment_num)}
+                    opacity={0.7}
+                    stroke="#fff"
                     isAnimationActive={false}
                   />
                 );
@@ -207,8 +199,7 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({
                     width: 10,
                     height: 10,
                     borderRadius: "50%",
-                    backgroundColor:
-                      EQUIPMENT_COLORS[idx % EQUIPMENT_COLORS.length],
+                    backgroundColor: getEquipmentColor(ed.equipment_num),
                   }}
                 />
                 <Typography fontSize={12}>{ed.equipment_num}</Typography>

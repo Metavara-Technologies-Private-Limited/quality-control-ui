@@ -28,9 +28,7 @@ const Dashboard = () => {
   const [search, setSearch] = useState("");
   const [parameterValues, setParameterValues] = useState<any[]>([]);
   const [valuesLoading, setValuesLoading] = useState(false);
-  const [sortActive, setSortActive] = useState(false);
-  const [filterActive, setFilterActive] = useState(false);
-  const [sort, setSort] = useState<"asc" | "desc">("asc");
+  const [sort, setSort] = useState<"asc" | "desc" | null>(null);
   const [filter, setFilter] = useState<string | null>(null);
 
   /** ------------------ DEPARTMENTS ------------------ **/
@@ -52,18 +50,19 @@ const Dashboard = () => {
 
     let list = department.equipments ?? [];
 
-    // search
     if (search.trim()) {
       list = list.filter((eq) =>
         eq.equipment_name.toLowerCase().includes(search.toLowerCase()),
       );
     }
 
-    list = [...list].sort((a, b) =>
-      sort === "asc"
-        ? a.equipment_name.localeCompare(b.equipment_name)
-        : b.equipment_name.localeCompare(a.equipment_name),
-    );
+    if (sort) {
+      list = [...list].sort((a, b) =>
+        sort === "asc"
+          ? a.equipment_name.localeCompare(b.equipment_name)
+          : b.equipment_name.localeCompare(a.equipment_name),
+      );
+    }
 
     return list;
   }, [department, search, sort, filter]);
@@ -133,28 +132,23 @@ const Dashboard = () => {
     <Container maxWidth={false} disableGutters>
       {/* Department Tabs */}
       <DepartmentTabs
-  departments={departments}
-  selected={departmentId}
-  onChange={setDepartmentId}
-  onSearch={(value) => {
-    setSearch(value);
-    setFilterActive(!!value); // Filter lights up if search
-  }}
-  onSort={() => {
-    setSort((s) => (s === "asc" ? "desc" : "asc"));
-    setFilterActive(false); // Filter goes off
-  }}
-  onFilter={() => {
-    setFilter((f) => (f ? null : "active"));
-    setFilterActive((prev) => !prev); 
-  }}
-  sortActive={!!sort} // highlight if sort is applied
-  filterActive={filterActive}
-/>
-
+        departments={departments}
+        selected={departmentId}
+        onChange={setDepartmentId}
+        onSearch={(value) => {
+          setSearch(value);
+          setFilter(value.trim() ? "search" : null);
+        }}
+        onSort={() =>
+          setSort((s) => (s === null ? "asc" : s === "asc" ? "desc" : null))
+        }
+        onFilter={() => setFilter((f) => (f ? null : "active"))}
+        sortActive={!!sort}
+        filterActive={!!filter}
+      />
 
       {/* Equipment Cards */}
-      <Box sx={{ overflowX: "auto", pb: 1 }}>
+      <Box sx={{ overflowX: "auto"}}>
         <Box sx={{ display: "inline-flex", gap: 2 }}>
           {equipments.map((eq) => (
             <EquipmentCards
@@ -182,11 +176,10 @@ const Dashboard = () => {
           />
 
           <Box sx={{ mt: 3 }}>
-            <Grid container spacing={3}>
+            <Grid container spacing={2}>
               <Grid item xs={12} md={8}>
                 <ParameterChart
                   equipmentDetails={equipmentDetails}
-                  parameterId={parameter.id}
                   parameterName={parameter.parameter_name}
                   unit={activeValue?.unit || ""}
                   values={parameterValues}
@@ -196,7 +189,6 @@ const Dashboard = () => {
 
               <Grid item xs={12} md={4}>
                 <RecentActivity
-                  parameterId={parameter.id}
                   parameterName={parameter.parameter_name}
                   unit={activeValue?.unit || ""}
                   equipmentDetails={equipmentDetails}
@@ -205,7 +197,7 @@ const Dashboard = () => {
               </Grid>
             </Grid>
 
-            <Grid container spacing={3} sx={{ mt: 1 }}>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12} md={4}>
                 <IncidentsChart
                   equipmentDetails={equipmentDetails}

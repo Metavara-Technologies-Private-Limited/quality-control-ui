@@ -214,7 +214,7 @@ const Sidebar = () => {
       sx={{
         width: 240,
         "& .MuiDrawer-paper": {
-          width: 240,
+          width: 250,
           backgroundColor: "#FAFAFA",
           borderRight: "none",
         },

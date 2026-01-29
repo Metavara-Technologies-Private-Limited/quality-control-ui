@@ -5,8 +5,10 @@ import {
   TextField,
   InputAdornment,
   IconButton,
+  useTheme,
 } from "@mui/material";
-import { Search, FilterList, Sort } from "@mui/icons-material";
+import { Search, Sort } from "@mui/icons-material";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import type { Department } from "@/types";
 
 interface DepartmentTabsProps {
@@ -25,7 +27,6 @@ const iconButtonSx = {
   borderRadius: 2,
   backgroundColor: "#fff",
 };
-const iconColor = "#6B7280";
 
 const DepartmentTabs = ({
   departments,
@@ -37,6 +38,11 @@ const DepartmentTabs = ({
   sortActive,
   filterActive,
 }: DepartmentTabsProps) => {
+  const theme = useTheme();
+  const activeColor = theme.palette.secondary.main;
+  const activeBg = theme.palette.secondary.light + "22";
+  const iconColor = theme.palette.text.secondary;
+
   const activeDepartments = departments.filter((d) => d.is_active);
 
   return (
@@ -70,13 +76,6 @@ const DepartmentTabs = ({
             minWidth: 300,
             flex: 1,
             maxWidth: 400,
-            "& .MuiOutlinedInput-root": {
-              backgroundColor: "#ffffff",
-              borderRadius: 2,
-              "& fieldset": { borderColor: "#e5e7eb" },
-              "&:hover fieldset": { borderColor: "#d1d5db" },
-              "&.Mui-focused fieldset": { borderColor: "#14b8a6" },
-            },
           }}
           InputProps={{
             startAdornment: (
@@ -87,22 +86,35 @@ const DepartmentTabs = ({
           }}
         />
 
-<IconButton
-  size="small"
-  sx={{ ...iconButtonSx, ...(sortActive && { borderColor: "#14b8a6" }) }}
-  onClick={onSort}
->
-  <Sort fontSize="small" sx={{ color: sortActive ? "#14b8a6" : iconColor }} />
-</IconButton>
+        <IconButton
+          size="small"
+          onClick={onSort}
+          sx={{
+            ...iconButtonSx,
+            borderColor: sortActive ? activeColor : "#E5E7EB",
+            backgroundColor: sortActive ? activeBg : "#fff",
+          }}
+        >
+          <Sort
+            fontSize="small"
+            sx={{ color: sortActive ? activeColor : iconColor }}
+          />
+        </IconButton>
 
-<IconButton
-  size="small"
-  sx={{ ...iconButtonSx, ...(filterActive && { borderColor: "#14b8a6" }) }}
-  onClick={onFilter}
->
-  <FilterList fontSize="small" sx={{ color: filterActive ? "#14b8a6" : iconColor }} />
-</IconButton>
-
+        <IconButton
+          size="small"
+          onClick={onFilter}
+          sx={{
+            ...iconButtonSx,
+            borderColor: filterActive ? activeColor : "#E5E7EB",
+            backgroundColor: filterActive ? activeBg : "#fff",
+          }}
+        >
+          <FilterAltIcon
+            fontSize="small"
+            sx={{ color: filterActive ? activeColor : iconColor }}
+          />
+        </IconButton>
       </Box>
     </Box>
   );

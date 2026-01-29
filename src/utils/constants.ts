@@ -29,6 +29,14 @@ export const CHART_COLORS = [
   '#ec4899', // pink
 ] as const;
 
+export const getEquipmentColor = (key: string | number) => {
+  const hash = String(key)
+    .split("")
+    .reduce((acc, c) => acc + c.charCodeAt(0), 0);
+
+  return CHART_COLORS[hash % CHART_COLORS.length];
+};
+
 // // Department Types
 // export const DEPARTMENTS = [
 //   'Embryology',
