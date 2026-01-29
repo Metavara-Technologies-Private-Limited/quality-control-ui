@@ -1,5 +1,5 @@
 import { Container } from '@mui/material';
-import EquipmentPage from '@/components/Configuration/EquipmentPage';
+import EquipmentPage from '@/components/Configuration/Equipment/EquipmentPage';
 
 const Configuration = () => {
 

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Box, Container, Tabs, Tab, Typography, Alert } from '@mui/material';
-import EquipmentPage from '@/components/Configuration/EquipmentPage';
-import DepartmentConfig from '@/components/Configuration/DepartmentConfig';
-import ParameterConfig from '@/components/Configuration/ParameterConfig';
-import TestTypeConfig from '@/components/Configuration/TestTypeConfig';
+import EquipmentPage from '@/components/Configuration/Equipment/EquipmentPage';
+import DepartmentConfig from '@/components/Configuration/Equipment/DepartmentConfig';
+import ParameterConfig from '@/components/Configuration/Equipment/ParameterConfig';
+import TestTypeConfig from '@/components/Configuration/Equipment/TestTypeConfig';
 
 const UserConfiguration = () => {
   const [activeTab, setActiveTab] = useState(0);
