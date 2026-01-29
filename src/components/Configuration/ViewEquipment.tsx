@@ -10,7 +10,6 @@ import {
   TableRow,
   IconButton,
 } from "@mui/material";
-// import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import TurnLeftIcon from "@mui/icons-material/TurnLeft";
 import { useNavigate, useLocation } from "react-router-dom";
 import { EquipmentDetail, Parameter } from "@/types";
@@ -94,7 +93,7 @@ const ViewEquipment = () => {
     if (!environment || !department) return null;
 
     name = environment.environment_name;
-    parameters = (environment.parameters ?? []).map(p => ({
+    parameters = (environment.parameters ?? []).map((p) => ({
       ...p,
       parameter_name: p.env_parameter_name ?? "",
     }));
@@ -118,22 +117,6 @@ const ViewEquipment = () => {
     <Box sx={{ p: 3, background: "#FFFFFF", minHeight: "100vh" }}>
       {/* Header */}
       <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1 }}>
-        {/* <ArrowBackIcon
-          onClick={() =>
-            navigate(
-              isEnvironment
-                ? "/configuration/environment"
-                : "/configuration/equipment",
-            )
-          }
-          sx={{
-            mr: 1,
-            cursor: "pointer",
-            border: "1px solid #E5E7EB",
-            borderRadius: "8px",
-            padding: "4px",
-          }}
-        /> */}
         <IconButton
           onClick={() =>
             navigate(
@@ -141,7 +124,7 @@ const ViewEquipment = () => {
                 ? "/configuration/environment"
                 : "/configuration/equipment",
             )
-          }       
+          }
           sx={{
             width: 24,
             height: 24,

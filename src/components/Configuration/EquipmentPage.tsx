@@ -27,7 +27,6 @@ import "react-toastify/dist/ReactToastify.css";
 
 import { Department, Parameter, EquipmentDetail } from "@/types";
 
-/* ------------------ UI Union Type ------------------ */
 type BaseUIItem = {
   id: number;
   is_active: boolean;
@@ -79,7 +78,6 @@ const EquipmentPage = () => {
     },
   };
 
-  /* ------------------ Derived Data ------------------ */
 
   const items = useMemo<EquipmentUIItem[]>(() => {
     if (!clinic?.department) return [];
@@ -122,7 +120,6 @@ const EquipmentPage = () => {
     [items, selectedItemId],
   );
 
-  /* ------------------ Helpers ------------------ */
 
   const getCreatedDate = (dateString?: string) => {
     if (!dateString) return "N/A";
@@ -130,7 +127,6 @@ const EquipmentPage = () => {
     return isNaN(date.getTime()) ? "N/A" : date.toLocaleDateString("en-GB");
   };
 
-  /* ------------------ API Actions ------------------ */
 
   const confirmDelete = async () => {
     if (!selectedItem) return;
@@ -151,7 +147,7 @@ const EquipmentPage = () => {
     }
   };
 
-const toggleActive = async (active: boolean) => {
+  const toggleActive = async (active: boolean) => {
     if (!selectedItem) return;
 
     try {
@@ -160,11 +156,13 @@ const toggleActive = async (active: boolean) => {
           ? await environmentApi.activate(selectedItem.id)
           : await environmentApi.inactive(selectedItem.id);
       } else {
-        // Corrected: Using only selectedItem.id to match standard activate patterns
-        // If your API requires the department ID as well, keep both arguments.
+
         active
-          ? await equipmentApi.activate(selectedItem.id) 
-          : await equipmentApi.inactive(selectedItem.department.id, selectedItem.id);
+          ? await equipmentApi.activate(selectedItem.id)
+          : await equipmentApi.inactive(
+              selectedItem.department.id,
+              selectedItem.id,
+            );
       }
 
       dispatch(fetchClinic(1));
@@ -174,7 +172,6 @@ const toggleActive = async (active: boolean) => {
     }
   };
 
-  /* ------------------ UI ------------------ */
 
   return (
     <Box sx={{ p: 1 }}>
@@ -185,7 +182,14 @@ const toggleActive = async (active: boolean) => {
           const isInactive = item.is_active === false;
 
           return (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={`${item.entityType}-${item.id}`}>
+            <Grid
+              item
+              xs={12}
+              sm={6}
+              md={4}
+              lg={3}
+              key={`${item.entityType}-${item.id}`}
+            >
               <Card
                 sx={{
                   position: "relative",
@@ -263,7 +267,9 @@ const toggleActive = async (active: boolean) => {
                 >
                   <Typography fontSize={14} color="#4B5563">
                     <span style={{ color: "#9CA3AF" }}>Created Date:</span>{" "}
-                    {getCreatedDate(item.created_at ?? item.department.created_at)}
+                    {getCreatedDate(
+                      item.created_at ?? item.department.created_at,
+                    )}
                   </Typography>
 
                   <Box sx={{ display: "flex", gap: 1 }}>
@@ -360,31 +366,65 @@ const toggleActive = async (active: boolean) => {
         </MenuItem>
       </Menu>
 
-      {/* Dialogs remain functionally the same but benefit from the API param fix */}
-      <Dialog open={dialogs.delete} onClose={() => setDialogs({ ...dialogs, delete: false })}>
+      <Dialog
+        open={dialogs.delete}
+        onClose={() => setDialogs({ ...dialogs, delete: false })}
+      >
         <DialogTitle>Confirm Delete</DialogTitle>
-        <DialogContent><Typography>Are you sure you want to delete this?</Typography></DialogContent>
+        <DialogContent>
+          <Typography>Are you sure you want to delete this?</Typography>
+        </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogs({ ...dialogs, delete: false })}>Cancel</Button>
-          <Button sx={darkButtonSx} variant="contained" onClick={confirmDelete}>Delete</Button>
+          <Button onClick={() => setDialogs({ ...dialogs, delete: false })}>
+            Cancel
+          </Button>
+          <Button sx={darkButtonSx} variant="contained" onClick={confirmDelete}>
+            Delete
+          </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={dialogs.inactive} onClose={() => setDialogs({ ...dialogs, inactive: false })}>
+      <Dialog
+        open={dialogs.inactive}
+        onClose={() => setDialogs({ ...dialogs, inactive: false })}
+      >
         <DialogTitle>Confirm Inactivate</DialogTitle>
-        <DialogContent><Typography>Are you sure you want to inactivate?</Typography></DialogContent>
+        <DialogContent>
+          <Typography>Are you sure you want to inactivate?</Typography>
+        </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogs({ ...dialogs, inactive: false })}>Cancel</Button>
-          <Button sx={darkButtonSx} onClick={() => toggleActive(false)} variant="contained">Inactivate</Button>
+          <Button onClick={() => setDialogs({ ...dialogs, inactive: false })}>
+            Cancel
+          </Button>
+          <Button
+            sx={darkButtonSx}
+            onClick={() => toggleActive(false)}
+            variant="contained"
+          >
+            Inactivate
+          </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={dialogs.active} onClose={() => setDialogs({ ...dialogs, active: false })}>
+      <Dialog
+        open={dialogs.active}
+        onClose={() => setDialogs({ ...dialogs, active: false })}
+      >
         <DialogTitle>Confirm Activate</DialogTitle>
-        <DialogContent><Typography>Are you sure you want to activate?</Typography></DialogContent>
+        <DialogContent>
+          <Typography>Are you sure you want to activate?</Typography>
+        </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogs({ ...dialogs, active: false })}>Cancel</Button>
-          <Button sx={darkButtonSx} onClick={() => toggleActive(true)} variant="contained">Activate</Button>
+          <Button onClick={() => setDialogs({ ...dialogs, active: false })}>
+            Cancel
+          </Button>
+          <Button
+            sx={darkButtonSx}
+            onClick={() => toggleActive(true)}
+            variant="contained"
+          >
+            Activate
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
