@@ -156,11 +156,9 @@ const isInactive = param.is_active === false || param.is_active === 0 || param.s
         parameter={param}
         value={value}
         onChange={(v) => setValue(param.env_parameter_name, v)}
-        // ✅ Pass disabled prop to your custom ParameterInput component
         disabled={isInactive} 
       />
 
-      {/* ✅ Show "Inactive" label so user knows why it's disabled */}
       {isInactive && (
         <Box sx={{ fontSize: 11, color: "#f44336", fontWeight: 700, mt: 0.5 }}>
           Inactive Parameter
