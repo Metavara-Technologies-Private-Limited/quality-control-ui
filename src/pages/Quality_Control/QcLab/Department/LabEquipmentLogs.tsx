@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
   Box,
   CircularProgress,
@@ -31,7 +31,10 @@ export default function LabEquipmentLogs({ equipment }: Props) {
   const [loading, setLoading] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 10,
+  });
 
   /* -------- Equipment Detail Map -------- */
   const equipmentDetailMap = useMemo(() => {
@@ -92,7 +95,8 @@ export default function LabEquipmentLogs({ equipment }: Props) {
       return {
         id: log.id || index,
         date: dayjs(log.created_at).format("DD/MM/YYYY HH:mm"),
-        equipment: equipmentDetailMap.get(log.equipment_details_id) ?? "Unknown",
+        equipment:
+          equipmentDetailMap.get(log.equipment_details_id) ?? "Unknown",
         parameter: param?.name ?? "-",
         unit: param?.unit ?? "-",
         value: log.content ?? "-",
@@ -107,8 +111,8 @@ export default function LabEquipmentLogs({ equipment }: Props) {
     if (searchTerm) {
       filtered = filtered.filter((row) =>
         Object.values(row).some((val) =>
-          String(val).toLowerCase().includes(searchTerm.toLowerCase())
-        )
+          String(val).toLowerCase().includes(searchTerm.toLowerCase()),
+        ),
       );
     }
 
@@ -124,10 +128,10 @@ export default function LabEquipmentLogs({ equipment }: Props) {
 
     const excelData = rows.map((row) => ({
       "Date & Time": row.date,
-      "Equipment": row.equipment,
-      "Parameter": row.parameter,
-      "Unit": row.unit,
-      "Value": row.value,
+      Equipment: row.equipment,
+      Parameter: row.parameter,
+      Unit: row.unit,
+      Value: row.value,
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -142,20 +146,27 @@ export default function LabEquipmentLogs({ equipment }: Props) {
 
   const handleImportCSV = async (importedData: any[]) => {
     try {
-      const requests = importedData.map((log) => {
-        const param = equipment.parameters.find((p) => p.parameter_name === log.parameter);
-        if (!param?.id || !equipment.equipment_id) return null;
+      const requests = importedData
+        .map((log) => {
+          const param = equipment.parameters.find(
+            (p) => p.parameter_name === log.parameter,
+          );
+          if (!param?.id || !equipment.equipment_id) return null;
 
-        const logDateTime = dayjs(log.dateTime, ["DD/MM/YYYY HH:mm", "YYYY-MM-DD HH:mm"]);
-        if (!logDateTime.isValid()) return null;
+          const logDateTime = dayjs(log.dateTime, [
+            "DD/MM/YYYY HH:mm",
+            "YYYY-MM-DD HH:mm",
+          ]);
+          if (!logDateTime.isValid()) return null;
 
-        return parameterValueApi.create({
-          parameter: param.id,
-          equipment_details: equipment.equipment_id,
-          content: log.value,
-          log_time: logDateTime.toISOString(),
-        });
-      }).filter(Boolean);
+          return parameterValueApi.create({
+            parameter: param.id,
+            equipment_details: equipment.equipment_id,
+            content: log.value,
+            log_time: logDateTime.toISOString(),
+          });
+        })
+        .filter(Boolean);
 
       if (requests.length === 0) {
         toast.warn("No valid logs to import");
@@ -179,44 +190,50 @@ export default function LabEquipmentLogs({ equipment }: Props) {
   }
 
   const columns: GridColDef[] = [
-    { 
-      field: 'date', 
-      headerName: 'Date & Time', 
-      width: 180, 
+    {
+      field: "date",
+      headerName: "Date & Time",
+      width: 180,
       sortable: true,
     },
-    { 
-      field: 'equipment', 
-      headerName: 'Equipment', 
-      width: 150, 
+    {
+      field: "equipment",
+      headerName: "Equipment",
+      width: 150,
       sortable: true,
     },
-    { 
-      field: 'parameter', 
-      headerName: 'Parameter', 
-      width: 150, 
+    {
+      field: "parameter",
+      headerName: "Parameter",
+      width: 150,
       sortable: true,
     },
-    { 
-      field: 'unit', 
-      headerName: 'Unit', 
-      width: 100, 
+    {
+      field: "unit",
+      headerName: "Unit",
+      width: 100,
       sortable: true,
     },
-    { 
-      field: 'value', 
-      headerName: 'Value', 
-      width: 120, 
+    {
+      field: "value",
+      headerName: "Value",
+      width: 120,
       sortable: true,
-      type: 'string',
+      type: "string",
     },
   ];
-
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {/* Header Actions */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 2,
+        }}
+      >
         <TextField
           placeholder="Search across all columns..."
           size="small"

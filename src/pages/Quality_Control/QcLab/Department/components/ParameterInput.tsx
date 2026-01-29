@@ -1,5 +1,3 @@
-// department/components/ParameterInput.tsx
-
 import { TextField, MenuItem } from "@mui/material";
 import { Parameter } from "@/types";
 
@@ -7,16 +5,14 @@ interface ParameterInputProps {
   parameter: Parameter;
   value: string;
   onChange: (value: string) => void;
-  // ✅ 1. Add disabled to the interface
-  disabled?: boolean; 
+  disabled?: boolean;
 }
 
 export default function ParameterInput({
   parameter,
   value,
   onChange,
-  // ✅ 2. Destructure disabled here
-  disabled, 
+  disabled,
 }: ParameterInputProps) {
   const cfg = parameter.config;
   if (!cfg) return null;
@@ -25,8 +21,7 @@ export default function ParameterInput({
     fullWidth: true,
     value: value ?? "",
     onChange: (e: any) => onChange(e.target.value),
-    // ✅ 3. Add disabled to commonProps so all TextFields receive it
-    disabled: disabled, 
+    disabled: disabled,
     label: `${parameter.parameter_name || parameter.env_parameter_name}${
       cfg.unit ? ` (${cfg.unit})` : ""
     }`,
@@ -40,8 +35,7 @@ export default function ParameterInput({
         borderRadius: "10px",
         fontSize: "16px",
         fontWeight: 500,
-        // ✅ 4. Optional: Change background color when disabled
-        backgroundColor: disabled ? "#F3F4F6" : "#FFFFFF", 
+        backgroundColor: disabled ? "#F3F4F6" : "#FFFFFF",
 
         "& fieldset": {
           borderColor: "#9e9e9e",
@@ -53,10 +47,9 @@ export default function ParameterInput({
         },
 
         "&.Mui-focused fieldset": {
-          borderColor: '#828282', 
+          borderColor: "#828282",
         },
-        
-        // Styling for the disabled state specifically
+
         "&.Mui-disabled fieldset": {
           borderColor: "#E5E7EB",
         },
@@ -85,7 +78,7 @@ export default function ParameterInput({
       },
 
       "& .MuiInputLabel-root.Mui-focused": {
-        color: "#232323", 
+        color: "#232323",
       },
 
       /* DROPDOWN ICON */
@@ -96,7 +89,6 @@ export default function ParameterInput({
     },
   };
 
-  // ... rest of your switch statement remains the same ...
   switch (cfg.data_type) {
     case "Integer":
     case "Decimal":
@@ -109,7 +101,9 @@ export default function ParameterInput({
         <TextField {...commonProps} select>
           <MenuItem value="">Select</MenuItem>
           {(cfg.dropdown || []).map((opt: string) => (
-            <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+            <MenuItem key={opt} value={opt}>
+              {opt}
+            </MenuItem>
           ))}
         </TextField>
       );

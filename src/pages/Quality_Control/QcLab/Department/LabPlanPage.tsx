@@ -5,21 +5,15 @@ import { useOutletContext } from "react-router-dom";
 import { RootState } from "@/store";
 import LabEquipmentForm from "./LabEquipmentForm";
 
-/* ---------------- Types ---------------- */
-
 type PlanItem = {
   key: string;
   eventId: number;
   eventName: string;
   assignment: string;
   scheduleLabel: string;
-
-  // equipment
   equipmentName: string;
   equipmentUnit: string;
   equipmentDetailId: number;
-
-  // 🔽 ADD THESE
   scheduleType?: number;
   startDate?: string | null;
   endDate?: string | null;

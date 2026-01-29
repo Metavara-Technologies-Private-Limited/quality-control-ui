@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
   Box,
   CircularProgress,
@@ -27,18 +27,21 @@ export default function LabEnvironmentLogs({ environment }: Props) {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 10,
+  });
 
   /* -------- Load logs for ALL environment parameters -------- */
   const loadLogs = async () => {
     setLoading(true);
     try {
       const all: any[] = [];
-      // Filter for parameters that have IDs
       const savedParameters = environment.parameters.filter((p) => p.id);
-      
+
       for (const p of savedParameters) {
-        const { data = [] } = await environmentParameterValueApi.listByParameter(p.id);
+        const { data = [] } =
+          await environmentParameterValueApi.listByParameter(p.id);
         all.push(...data);
       }
       setLogs(all);
@@ -83,32 +86,38 @@ export default function LabEnvironmentLogs({ environment }: Props) {
 
     return allRows.filter((row) =>
       Object.values(row).some((val) =>
-        String(val).toLowerCase().includes(searchTerm.toLowerCase())
-      )
+        String(val).toLowerCase().includes(searchTerm.toLowerCase()),
+      ),
     );
   }, [logs, parameterMetaMap, searchTerm]);
 
   /* -------- Handle Import Logic -------- */
   const handleImportCSV = async (importedData: any[]) => {
     try {
-      const requests = importedData.map((log) => {
-        // Find environment parameter by name
-        const param = environment.parameters.find(
-          (p) => p.env_parameter_name.toLowerCase() === log.parameter.toLowerCase()
-        );
-        
-        if (!param?.id) return null;
+      const requests = importedData
+        .map((log) => {
+          const param = environment.parameters.find(
+            (p) =>
+              p.env_parameter_name.toLowerCase() ===
+              log.parameter.toLowerCase(),
+          );
 
-        const logDateTime = dayjs(log.dateTime, ["DD/MM/YYYY HH:mm", "YYYY-MM-DD HH:mm"]);
-        if (!logDateTime.isValid()) return null;
+          if (!param?.id) return null;
 
-        return environmentParameterValueApi.create({
-          environment_parameter: param.id,
-          content: log.value,
-          log_time: logDateTime.toISOString(),
-          environment: 0
-        });
-      }).filter(Boolean);
+          const logDateTime = dayjs(log.dateTime, [
+            "DD/MM/YYYY HH:mm",
+            "YYYY-MM-DD HH:mm",
+          ]);
+          if (!logDateTime.isValid()) return null;
+
+          return environmentParameterValueApi.create({
+            environment_parameter: param.id,
+            content: log.value,
+            log_time: logDateTime.toISOString(),
+            environment: 0,
+          });
+        })
+        .filter(Boolean);
 
       if (requests.length === 0) {
         toast.warn("No valid environment logs to import");
@@ -133,9 +142,9 @@ export default function LabEnvironmentLogs({ environment }: Props) {
 
     const excelData = rows.map((row) => ({
       "Date & Time": row.date,
-      "Parameter": row.parameter,
-      "Unit": row.unit,
-      "Value": row.value,
+      Parameter: row.parameter,
+      Unit: row.unit,
+      Value: row.value,
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -156,37 +165,44 @@ export default function LabEnvironmentLogs({ environment }: Props) {
   }
 
   const columns: GridColDef[] = [
-    { 
-      field: 'date', 
-      headerName: 'Date & Time', 
-      width: 180, 
+    {
+      field: "date",
+      headerName: "Date & Time",
+      width: 180,
       sortable: true,
     },
-    { 
-      field: 'parameter', 
-      headerName: 'Parameter', 
-      width: 150, 
+    {
+      field: "parameter",
+      headerName: "Parameter",
+      width: 150,
       sortable: true,
     },
-    { 
-      field: 'unit', 
-      headerName: 'Unit', 
-      width: 100, 
+    {
+      field: "unit",
+      headerName: "Unit",
+      width: 100,
       sortable: true,
     },
-    { 
-      field: 'value', 
-      headerName: 'Value', 
-      width: 120, 
+    {
+      field: "value",
+      headerName: "Value",
+      width: 120,
       sortable: true,
-      type: 'string',
+      type: "string",
     },
   ];
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {/* Header Actions */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 2,
+        }}
+      >
         <TextField
           placeholder="Filter environment logs..."
           size="small"
@@ -287,7 +303,10 @@ export default function LabEnvironmentLogs({ environment }: Props) {
       <ImportCSVPopup
         open={importDialogOpen}
         onClose={() => setImportDialogOpen(false)}
-        parameters={environment.parameters.map(p => ({ ...p, parameter_name: p.env_parameter_name }))}
+        parameters={environment.parameters.map((p) => ({
+          ...p,
+          parameter_name: p.env_parameter_name,
+        }))}
         onImport={handleImportCSV}
       />
     </Box>

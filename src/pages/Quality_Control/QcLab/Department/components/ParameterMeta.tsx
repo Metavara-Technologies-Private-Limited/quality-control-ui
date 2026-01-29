@@ -1,4 +1,3 @@
-// department/components/ParameterMeta.tsx
 export default function ParameterMeta({ parameter, value }: any) {
   const { config } = parameter;
 

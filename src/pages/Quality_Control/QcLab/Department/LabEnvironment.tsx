@@ -5,12 +5,7 @@ import { RootState } from "@/store";
 import LabEnvironmentForm from "./LabEnvironmentForm";
 import LabEnvironmentComplianceChart from "./LabEnvironmentComplianceChart";
 
-/* ---------------- Utils ---------------- */
-
 const normalize = (v: string) => v?.replace(/\s+/g, "").toLowerCase();
-
-/* ---------------- Main ---------------- */
-
 export default function LabEnvironment() {
   const { departmentName, searchText } = useOutletContext<{
     departmentName: string;
@@ -20,19 +15,18 @@ export default function LabEnvironment() {
   const { data: clinic } = useSelector((s: RootState) => s.clinic);
 
   const department = clinic?.department.find(
-    (d) => normalize(d.name) === normalize(departmentName)
+    (d) => normalize(d.name) === normalize(departmentName),
   );
 
-const environments = useMemo(() => {
-  if (!department?.environments) return [];
+  const environments = useMemo(() => {
+    if (!department?.environments) return [];
 
-  return department.environments
-    .filter((env) => env.is_active !== false) 
-    .filter((env) =>
-      env.environment_name.toLowerCase().includes(searchText.toLowerCase())
-    );
-}, [department, searchText]);
-
+    return department.environments
+      .filter((env) => env.is_active !== false)
+      .filter((env) =>
+        env.environment_name.toLowerCase().includes(searchText.toLowerCase()),
+      );
+  }, [department, searchText]);
 
   const [selectedEnv, setSelectedEnv] = useState<any>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -54,12 +48,10 @@ const environments = useMemo(() => {
 
   return (
     <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
-      {/* ---------- HEADER ---------- */}
       <h1 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>
         {selectedEnv.environment_name}
       </h1>
 
-      {/* ---------- BODY ---------- */}
       <div
         style={{
           display: "grid",

@@ -19,13 +19,11 @@ const WEEK_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 type Props = {
   equipmentDetailId: number;
   parameters: any[];
-  //   refreshKey: number;
 };
 
 export default function LabEquipmentComplianceChart({
   equipmentDetailId,
   parameters,
-  //   refreshKey,
 }: Props) {
   const [chartData, setChartData] = useState<any[]>([]);
 
@@ -135,7 +133,7 @@ export default function LabEquipmentComplianceChart({
         <BarChart
           data={chartData}
           stackOffset="sign"
-          margin={{ top: 20, right: 10, left: 10, bottom: 30 }} // 👈 ADD THIS
+          margin={{ top: 20, right: 10, left: 10, bottom: 30 }} 
         >
           <CartesianGrid vertical={false} stroke="#f1f5f9" />
           <XAxis
@@ -189,7 +187,7 @@ export default function LabEquipmentComplianceChart({
               position="top"
               formatter={(v: number) => (v === 0 ? "" : v)}
               style={{
-                fontSize: 12, // 👈 decrease size
+                fontSize: 12, 
                 fill: "#6c6c6c",
               }}
             />
@@ -206,7 +204,7 @@ export default function LabEquipmentComplianceChart({
               position="top"
               formatter={(v: number) => (v === 0 ? "" : Math.abs(v))}
               style={{
-                fontSize: 12, // 👈 decrease size
+                fontSize: 12, 
                 fill: "#EF9685",
               }}
             />
