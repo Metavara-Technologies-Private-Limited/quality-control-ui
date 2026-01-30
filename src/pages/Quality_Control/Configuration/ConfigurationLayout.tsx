@@ -3,7 +3,7 @@ import { Box, Button, TextField } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { useState } from "react";
 
-import AddEquipmentPopup from "@/components/Configuration/AddEquipmentPopup";
+import AddEquipmentPopup from "@/components/Configuration/Equipment/AddEquipmentPopup";
 import AddEnvironmentPopup from "@/pages/Quality_Control/Configuration/AddEnvironmentPopup";
 
 const ConfigurationLayout = () => {
