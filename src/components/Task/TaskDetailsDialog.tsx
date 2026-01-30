@@ -32,13 +32,10 @@ import ImageIcon from "@mui/icons-material/Image";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
-
 import { toast } from "react-toastify";
-import { COLORS } from "./data/colors";
-import { STATUS_OPTIONS } from "./data/data";
-import { formatDueDateDisplay } from "./formatDueDateDisplay";
+import { COLORS } from "./colors";
+import { formatDueDateDisplay } from "./FormatDueDateDisplay";
 import { trackIcons } from "./trackIcons";
-// import { statusPill } from './statusPill';
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import {
@@ -48,7 +45,7 @@ import {
   TaskStatus,
   TaskUpdatePayload,
 } from "@/types";
-// import dayjs from 'dayjs';
+
 import { DatePicker } from "@mui/x-date-pickers";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { taskApi } from "@/services/api";
@@ -69,16 +66,12 @@ interface TaskDetailsDialogProps {
   task: UITask | null;
   onUpdated: () => void;
 }
-
+const STATUS_OPTIONS = ["To - Do", "In Progress", "Completed"];
 const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
   open,
-  // openTaskDetails,
   onClose,
   task,
   onUpdated,
-  // taskIndex,
-  // selectedEvent,
-  // setTasksByEvent,
 }) => {
   const assignees = useSelector((state: RootState) => state.assignees.data);
   const [detailsTab, setDetailsTab] = useState(0);
@@ -122,37 +115,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
     setTaskDetails(task.description || "");
     setSubTasks(task.sub_tasks || []);
     setDetailsTab(0);
-  }, [open, task?.id]); // 👈 important: task.id, not task object
-
-  // // Editor content setup when tab changes to description
-  // useEffect(() => {
-  //   if (!open || detailsTab !== 0 || !editorRef.current) return;
-
-  //   const editor = editorRef.current;
-  //
-
-  //   if (taskDetails?.trim()) {
-  //     editor.innerHTML = taskDetails;
-  //   } else {
-  //     editor.innerHTML =
-  //       '<p style="color:#aaa; font-style:italic;">No description saved yet. Click to edit...</p>';
-  //   }
-
-  //   // Place cursor at the end
-  //   try {
-  //     const range = document.createRange();
-  //     range.selectNodeContents(editor);
-  //     range.collapse(false);
-  //     const sel = window.getSelection();
-  //     sel?.removeAllRanges();
-  //     sel?.addRange(range);
-  //     editor.focus();
-  //   } catch (err) {
-  //     console.warn("Cursor positioning failed:", err);
-  //   }
-
-  //   checkFormats();
-  // }, [open, detailsTab, taskDetails]);
+  }, [open, task?.id]); 
 
   useEffect(() => {
     if (task?.timer_status !== "RUNNING") return;
@@ -164,12 +127,8 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
     return () => clearInterval(i);
   }, [task?.timer_status]);
 
-  // const hydratedTaskIdRef = useRef<number | null>(null);
-
   useEffect(() => {
     if (!open || !task) return;
-
-    // defer until DOM is painted
     requestAnimationFrame(() => {
       if (!editorRef.current) return;
 
@@ -260,27 +219,15 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
 
     files.forEach((file) => {
       if (file.type.startsWith("image/")) {
-        insertImageFromUpload(file); // editor only
+        insertImageFromUpload(file); 
       }
     });
 
-    setSelectedFiles((prev) => [...prev, ...files]); // ⭐ KEY FIX
+    setSelectedFiles((prev) => [...prev, ...files]); 
     e.target.value = "";
   };
 
   const tabs = ["Description", "Sub Tasks"];
-
-  // const validateTaskDetails = () => {
-  //   const desc = editorRef.current?.innerText?.trim() || '';
-  //   if (!desc) {
-  //     setTaskDetailsErrors({ description: 'Description is required' });
-  //     toast.error('Description cannot be empty');
-  //     return false;
-  //   }
-  //   setTaskDetailsErrors({ description: '' });
-  //   return true;
-  // };
-
   const toISO = (value?: string) => {
     if (!value) return null;
     const d = new Date(value);
@@ -294,24 +241,15 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
     const payload: TaskUpdatePayload = {
       task_event: task.task_event,
       assignment: task.assignment ?? null,
-
       name: task.name,
-
-      // ✅ USE LOCAL EDITOR STATE
       description: taskDetails,
-
-      // ✅ USE ENUM (map label → enum)
       status:
         taskStatus === TaskStatus.COMPLETED
           ? 2
           : taskStatus === TaskStatus.IN_PROGRESS
             ? 1
             : 0,
-
-      // ✅ SAFE DATE
       due_date: toISO(task.due_date)!,
-
-      // ✅ USE LOCAL SUBTASK STATE
       sub_tasks: subTasks.map((st) => ({
         id: st.id,
         name: st.name,
@@ -327,8 +265,8 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
 
     await taskApi.update(task.id, payload);
     toast.success("Task updated");
-    onClose(); // ✅ close dialog
-    onUpdated(); // ✅ refetch tasks in parent
+    onClose();
+    onUpdated(); 
   };
 
   const handleAddSubTask = () => {
@@ -337,14 +275,14 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
       return;
     }
 
-    const dueDate = newSubTask.due_date; // ✅ TS now knows it's not null
+    const dueDate = newSubTask.due_date; 
 
     setSubTasks((prev) => [
       ...prev,
       {
         name: newSubTask.name,
         status: newSubTask.status,
-        due_date: dueDate.toISOString(), // ✅ safe
+        due_date: dueDate.toISOString(), 
         assignment: newSubTask.assignee === "" ? null : newSubTask.assignee,
       },
     ]);
@@ -594,22 +532,6 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
             </Stack>
 
             <Divider sx={{ mb: 3 }} />
-
-            {/* Tabs */}
-            {/* <Box sx={{  mb: 2 }}>
-              <Tabs value={detailsTab} onChange={(_, v) => setDetailsTab(v)}>
-                <Tab
-                  label="Description"
-                  sx={{
-                    textTransform: 'none',
-                    fontWeight: 600,
-                    color: detailsTab === 0 ? '#FF8A65' : 'inherit',
-                  }}
-                />
-                <Tab label="Sub Tasks" sx={{ textTransform: 'none', fontWeight: 600 }} />
-              </Tabs>
-            </Box> */}
-
             <Box>
               <div
                 style={{
@@ -644,7 +566,6 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
             </Box>
 
             {/* Description Tab */}
-            {/* {detailsTab === 0 && ( */}
             <Stack sx={{ display: detailsTab === 0 ? "flex" : "none" }}>
               <Box>
                 <Typography
@@ -695,7 +616,6 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                     bgcolor="#FAFAFA"
                     borderTop="1px solid #E0E0E0"
                   >
-                    {/* Formatting toolbar - left */}
                     <Stack direction="row" spacing={1}>
                       <IconButton
                         size="small"
@@ -825,8 +745,6 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                         <FormatAlignJustifyIcon fontSize="small" />
                       </IconButton>
                     </Stack>
-
-                    {/* Right side actions */}
                     <Stack direction="row" spacing={1}>
                       <IconButton size="small" onClick={insertLink}>
                         <InsertLinkIcon fontSize="small" />
@@ -957,12 +875,10 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                 </Typography>
               </Box>
             </Stack>
-            {/* )} */}
 
             {/* Sub Tasks Tab */}
             {detailsTab === 1 && (
               <Stack spacing={3}>
-                {/* Sub-tasks list */}
                 <Stack spacing={1}>
                   <Stack direction="row" px={2}>
                     <Typography width="40%" fontSize={12} color="#999">
@@ -1038,13 +954,13 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                     sx={{
                       px: 1,
                       py: 2,
-                      display: "inline-block", // Prevent stretching across the full width
+                      display: "inline-block",
                       alignItems: "center",
                       cursor: "pointer",
                       justifyContent: "flex-start",
-                      width: "fit-content", // Adjust width to content size
+                      width: "fit-content", 
                       "&:hover": {
-                        opacity: 0.7, // Apply hover effect
+                        opacity: 0.7, 
                       },
                     }}
                     onClick={() => setShowSubTaskForm((prev) => !prev)}
@@ -1083,8 +999,6 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                                 name: e.target.value,
                               })
                             }
-                            // error={!!errors.subName}
-                            // helperText={errors.subName}
                             sx={{
                               "& .MuiOutlinedInput-root": {
                                 borderRadius: "8px",
@@ -1105,7 +1019,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                                   setNewSubTask({
                                     ...newSubTask,
                                     status: Number(e.target.value),
-                                  }) // Convert to number
+                                  }) 
                               }
                               sx={{ borderRadius: "8px" }}
                             >
@@ -1134,8 +1048,6 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                               textField: {
                                 fullWidth: true,
                                 size: "small",
-                                // error: !!errors.subDue,
-                                // helperText: errors.subDue,
                                 sx: {
                                   "& .MuiOutlinedInput-root": {
                                     borderRadius: "8px",
@@ -1205,7 +1117,6 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                 </Stack>
               </Stack>
             )}
-
             {/* Action Buttons */}
             <Stack direction="row" justifyContent="flex-end" spacing={2} mt={4}>
               <Button
@@ -1259,5 +1170,4 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
     </>
   );
 };
-
 export default TaskDetailsDialog;

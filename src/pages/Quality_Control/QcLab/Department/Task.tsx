@@ -13,11 +13,13 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { formatDueDateDisplay } from "./components/FormatDueDateDisplay";
-import { trackIcons } from "./components/trackIcons";
-import TaskDetailsDialog from "./components/TaskDetailsDIalog";
-import AddTaskDialog from "./components/AddTaskDialog";
-import { AddEventDialog } from "./components/AddEventDialog";
+import { formatDueDateDisplay } from "@/components/Task/FormatDueDateDisplay";
+import { trackIcons } from "@/components/Task/trackIcons";
+import { AddEventDialog } from "@/components/Task/AddEventDialog";
+import TaskDetailsDialog from "@/components/Task/TaskDetailsDialog";
+import  AddTaskDialog  from "@/components/Task/AddTaskDialog";
+
+
 import { ArrowRightRounded } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
@@ -33,7 +35,7 @@ import {
   fetchTaskEventsByDepartment,
   selectUITaskEvents,
 } from "@/store/taskEventSlice";
-import { COLORS } from "./components/colors";
+import { COLORS } from "@/components/Task/colors";
 
 function Task() {
   const location = useLocation();
