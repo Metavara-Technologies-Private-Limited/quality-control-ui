@@ -50,7 +50,7 @@ src/
 ## Current Status
 
 - ✅ Frontend UI: 100% complete
-- ⏳ API Integration: Pending (using mock data)
+- ✅ API Integration: 100% complete
 - ⏳ Authentication: Pending
 
 ## Scripts
@@ -61,5 +61,4 @@ src/
 
 ---
 
-**Version:** 1.0.0
-**Version:** 1.0.0
+**Version:** 2.0.0
