@@ -15,7 +15,7 @@ import ConfigurationLayout from "./pages/Quality_Control/Configuration/Configura
 import Events from "./pages/Quality_Control/Configuration/Events";
 import CreateEvent from "./components/Configuration/Events/CreateEvent";
 import LabLayout from "./pages/Quality_Control/QcLab/LabLayout";
-import Task from "./pages/Quality_Control/QcLab/Embryology/Task";
+import Task from "./pages/Quality_Control/QcLab/Department/Task";
 import EquipmentPage from "./components/Configuration/Equipment/EquipmentPage";
 import ViewEquipment from "./components/Configuration/Equipment/ViewEquipment";
 import AddParameterPage from "./components/Configuration/Equipment/AddParameterPage";
