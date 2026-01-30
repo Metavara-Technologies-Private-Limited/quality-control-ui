@@ -175,7 +175,7 @@ CREATE TABLE users (
 
 **To implement:**
 1. Create `src/pages/Login.tsx`
-2. Add protected routes in `src/App.tsx`
+2. Add protected routes in `src/AppRoute.tsx`
 3. Add `authApi` to `src/services/api.ts`
 
 ---

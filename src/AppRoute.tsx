@@ -33,7 +33,7 @@ import LabEquipments from "./pages/Quality_Control/QcLab/Department/LabEquipment
 import LabEnvironment from "./pages/Quality_Control/QcLab/Department/LabEnvironment";
 import { fetchEventsByClinic } from "./store/eventSlice";
 
-function App() {
+function AppRoute() {
   const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
@@ -117,4 +117,4 @@ function App() {
   );
 }
 
-export default App;
+export default AppRoute;
