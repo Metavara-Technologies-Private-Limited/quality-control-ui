@@ -106,7 +106,6 @@ export interface ParameterContent {
   percentage?: number | string;
   dropdown?: string[];
   readings?: Reading[];
-  // ✅ Add history support
   history?: Array<{
     data_type?: string;
     integer_value?: number | string;
@@ -156,6 +155,7 @@ export interface Parameter {
   is_active: boolean;
   config?: ParameterContent | null;
   is_deleted: boolean;
+  Content: ParameterContent;
 }
 
 export interface TestType {

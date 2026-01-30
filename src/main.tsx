@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import App from "./App";
+import AppRoute from "./AppRoute";
 import theme from "./theme";
 import { ViewProvider } from "./utils/viewContext";
 import "./index.css";
@@ -21,7 +21,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <ViewProvider>
             <TabProvider>
               <ToastProvider>
-                <App />
+                <AppRoute />
               </ToastProvider>
             </TabProvider>
           </ViewProvider>
