@@ -45,27 +45,42 @@ const Dashboard = () => {
   );
 
   /** ------------------ EQUIPMENTS ------------------ **/
-  const equipments = useMemo(() => {
-    if (!department) return [];
+const equipments = useMemo(() => {
+  if (!department) return [];
 
-    let list = department.equipments ?? [];
+  let list = department.equipments ?? [];
 
-    if (search.trim()) {
-      list = list.filter((eq) =>
-        eq.equipment_name.toLowerCase().includes(search.toLowerCase()),
-      );
-    }
+  // 🔍 SEARCH
+  if (search.trim()) {
+    list = list.filter((eq) =>
+      eq.equipment_name.toLowerCase().includes(search.toLowerCase()),
+    );
+  }
 
-    if (sort) {
-      list = [...list].sort((a, b) =>
-        sort === "asc"
-          ? a.equipment_name.localeCompare(b.equipment_name)
-          : b.equipment_name.localeCompare(a.equipment_name),
-      );
-    }
+  // 🎯 FILTER (FIXED)
+  if (filter === "ACTIVE") {
+    list = list.filter((eq) => eq.is_active);
+  }
 
-    return list;
-  }, [department, search, sort, filter]);
+  if (filter === "INACTIVE") {
+    list = list.filter((eq) => !eq.is_active);
+  }
+
+  if (filter === "ALERT") {
+    list = list.filter((eq) => eq.has_alert);
+  }
+
+  // 🔃 SORT
+  if (sort) {
+    list = [...list].sort((a, b) =>
+      sort === "asc"
+        ? a.equipment_name.localeCompare(b.equipment_name)
+        : b.equipment_name.localeCompare(a.equipment_name),
+    );
+  }
+
+  return list;
+}, [department, search, sort, filter]);
 
   const equipment: Equipment | null = useMemo(
     () => equipments.find((e) => e.id === equipmentId) ?? null,

@@ -20,7 +20,7 @@ interface AssigneePanelProps {
   equipmentId: number | null;
 }
 
-const AssigneePanel: React.FC<AssigneePanelProps> = ({ departmentName,equipmentId }) => {
+const AssigneePanel: React.FC<AssigneePanelProps> = ({ departmentName, equipmentId }) => {
   const assigneesFromStore = useSelector(
     (state: RootState) => state.assignees.data
   );
@@ -71,6 +71,35 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ departmentName,equipmentI
   }, [events, departmentName, equipmentId]);  
 
   /* -------------------------------------------------
+   FUTURE: ID-BASED ASSIGNEE MATCHING (COMMENTED)
+   Requires backend to expose event.assignee_id
+-------------------------------------------------- */
+
+// const assigneesUsedInEventsById = useMemo(() => {
+//   if (!equipmentId) return new Set<number>();
+
+//   const set = new Set<number>();
+
+//   events.forEach((event: any) => {
+//     if (event.department !== departmentName) return;
+
+//     const isRelatedToEquipment = event.equipments?.some(
+//       (eq: any) => eq.equipment_details__equipment__id === equipmentId
+//     );
+
+//     if (!isRelatedToEquipment) return;
+
+//     if (event.assignee_id) {
+//       set.add(event.assignee_id);
+//     }
+//   });
+
+//   return set;
+// }, [events, departmentName, equipmentId]);
+/*#####################   uncomment the above and remove the old
+########################  assigneesUsedInEvents#######*/
+
+  /* -------------------------------------------------
      DERIVED LISTS (NO MUTATION)
   -------------------------------------------------- */
   const assigned = assigneesFromStore.filter((a) =>
@@ -81,6 +110,15 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ departmentName,equipmentI
     (a) => !assigneesUsedInEvents.has(a.emp_name)
   );  
 
+
+  // const assigned = assigneesFromStore.filter((a) =>
+//   assigneesUsedInEventsById.has(a.id)
+// );
+
+// const available = assigneesFromStore.filter(
+//   (a) => !assigneesUsedInEventsById.has(a.id)
+// );
+/*################# uncomment above 2 states and remove old states ###########*/
   /* -------------------------------------------------
      SEARCH
   -------------------------------------------------- */
@@ -177,3 +215,10 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ departmentName,equipmentI
 };
 
 export default AssigneePanel;
+
+
+
+
+// TODO (backend dependency):
+// Switch assignee matching from emp_name to emp_id once events API exposes assignee_id.
+// Prepared ID-based logic is added below and currently commented.

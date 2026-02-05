@@ -45,49 +45,51 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({
      LOG-LEVEL INCIDENT SUMMARY
      (THIS FIXES 4 vs 124 ISSUE)
   ----------------------------- */
-  const summary = useMemo(() => {
-    let high = 0;
-    let normal = 0;
-    let low = 0;
+const summary = useMemo(() => {
+  let high = 0;
+  let normal = 0;
+  let low = 0;
 
-    const min =
-      parameterConfig?.min_value != null
-        ? Number(parameterConfig.min_value)
-        : null;
+  const min =
+    parameterConfig?.min_value != null
+      ? Number(parameterConfig.min_value)
+      : null;
 
-    const max =
-      parameterConfig?.max_value != null
-        ? Number(parameterConfig.max_value)
-        : null;
+  const max =
+    parameterConfig?.max_value != null
+      ? Number(parameterConfig.max_value)
+      : null;
 
-    const thresholdApplicable =
-      (min !== null && !isNaN(min)) || (max !== null && !isNaN(max));
+  const thresholdApplicable =
+    (min !== null && !isNaN(min)) || (max !== null && !isNaN(max));
 
-    if (!thresholdApplicable) {
-      return { high: 0, normal: 0, low: 0, total: 0 };
-    }
+  if (!thresholdApplicable) {
+    return { high: 0, normal: 0, low: 0, total: 0 };
+  }
 
-    values
-      .filter(
-        (v) =>
-          !v.is_deleted && validEquipmentDetailIds.has(v.equipment_details_id),
-      )
-      .forEach((v) => {
-        const val = Number(v.content);
-        if (isNaN(val)) return;
+  values
+    .filter(
+      (v) =>
+        !v.is_deleted &&
+        validEquipmentDetailIds.has(v.equipment_details_id),
+    )
+    .forEach((v) => {
+      const val = Number(v.content);
+      if (isNaN(val)) return;
 
-        if (max !== null && val > max) high++;
-        else if (min !== null && val < min) low++;
-        else normal++;
-      });
+      if (max !== null && val > max) high++;
+      else if (min !== null && val < min) low++;
+      else normal++;
+    });
 
-    return {
-      high,
-      normal,
-      low,
-      total: high + normal + low,
-    };
-  }, [values, parameterConfig]);
+  return {
+    high,
+    normal,
+    low,
+    total: high + normal + low,
+  };
+}, [values, parameterConfig, validEquipmentDetailIds]);
+
 
   /* -----------------------------
      RENDER
