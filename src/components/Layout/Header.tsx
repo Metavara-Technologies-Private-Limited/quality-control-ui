@@ -70,7 +70,7 @@ const Header = () => {
     "user-management": "User Management",
     "audit-trail": "Audit Trail",
     "quality-control": "Quality Control",
-    "add-parameter": "Add Equipment",
+    "add-parameter": "Add Parameter",
     "qc-lab": "QC-Lab",
     embryology: "Embryology",
     andrology: "Andrology",

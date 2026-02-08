@@ -1,7 +1,7 @@
 import { Box, Tabs, Tab, Typography, Button } from "@mui/material";
 import type { Parameter } from "@/types";
 import { Edit } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 interface ParameterTabsProps {
   parameters: Parameter[];
@@ -17,6 +17,7 @@ const ParameterTabs = ({
   loading = false,
 }: ParameterTabsProps) => {
   const navigate = useNavigate();
+  const { department } = useParams<{ department: string }>();
   if (loading || parameters.length === 0) return null;
 
   return (
@@ -84,7 +85,7 @@ const ParameterTabs = ({
         variant="contained"
         color="primary"
         startIcon={<Edit />}
-        onClick={() => navigate("/qc-lab/")}
+onClick={() => navigate(`/qc-lab/${department}/parameters`)}
       >
         Record
       </Button>
