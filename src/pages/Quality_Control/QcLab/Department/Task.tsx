@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 import {
   Box,
   Typography,
@@ -186,15 +185,6 @@ function Task() {
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <div>
-        <ToastContainer
-          position="top-right"
-          autoClose={2000}
-          hideProgressBar={false}
-          closeOnClick
-          pauseOnHover
-          draggable
-          theme="colored"
-        />
         <Box sx={{ width: "100%" }}>
           <Box display="flex" gap={1.5}>
             <Box

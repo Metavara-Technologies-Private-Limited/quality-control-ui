@@ -6,6 +6,7 @@ import {
   Typography,
   Badge,
   Skeleton,
+  Tooltip,
 } from "@mui/material";
 import {
   MedicalServices,
@@ -22,7 +23,7 @@ interface EquipmentCardsProps {
   selected: Equipment | null;
   onSelect: (equipment: Equipment) => void;
   loading?: boolean;
-  hasAlert?: boolean;
+  values?: any[];
 }
 
 const equipmentIcons: Record<string, React.ReactElement> = {
@@ -39,8 +40,52 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
   selected,
   onSelect,
   loading = false,
-  hasAlert = false,
+  values,
 }) => {
+  const getEquipmentAlerts = (equipment: Equipment, values: any[]) => {
+    if (!values?.length) return [];
+
+    const alerts: string[] = [];
+
+    equipment.parameters?.forEach((param) => {
+      const min =
+        param.config?.min_value != null ? Number(param.config.min_value) : null;
+
+      const max =
+        param.config?.max_value != null ? Number(param.config.max_value) : null;
+
+      if (min == null && max == null) return;
+
+      const relevant = values.filter(
+        (v) =>
+          v.parameter_id === param.id &&
+          equipment.equipment_details?.some(
+            (ed) => ed.id === v.equipment_details_id,
+          ),
+      );
+
+      if (relevant.length < 2) return;
+
+      const latest = relevant[relevant.length - 1];
+      const prev = relevant[relevant.length - 2];
+
+      const diff = Number(latest.content) - Number(prev.content);
+
+      if (
+        (max != null && Number(latest.content) > max) ||
+        (min != null && Number(latest.content) < min)
+      ) {
+        alerts.push(
+          `${param.parameter_name} ${
+            diff > 0 ? "rise" : "drop"
+          } to ${latest.content}`,
+        );
+      }
+    });
+
+    return alerts;
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
@@ -61,63 +106,91 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
     <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
       {equipments.map((equipment) => {
         const isSelected = selected?.id === equipment.id;
-        const equipmentHasAlert = hasAlert;
+        const alerts = getEquipmentAlerts(equipment, values || []);
+        const alertCount = alerts.length;
 
         return (
-          <Badge
+          <Tooltip
             key={equipment.id}
-            invisible={!equipmentHasAlert}
-            badgeContent="!"
-            color="error"
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  bgcolor: "#000",
+                },
+              },
+              arrow: {
+                sx: {
+                  color: "#000",
+                },
+              },
+            }}
+            title={
+              alertCount > 0 ? (
+                <Box>
+                  {alerts.map((a, i) => (
+                    <Typography key={i} fontSize={12} sx={{ color: "#fff" }}>
+                      {a}
+                    </Typography>
+                  ))}
+                </Box>
+              ) : undefined
+            }
+            arrow
           >
-            <Card
-              onClick={() => onSelect(equipment)}
-              sx={{
-                width: 250,
-                height: 75,
-                padding: "16px",
-                borderRadius: "12px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                backgroundColor: isSelected ? "#FFFFFF" : "#FAFAFA",
-                border: isSelected ? "1px solid #E5E7EB" : "none",
-                boxShadow: isSelected
-                  ? "2px 2px 8px rgba(0, 0, 0, 0.12)"
-                  : "none",
-                "&:hover": { backgroundColor: "#F3F4F6" },
-              }}
+            <Badge
+              invisible={alertCount === 0}
+              badgeContent={alertCount}
+              color="error"
             >
-              <CardContent
+              <Card
+                onClick={() => onSelect(equipment)}
                 sx={{
-                  padding: 0,
+                  width: 250,
+                  height: 75,
+                  padding: "16px",
+                  borderRadius: "12px",
+                  cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
-                  gap: "16px",
-                  "&:last-child": { paddingBottom: 0 },
+                  backgroundColor: isSelected ? "#FFFFFF" : "#FAFAFA",
+                  border: isSelected ? "1px solid #E5E7EB" : "none",
+                  boxShadow: isSelected
+                    ? "2px 2px 8px rgba(0, 0, 0, 0.12)"
+                    : "none",
+                  "&:hover": { backgroundColor: "#F3F4F6" },
                 }}
               >
-                <Box
-                  sx={{ color: "secondary.main", "& svg": { fontSize: 32 } }}
-                >
-                  {equipmentIcons[equipment.equipment_name] || (
-                    <MedicalServices />
-                  )}
-                </Box>
-
-                <Typography
-                  variant="body2"
+                <CardContent
                   sx={{
-                    fontWeight: 500,
-                    color: isSelected ? "secondary.main" : "text.primary",
-                    fontSize: "16px",
+                    padding: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    "&:last-child": { paddingBottom: 0 },
                   }}
                 >
-                  {equipment.equipment_name}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Badge>
+                  <Box
+                    sx={{ color: "secondary.main", "& svg": { fontSize: 32 } }}
+                  >
+                    {equipmentIcons[equipment.equipment_name] || (
+                      <MedicalServices />
+                    )}
+                  </Box>
+
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 500,
+                      color: isSelected ? "secondary.main" : "text.primary",
+                      fontSize: "16px",
+                    }}
+                  >
+                    {equipment.equipment_name}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Badge>
+          </Tooltip>
         );
       })}
     </Box>

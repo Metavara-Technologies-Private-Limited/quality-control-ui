@@ -32,16 +32,6 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearch, setShowSearch] = useState(false);
 
-  const employeeNameToId = useMemo(() => {
-    const map = new Map<string, number>();
-
-    assigneesFromStore.forEach((emp) => {
-      map.set(emp.emp_name.trim().toLowerCase(), emp.id);
-    });
-
-    return map;
-  }, [assigneesFromStore]);
-
   /* -------------------------------------------------
      BUILD: equipment → assignees map (SOURCE OF TRUTH)
   -------------------------------------------------- */
@@ -75,8 +65,9 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({
     events.forEach((event: any) => {
       if (event.department !== departmentName) return;
 
-      const nameKey = event.assignment?.trim().toLowerCase();
-      const empId = employeeNameToId.get(nameKey);
+      const empId = event.assignee_id;
+      if (!empId) return;
+
       if (!empId) return;
 
       event.equipments?.forEach((eq: any) => {
@@ -91,7 +82,7 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({
     });
 
     return map;
-  }, [events, departmentName, equipmentId, employeeNameToId]);
+  }, [events, departmentName, equipmentId]);
 
   /* -------------------------------------------------
      DERIVED LISTS (NO MUTATION)

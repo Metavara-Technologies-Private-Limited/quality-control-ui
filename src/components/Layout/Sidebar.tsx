@@ -44,6 +44,7 @@ import VidaiLogo from "../../assets/icons/Vidai-logo.svg";
 import DashboardCardBg from "../../assets/icons/dashboard_card_bg.svg";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+import { slugify } from "@/utils/slugify";
 
 /* ================= ICON CONFIG ================= */
 
@@ -124,9 +125,9 @@ export const buildIconMenuMap = (departments: any[]): IconMenuMap => ({
       text: "Lab",
       path: "/qc-lab",
       children: departments.map((d) => ({
-        key: d.name.toLowerCase().replace(/\s+/g, "_"),
         text: d.name,
-        path: `/qc-lab/${d.name.toLowerCase().replace(/\s+/g, "")}`,
+        key: slugify(d.name),
+        path: `/qc-lab/${slugify(d.name)}`,
       })),
     },
 

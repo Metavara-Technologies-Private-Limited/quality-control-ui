@@ -1,8 +1,7 @@
 import { Box, Typography } from "@mui/material";
 import { useState } from "react";
 import { parameterValueApi } from "@/services/api";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 import LabEquipmentLogs from "./LabEquipmentLogs";
 import ParameterInput from "./components/ParameterInput";
 import LabEquipmentComplianceChart from "./LabEquipmentComplianceChart";
@@ -110,7 +109,6 @@ export default function LabEquipmentForm({
         overflow: "hidden",
       }}
     >
-      <ToastContainer position="top-right" autoClose={3000} />
 
       {/* ---------- FORM / LOGS TABS ---------- */}
       <Box

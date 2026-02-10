@@ -1,6 +1,6 @@
 import { Box } from "@mui/material";
 import { useState } from "react";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { environmentParameterValueApi } from "@/services/api";
 import ParameterInput from "./components/ParameterInput";
 import LabEnvironmentLogs from "./LabEnvironmentLogs";
@@ -70,8 +70,7 @@ export default function LabEnvironmentForm({ environment, onSaved }: Props) {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <ToastContainer />
-
+      
       {/* Tabs */}
       <div
         style={{

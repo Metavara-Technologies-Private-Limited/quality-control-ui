@@ -2,6 +2,7 @@ import { Box, Tabs, Tab, Typography, Button } from "@mui/material";
 import type { Parameter } from "@/types";
 import { Edit } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import { slugify } from "@/utils/slugify";
 
 interface ParameterTabsProps {
   parameters: Parameter[];
@@ -87,7 +88,7 @@ const ParameterTabs = ({
         color="primary"
         startIcon={<Edit />}
         onClick={() => {
-          const slug = departmentName?.toLowerCase().replace(/\s+/g, "");
+          const slug = departmentName ? slugify(departmentName) : null;
           navigate(slug ? `/qc-lab/${slug}/equipments` : "/qc-lab");
         }}
       >

@@ -153,6 +153,7 @@ const Dashboard = () => {
             setParameterId(null);
           }}
           loading={loading}
+          values={parameterValues}
         />
       </Box>
 

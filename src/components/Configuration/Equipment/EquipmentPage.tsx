@@ -22,8 +22,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import { fetchClinic } from "@/store/clinicSlice";
 import { equipmentApi, environmentApi } from "@/services/api";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 
 import { Department, Parameter, EquipmentDetail } from "@/types";
 
@@ -175,7 +174,6 @@ const EquipmentPage = () => {
 
   return (
     <Box sx={{ p: 1 }}>
-      <ToastContainer position="top-right" autoClose={3000} />
 
       <Grid container spacing={2}>
         {filteredItems.map((item) => {

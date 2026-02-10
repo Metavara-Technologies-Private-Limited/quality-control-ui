@@ -28,8 +28,7 @@ import AddEquipmentDialog, {
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { Assignee } from "@/types";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast} from "react-toastify";
 import { eventApi } from "@/services/api";
 
 import TurnLeftIcon from "@mui/icons-material/TurnLeft";
@@ -310,7 +309,6 @@ const CreateEvent = () => {
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box sx={{ p: 3, backgroundColor: COLORS.bg }}>
-        <ToastContainer />
         <Card
           sx={{ p: 3, borderRadius: 2, border: `1px solid ${COLORS.border}` }}
         >
