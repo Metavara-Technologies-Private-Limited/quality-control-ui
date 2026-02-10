@@ -20,114 +20,99 @@ interface AssigneePanelProps {
   equipmentId: number | null;
 }
 
-const AssigneePanel: React.FC<AssigneePanelProps> = ({ departmentName, equipmentId }) => {
+const AssigneePanel: React.FC<AssigneePanelProps> = ({
+  departmentName,
+  equipmentId,
+}) => {
   const assigneesFromStore = useSelector(
-    (state: RootState) => state.assignees.data
+    (state: RootState) => state.assignees.data,
   );
   const events = useSelector((state: RootState) => state.events.data);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearch, setShowSearch] = useState(false);
 
+  const employeeNameToId = useMemo(() => {
+    const map = new Map<string, number>();
+
+    assigneesFromStore.forEach((emp) => {
+      map.set(emp.emp_name.trim().toLowerCase(), emp.id);
+    });
+
+    return map;
+  }, [assigneesFromStore]);
+
   /* -------------------------------------------------
      BUILD: equipment → assignees map (SOURCE OF TRUTH)
   -------------------------------------------------- */
   const equipmentName = useMemo(() => {
     if (!equipmentId) return "";
-  
+
     for (const event of events) {
       const eq = event.equipments?.find(
-        (e: any) => e.equipment_details__equipment__id === equipmentId
+        (e: any) => e.equipment_details__equipment__id === equipmentId,
       );
-  
+
       if (eq) {
         return eq.equipment_details__equipment__equipment_name;
       }
     }
-  
+
     return "";
   }, [events, equipmentId]);
-  
-  const assigneesUsedInEvents = useMemo(() => {
-    if (!equipmentId) return new Set<string>();
-  
-    const set = new Set<string>();
-  
+
+  const departmentAssignees = useMemo(() => {
+    return assigneesFromStore.filter(
+      (a) => a.department_name === departmentName,
+    );
+  }, [assigneesFromStore, departmentName]);
+
+  const assigneeEquipmentMap = useMemo(() => {
+    const map = new Map<number, Set<string>>();
+
+    if (!equipmentId) return map;
+
     events.forEach((event: any) => {
       if (event.department !== departmentName) return;
-  
-      const isRelatedToEquipment = event.equipments?.some(
-        (eq: any) => eq.equipment_details__equipment__id === equipmentId
-      );
-  
-      if (!isRelatedToEquipment) return;
-  
-      if (event.assignment) {
-        set.add(event.assignment);
-      }
+
+      const nameKey = event.assignment?.trim().toLowerCase();
+      const empId = employeeNameToId.get(nameKey);
+      if (!empId) return;
+
+      event.equipments?.forEach((eq: any) => {
+        if (eq.equipment_details__equipment__id !== equipmentId) return;
+
+        if (!map.has(empId)) {
+          map.set(empId, new Set());
+        }
+
+        map.get(empId)!.add(eq.equipment_details__equipment_num);
+      });
     });
-  
-    return set;
-  }, [events, departmentName, equipmentId]);  
 
-  /* -------------------------------------------------
-   FUTURE: ID-BASED ASSIGNEE MATCHING (COMMENTED)
-   Requires backend to expose event.assignee_id
--------------------------------------------------- */
-
-// const assigneesUsedInEventsById = useMemo(() => {
-//   if (!equipmentId) return new Set<number>();
-
-//   const set = new Set<number>();
-
-//   events.forEach((event: any) => {
-//     if (event.department !== departmentName) return;
-
-//     const isRelatedToEquipment = event.equipments?.some(
-//       (eq: any) => eq.equipment_details__equipment__id === equipmentId
-//     );
-
-//     if (!isRelatedToEquipment) return;
-
-//     if (event.assignee_id) {
-//       set.add(event.assignee_id);
-//     }
-//   });
-
-//   return set;
-// }, [events, departmentName, equipmentId]);
-/*#####################   uncomment the above and remove the old
-########################  assigneesUsedInEvents#######*/
+    return map;
+  }, [events, departmentName, equipmentId, employeeNameToId]);
 
   /* -------------------------------------------------
      DERIVED LISTS (NO MUTATION)
   -------------------------------------------------- */
-  const assigned = assigneesFromStore.filter((a) =>
-    assigneesUsedInEvents.has(a.emp_name)
+  const assigned = departmentAssignees.filter((a) =>
+    assigneeEquipmentMap.has(a.id),
   );
-  
-  const available = assigneesFromStore.filter(
-    (a) => !assigneesUsedInEvents.has(a.emp_name)
-  );  
 
+  const available = departmentAssignees.filter(
+    (a) => !assigneeEquipmentMap.has(a.id),
+  );
 
-  // const assigned = assigneesFromStore.filter((a) =>
-//   assigneesUsedInEventsById.has(a.id)
-// );
-
-// const available = assigneesFromStore.filter(
-//   (a) => !assigneesUsedInEventsById.has(a.id)
-// );
-/*################# uncomment above 2 states and remove old states ###########*/
   /* -------------------------------------------------
      SEARCH
   -------------------------------------------------- */
   const filteredAssigned = assigned.filter((a) =>
-    a.emp_name.toLowerCase().includes(searchTerm.toLowerCase())
+    a.emp_name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const filteredAvailable = available.filter((a) =>
-    a.emp_name.toLowerCase().includes(searchTerm.toLowerCase())
+    a.emp_name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -142,13 +127,10 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ departmentName, equipment
         }}
       >
         <Typography fontWeight={700}>
-        {equipmentName} Assignees
+          {equipmentName ? `${equipmentName} Assignees` : "Assignees"}
         </Typography>
 
-        <IconButton
-          size="small"
-          onClick={() => setShowSearch((prev) => !prev)}
-        >
+        <IconButton size="small" onClick={() => setShowSearch((prev) => !prev)}>
           <SearchIcon />
         </IconButton>
 
@@ -186,7 +168,7 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ departmentName, equipment
                 {a.emp_name}
               </Typography>
               <Typography fontSize={11} color="text.secondary">
-                Active in events
+                {Array.from(assigneeEquipmentMap.get(a.id) || []).join(", ")}
               </Typography>
             </Box>
           </Box>
@@ -215,10 +197,3 @@ const AssigneePanel: React.FC<AssigneePanelProps> = ({ departmentName, equipment
 };
 
 export default AssigneePanel;
-
-
-
-
-// TODO (backend dependency):
-// Switch assignee matching from emp_name to emp_id once events API exposes assignee_id.
-// Prepared ID-based logic is added below and currently commented.

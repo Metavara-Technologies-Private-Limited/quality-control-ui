@@ -61,9 +61,15 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
     <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
       {equipments.map((equipment) => {
         const isSelected = selected?.id === equipment.id;
+        const equipmentHasAlert = hasAlert;
 
         return (
-          <Badge invisible={!hasAlert} badgeContent="!" color="error">
+          <Badge
+            key={equipment.id}
+            invisible={!equipmentHasAlert}
+            badgeContent="!"
+            color="error"
+          >
             <Card
               onClick={() => onSelect(equipment)}
               sx={{
@@ -79,10 +85,7 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
                 boxShadow: isSelected
                   ? "2px 2px 8px rgba(0, 0, 0, 0.12)"
                   : "none",
-                transition: "background-color 0.2s ease",
-                "&:hover": {
-                  backgroundColor: "#F3F4F6",
-                },
+                "&:hover": { backgroundColor: "#F3F4F6" },
               }}
             >
               <CardContent
@@ -95,11 +98,7 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
                 }}
               >
                 <Box
-                  sx={{
-                    color: "secondary.main",
-                    display: "flex",
-                    "& svg": { fontSize: 32 },
-                  }}
+                  sx={{ color: "secondary.main", "& svg": { fontSize: 32 } }}
                 >
                   {equipmentIcons[equipment.equipment_name] || (
                     <MedicalServices />
@@ -107,13 +106,11 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
                 </Box>
 
                 <Typography
-                  className="equipment-text"
                   variant="body2"
                   sx={{
                     fontWeight: 500,
                     color: isSelected ? "secondary.main" : "text.primary",
                     fontSize: "16px",
-                    transition: "all 0.2s ease",
                   }}
                 >
                   {equipment.equipment_name}

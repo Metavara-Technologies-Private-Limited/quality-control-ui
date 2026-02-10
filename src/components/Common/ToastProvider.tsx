@@ -1,7 +1,12 @@
-import { createContext, useContext, useState } from 'react';
-import { Snackbar, Alert } from '@mui/material';
+/**
+ * @deprecated
+ * This custom ToastProvider is no longer used.
+ * Replaced by react-toastify for global notifications.
+ */
+import { createContext, useContext, useState } from "react";
+import { Snackbar, Alert } from "@mui/material";
 
-type ToastType = 'success' | 'error' | 'warning' | 'info';
+type ToastType = "success" | "error" | "warning" | "info";
 
 type ToastContextValue = {
   showToast: (message: string, type?: ToastType) => void;
@@ -16,11 +21,11 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
     type: ToastType;
   }>({
     open: false,
-    message: '',
-    type: 'info',
+    message: "",
+    type: "info",
   });
 
-  const showToast = (message: string, type: ToastType = 'info') => {
+  const showToast = (message: string, type: ToastType = "info") => {
     setToast({ open: true, message, type });
   };
 
@@ -34,12 +39,12 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
         open={toast.open}
         autoHideDuration={4000}
         onClose={() => setToast((t) => ({ ...t, open: false }))}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <Alert
           severity={toast.type}
           onClose={() => setToast((t) => ({ ...t, open: false }))}
-          sx={{ width: '100%' }}
+          sx={{ width: "100%" }}
         >
           {toast.message}
         </Alert>
@@ -51,7 +56,7 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
 export const useToast = () => {
   const ctx = useContext(ToastContext);
   if (!ctx) {
-    throw new Error('useToast must be used inside ToastProvider');
+    throw new Error("useToast must be used inside ToastProvider");
   }
   return ctx;
 };

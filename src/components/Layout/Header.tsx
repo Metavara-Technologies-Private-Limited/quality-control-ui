@@ -148,7 +148,11 @@ const Header = () => {
 
             {pathnames.map((name, index) => {
               const isLast = index === pathnames.length - 1;
-              const displayText = breadcrumbMap[name] || name;
+              const displayText =
+                breadcrumbMap[name] ||
+                name
+                  .replace(/-/g, " ")
+                  .replace(/\b\w/g, (c) => c.toUpperCase());
 
               return isLast ? (
                 <Typography

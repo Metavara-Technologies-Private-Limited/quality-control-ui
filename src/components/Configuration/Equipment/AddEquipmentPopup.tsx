@@ -13,7 +13,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { useToast } from "../../Common/ToastProvider";
+import { toast } from "react-toastify";
 
 const AddEquipmentPopup: React.FC<{
   open: boolean;
@@ -23,8 +23,6 @@ const AddEquipmentPopup: React.FC<{
 
   const { data: clinic } = useSelector((state: RootState) => state.clinic);
   const departments = clinic?.department ?? [];
-
-const { showToast } = useToast();
 
   const [equipmentName, setEquipmentName] = useState("");
   const [departmentId, setDepartmentId] = useState<number | "">("");
@@ -45,7 +43,7 @@ const { showToast } = useToast();
 
   const handleAdd = () => {
     if (!equipmentName.trim() || !departmentId) {
-showToast("Please enter all fields", "error");
+      toast.warn("Please enter all fields");
       return;
     }
 

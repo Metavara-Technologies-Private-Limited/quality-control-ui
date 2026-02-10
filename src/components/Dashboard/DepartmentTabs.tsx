@@ -17,7 +17,6 @@ interface DepartmentTabsProps {
   onChange: (departmentId: number) => void;
   onSearch?: (value: string) => void;
   onSort?: () => void;
-  onFilter?: () => void;
   sortActive?: boolean;
   filterActive?: boolean;
 }
@@ -34,7 +33,6 @@ const DepartmentTabs = ({
   onChange,
   onSearch,
   onSort,
-  onFilter,
   sortActive,
   filterActive,
 }: DepartmentTabsProps) => {
@@ -103,7 +101,6 @@ const DepartmentTabs = ({
 
         <IconButton
           size="small"
-          onClick={onFilter}
           sx={{
             ...iconButtonSx,
             borderColor: filterActive ? activeColor : "#E5E7EB",

@@ -29,7 +29,6 @@ const Dashboard = () => {
   const [parameterValues, setParameterValues] = useState<any[]>([]);
   const [valuesLoading, setValuesLoading] = useState(false);
   const [sort, setSort] = useState<"asc" | "desc" | null>(null);
-  const [filter, setFilter] = useState<string | null>(null);
 
   /** ------------------ DEPARTMENTS ------------------ **/
   const departments = clinic?.department ?? [];
@@ -45,42 +44,28 @@ const Dashboard = () => {
   );
 
   /** ------------------ EQUIPMENTS ------------------ **/
-const equipments = useMemo(() => {
-  if (!department) return [];
+  const equipments = useMemo(() => {
+    if (!department) return [];
 
-  let list = department.equipments ?? [];
+    let list = department.equipments ?? [];
 
-  // 🔍 SEARCH
-  if (search.trim()) {
-    list = list.filter((eq) =>
-      eq.equipment_name.toLowerCase().includes(search.toLowerCase()),
-    );
-  }
+    // 🔍 SEARCH
+    if (search.trim()) {
+      list = list.filter((eq) =>
+        eq.equipment_name.toLowerCase().includes(search.toLowerCase()),
+      );
+    }
 
-  // 🎯 FILTER (FIXED)
-  if (filter === "ACTIVE") {
-    list = list.filter((eq) => eq.is_active);
-  }
+    if (sort) {
+      list = [...list].sort((a, b) =>
+        sort === "asc"
+          ? a.equipment_name.localeCompare(b.equipment_name)
+          : b.equipment_name.localeCompare(a.equipment_name),
+      );
+    }
 
-  if (filter === "INACTIVE") {
-    list = list.filter((eq) => !eq.is_active);
-  }
-
-  if (filter === "ALERT") {
-    list = list.filter((eq) => eq.has_alert);
-  }
-
-  // 🔃 SORT
-  if (sort) {
-    list = [...list].sort((a, b) =>
-      sort === "asc"
-        ? a.equipment_name.localeCompare(b.equipment_name)
-        : b.equipment_name.localeCompare(a.equipment_name),
-    );
-  }
-
-  return list;
-}, [department, search, sort, filter]);
+    return list;
+  }, [department, search, sort]);
 
   const equipment: Equipment | null = useMemo(
     () => equipments.find((e) => e.id === equipmentId) ?? null,
@@ -150,34 +135,25 @@ const equipments = useMemo(() => {
         departments={departments}
         selected={departmentId}
         onChange={setDepartmentId}
-        onSearch={(value) => {
-          setSearch(value);
-          setFilter(value.trim() ? "search" : null);
-        }}
+        onSearch={setSearch}
         onSort={() =>
           setSort((s) => (s === null ? "asc" : s === "asc" ? "desc" : null))
         }
-        onFilter={() => setFilter((f) => (f ? null : "active"))}
         sortActive={!!sort}
-        filterActive={!!filter}
+        filterActive={!!search.trim()}
       />
 
       {/* Equipment Cards */}
-      <Box sx={{ overflowX: "auto"}}>
-        <Box sx={{ display: "inline-flex", gap: 2 }}>
-          {equipments.map((eq) => (
-            <EquipmentCards
-              key={eq.id}
-              equipments={[eq]}
-              selected={equipment}
-              onSelect={(e) => {
-                setEquipmentId(e.id);
-                setParameterId(null);
-              }}
-              loading={loading}
-            />
-          ))}
-        </Box>
+      <Box sx={{ overflowX: "auto" }}>
+        <EquipmentCards
+          equipments={equipments}
+          selected={equipment}
+          onSelect={(e) => {
+            setEquipmentId(e.id);
+            setParameterId(null);
+          }}
+          loading={loading}
+        />
       </Box>
 
       {/* Parameter Tabs + Charts */}
@@ -188,6 +164,7 @@ const equipments = useMemo(() => {
             selected={parameterId}
             onSelect={setParameterId}
             loading={loading}
+            departmentName={department?.name}
           />
 
           <Box sx={{ mt: 3 }}>

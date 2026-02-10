@@ -31,6 +31,7 @@ export interface Equipment {
   created_at: string;
   equipment_details: EquipmentDetail[];
   parameters: Parameter[];
+  hasAlert?: boolean;
 }
 
 export interface EquipmentDetail {
