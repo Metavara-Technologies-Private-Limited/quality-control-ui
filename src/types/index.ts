@@ -24,6 +24,8 @@ export interface Department {
 }
 
 export interface Equipment {
+  status: string;
+  equipment_type: any;
   id: number;
   equipment_name: string;
   is_active: boolean;

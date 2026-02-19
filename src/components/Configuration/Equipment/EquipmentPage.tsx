@@ -45,7 +45,11 @@ type EquipmentUIItem =
       environment_name: string;
     });
 
-const EquipmentPage = () => {
+type EquipmentPageProps = {
+  readOnly?: boolean;
+};
+
+const EquipmentPage: React.FC<EquipmentPageProps> = ({ }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();

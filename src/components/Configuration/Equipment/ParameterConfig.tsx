@@ -42,7 +42,7 @@ const ParameterConfig: React.FC<ParameterConfigProps> = ({
     handleSubmit,
     reset,
     formState: { errors },
-    watch,
+     
   } = useForm();
 
   useEffect(() => {
@@ -76,10 +76,10 @@ const ParameterConfig: React.FC<ParameterConfigProps> = ({
         min_value: parameter.Content.min_value,
         max_value: parameter.Content.max_value,
         unit: parameter.Content.unit,
-        warning_min: parameter.Content.control_limits.warning_min,
-        warning_max: parameter.Content.control_limits.warning_max,
-        critical_min: parameter.Content.control_limits.critical_min,
-        critical_max: parameter.Content.control_limits.critical_max,
+        warning_min: parameter.Content.control_limits?.warning_min,
+        warning_max: parameter.Content.control_limits?.warning_max,
+        critical_min: parameter.Content.control_limits?.critical_min,
+        critical_max: parameter.Content.control_limits?.critical_max,
       });
     } else {
       setEditing(null);
@@ -122,9 +122,6 @@ const ParameterConfig: React.FC<ParameterConfigProps> = ({
         },
       };
 
-      const equipment = equipments.find(
-        (e) => e.id === parseInt(data.equipment_id),
-      );
 
       if (editing) {
         setParameters(
@@ -133,9 +130,7 @@ const ParameterConfig: React.FC<ParameterConfigProps> = ({
               ? {
                   ...p,
                   ...data,
-                  equipment_id: parseInt(data.equipment_id),
                   Content: content,
-                  equipment,
                 }
               : p,
           ),
@@ -144,11 +139,9 @@ const ParameterConfig: React.FC<ParameterConfigProps> = ({
         const newParam: Parameter = {
           id: Math.max(...parameters.map((p) => p.id), 0) + 1,
           parameter_name: data.parameter_name,
-          equipment_id: parseInt(data.equipment_id),
           is_active: data.is_active,
           Content: content,
-          created_at: new Date().toISOString(),
-          equipment,
+          is_deleted: false
         };
         setParameters([...parameters, newParam]);
       }
@@ -209,7 +202,13 @@ const ParameterConfig: React.FC<ParameterConfigProps> = ({
                       {...register("equipment_id", {
                         required: "Equipment is required",
                       })}
-                      defaultValue={editing?.equipment_id || ""}
+                      defaultValue={
+                        editing
+                          ? equipments.find((e) =>
+                              e.parameters?.some?.((p: Parameter) => p.id === editing.id)
+                            )?.id ?? ""
+                          : ""
+                      }
                       disabled={readOnly}
                     >
                       {equipments.map((equipment) => (

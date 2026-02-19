@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Box, Container, Tabs, Tab, Typography, Alert } from '@mui/material';
+import  { useState } from 'react';
+import { Box, Container, Tabs, Tab, Alert } from '@mui/material';
 import EquipmentPage from '@/components/Configuration/Equipment/EquipmentPage';
 import DepartmentConfig from '@/components/Configuration/Equipment/DepartmentConfig';
 import ParameterConfig from '@/components/Configuration/Equipment/ParameterConfig';

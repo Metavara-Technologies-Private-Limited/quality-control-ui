@@ -42,6 +42,7 @@ export const initializeMockData = async (clinic_id: number) => {
   mockClinic = {
     id: clinic_id,
     name: api.name,
+    department: api.department, // Add department property as required by Clinic interface
   };
 
   localStorage.setItem("clinic", JSON.stringify(api));
@@ -72,8 +73,11 @@ export const initializeMockData = async (clinic_id: number) => {
           equipment_name: eq.equipment_name,
           dep_id: depIndex + 1,
           created_at: new Date().toISOString(),
-          department: mockDepartments[depIndex],
           parameters: [],
+          status: eq.status ?? "active", // or provide a default value
+          equipment_type: eq.equipment_type ?? "Unknown", // or provide a default value
+          is_active: eq.is_active ?? true, // or provide a default value
+          equipment_details: eq.equipment_details ?? [], // or provide a default value
         };
         mockEquipments.push(equipment);
       }
@@ -105,10 +109,9 @@ export const initializeMockData = async (clinic_id: number) => {
           // id: parameterCounter++,
           id: param.id,
           parameter_name: param.parameter_name,
-          equipment_id: equipment!.id,
           is_active: param.is_active,
           Content: {
-            ...content,                 // <-- readings come from here
+            ...content, // <-- readings come from here
             unit: param?.content?.unit || unit,
             control_limits: {
               warning_min: 0,
@@ -116,9 +119,8 @@ export const initializeMockData = async (clinic_id: number) => {
               critical_min: 0,
               critical_max: 0,
             },
-          },          
-          created_at: new Date().toISOString(),
-          equipment: equipment!,
+          },
+          is_deleted: false
         };
 
         mockParameters.push(newParam);
@@ -235,28 +237,28 @@ export const mockActivities: Activity[] = [
   ...Array.from({ length: 12 }).map((_, i) => ({
     id: i + 1,
     equipment_id: 1,
-    type: "temperature",
+    type: "temperature" as "temperature",
     message: `Temperature incident ${i + 1}`,
     timestamp: new Date().toISOString(),
   })),
   ...Array.from({ length: 10 }).map((_, i) => ({
     id: i + 13,
     equipment_id: 1,
-    type: "co2",
+    type: "co2" as "co2",
     message: `CO2 incident ${i + 1}`,
     timestamp: new Date().toISOString(),
   })),
   ...Array.from({ length: 10 }).map((_, i) => ({
     id: i + 23,
     equipment_id: 1,
-    type: "humidity",
+    type: "humidity" as "humidity",
     message: `Humidity normal ${i + 1}`,
     timestamp: new Date().toISOString(),
   })),
   ...Array.from({ length: 4 }).map((_, i) => ({
     id: i + 33,
     equipment_id: 1,
-    type: "airflow",
+    type: "airflow" as "airflow",
     message: `Airflow low ${i + 1}`,
     timestamp: new Date().toISOString(),
   })),
