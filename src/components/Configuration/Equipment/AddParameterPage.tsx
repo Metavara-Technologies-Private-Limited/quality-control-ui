@@ -1,4 +1,6 @@
 import React, { CSSProperties, useState } from "react";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import {
   Box,
@@ -26,7 +28,6 @@ const AddParameterPage = () => {
     isEquipment,
     equipmentName,
     departmentName,
-    departmentId,
     count,
     setCount,
     selected,
@@ -152,6 +153,7 @@ const AddParameterPage = () => {
 
   return (
     <Box>
+      <ToastContainer />
 
       <Box sx={{ background: "#FFFFFF", minHeight: "100vh" }}>
         {/* Header */}

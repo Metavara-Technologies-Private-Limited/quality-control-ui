@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Chip, Menu, MenuItem, Typography } from '@mui/material';
+import { Chip, Menu, MenuItem } from '@mui/material';
 import { AdminPanelSettings, Person, Science, KeyboardArrowDown } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 

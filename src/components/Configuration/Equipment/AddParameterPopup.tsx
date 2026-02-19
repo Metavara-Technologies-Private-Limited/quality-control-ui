@@ -94,7 +94,6 @@ const AddParameterPopup: React.FC<Props> = ({
     booleanType,
     setBooleanType,
     dropdownMode,
-    setDropdownMode,
     dropdownOptions,
     setDropdownOptions,
     selectedDropdownValues,
