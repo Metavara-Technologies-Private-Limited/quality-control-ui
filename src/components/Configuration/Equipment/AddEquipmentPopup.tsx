@@ -47,7 +47,7 @@ const AddEquipmentPopup: React.FC<{
       return;
     }
 
-    const tempEquipmentId = crypto.randomUUID();
+    const tempEquipmentId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const departmentName =
       departments.find((d) => d.id === departmentId)?.name || "";
 
