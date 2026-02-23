@@ -20,6 +20,7 @@ import {
   Checkbox,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import { slugify } from "@/utils/slugify";
 
 const avatarColors = [
   "#091E42",
@@ -63,11 +64,9 @@ const DepartmentLayout = () => {
   const { department: departmentName = "" } = useParams();
   const navigate = useNavigate();
   const allAssignees = useSelector((state: RootState) => state.assignees.data);
-  const normalize = (value: string) => value.replace(/\s+/g, "").toLowerCase();
+  // const normalize = (value: string) => value.replace(/\s+/g, "").toLowerCase();
   const departmentAssignees = allAssignees.filter(
-    (a) =>
-      a.department_name &&
-      normalize(a.department_name) === normalize(departmentName),
+    (a) => a.department_name && slugify(a.department_name) === departmentName,
   );
 
   const [searchText, setSearchText] = useState("");
