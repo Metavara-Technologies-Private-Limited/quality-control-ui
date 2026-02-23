@@ -95,7 +95,7 @@ export const mapEventToRow = (e: any, clinic: any) => {
     id: e.id,
     name: e.event_name,
     description: e.description,
-    createdBy: e.assignment ?? "-",
+    createdBy: e.assignee_name ?? "-",
     createdDate: formatDate(e.created_at),
 
     scheduleType:
