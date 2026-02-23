@@ -35,6 +35,7 @@ import {
   selectUITaskEvents,
 } from "@/store/taskEventSlice";
 import { COLORS } from "@/components/Task/colors";
+import { slugify } from "@/utils/slugify";
 
 function Task() {
   const location = useLocation();
@@ -67,9 +68,8 @@ function Task() {
   const departmentId = useMemo(() => {
     if (!clinic?.department?.length) return null;
 
-    const dep = clinic.department.find(
-      (d) => d.name.toLowerCase() === deptName.toLowerCase(),
-    );
+    
+  const dep = clinic.department.find((d) => slugify(d.name) === deptName);
 
     return dep?.id ?? null;
   }, [clinic?.department, deptName]);
@@ -116,10 +116,16 @@ function Task() {
     }
   };
 
+  const eventIds = useMemo(() => events.map((e) => e.id), [events]);
+
   const tasks = useMemo(() => {
     if (!selectedEventId) return [];
-    return allTasks.filter((t) => t.task_event === selectedEventId);
-  }, [allTasks, selectedEventId]);
+
+    return allTasks.filter(
+      (t) =>
+        eventIds.includes(t.task_event) && t.task_event === selectedEventId,
+    );
+  }, [allTasks, selectedEventId, eventIds]);
 
   const eventTaskCounts = useMemo(() => {
     const counts: Record<number, { assigned: number; unassigned: number }> = {};
