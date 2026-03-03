@@ -44,33 +44,51 @@ export default function LabEnvironmentForm({ environment, onSaved }: Props) {
       (p) => p.is_active !== false && !p.is_deleted,
     );
 
+    if (!activeParams.length) {
+      toast.error("No active parameters available");
+      return;
+    }
+
+    const requests = activeParams
+      .map((p: any) => {
+        const value = values[p.env_parameter_name];
+        if (!value || value.trim() === "") return null;
+
+        return environmentParameterValueApi.create({
+          environment: environment.id,
+          environment_parameter: p.id,
+          content: value,
+          log_time: logDateTime?.toISOString(),
+        });
+      })
+      .filter(Boolean);
+
+    if (!requests.length) {
+      toast.error("Please enter value and save");
+      return;
+    }
+
     try {
       setSaving(true);
-      await Promise.all(
-        activeParams.map((p: any) => {
-          const value = values[p.env_parameter_name];
-          if (!value) return null;
 
-          return environmentParameterValueApi.create({
-            environment: environment.id,
-            environment_parameter: p.id,
-            content: value,
-            log_time: logDateTime?.toISOString(),
-          });
-        }),
-      );
+      const results = await Promise.all(requests);
+      console.log("✅ Save successful:", results);
+
       toast.success("Logs saved successfully");
-      onSaved();
-    } catch (err) {
+
+      // Wait for toast autoClose (3000ms) + buffer before calling onSaved
+      setTimeout(() => {
+        onSaved();
+      }, 3500);
+    } catch (err: any) {
+      console.error("❌ API ERROR:", err);
       toast.error("Save failed");
     } finally {
       setSaving(false);
     }
   };
-
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      
       {/* Tabs */}
       <div
         style={{
@@ -135,7 +153,7 @@ export default function LabEnvironmentForm({ environment, onSaved }: Props) {
                   key={param.id}
                   sx={{
                     opacity: isInactive ? 0.6 : 1,
-                    pointerEvents: isInactive ? "none" : "auto", 
+                    pointerEvents: isInactive ? "none" : "auto",
                   }}
                 >
                   <ParameterInput
@@ -263,7 +281,6 @@ export default function LabEnvironmentForm({ environment, onSaved }: Props) {
               {saving ? "Saving..." : "Save"}
             </button>
           </div>
-
         </Box>
       )}
     </Box>
