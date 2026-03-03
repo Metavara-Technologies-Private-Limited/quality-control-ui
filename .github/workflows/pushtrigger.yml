@@ -1,0 +1,52 @@
+name: Quality-control-UI Push Trigger
+
+on:
+  push:
+    branches:
+      - main
+      - devops-build
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Docker image
+        run: |
+          docker build \
+          --build-arg VITE_API_BASE_URL=http://72.62.227.137:8002/api \
+            -f devops/Dockerfile \
+            -t ${{ secrets.DOCKER_USERNAME }}/vidai-frontend:latest \
+            .
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/vidai-frontend:latest
+
+      - name: Deploy to VPS (SSH Key)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            docker pull ${{ secrets.DOCKER_USERNAME }}/vidai-frontend:latest
+
+            docker stop vidai-frontend || true
+            docker rm vidai-frontend || true
+
+            docker run -d \
+              --restart always \
+              --name vidai-frontend \
+              -p 3001:80 \
+              ${{ secrets.DOCKER_USERNAME }}/vidai-frontend:latest
+
