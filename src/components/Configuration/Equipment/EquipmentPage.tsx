@@ -49,13 +49,13 @@ type EquipmentPageProps = {
   readOnly?: boolean;
 };
 
-const EquipmentPage: React.FC<EquipmentPageProps> = ({ }) => {
+const EquipmentPage: React.FC<EquipmentPageProps> = ({}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
 
   const { searchQuery = "" } = useOutletContext<{ searchQuery: string }>();
-  const { data: clinic } = useSelector((state: RootState) => state.clinic);
+  const { rawData: clinic } = useSelector((state: RootState) => state.clinic);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
@@ -80,7 +80,6 @@ const EquipmentPage: React.FC<EquipmentPageProps> = ({ }) => {
       backgroundColor: "#232323",
     },
   };
-
 
   const items = useMemo<EquipmentUIItem[]>(() => {
     if (!clinic?.department) return [];
@@ -123,13 +122,11 @@ const EquipmentPage: React.FC<EquipmentPageProps> = ({ }) => {
     [items, selectedItemId],
   );
 
-
   const getCreatedDate = (dateString?: string) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
     return isNaN(date.getTime()) ? "N/A" : date.toLocaleDateString("en-GB");
   };
-
 
   const confirmDelete = async () => {
     if (!selectedItem) return;
@@ -159,7 +156,6 @@ const EquipmentPage: React.FC<EquipmentPageProps> = ({ }) => {
           ? await environmentApi.activate(selectedItem.id)
           : await environmentApi.inactive(selectedItem.id);
       } else {
-
         active
           ? await equipmentApi.activate(selectedItem.id)
           : await equipmentApi.inactive(
@@ -175,10 +171,8 @@ const EquipmentPage: React.FC<EquipmentPageProps> = ({ }) => {
     }
   };
 
-
   return (
     <Box sx={{ p: 1 }}>
-
       <Grid container spacing={2}>
         {filteredItems.map((item) => {
           const isInactive = item.is_active === false;
