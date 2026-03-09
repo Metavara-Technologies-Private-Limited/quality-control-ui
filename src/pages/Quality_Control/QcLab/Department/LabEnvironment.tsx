@@ -4,8 +4,9 @@ import { useOutletContext } from "react-router-dom";
 import { RootState } from "@/store";
 import LabEnvironmentForm from "./LabEnvironmentForm";
 import LabEnvironmentComplianceChart from "./LabEnvironmentComplianceChart";
+import { slugify } from "@/utils/slugify";
 
-const normalize = (v: string) => v?.replace(/\s+/g, "").toLowerCase();
+// const normalize = (v: string) => v?.replace(/\s+/g, "").toLowerCase();
 export default function LabEnvironment() {
   const { departmentName, searchText } = useOutletContext<{
     departmentName: string;
@@ -15,7 +16,7 @@ export default function LabEnvironment() {
   const { data: clinic } = useSelector((s: RootState) => s.clinic);
 
   const department = clinic?.department.find(
-    (d) => normalize(d.name) === normalize(departmentName),
+    (d) => slugify(d.name) === departmentName,
   );
 
   const environments = useMemo(() => {

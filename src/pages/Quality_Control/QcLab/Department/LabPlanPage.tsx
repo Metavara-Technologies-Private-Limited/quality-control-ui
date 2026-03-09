@@ -4,6 +4,7 @@ import { useOutletContext } from "react-router-dom";
 
 import { RootState } from "@/store";
 import LabEquipmentForm from "./LabEquipmentForm";
+import { slugify } from "@/utils/slugify";
 
 type PlanItem = {
   key: string;
@@ -53,11 +54,14 @@ const avatarColors = [
   "#5E4DB2", "#BF2600", "#DE350B", "#FF5630", "#FF8B00",
 ];
 
-const getAvatarColor = (name: string) => {
+const getAvatarColor = (name?: string) => {
+  if (!name) return avatarColors[0];
+
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
+
   return avatarColors[Math.abs(hash) % avatarColors.length];
 };
 
@@ -70,7 +74,7 @@ const SCHEDULE_LABEL: Record<number, string> = {
 
 /* ---------------- Utils ---------------- */
 
-const normalize = (v: string) => v.replace(/\s+/g, "").toLowerCase();
+// const normalize = (v: string) => v.replace(/\s+/g, "").toLowerCase();
 
 const getScheduleLabel = (type: any) => {
   const t =
@@ -85,13 +89,13 @@ const getScheduleLabel = (type: any) => {
   return SCHEDULE_LABEL[t] ?? "Others";
 };
 
-const getInitials = (name: string) =>
+const getInitials = (name?: string) =>
   name
     ?.split(" ")
     .map((n) => n[0])
     .join("")
     .slice(0, 2)
-    .toUpperCase();
+    .toUpperCase() || "?";
 
 /* ---------------- Component ---------------- */
 
@@ -124,7 +128,7 @@ export default function LabPlanPage() {
 
   const planItems = useMemo(() => {
     return events.flatMap((event) => {
-      if (normalize(event.department) !== normalize(departmentName)) return [];
+      if (slugify(event.department) !== departmentName) return [];
 
       const assigneeId = assigneeIdMap[event.assignment];
 
@@ -206,7 +210,7 @@ export default function LabPlanPage() {
     if (!selectedItem || !clinic) return [];
 
     const department = clinic.department.find(
-      (d) => normalize(d.name) === normalize(departmentName),
+      (d) => slugify(d.name) === departmentName,
     );
     if (!department) return [];
 
@@ -368,7 +372,7 @@ export default function LabPlanPage() {
                 </div>
 
                 <div
-                  title={item.assignment}
+                  title={item.assignment || "Unassigned"}
                   style={{
                     width: 28,
                     height: 28,

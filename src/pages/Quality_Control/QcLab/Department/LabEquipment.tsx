@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useOutletContext } from "react-router-dom";
 import {
-  normalize,
+  // normalize,
   formatDate,
   getInitials,
   getAvatarColor,
@@ -16,6 +16,7 @@ import EquipmentTabs from "./EquipmentTabs";
 import { RootState } from "@/store";
 import LabEquipmentForm from "./LabEquipmentForm";
 import LabPlanPage from "./LabPlanPage";
+import { slugify } from "@/utils/slugify";
 
 /* -------- Check if event is active TODAY -------- */
 
@@ -234,7 +235,7 @@ export default function LabEquipments() {
   const [selectedRadio, setSelectedRadio] = useState("");
 
   const department = clinic?.department.find(
-    (d) => normalize(d.name) === normalize(departmentName),
+    (d) => slugify(d.name) === departmentName,
   );
 
   const assigneeByName = useMemo(() => {
