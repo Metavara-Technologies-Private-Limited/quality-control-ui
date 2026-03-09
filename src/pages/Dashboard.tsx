@@ -17,7 +17,8 @@ import { parameterValueApi } from "@/services/api";
 
 const Dashboard = () => {
   /** ------------------ REDUX STATE ------------------ **/
-  const { data: clinic, loading } = useSelector(
+  // ← Use rawData so ALL departments (lab + clinical) appear in tabs
+  const { rawData: clinic, loading } = useSelector(
     (state: RootState) => state.clinic,
   ) as RootState["clinic"];
 
@@ -49,7 +50,6 @@ const Dashboard = () => {
 
     let list = department.equipments ?? [];
 
-    // 🔍 SEARCH
     if (search.trim()) {
       list = list.filter((eq) =>
         eq.equipment_name.toLowerCase().includes(search.toLowerCase()),

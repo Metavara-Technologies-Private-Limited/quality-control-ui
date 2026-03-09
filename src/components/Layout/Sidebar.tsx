@@ -12,8 +12,6 @@ import {
   IconButton,
 } from "@mui/material";
 
-// import { useView } from "@/utils/viewContext";
-
 /* ===== ORIGINAL ICONS ===== */
 import ShieldTickIcon from "../../assets/icons/shield-tick.svg";
 import BriefcaseIcon from "../../assets/icons/brifecase-tick.svg";
@@ -90,7 +88,6 @@ const SELECTED_ICON_STYLE = [
 ];
 
 /* ================= MENU MAP ================= */
-// Type for a single menu item
 type MenuItem = {
   key: string;
   text: string;
@@ -98,7 +95,6 @@ type MenuItem = {
   children?: MenuItem[];
 };
 
-// Type for the map
 type IconMenuMap = {
   quality: MenuItem[];
   documentation: MenuItem[];
@@ -106,7 +102,10 @@ type IconMenuMap = {
   compliance: MenuItem[];
 };
 
-export const buildIconMenuMap = (departments: any[]): IconMenuMap => ({
+export const buildIconMenuMap = (
+  labDepartments: any[],
+  clinicalDepartments: any[],
+): IconMenuMap => ({
   quality: [
     {
       key: "dashboard",
@@ -114,17 +113,24 @@ export const buildIconMenuMap = (departments: any[]): IconMenuMap => ({
       path: "/dashboard",
     },
 
+    // ── Clinical section ──────────────────────────────────────────
     {
       key: "clinical",
       text: "Clinical",
-      path: "/clinical",
+      path: "/clinic-lab/consultation",
+      children: clinicalDepartments.map((d) => ({
+        text: d.name,
+        key: slugify(d.name),
+        path: `/clinic-lab/${slugify(d.name)}`,
+      })),
     },
 
+    // ── Lab section ───────────────────────────────────────────────
     {
       key: "lab",
       text: "Lab",
       path: "/qc-lab",
-      children: departments.map((d) => ({
+      children: labDepartments.map((d) => ({
         text: d.name,
         key: slugify(d.name),
         path: `/qc-lab/${slugify(d.name)}`,
@@ -198,11 +204,15 @@ const ICON_INDEX_MAP = [
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  // const { currentView } = useView();
 
-  const { data: clinic } = useSelector((state: RootState) => state.clinic);
-  const departments = clinic?.department ?? [];
-  const ICON_MENU_MAP = buildIconMenuMap(departments);
+  // Lab departments (type === "lab")
+  const { data: labClinic, clinicData } = useSelector(
+    (state: RootState) => state.clinic,
+  );
+  const labDepartments = labClinic?.department ?? [];
+  const clinicalDepartments = clinicData?.department ?? [];
+
+  const ICON_MENU_MAP = buildIconMenuMap(labDepartments, clinicalDepartments);
 
   const [selectedIcon, setSelectedIcon] = useState(0);
 
@@ -304,9 +314,18 @@ const Sidebar = () => {
             {menuItems.map((item: any) => {
               const isItemActive =
                 location.pathname === item.path ||
-                (item.children && location.pathname.startsWith(item.path));
+                (item.children &&
+                  location.pathname.startsWith(
+                    item.key === "clinical" ? "/clinic-lab" : item.path,
+                  ));
+
               const isLab = item.key === "lab";
               const isLabOpen = location.pathname.startsWith("/qc-lab");
+
+              const isClinical = item.key === "clinical";
+              const isClinicalOpen =
+                location.pathname.startsWith("/clinic-lab");
+
               const isConfiguration = item.key === "configuration";
               const isConfigurationOpen =
                 location.pathname.startsWith("/configuration");
@@ -328,6 +347,68 @@ const Sidebar = () => {
                     </ListItemButton>
                   </ListItem>
 
+                  {/* SUB MENU for Clinical */}
+                  {isClinical && isClinicalOpen && item.children && (
+                    <Box
+                      sx={{
+                        mt: 0.5,
+                        backgroundColor: "#F3F3F3",
+                        borderRadius: "12px 0 0 12px",
+                        mx: -2,
+                        py: 0.5,
+                      }}
+                    >
+                      {item.children.map((sub: any) => {
+                        const isSubActive =
+                          location.pathname.startsWith(sub.path);
+                        return (
+                          <ListItemButton
+                            key={sub.key}
+                            onClick={() => navigate(sub.path)}
+                            sx={{
+                              pl: 4,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1.5,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                width: 18,
+                                height: 18,
+                                borderRadius: "50%",
+                                backgroundColor: "#FFFFFF",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: "50%",
+                                  backgroundColor: isSubActive
+                                    ? "#E17E61"
+                                    : "#CFD1D4",
+                                }}
+                              />
+                            </Box>
+                            <Typography
+                              sx={{
+                                fontSize: "0.95rem",
+                                fontWeight: 600,
+                                color: isSubActive ? "#E17E61" : "#232323",
+                              }}
+                            >
+                              {sub.text}
+                            </Typography>
+                          </ListItemButton>
+                        );
+                      })}
+                    </Box>
+                  )}
+
                   {/* SUB MENU for Lab */}
                   {isLab && isLabOpen && item.children && (
                     <Box
@@ -340,9 +421,8 @@ const Sidebar = () => {
                       }}
                     >
                       {item.children.map((sub: any) => {
-                        const isSubActive = location.pathname.startsWith(
-                          sub.path
-                        );
+                        const isSubActive =
+                          location.pathname.startsWith(sub.path);
                         return (
                           <ListItemButton
                             key={sub.key}
