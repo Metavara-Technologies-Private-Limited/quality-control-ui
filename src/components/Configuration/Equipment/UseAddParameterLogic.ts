@@ -26,7 +26,9 @@ export const useAddParameterLogic = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
-  const { data: clinic } = useSelector((state: RootState) => state.clinic);
+
+  // ← KEY FIX: use rawData so ALL departments (lab + clinical) are available
+  const { rawData: clinic } = useSelector((state: RootState) => state.clinic);
 
   const entityType: "equipment" | "environment" = location.pathname.includes(
     "/environment",
@@ -40,7 +42,10 @@ export const useAddParameterLogic = () => {
   // State management
   const [equipmentName, setEquipmentName] = useState("");
   const [departmentName, setDepartmentName] = useState("");
-  const [departmentId, setDepartmentId] = useState<number | null>(null);
+  // ← Initialize directly from nav state so it's available before clinic loads
+  const [departmentId, setDepartmentId] = useState<number | null>(
+    location.state?.departmentId ? Number(location.state.departmentId) : null,
+  );
   const [count, setCount] = useState(1);
   const [selected, setSelected] = useState<number[]>([]);
   const [parameters, setParameters] = useState<ParameterContent[]>([]);
@@ -80,16 +85,16 @@ export const useAddParameterLogic = () => {
   // Initialize data on mount
   useEffect(() => {
     const equipmentId = location.state?.equipmentId;
-    const environmentId = location.state?.environmentId;
+    const envId = location.state?.environmentId;
 
     /* ENVIRONMENT EDIT */
-    if (isEnvironment && environmentId && clinic) {
+    if (isEnvironment && envId && clinic) {
       const department = clinic.department.find((d) =>
-        d.environments?.some((env) => env.id === environmentId),
+        d.environments?.some((env) => env.id === envId),
       );
 
       const environment = department?.environments?.find(
-        (env) => env.id === environmentId,
+        (env) => env.id === envId,
       );
 
       if (!environment || !department) return;
@@ -165,7 +170,7 @@ export const useAddParameterLogic = () => {
       setEquipmentTable(loadedEquipmentTable);
 
       if (loadedEquipmentTable.length > 0) {
-        const maxSrNo = Math.max(...loadedEquipmentTable.map((i) => i.sr));
+        const maxSrNo = Math.max(...loadedEquipmentTable.map((i: any) => i.sr));
         setCount(maxSrNo);
         setNextSrNo(maxSrNo + 1);
       }
@@ -240,12 +245,21 @@ export const useAddParameterLogic = () => {
 
     setDepartmentName(location.state?.departmentName || "");
 
-    const dept = clinic?.department.find(
-      (d) =>
-        d.name.toLowerCase() === location.state?.departmentName?.toLowerCase(),
-    );
+    // ← KEY FIX: prefer departmentId passed directly from navigation state
+    // (set by AddEquipmentPopup). Fall back to name-based lookup only if needed.
+    const navDeptId = location.state?.departmentId;
+    if (navDeptId) {
+      setDepartmentId(navDeptId);
+    } else {
+      // fallback: find by name across ALL departments (rawData)
+      const dept = clinic?.department.find(
+        (d) =>
+          d.name.toLowerCase() ===
+          location.state?.departmentName?.toLowerCase(),
+      );
+      setDepartmentId(dept?.id || null);
+    }
 
-    setDepartmentId(dept?.id || null);
     setParameters(loadParametersFromLocalStorage());
   }, [location, clinic]);
 

@@ -21,7 +21,8 @@ const AddEquipmentPopup: React.FC<{
 }> = ({ open, onClose }) => {
   const navigate = useNavigate();
 
-  const { data: clinic } = useSelector((state: RootState) => state.clinic);
+  // Use rawData so ALL departments (lab + clinical) appear in the dropdown
+  const { rawData: clinic } = useSelector((state: RootState) => state.clinic);
   const departments = clinic?.department ?? [];
 
   const [equipmentName, setEquipmentName] = useState("");
@@ -48,8 +49,8 @@ const AddEquipmentPopup: React.FC<{
     }
 
     const tempEquipmentId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    const departmentName =
-      departments.find((d) => d.id === departmentId)?.name || "";
+    const selectedDept = departments.find((d) => d.id === departmentId);
+    const departmentName = selectedDept?.name || "";
 
     onClose();
     navigate("/configuration/equipment/add-parameter", {
@@ -57,6 +58,7 @@ const AddEquipmentPopup: React.FC<{
         tempEquipmentId,
         equipmentName: equipmentName.trim(),
         departmentName,
+        departmentId,           // ← pass the actual ID so backend save works
       },
     });
   };
@@ -115,9 +117,7 @@ const AddEquipmentPopup: React.FC<{
           size="small"
           variant="outlined"
           value={departmentId || ""}
-          onChange={(e) => {
-            setDepartmentId(Number(e.target.value));
-          }}
+          onChange={(e) => setDepartmentId(Number(e.target.value))}
           sx={{
             "& .MuiInputLabel-root": { color: "#5F646F !important" },
             "& .MuiOutlinedInput-root": {
