@@ -17,10 +17,28 @@ import { parameterValueApi } from "@/services/api";
 
 const Dashboard = () => {
   /** ------------------ REDUX STATE ------------------ **/
-  // ← Use rawData so ALL departments (lab + clinical) appear in tabs
-  const { rawData: clinic, loading } = useSelector(
+  const { rawData, loading } = useSelector(
     (state: RootState) => state.clinic,
   ) as RootState["clinic"];
+
+  // All departments with only active equipments shown
+  const clinic = useMemo(() => {
+    if (!rawData) return null;
+    return {
+      ...rawData,
+      department: rawData.department
+        .filter((d) => d.is_active)
+        .map((d) => ({
+          ...d,
+          equipments: d.equipments
+            .filter((e) => e.is_active)
+            .map((e) => ({
+              ...e,
+              parameters: e.parameters.filter((p) => !p.is_deleted),
+            })),
+        })),
+    };
+  }, [rawData]);
 
   /** ------------------ LOCAL UI STATE ------------------ **/
   const [departmentId, setDepartmentId] = useState<number | null>(null);

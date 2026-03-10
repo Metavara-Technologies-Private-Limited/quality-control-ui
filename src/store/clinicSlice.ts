@@ -4,7 +4,7 @@ import type { Clinic } from "@/types";
 
 type ClinicState = {
   data: Clinic | null;       // Lab departments only (type === "lab")
-  rawData: Clinic | null;    // All departments unfiltered
+  rawData: Clinic | null;    // All departments, inactive equipments filtered out
   clinicData: Clinic | null; // Clinical departments only (type === "clinical")
   labData: Clinic | null;    // Lab departments only (type === "lab")
   loading: boolean;
@@ -20,9 +20,10 @@ const initialState: ClinicState = {
   error: null,
 };
 
+// Filter active equipments/parameters within departments, optionally by type
 const filterActiveByType = (
   clinic: Clinic | null,
-  type: "lab" | "clinical" | null, // null = all departments
+  type: "lab" | "clinical" | null, // null = all department types
 ): Clinic | null => {
   if (!clinic) return null;
 
@@ -39,8 +40,14 @@ const filterActiveByType = (
             ...e,
             parameters: e.parameters.filter((p) => !p.is_deleted),
           })),
+        environments: (d.environments ?? []).filter((env) => env.is_active),
       })),
   };
+};
+
+// rawData: all department types but still filters inactive equipments/environments
+const filterActiveAll = (clinic: Clinic | null): Clinic | null => {
+  return filterActiveByType(clinic, null);
 };
 
 export const fetchClinic = createAsyncThunk(
@@ -63,13 +70,16 @@ const clinicSlice = createSlice({
       })
       .addCase(fetchClinic.fulfilled, (state, action) => {
         state.loading = false;
+
+        // rawData = completely unfiltered — Configuration uses this
+        // so inactive equipments still show there for activate/inactivate
         state.rawData = action.payload;
 
-        // Lab departments (type === "lab") — used by QC Lab pages
-        state.data      = filterActiveByType(action.payload, "lab");
-        state.labData   = filterActiveByType(action.payload, "lab");
+        // Lab departments only
+        state.data    = filterActiveByType(action.payload, "lab");
+        state.labData = filterActiveByType(action.payload, "lab");
 
-        // Clinical departments (type === "clinical") — used by Clinical pages
+        // Clinical departments only
         state.clinicData = filterActiveByType(action.payload, "clinical");
       })
       .addCase(fetchClinic.rejected, (state) => {
