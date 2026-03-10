@@ -146,17 +146,17 @@ export default function LabPlanPage() {
         key: `${event.id}-${eq.equipment_details__id}`,
         eventId: event.id,
         eventName: event.event_name,
-        assignment: event.assignment,
-      
+        assignment: event.assignee_name,
+
         scheduleLabel: getScheduleLabel(event.schedule?.type),
         scheduleType: event.schedule?.type,
-      
+
         startDate: event.schedule?.start_date ?? null,
         endDate: event.schedule?.end_date ?? null,
         days: event.schedule?.days ?? null,
         months: event.schedule?.months ?? null,
         oneTimeDate: event.schedule?.one_time_date ?? null,
-      
+
         equipmentName: eq.equipment_details__equipment__equipment_name,
         equipmentUnit: eq.equipment_details__equipment_num,
         equipmentDetailId: eq.equipment_details__id,
