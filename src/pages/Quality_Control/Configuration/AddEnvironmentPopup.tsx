@@ -23,7 +23,8 @@ const AddEnvironmentPopup: React.FC<{
 }> = ({ open, onClose }) => {
   const navigate = useNavigate();
 
-  const { data: clinic } = useSelector((state: RootState) => state.clinic);
+  // ← rawData so ALL departments (lab + clinical) appear in dropdown
+  const { rawData: clinic } = useSelector((state: RootState) => state.clinic);
   const departments = clinic?.department ?? [];
 
   const [departmentId, setDepartmentId] = useState<number | "">("");
@@ -89,7 +90,6 @@ const AddEnvironmentPopup: React.FC<{
       </DialogTitle>
 
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {/* ENVIRONMENT NAME (PRE-FILLED & DISABLED) */}
         <TextField
           label="Environment Name"
           fullWidth
@@ -105,7 +105,6 @@ const AddEnvironmentPopup: React.FC<{
           }}
         />
 
-        {/* DEPARTMENT SELECT */}
         <TextField
           label="Department"
           select
@@ -127,7 +126,6 @@ const AddEnvironmentPopup: React.FC<{
             .filter((d) => d.is_active)
             .map((dept) => {
               const disabled = hasEnvironment(dept.id);
-
               return (
                 <MenuItem
                   key={dept.id}
@@ -150,17 +148,12 @@ const AddEnvironmentPopup: React.FC<{
             })}
         </TextField>
 
-        {/* ACTIONS */}
-        <Box
-          sx={{ display: "flex", justifyContent: "flex-end", mt: 3, gap: 2 }}
-        >
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3, gap: 2 }}>
           <Button
             variant="outlined"
             onClick={onClose}
             sx={{
-              color: "#505050",
-              width: "100px",
-              borderRadius: "10px",
+              color: "#505050", width: "100px", borderRadius: "10px",
               borderColor: "#505050",
               "&:hover": { borderColor: "#505050", backgroundColor: "white" },
               textTransform: "none",
@@ -168,18 +161,15 @@ const AddEnvironmentPopup: React.FC<{
           >
             Cancel
           </Button>
-
           <Button
             variant="contained"
             onClick={handleAdd}
+            disabled={!departmentId}
             sx={{
-              width: "100px",
-              borderRadius: "10px",
-              background: "#383838",
-              textTransform: "none",
+              width: "100px", borderRadius: "10px",
+              background: "#383838", textTransform: "none",
               "&:hover": { background: "#2f2f2f" },
             }}
-            disabled={!departmentId}
           >
             Add
           </Button>
