@@ -98,7 +98,7 @@ export default function ClinicalPlanPage() {
         key: `${event.id}-${eq.equipment_details__id}`,
         eventId: event.id,
         eventName: event.event_name,
-        assignment: event.assignment,
+        assignment: event.assignee_name,
         scheduleLabel: getScheduleLabel(event.schedule?.type),
         scheduleType: event.schedule?.type,
         startDate: event.schedule?.start_date ?? null,
