@@ -69,7 +69,6 @@ const ViewEquipment = () => {
   let equipmentDetails: EquipmentDetail[] = [];
   let departmentName = "";
   let departmentId: number | null = null;
-  let equipmentId: number | null = null;
 
   if (isEnvironment) {
     const department = clinic.department.find((d) =>
@@ -97,7 +96,6 @@ const ViewEquipment = () => {
     equipmentDetails = equipment.equipment_details ?? [];
     departmentName = department.name;
     departmentId = department.id;
-    equipmentId = equipment.id;
   }
 
   return (
