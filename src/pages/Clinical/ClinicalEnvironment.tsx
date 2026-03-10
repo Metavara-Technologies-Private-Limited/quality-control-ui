@@ -12,10 +12,11 @@ export default function ClinicalEnvironment() {
     searchText: string;
   }>();
 
-  const { clinicData } = useSelector((s: RootState) => s.clinic);
+  // ← rawData so clinical departments are found regardless of type field
+  const { rawData } = useSelector((s: RootState) => s.clinic);
 
-  const department = clinicData?.department.find(
-    (d) => slugify(d.name) === departmentName,
+  const department = rawData?.department.find(
+    (d) => d.is_active && slugify(d.name) === departmentName,
   );
 
   const environments = useMemo(() => {
