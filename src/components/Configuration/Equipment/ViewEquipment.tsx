@@ -16,8 +16,6 @@ import { EquipmentDetail, Parameter } from "@/types";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 
-/* ------------------ Helpers ------------------ */
-
 const renderParameterDetails = (p: Parameter) => {
   let content = p.config;
   if (!content) return "-";
@@ -30,37 +28,29 @@ const renderParameterDetails = (p: Parameter) => {
     case "Integer":
     case "Min/Max":
     case "Decimal":
-      return `Min ${content.min_value ?? "-"} ${content.unit ?? ""} – Max ${
-        content.max_value ?? "-"
-      } ${content.unit ?? ""}`;
-
+      return `Min ${content.min_value ?? "-"} ${content.unit ?? ""} – Max ${content.max_value ?? "-"} ${content.unit ?? ""}`;
     case "Percentage":
       return content.percentage ?? "-";
-
     case "Text":
       return content.text ?? "-";
-
     case "Boolean":
       return content.boolean_type === "yesno" ? "Yes/No" : "True/False";
-
     case "Dropdown":
     case "Select":
       return (content.dropdown ?? []).join(", ");
-
     default:
       return "-";
   }
 };
 
-/* ------------------ Component ------------------ */
-
 const ViewEquipment = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { data: clinic } = useSelector((state: RootState) => state.clinic);
+
+  // ← rawData so clinical departments are found too
+  const { rawData: clinic } = useSelector((state: RootState) => state.clinic);
 
   const isEnvironment = Boolean(location.state?.environmentId);
-
   const entityId = isEnvironment
     ? location.state?.environmentId
     : location.state?.equipmentId;
@@ -69,9 +59,7 @@ const ViewEquipment = () => {
     return (
       <Box sx={{ p: 3 }}>
         <Typography>No data found</Typography>
-        <Button onClick={() => navigate(-1)} sx={{ mt: 2 }}>
-          Go Back
-        </Button>
+        <Button onClick={() => navigate(-1)} sx={{ mt: 2 }}>Go Back</Button>
       </Box>
     );
   }
@@ -80,16 +68,14 @@ const ViewEquipment = () => {
   let parameters: Parameter[] = [];
   let equipmentDetails: EquipmentDetail[] = [];
   let departmentName = "";
+  let departmentId: number | null = null;
+  let equipmentId: number | null = null;
 
   if (isEnvironment) {
     const department = clinic.department.find((d) =>
       d.environments?.some((env) => env.id === entityId),
     );
-
-    const environment = department?.environments?.find(
-      (env) => env.id === entityId,
-    );
-
+    const environment = department?.environments?.find((env) => env.id === entityId);
     if (!environment || !department) return null;
 
     name = environment.environment_name;
@@ -98,19 +84,20 @@ const ViewEquipment = () => {
       parameter_name: p.env_parameter_name ?? "",
     }));
     departmentName = department.name;
+    departmentId = department.id;
   } else {
     const department = clinic.department.find((d) =>
       d.equipments.some((e) => e.id === entityId),
     );
-
     const equipment = department?.equipments.find((e) => e.id === entityId);
-
     if (!equipment || !department) return null;
 
     name = equipment.equipment_name;
     parameters = equipment.parameters ?? [];
     equipmentDetails = equipment.equipment_details ?? [];
     departmentName = department.name;
+    departmentId = department.id;
+    equipmentId = equipment.id;
   }
 
   return (
@@ -119,22 +106,12 @@ const ViewEquipment = () => {
       <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1 }}>
         <IconButton
           onClick={() =>
-            navigate(
-              isEnvironment
-                ? "/configuration/environment"
-                : "/configuration/equipment",
-            )
+            navigate(isEnvironment ? "/configuration/environment" : "/configuration/equipment")
           }
           sx={{
-            width: 24,
-            height: 24,
-            padding: "10px",
-            opacity: 1,
-            color: "#374151",
-            borderRadius: 1,
-            mr: 1,
-            boxShadow: "3px 3px 6px rgba(0,0,0,0.2)",
-            backgroundColor: "#fff",
+            width: 24, height: 24, padding: "10px", opacity: 1,
+            color: "#374151", borderRadius: 1, mr: 1,
+            boxShadow: "3px 3px 6px rgba(0,0,0,0.2)", backgroundColor: "#fff",
           }}
         >
           <TurnLeftIcon sx={{ fontSize: 24, padding: "3px" }} />
@@ -150,12 +127,7 @@ const ViewEquipment = () => {
         <Chip
           label={departmentName}
           size="small"
-          sx={{
-            background: "#E0F1E6",
-            color: "#3D8B61",
-            fontWeight: 600,
-            height: "22px",
-          }}
+          sx={{ background: "#E0F1E6", color: "#3D8B61", fontWeight: 600, height: "22px" }}
         />
       </Box>
 
@@ -169,21 +141,10 @@ const ViewEquipment = () => {
           {parameters.map((p, i) => (
             <Box
               key={i}
-              sx={{
-                width: 216,
-                height: 90,
-                border: "1px solid #E5E7EB",
-                borderRadius: "12px",
-                px: 2,
-                py: 1.5,
-              }}
+              sx={{ width: 216, height: 90, border: "1px solid #E5E7EB", borderRadius: "12px", px: 2, py: 1.5 }}
             >
-              <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
-                {p.parameter_name}
-              </Typography>
-              <Typography sx={{ fontSize: 13, color: "#374151" }}>
-                {renderParameterDetails(p)}
-              </Typography>
+              <Typography sx={{ fontWeight: 600, fontSize: 14 }}>{p.parameter_name}</Typography>
+              <Typography sx={{ fontSize: 13, color: "#374151" }}>{renderParameterDetails(p)}</Typography>
             </Box>
           ))}
         </Box>
@@ -191,15 +152,13 @@ const ViewEquipment = () => {
         <Typography color="#6B7280">No parameters added</Typography>
       )}
 
-      {/* Equipment Units (ONLY for equipment) */}
+      {/* Equipment Units */}
       {!isEnvironment && (
         <>
           <Box sx={{ height: 1, background: "#E5E7EB", my: 3 }} />
-
           <Typography sx={{ fontWeight: 700, mb: 1, fontSize: 16 }}>
             Units ({equipmentDetails.length})
           </Typography>
-
           {equipmentDetails.length > 0 ? (
             <Table size="small">
               <TableHead>
@@ -238,17 +197,12 @@ const ViewEquipment = () => {
                 : "/configuration/equipment/add-parameter",
               {
                 state: isEnvironment
-                  ? { environmentId: entityId }
-                  : { equipmentId: entityId },
+                  ? { environmentId: entityId, departmentId, departmentName }
+                  : { equipmentId: entityId, departmentId, departmentName },
               },
             )
           }
-          sx={{
-            borderRadius: "10px",
-            background: "#505050",
-            textTransform: "none",
-            "&:hover": { background: "#232323" },
-          }}
+          sx={{ borderRadius: "10px", background: "#505050", textTransform: "none", "&:hover": { background: "#232323" } }}
         >
           Edit
         </Button>
