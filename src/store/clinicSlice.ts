@@ -45,11 +45,6 @@ const filterActiveByType = (
   };
 };
 
-// rawData: all department types but still filters inactive equipments/environments
-const filterActiveAll = (clinic: Clinic | null): Clinic | null => {
-  return filterActiveByType(clinic, null);
-};
-
 export const fetchClinic = createAsyncThunk(
   "clinic/fetchClinic",
   async (clinicId: number) => {
