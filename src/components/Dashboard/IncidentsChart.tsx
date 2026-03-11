@@ -14,7 +14,6 @@ import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import RemoveIcon from "@mui/icons-material/Remove";
 
 import { EquipmentDetail, ParameterContent } from "@/types";
-import { getEquipmentColor } from "@/utils/constants";
 
 interface IncidentsChartProps {
   equipmentDetails: EquipmentDetail[];
@@ -26,10 +25,12 @@ interface IncidentsChartProps {
    STATUS COLORS
 ----------------------------- */
 const STATUS_COLORS = {
-  high: "#F25B5B",
+  high: "##F25B5B",
   normal: "#47B35F",
   low: "#9E9E9E",
 };
+
+const RING_COLORS = ["#EF9685", "#FFD0C7", "#9B9B9B", "#6C6C6C"];
 
 const IncidentsChart: React.FC<IncidentsChartProps> = ({
   equipmentDetails,
@@ -136,8 +137,7 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({
                     dataKey="value"
                     innerRadius={inner}
                     outerRadius={outer}
-                    fill={getEquipmentColor(ed.equipment_num)}
-                    opacity={0.7}
+fill={RING_COLORS[(RING_COLORS.length - 1 - idx) % RING_COLORS.length]}                    opacity={0.7}
                     stroke="#fff"
                     isAnimationActive={false}
                   />
@@ -192,19 +192,20 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({
               mt: 1,
             }}
           >
-            {equipmentDetails.map((ed, idx) => (
-              <Box key={ed.id ?? idx} sx={{ display: "flex", gap: 1 }}>
-                <Box
-                  sx={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    backgroundColor: getEquipmentColor(ed.equipment_num),
-                  }}
-                />
-                <Typography fontSize={12}>{ed.equipment_num}</Typography>
-              </Box>
-            ))}
+{equipmentDetails.map((ed, idx) => (
+  <Box key={ed.id ?? idx} sx={{ display: "flex", gap: 1 }}>
+    <Box
+      sx={{
+        width: 10,
+        height: 10,
+        borderRadius: "50%",
+        backgroundColor:
+          RING_COLORS[(RING_COLORS.length - 1 - idx) % RING_COLORS.length],
+      }}
+    />
+    <Typography fontSize={12}>{ed.equipment_num}</Typography>
+  </Box>
+))}
           </Box>
         </Box>
       </Box>

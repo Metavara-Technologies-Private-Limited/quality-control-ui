@@ -123,12 +123,21 @@ const EquipmentCard = ({
       </div>
 
       {/* Equipment info */}
-      <div style={{ fontSize: 13, fontWeight: 700, color: "#4B5563" }}>
-        {item.detailName} :{" "}
-        <span style={{ fontWeight: 500, color: "#6B7280" }}>
-          Parameters : {item.paramsCount}
-        </span>
-      </div>
+<div
+  style={{
+    fontSize: 13,
+    fontWeight: 700,
+    color: "#4B5563",
+    paddingRight: 110,   // reserve space for assignees
+    lineHeight: "18px",
+    wordBreak: "break-word",
+  }}
+>
+  {item.detailName} :{" "}
+  <span style={{ fontWeight: 500, color: "#6B7280" }}>
+    Parameters : {item.paramsCount}
+  </span>
+</div>
 
       {/* Dates */}
       {/* Dates + Recurrence */}

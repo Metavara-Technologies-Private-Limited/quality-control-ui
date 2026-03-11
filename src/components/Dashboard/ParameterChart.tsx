@@ -29,7 +29,6 @@ import { LocalizationProvider, DateCalendar } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
 import type { EquipmentDetail, ParameterChartData } from "@/types";
-import { getEquipmentColor } from "@/utils/constants";
 
 interface ParameterChartProps {
   equipmentDetails: EquipmentDetail[];
@@ -39,6 +38,8 @@ interface ParameterChartProps {
   loading: boolean;
 }
 
+const CHART_COLORS = ["#6C6C6C", "#9B9B9B", "#FFD0C7", "#EF9685"];
+
 const ParameterChart: React.FC<ParameterChartProps> = ({
   equipmentDetails,
   parameterName,
@@ -47,7 +48,7 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
   loading,
 }) => {
   const [chartData, setChartData] = useState<ParameterChartData | null>(null);
-  const [chartType, setChartType] = useState<"line" | "bar">("line");
+  const [chartType, setChartType] = useState<"line" | "bar">("bar");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [chartMenuAnchor, setChartMenuAnchor] = useState<null | HTMLElement>(
@@ -153,14 +154,13 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
           {/* RIGHT: LEGEND + ICONS ----- Incubator A B C D -------- on top of chart */}
           <Box display="flex" alignItems="center" gap={2}>
             <Box display="flex" alignItems="center" gap={1}>
-              {chartData?.equipment_names?.map((name) => (
-                <Box key={name} display="flex" alignItems="center" gap={0.5}>
+{chartData?.equipment_names?.map((name, index) => (                <Box key={name} display="flex" alignItems="center" gap={0.5}>
                   <Box
                     sx={{
                       width: 10,
                       height: 10,
                       borderRadius: "50%",
-                      backgroundColor: getEquipmentColor(name),
+                      backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
                     }}
                   />
                   <Typography variant="caption">{name}</Typography>
@@ -296,13 +296,14 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
                   <XAxis {...xAxisProps} />
                   <YAxis {...yAxisProps} />
                   <Tooltip />
-                  {chartData?.equipment_names?.map((name) => (
-                    <Bar
-                      key={name}
-                      dataKey={name}
-                      fill={getEquipmentColor(name)}
-                      radius={[6, 6, 0, 0]}
-                    />
+                  {chartData?.equipment_names?.map((name, index) => (
+<Bar
+  key={name}
+  dataKey={name}
+  fill={CHART_COLORS[index % CHART_COLORS.length]}
+  radius={[6, 6, 0, 0]}
+  barSize={18}
+/>
                   ))}
                 </BarChart>
               ) : (
@@ -311,11 +312,11 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
                   <XAxis {...xAxisProps} />
                   <YAxis {...yAxisProps} />
                   <Tooltip />
-                  {chartData?.equipment_names?.map((name) => (
+                  {chartData?.equipment_names?.map((name, index) => (
                     <Line
                       key={name}
                       dataKey={name}
-                      stroke={getEquipmentColor(name)}
+                      stroke={CHART_COLORS[index % CHART_COLORS.length]}
                       strokeWidth={2}
                       dot={false}
                       type="monotone"
