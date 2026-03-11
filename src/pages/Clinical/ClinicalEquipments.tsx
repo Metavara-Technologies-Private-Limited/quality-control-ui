@@ -51,79 +51,86 @@ const EquipmentCard = ({
         boxShadow: "0px 2px 4px rgba(0,0,0,0.02)",
       }}
     >
-      {/* Top-right: Assignees */}
+      {/* Header: Equipment + Assignees */}
       <div
         style={{
-          position: "absolute",
-          top: 10,
-          right: 10,
           display: "flex",
-          alignItems: "center",
-          gap: "8px",
+          flexDirection: "column",
+          gap: 8,
         }}
       >
-        <span
-          style={{
-            fontSize: "12px",
-            fontWeight: 700,
-            color: "#4B5563",
-            display: selected ? "inline" : "none",
-          }}
-        >
-          Assignees :
-        </span>
-        <div style={{ display: "flex" }}>
-          {item.assigneeNames?.slice(0, 3).map((name, index) => (
-            <div
-              key={index}
-              title={name}
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: "50%",
-                backgroundColor: getAvatarColor(name),
-                color: "#fff",
-                fontSize: 10,
-                fontWeight: 700,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginLeft: index === 0 ? 0 : -8,
-                border: "2px solid #fff",
-              }}
-            >
-              {getInitials(name)}
-            </div>
-          ))}
-          {item.assigneeNames && item.assigneeNames.length > 3 && (
-            <div
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: "50%",
-                backgroundColor: "#6B7280",
-                color: "#fff",
-                fontSize: 10,
-                fontWeight: 700,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginLeft: -8,
-                border: "2px solid #fff",
-              }}
-            >
-              +{item.assigneeNames.length - 3}
-            </div>
-          )}
+        {/* Equipment info */}
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#4B5563" }}>
+          {item.detailName} :{" "}
+          <span style={{ fontWeight: 500, color: "#6B7280" }}>
+            Parameters : {item.paramsCount}
+          </span>
         </div>
-      </div>
 
-      {/* Equipment info */}
-      <div style={{ fontSize: 13, fontWeight: 700, color: "#4B5563" }}>
-        {item.detailName} :{" "}
-        <span style={{ fontWeight: 500, color: "#6B7280" }}>
-          Parameters : {item.paramsCount}
-        </span>
+        {/* Assignees */}
+        {selected && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "12px",
+                fontWeight: 700,
+                color: "#4B5563",
+              }}
+            >
+              Assignees :
+            </span>
+            <div style={{ display: "flex" }}>
+              {item.assigneeNames?.slice(0, 3).map((name, index) => (
+                <div
+                  key={index}
+                  title={name}
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: "50%",
+                    backgroundColor: getAvatarColor(name),
+                    color: "#fff",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginLeft: index === 0 ? 0 : -8,
+                    border: "2px solid #fff",
+                  }}
+                >
+                  {getInitials(name)}
+                </div>
+              ))}
+              {item.assigneeNames && item.assigneeNames.length > 3 && (
+                <div
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: "50%",
+                    backgroundColor: "#6B7280",
+                    color: "#fff",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginLeft: -8,
+                    border: "2px solid #fff",
+                  }}
+                >
+                  +{item.assigneeNames.length - 3}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Dates + Recurrence */}
@@ -137,12 +144,26 @@ const EquipmentCard = ({
           }}
         >
           {item.eventNames && item.eventNames.length > 0 && (
-            <div style={{ fontSize: 10, fontWeight: 600, color: "#0f172a", marginBottom: 2 }}>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: "#0f172a",
+                marginBottom: 2,
+              }}
+            >
               {item.eventNames[0]}
             </div>
           )}
           {item.scheduleType && (
-            <div style={{ fontSize: 10, fontWeight: 600, color: "#2563eb", marginBottom: 2 }}>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: "#2563eb",
+                marginBottom: 2,
+              }}
+            >
               {getRecurrenceLabel(item)}
             </div>
           )}
@@ -152,19 +173,33 @@ const EquipmentCard = ({
             </div>
           )}
           {item.days && item.days.length > 0 && (
-            <div style={{ fontSize: 11, color: "#6B7280" }}>Days: {item.days.join(", ")}</div>
+            <div style={{ fontSize: 11, color: "#6B7280" }}>
+              Days: {item.days.join(", ")}
+            </div>
           )}
           {item.months && item.months.length > 0 && (
-            <div style={{ fontSize: 11, color: "#6B7280" }}>Date: {item.months.join(", ")}</div>
+            <div style={{ fontSize: 11, color: "#6B7280" }}>
+              Date: {item.months.join(", ")}
+            </div>
           )}
           {item.oneTimeDate && (
-            <div style={{ fontSize: 11, color: "#6B7280" }}>On: {formatDate(item.oneTimeDate)}</div>
+            <div style={{ fontSize: 11, color: "#6B7280" }}>
+              On: {formatDate(item.oneTimeDate)}
+            </div>
           )}
         </div>
       )}
 
       {/* Footer */}
-      <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
+      <div
+        style={{
+          marginTop: 12,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          fontSize: 12,
+        }}
+      >
         <span style={{ fontWeight: 700, color: percentColor }}>{percent}%</span>
         <span style={{ color: "#94a3b8", fontWeight: 500 }}>
           {item.make} · {item.model}
@@ -187,7 +222,8 @@ export default function ClinicalEquipments() {
   const events = useSelector((s: RootState) => s.events.data);
 
   const [activeTab, setActiveTab] = useState<"All" | "To-Do" | "Plan">("All");
-  const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(null);
+  const [selectedEquipment, setSelectedEquipment] =
+    useState<EquipmentItem | null>(null);
   const [selectedRadio, setSelectedRadio] = useState("");
 
   const department = clinicData?.department.find(
@@ -200,8 +236,14 @@ export default function ClinicalEquipments() {
     return map;
   }, [assignees]);
 
-  const equipmentMetadata = useMemo(() => buildEquipmentMetadata(events), [events]);
-  const todayActiveEquipmentIds = useMemo(() => getTodayActiveEquipmentIds(events), [events]);
+  const equipmentMetadata = useMemo(
+    () => buildEquipmentMetadata(events),
+    [events],
+  );
+  const todayActiveEquipmentIds = useMemo(
+    () => getTodayActiveEquipmentIds(events),
+    [events],
+  );
 
   const rawEquipmentData = useMemo<EquipmentItem[]>(
     () =>
@@ -213,7 +255,14 @@ export default function ClinicalEquipments() {
         activeTab,
         todayActiveEquipmentIds,
       }),
-    [department, equipmentMetadata, selectedAssigneeIds, assigneeByName, activeTab, todayActiveEquipmentIds],
+    [
+      department,
+      equipmentMetadata,
+      selectedAssigneeIds,
+      assigneeByName,
+      activeTab,
+      todayActiveEquipmentIds,
+    ],
   );
 
   const groupedEquipments = useMemo(() => {
@@ -268,8 +317,12 @@ export default function ClinicalEquipments() {
         }}
       >
         {Object.keys(groupedEquipments).length === 0 ? (
-          <div style={{ textAlign: "center", color: "#94a3b8", paddingTop: 40 }}>
-            {activeTab === "To-Do" ? "No equipment scheduled for today" : "No equipment found"}
+          <div
+            style={{ textAlign: "center", color: "#94a3b8", paddingTop: 40 }}
+          >
+            {activeTab === "To-Do"
+              ? "No equipment scheduled for today"
+              : "No equipment found"}
           </div>
         ) : (
           Object.keys(groupedEquipments).map((eqName) => (
@@ -283,7 +336,14 @@ export default function ClinicalEquipments() {
                 border: "2px solid #e5e7eb",
               }}
             >
-              <h3 style={{ marginBottom: 12, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>
+              <h3
+                style={{
+                  marginBottom: 12,
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: "#0f172a",
+                }}
+              >
                 {eqName}
               </h3>
               <div
@@ -330,8 +390,17 @@ export default function ClinicalEquipments() {
   if (activeTab === "Plan") {
     return (
       <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 24, gap: 24 }}>
-          <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Equipments</h1>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: 24,
+            gap: 24,
+          }}
+        >
+          <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
+            Equipments
+          </h1>
           <EquipmentTabs activeTab={activeTab} onTabChange={handleTabChange} />
         </div>
         <ClinicalPlanPage />
@@ -341,7 +410,14 @@ export default function ClinicalEquipments() {
 
   return (
     <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", marginBottom: 24, gap: 24 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          marginBottom: 24,
+          gap: 24,
+        }}
+      >
         <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Equipments</h1>
         <EquipmentTabs activeTab={activeTab} onTabChange={handleTabChange} />
       </div>

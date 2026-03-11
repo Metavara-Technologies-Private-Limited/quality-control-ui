@@ -178,25 +178,29 @@ const EquipmentPage: React.FC<EquipmentPageProps> = ({}) => {
           const isInactive = item.is_active === false;
 
           return (
-            <Grid
-              item
-              xs={12}
-              sm={6}
-              md={4}
-              lg={3}
-              key={`${item.entityType}-${item.id}`}
-            >
-              <Card
-                sx={{
-                  position: "relative",
-                  borderRadius: "12px",
-                  border: "1px solid #E5E7EB",
-                  boxShadow: "none",
-                  opacity: isInactive ? 0.6 : 1,
-                  backgroundColor: isInactive ? "#F5F5F5" : "#fff",
-                  transition: "all 0.3s ease",
-                }}
-              >
+<Grid
+  item
+  xs={12}
+  sm={6}
+  md={4}
+  lg={3}
+  key={`${item.entityType}-${item.id}`}
+  sx={{ display: "flex" }}
+>
+<Card
+  sx={{
+    display: "flex",
+    flexDirection: "column",
+    flexGrow: 1,
+    position: "relative",
+    borderRadius: "12px",
+    border: "1px solid #E5E7EB",
+    boxShadow: "none",
+    opacity: isInactive ? 0.6 : 1,
+    backgroundColor: isInactive ? "#F5F5F5" : "#fff",
+    transition: "all 0.3s ease",
+  }}
+>
                 <Box
                   sx={{
                     position: "absolute",
@@ -216,12 +220,20 @@ const EquipmentPage: React.FC<EquipmentPageProps> = ({}) => {
                   {isInactive ? "Inactive" : "Active"}
                 </Box>
 
-                <CardContent sx={{ pb: 1 }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: 16 }}>
-                    {item.entityType === "environment"
-                      ? item.environment_name
-                      : item.equipment_name}
-                  </Typography>
+<CardContent sx={{ pb: 1 }}>
+  <Typography
+    sx={{
+      fontWeight: 700,
+      fontSize: 16,
+      pr: "70px", // reserve space for ACTIVE pill
+      wordBreak: "break-word",
+      lineHeight: 1.3,
+    }}
+  >
+    {item.entityType === "environment"
+      ? item.environment_name
+      : item.equipment_name}
+  </Typography>
 
                   <Box
                     sx={{
