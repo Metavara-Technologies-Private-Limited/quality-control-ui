@@ -54,90 +54,91 @@ const EquipmentCard = ({
         boxShadow: "0px 2px 4px rgba(0,0,0,0.02)",
       }}
     >
-      {/* Top-right: Assignees */}
+      {/* Header : Equipment + Assignees */}
       <div
         style={{
-          position: "absolute",
-          top: 10,
-          right: 10,
           display: "flex",
-          alignItems: "center",
-          gap: "8px",
+          flexDirection: "column",
+          gap: 8,
         }}
       >
-        <span
+        {/* Equipment title */}
+        <div
           style={{
-            fontSize: "12px",
+            fontSize: 13,
             fontWeight: 700,
             color: "#4B5563",
-            display: selected ? "inline" : "none",
+            lineHeight: "18px",
+            wordBreak: "break-word",
           }}
         >
-          Assignees :
-        </span>
-
-        <div style={{ display: "flex" }}>
-          {item.assigneeNames?.slice(0, 3).map((name, index) => (
-            <div
-              key={index}
-              title={name}
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: "50%",
-                backgroundColor: getAvatarColor(name),
-                color: "#fff",
-                fontSize: 10,
-                fontWeight: 700,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginLeft: index === 0 ? 0 : -8,
-                border: "2px solid #fff",
-              }}
-            >
-              {getInitials(name)}
-            </div>
-          ))}
-          {item.assigneeNames && item.assigneeNames.length > 3 && (
-            <div
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: "50%",
-                backgroundColor: "#6B7280",
-                color: "#fff",
-                fontSize: 10,
-                fontWeight: 700,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginLeft: -8,
-                border: "2px solid #fff",
-              }}
-            >
-              +{item.assigneeNames.length - 3}
-            </div>
-          )}
+          {item.detailName} :{" "}
+          <span style={{ fontWeight: 500, color: "#6B7280" }}>
+            Parameters : {item.paramsCount}
+          </span>
         </div>
-      </div>
 
-      {/* Equipment info */}
-<div
-  style={{
-    fontSize: 13,
-    fontWeight: 700,
-    color: "#4B5563",
-    paddingRight: 110,   // reserve space for assignees
-    lineHeight: "18px",
-    wordBreak: "break-word",
-  }}
->
-  {item.detailName} :{" "}
-  <span style={{ fontWeight: 500, color: "#6B7280" }}>
-    Parameters : {item.paramsCount}
-  </span>
-</div>
+        {/* Assignees */}
+        {selected && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#4B5563",
+              }}
+            >
+              Assignees :
+            </span>
+
+            <div style={{ display: "flex" }}>
+              {item.assigneeNames?.slice(0, 3).map((name, index) => (
+                <div
+                  key={index}
+                  title={name}
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: "50%",
+                    backgroundColor: getAvatarColor(name),
+                    color: "#fff",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginLeft: index === 0 ? 0 : -8,
+                    border: "2px solid #fff",
+                  }}
+                >
+                  {getInitials(name)}
+                </div>
+              ))}
+
+              {item.assigneeNames && item.assigneeNames.length > 3 && (
+                <div
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: "50%",
+                    backgroundColor: "#6B7280",
+                    color: "#fff",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginLeft: -8,
+                    border: "2px solid #fff",
+                  }}
+                >
+                  +{item.assigneeNames.length - 3}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Dates */}
       {/* Dates + Recurrence */}
