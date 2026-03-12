@@ -1,4 +1,5 @@
 import React from "react";
+import { toast } from "react-toastify";
 import {
   Dialog,
   DialogTitle,
@@ -20,6 +21,50 @@ import {
   FIELD_TYPES,
 } from "./AddParameterPopup.logic";
 
+// ===== VALIDATIONS =====
+
+// Title → starts with alphabet, then alphanumeric
+const handleTitleChange = (value: string, setTitle: any) => {
+  const regex = /^[A-Za-z][A-Za-z0-9]*$/;
+
+  if (value === "" || regex.test(value)) {
+    setTitle(value);
+  } else {
+    toast.error("Enter Alphanumeric only");
+  }
+};
+
+// Integer validation
+const handleIntegerInput = (value: string, setter: any) => {
+  const regex = /^[0-9]*$/;
+
+  if (regex.test(value)) {
+    setter(value);
+  } else {
+    toast.error("Enter Integers only");
+  }
+};
+
+// Decimal validation
+const handleDecimalInput = (value: string, setter: any) => {
+  const regex = /^[0-9]*\.?[0-9]*$/;
+
+  if (regex.test(value)) {
+    setter(value);
+  } else {
+    toast.error("Enter Decimals only");
+  }
+};
+
+// convert integer → decimal format
+const normalizeDecimal = (value: string, setter: any) => {
+  if (value === "") return;
+
+  if (!value.includes(".")) {
+    setter(`${value}.0`);
+  }
+};
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -29,6 +74,7 @@ interface Props {
 
 // Style constants
 const halfFieldSX = {
+  flex: 1,
   "& .MuiInputLabel-root.Mui-focused": {
     color: "#232323 !important",
   },
@@ -145,7 +191,7 @@ const AddParameterPopup: React.FC<Props> = ({
           fullWidth
           size="small"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => handleTitleChange(e.target.value, setTitle)}
           InputLabelProps={{ shrink: true }}
           sx={{
             width: "380px",
@@ -226,7 +272,7 @@ const AddParameterPopup: React.FC<Props> = ({
                 label="Recommended"
                 size="small"
                 value={integerDefault}
-                onChange={(e) => setIntegerDefault(e.target.value)}
+                onChange={(e) => handleIntegerInput(e.target.value, setIntegerDefault)}
                 InputLabelProps={{ shrink: true }}
                 sx={halfFieldSX}
               />
@@ -248,25 +294,25 @@ const AddParameterPopup: React.FC<Props> = ({
               </TextField>
             </Box>
 
-            <Box sx={{ display: "flex", gap: "16px" }}>
-              <TextField
-                label="Minimum Value"
-                size="small"
-                value={integerMin}
-                onChange={(e) => setIntegerMin(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                sx={{ ...commonFieldSX, width: "182px", height: "50px" }}
-              />
+<Box sx={{ display: "flex", gap: "16px", width: "100%" }}>
+  <TextField
+    label="Minimum Value"
+    size="small"
+    value={integerMin}
+    onChange={(e) => handleIntegerInput(e.target.value, setIntegerMin)}
+    InputLabelProps={{ shrink: true }}
+    sx={{ ...commonFieldSX, flex: 1 }}
+  />
 
-              <TextField
-                label="Maximum Value"
-                size="small"
-                value={integerMax}
-                onChange={(e) => setIntegerMax(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                sx={{ ...commonFieldSX, width: "182px", height: "50px" }}
-              />
-            </Box>
+  <TextField
+    label="Maximum Value"
+    size="small"
+    value={integerMax}
+    onChange={(e) => handleIntegerInput(e.target.value, setIntegerMax)}
+    InputLabelProps={{ shrink: true }}
+    sx={{ ...commonFieldSX, flex: 1 }}
+  />
+</Box>
           </>
         )}
 
@@ -278,7 +324,8 @@ const AddParameterPopup: React.FC<Props> = ({
                 label="Recommended"
                 size="small"
                 value={decimalDefault}
-                onChange={(e) => setDecimalDefault(e.target.value)}
+                onChange={(e) => handleDecimalInput(e.target.value, setDecimalDefault)}
+                onBlur={() => normalizeDecimal(decimalDefault, setDecimalDefault)}
                 InputLabelProps={{ shrink: true }}
                 sx={halfFieldSX}
               />
@@ -305,18 +352,20 @@ const AddParameterPopup: React.FC<Props> = ({
                 label="Minimum Value"
                 size="small"
                 value={decimalMin}
-                onChange={(e) => setDecimalMin(e.target.value)}
+                onChange={(e) => handleDecimalInput(e.target.value, setDecimalMin)}
+                onBlur={() => normalizeDecimal(decimalMin, setDecimalMin)}
                 InputLabelProps={{ shrink: true }}
-                sx={{ ...commonFieldSX, width: "182px" }}
+                sx={{ ...commonFieldSX, flex: 1 }}
               />
 
               <TextField
                 label="Maximum Value"
                 size="small"
                 value={decimalMax}
-                onChange={(e) => setDecimalMax(e.target.value)}
+                onChange={(e) => handleDecimalInput(e.target.value, setDecimalMax)}
+                onBlur={() => normalizeDecimal(decimalMax, setDecimalMax)}
                 InputLabelProps={{ shrink: true }}
-                sx={{ ...commonFieldSX, width: "182px" }}
+                sx={{ ...commonFieldSX, flex: 1 }}
               />
             </Box>
           </>

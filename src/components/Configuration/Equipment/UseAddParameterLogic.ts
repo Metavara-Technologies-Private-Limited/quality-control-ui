@@ -8,8 +8,18 @@ import { environmentApi, equipmentApi } from "@/services/api";
 import { ParameterContent } from "@/types";
 
 const PARAM_DRAFT_STORAGE_KEY = "equipment_parameters_draft";
+const formatDecimal = (value: any) => {
+  if (value === null || value === undefined || value === "") return null;
 
+  const str = String(value);
+
+  if (str.includes(".")) return str;
+
+  return `${str}.0`;
+};
 const normalizeDropdownValue = (data: any): string[] => {
+
+
   if (Array.isArray(data)) {
     return data.map(String).filter(Boolean);
   }
@@ -201,12 +211,12 @@ export const useAddParameterLogic = () => {
               param.min_value = cfg.min_value || "";
               param.max_value = cfg.max_value || "";
               break;
-            case "Decimal":
-              param.default_value = cfg.default_value || "";
-              param.unit = cfg.unit || "";
-              param.min_value = cfg.min_value || "";
-              param.max_value = cfg.max_value || "";
-              break;
+case "Decimal":
+  param.default_value = formatDecimal(cfg.default_value) || "";
+  param.unit = cfg.unit || "";
+  param.min_value = formatDecimal(cfg.min_value) || "";
+  param.max_value = formatDecimal(cfg.max_value) || "";
+  break;
             case "Text":
               param.text_type = cfg.text_type || "single";
               param.text = cfg.text || "";
@@ -541,16 +551,23 @@ export const useAddParameterLogic = () => {
             is_active: p.is_active !== false,
             config: {
               data_type: p.data_type || p.field_type || "",
-              default_value:
-                p.data_type === "Integer"
-                  ? (p.default_value ?? p.integer_value ?? null)
-                  : p.data_type === "Decimal"
-                    ? (p.default_value ?? null)
+default_value:
+  p.data_type === "Integer"
+    ? (p.default_value ?? p.integer_value ?? null)
+    : p.data_type === "Decimal"
+      ? formatDecimal(p.default_value)
                     : p.data_type === "Text"
                       ? (p.text ?? null)
                       : null,
-              min_value: p.min_value ?? null,
-              max_value: p.max_value ?? null,
+min_value:
+  p.data_type === "Decimal"
+    ? formatDecimal(p.min_value)
+    : p.min_value ?? null,
+
+max_value:
+  p.data_type === "Decimal"
+    ? formatDecimal(p.max_value)
+    : p.max_value ?? null,
               integer_value: p.integer_value ?? null,
               unit: p.unit ?? null,
               percentage: p.percentage ?? null,
@@ -586,10 +603,19 @@ export const useAddParameterLogic = () => {
             env_parameter_name: p.name || p.title || "",
             is_active: p.is_active !== false,
             config: {
-              default_value: p.default_value ?? null,
-              data_type: p.data_type || p.field_type || "",
-              min_value: p.min_value ?? null,
-              max_value: p.max_value ?? null,
+default_value:
+  p.data_type === "Decimal"
+    ? formatDecimal(p.default_value)
+    : p.default_value ?? null,              data_type: p.data_type || p.field_type || "",
+min_value:
+  p.data_type === "Decimal"
+    ? formatDecimal(p.min_value)
+    : p.min_value ?? null,
+
+max_value:
+  p.data_type === "Decimal"
+    ? formatDecimal(p.max_value)
+    : p.max_value ?? null,
               unit: p.unit ?? null,
               percentage: p.percentage ?? null,
               text: p.text ?? null,
