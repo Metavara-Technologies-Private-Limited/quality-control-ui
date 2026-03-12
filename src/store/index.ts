@@ -4,6 +4,7 @@ import assigneeReducer from "./assigneeSlice";
 import taskReducer from "./taskSlice";
 import eventReducer from "./eventSlice";
 import taskEventReducer from "./taskEventSlice";
+import reportsReducer from "./reportsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     tasks: taskReducer,
     events: eventReducer,
     taskEvents: taskEventReducer,
+    reports: reportsReducer,
   },
 });
 

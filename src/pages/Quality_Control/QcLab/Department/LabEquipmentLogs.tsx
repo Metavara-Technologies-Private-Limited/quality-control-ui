@@ -26,7 +26,7 @@ type Props = {
 };
 
 export default function LabEquipmentLogs({ equipment }: Props) {
-  const clinic = useSelector((s: RootState) => s.clinic.data);
+  const clinic = useSelector((s: RootState) => s.clinic.rawData);
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);

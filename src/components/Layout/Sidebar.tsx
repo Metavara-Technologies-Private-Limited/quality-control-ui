@@ -333,7 +333,11 @@ const Sidebar = () => {
               return (
                 <Box key={item.key}>
                   <ListItem disablePadding>
-                    <ListItemButton onClick={() => navigate(item.path)}>
+                    <ListItemButton
+                      onClick={() =>
+                        navigate(item.children?.[0]?.path || item.path)
+                      }
+                    >
                       <ListItemText
                         primary={item.text}
                         primaryTypographyProps={{
@@ -359,8 +363,9 @@ const Sidebar = () => {
                       }}
                     >
                       {item.children.map((sub: any) => {
-                        const isSubActive =
-                          location.pathname.startsWith(sub.path);
+                        const isSubActive = location.pathname.startsWith(
+                          sub.path,
+                        );
                         return (
                           <ListItemButton
                             key={sub.key}
@@ -421,8 +426,9 @@ const Sidebar = () => {
                       }}
                     >
                       {item.children.map((sub: any) => {
-                        const isSubActive =
-                          location.pathname.startsWith(sub.path);
+                        const isSubActive = location.pathname.startsWith(
+                          sub.path,
+                        );
                         return (
                           <ListItemButton
                             key={sub.key}

@@ -11,19 +11,22 @@ import {
   InputAdornment,
   Paper,
   Button,
+  LinearProgress,
 } from "@mui/material";
 import { Search, FileUpload, FileDownload } from "@mui/icons-material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store";
-import { parameterValueApi } from "@/services/api";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/store";
+// import { parameterValueApi } from "@/services/api";
 import dayjs from "dayjs";
 import * as XLSX from "xlsx";
 import { toast } from "react-toastify";
+import { fetchReports, markFetchedParams } from "@/store/reportsSlice";
 
 import ImportCSVPopup from "./QcLab/Department/ImportCSVPopup";
 
 const Reports = () => {
+  const dispatch = useDispatch<AppDispatch>();
   // combine lab and clinical departments so reports include both types
   const labDepts = useSelector(
     (s: RootState) => s.clinic.labData?.department ?? [],
@@ -32,7 +35,10 @@ const Reports = () => {
     (s: RootState) => s.clinic.clinicData?.department ?? [],
   );
 
-  const [logs, setLogs] = useState<any[]>([]);
+  // const [logs, setLogs] = useState<any[]>([]);
+  const logs = useSelector((s: RootState) => s.reports.logs);
+  const loading = useSelector((s: RootState) => s.reports.loading);
+  const progress = useSelector((s: RootState) => s.reports.progress);
   const [search, setSearch] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState<any>("all");
   const [selectedEquipment, setSelectedEquipment] = useState<any>("all");
@@ -88,29 +94,23 @@ const Reports = () => {
 
   /* -------- Load ALL logs -------- */
 
+  const fetchedParams = useSelector((s: RootState) => s.reports.fetchedParams);
+
   useEffect(() => {
-    const loadLogs = async () => {
-      const allParams: number[] = [];
+    const paramIds = departments.flatMap(
+      (d) =>
+        d.equipments?.flatMap(
+          (eq) => eq.parameters?.map((p) => p.id).filter(Boolean) ?? [],
+        ) ?? [],
+    );
 
-      departments.forEach((d) => {
-        d.equipments?.forEach((eq) => {
-          eq.parameters?.forEach((p) => {
-            if (p.id) allParams.push(p.id);
-          });
-        });
-      });
+    const newParamIds = paramIds.filter((id) => !fetchedParams.includes(id));
 
-      const responses = await Promise.all(
-        allParams.map((p) => parameterValueApi.listByParameter(p)),
-      );
-
-      const data = responses.flatMap((r) => r.data ?? []);
-
-      setLogs(data);
-    };
-
-    if (departments.length) loadLogs();
-  }, [departments]);
+    if (newParamIds.length) {
+      dispatch(fetchReports(newParamIds));
+      dispatch(markFetchedParams(newParamIds));
+    }
+  }, [departments, fetchedParams, dispatch]);
 
   /* -------- Build rows -------- */
 
@@ -290,7 +290,14 @@ const Reports = () => {
       </Box>
 
       {/* Table */}
-
+      {loading && (
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Loading all logs... {progress}%
+          </Typography>
+          <LinearProgress variant="determinate" value={progress} />
+        </Box>
+      )}
       <Paper sx={{ height: 520 }}>
         <DataGrid rows={rows} columns={columns} />
       </Paper>
