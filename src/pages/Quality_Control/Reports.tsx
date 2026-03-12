@@ -189,13 +189,13 @@ const Reports = () => {
 
   /* -------- Columns -------- */
 
-  const columns: GridColDef[] = [
-    { field: "date", headerName: "Date & Time", width: 180 },
-    { field: "equipment", headerName: "Equipment", width: 150 },
-    { field: "parameter", headerName: "Parameter", width: 150 },
-    { field: "unit", headerName: "Unit", width: 100 },
-    { field: "value", headerName: "Value", width: 120 },
-  ];
+const columns: GridColDef[] = [
+  { field: "date", headerName: "Date & Time", flex: 1.5, minWidth: 180 },
+  { field: "equipment", headerName: "Equipment", flex: 1.3, minWidth: 150 },
+  { field: "parameter", headerName: "Parameter", flex: 1.3, minWidth: 150 },
+  { field: "unit", headerName: "Unit", flex: 0.8, minWidth: 100 },
+  { field: "value", headerName: "Value", flex: 1, minWidth: 120 },
+];
 
   return (
     <Container maxWidth={false} sx={{ py: 2 }}>
@@ -234,11 +234,15 @@ const Reports = () => {
           >
             <MenuItem value="all">All Equipments</MenuItem>
 
-            {Array.from(equipmentMap.values()).map((e: any) => (
-              <MenuItem key={e.equipment_num} value={e.equipment_num}>
-                {e.equipment_name} ({e.equipment_num})
-              </MenuItem>
-            ))}
+{Array.from(equipmentMap.values())
+  .filter((e: any) =>
+    selectedDepartment === "all" ? true : e.department_id === selectedDepartment
+  )
+  .map((e: any) => (
+    <MenuItem key={e.equipment_num} value={e.equipment_num}>
+      {e.equipment_name} ({e.equipment_num})
+    </MenuItem>
+  ))}
           </Select>
         </FormControl>
 
