@@ -1,5 +1,5 @@
 import React, { CSSProperties, useState } from "react";
-import { ToastContainer } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import {
@@ -534,6 +534,15 @@ interface MakeModelSectionProps {
   onSave: () => void;
 }
 
+const validateAlphanumericInput = (value: string): boolean => {
+  if (value === "") return true; // Allow empty string
+  // Check if first character is an alphabet
+  if (!/^[A-Za-z]/.test(value)) return false;
+  // Check if all characters are alphanumeric
+  if (!/^[A-Za-z0-9]*$/.test(value)) return false;
+  return true;
+};
+
 const MakeModelSection: React.FC<MakeModelSectionProps> = ({
   selected,
   equipmentName,
@@ -552,7 +561,13 @@ const MakeModelSection: React.FC<MakeModelSectionProps> = ({
         placeholder="Enter Make"
         label="Make"
         value={make}
-        onChange={(e) => setMake(e.target.value)}
+        onChange={(e) => {
+          if (validateAlphanumericInput(e.target.value)) {
+            setMake(e.target.value);
+          } else {
+            toast.error("Enter Alphanumeric only");
+          }
+        }}
         fullWidth
         size="small"
         required
@@ -565,7 +580,13 @@ const MakeModelSection: React.FC<MakeModelSectionProps> = ({
         placeholder="Enter Model"
         label="Model"
         value={model}
-        onChange={(e) => setModel(e.target.value)}
+        onChange={(e) => {
+          if (validateAlphanumericInput(e.target.value)) {
+            setModel(e.target.value);
+          } else {
+            toast.error("Enter Alphanumeric only");
+          }
+        }}
         fullWidth
         size="small"
         required
