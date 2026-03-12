@@ -34,13 +34,23 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import { toast } from "react-toastify";
-import { CustomStepIndicator} from "./CustomStepIndicator";
+import { CustomStepIndicator } from "./CustomStepIndicator";
 import { taskApi } from "@/services/api";
 import { TASK_STATUS_MAP, TaskStatus } from "@/types";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { formatDueDateDisplay } from "./FormatDueDateDisplay";
 import { COLORS } from "./colors";
+
+// Validation function for alphanumeric input starting with alphabets
+const validateAlphanumericInput = (value: string): boolean => {
+  if (value === "") return true; // Allow empty string
+  // Check if first character is an alphabet
+  if (!/^[A-Za-z]/.test(value)) return false;
+  // Check if all characters are alphanumeric (letters, numbers, spaces)
+  if (!/^[A-Za-z0-9\s]*$/.test(value)) return false;
+  return true;
+};
 
 interface AddTaskDialogProps {
   open: boolean;
@@ -60,11 +70,8 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   initialSelectedEvent,
   onTaskCreated,
 }) => {
-  
-
   const assignees = useSelector((state: RootState) => state.assignees.data);
   const [step, setStep] = useState(1);
-
 
   const [name, setName] = useState("");
   const [assignee, setAssignee] = useState<number | "">("");
@@ -196,12 +203,28 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   // ── Validation ────
   const validateStep1 = () => {
     const newErrors = {
-      name: !name.trim() ? "Task name is required" : "",
+      name: !name.trim()
+        ? "Task name is required"
+        : !validateAlphanumericInput(name)
+          ? "Enter Alphanumeric only"
+          : "",
       event: !selectedEventId ? "Event is required" : "",
       assignee: !assignee ? "Assignee is required" : "",
       dueDate: !dueDate ? "Due date is required" : "",
     };
     setErrors((prev) => ({ ...prev, ...newErrors }));
+
+    if (newErrors.name) {
+      toast.error(newErrors.name, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
+
     return Object.values(newErrors).every((v) => !v);
   };
 
@@ -212,7 +235,14 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
         ...prev,
         description: "Description is required",
       }));
-      toast.error("Description is required");
+      toast.error("Description is required", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       return false;
     }
     setErrors((prev) => ({ ...prev, description: "" }));
@@ -222,7 +252,11 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
 
   const validateSubTask = () => {
     const newErrors = {
-      subName: !newSubTask.name.trim() ? "Sub-Task name is required" : "",
+      subName: !newSubTask.name.trim()
+        ? "Sub-Task name is required"
+        : !validateAlphanumericInput(newSubTask.name)
+          ? "Enter Alphanumeric only"
+          : "",
       subStatus:
         newSubTask.status === undefined || newSubTask.status === null
           ? "Status is required"
@@ -231,6 +265,18 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
       subAssignee: !newSubTask.assignee ? "Assignee is required" : "",
     };
     setErrors((prev) => ({ ...prev, ...newErrors }));
+
+    if (newErrors.subName) {
+      toast.error(newErrors.subName, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
+
     return Object.values(newErrors).every((v) => !v);
   };
 
@@ -255,12 +301,26 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
       assignee: "",
     });
 
-    toast.success("Sub-task added");
+    toast.success("Sub-task added", {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
   };
 
   const handleDeleteSubTask = (index: number) => {
     setSubTasks((prev) => prev.filter((_, i) => i !== index));
-    toast.info("Sub-task removed");
+    toast.info("Sub-task removed", {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
   };
 
   const handleSaveTask = async () => {
@@ -275,24 +335,45 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
         sub_tasks: subTasks,
         documents: selectedFiles.map((file) => ({
           document_name: file.name,
-          data: "BINARY_OR_BASE64_DATA_PLACEHOLDER", 
+          data: "BINARY_OR_BASE64_DATA_PLACEHOLDER",
         })),
       };
 
       if (!payload.task_event || !payload.assignment) {
-        toast.error("Event or assignee missing");
+        toast.error("Event or assignee missing", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
         return;
       }
-      
+
       const createdTask = await taskApi.create(payload);
-      toast.success("Task created successfully");
+      toast.success("Task created successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       onTaskCreated(createdTask, String(selectedEventId));
       setTimeout(() => {
         onClose();
       }, 2000);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to create task");
+      toast.error("Failed to create task", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   };
 
@@ -351,7 +432,22 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
                     label="Name"
                     placeholder="Calibrate & Maintain Equipment"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      if (validateAlphanumericInput(newValue)) {
+                        setName(newValue);
+                        setErrors((prev) => ({ ...prev, name: "" }));
+                      } else {
+                        toast.error("Enter Alphanumeric only", {
+                          position: "top-right",
+                          autoClose: 3000,
+                          hideProgressBar: false,
+                          closeOnClick: true,
+                          pauseOnHover: true,
+                          draggable: true,
+                        });
+                      }
+                    }}
                     error={!!errors.name}
                     helperText={errors.name}
                     sx={{
@@ -734,9 +830,22 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
                       fullWidth
                       size="small"
                       value={newSubTask.name}
-                      onChange={(e) =>
-                        setNewSubTask({ ...newSubTask, name: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        if (validateAlphanumericInput(newValue)) {
+                          setNewSubTask({ ...newSubTask, name: newValue });
+                          setErrors((prev) => ({ ...prev, subName: "" }));
+                        } else {
+                          toast.error("Enter Alphanumeric only", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                          });
+                        }
+                      }}
                       error={!!errors.subName}
                       helperText={errors.subName}
                       sx={{
