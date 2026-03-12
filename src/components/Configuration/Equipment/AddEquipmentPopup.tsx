@@ -15,6 +15,16 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { toast } from "react-toastify";
 
+// Validation function for alphanumeric input starting with alphabets
+const validateAlphanumericInput = (value: string): boolean => {
+  if (value === "") return true; // Allow empty string
+  // Check if first character is an alphabet
+  if (!/^[A-Za-z]/.test(value)) return false;
+  // Check if all characters are alphanumeric (letters, numbers, spaces)
+  if (!/^[A-Za-z0-9\s]*$/.test(value)) return false;
+  return true;
+};
+
 const AddEquipmentPopup: React.FC<{
   open: boolean;
   onClose: () => void;
@@ -37,14 +47,42 @@ const AddEquipmentPopup: React.FC<{
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    if (/^[a-zA-Z0-9\s]*$/.test(value)) {
+    if (validateAlphanumericInput(value)) {
       setEquipmentName(value);
+    } else {
+      toast.error("Enter Alphanumeric only", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   };
 
   const handleAdd = () => {
     if (!equipmentName.trim() || !departmentId) {
-      toast.warn("Please enter all fields");
+      toast.error("Please enter all fields", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return;
+    }
+
+    if (!validateAlphanumericInput(equipmentName)) {
+      toast.error("Enter Alphanumeric only", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       return;
     }
 
@@ -58,7 +96,7 @@ const AddEquipmentPopup: React.FC<{
         tempEquipmentId,
         equipmentName: equipmentName.trim(),
         departmentName,
-        departmentId,           // ← pass the actual ID so backend save works
+        departmentId, // ← pass the actual ID so backend save works
       },
     });
   };

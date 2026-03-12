@@ -11,7 +11,17 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { toast } from "react-toastify";
 
-// AddEventDialog 
+// Validation function for alphanumeric input starting with alphabets
+const validateAlphanumericInput = (value: string): boolean => {
+  if (value === "") return true; // Allow empty string
+  // Check if first character is an alphabet
+  if (!/^[A-Za-z]/.test(value)) return false;
+  // Check if all characters are alphanumeric (letters, numbers, spaces)
+  if (!/^[A-Za-z0-9\s]*$/.test(value)) return false;
+  return true;
+};
+
+// AddEventDialog
 interface AddEventDialogProps {
   openAddEvent: boolean;
   setOpenAddEvent: (v: boolean) => void;
@@ -62,7 +72,22 @@ export const AddEventDialog = ({
             label="Name"
             placeholder="Calibrate & Maintain Equipment"
             value={newEventName}
-            onChange={(e) => setNewEventName(e.target.value)}
+            onChange={(e) => {
+              const newValue = e.target.value;
+              if (validateAlphanumericInput(newValue)) {
+                setNewEventName(newValue);
+                setEventError("");
+              } else {
+                toast.error("Enter Alphanumeric only", {
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                });
+              }
+            }}
             error={!!eventError}
             helperText={eventError}
           />
@@ -94,15 +119,40 @@ export const AddEventDialog = ({
               onClick={() => {
                 if (!newEventName.trim()) {
                   setEventError("Event name is required");
-                  toast.error("Event name is required");
+                  toast.error("Event name is required", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                  });
                   return;
                 }
-
+                if (!validateAlphanumericInput(newEventName)) {
+                  setEventError("Enter Alphanumeric only");
+                  toast.error("Enter Alphanumeric only", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                  });
+                  return;
+                }
                 onCreate(newEventName.trim());
                 setNewEventName("");
                 setEventError("");
                 setOpenAddEvent(false);
-                toast.success("Event created successfully");
+                toast.success("Event created successfully!", {
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                });
               }}
             >
               Save
