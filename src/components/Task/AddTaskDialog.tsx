@@ -701,19 +701,6 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
                         </Box>
                       )}
 
-                      <IconButton
-                        size="small"
-                        onClick={() => toggleFormat("justifyLeft")}
-                      >
-                        <FormatAlignLeftIcon fontSize="small" />
-                      </IconButton>
-
-                      <IconButton
-                        size="small"
-                        onClick={() => toggleFormat("justifyFull")}
-                      >
-                        <FormatAlignJustifyIcon fontSize="small" />
-                      </IconButton>
                     </Stack>
 
                     <Stack direction="row" spacing={1}>

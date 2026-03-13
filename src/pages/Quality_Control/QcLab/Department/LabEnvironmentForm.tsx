@@ -39,6 +39,20 @@ export default function LabEnvironmentForm({ environment, onSaved }: Props) {
   const setValue = (k: string, v: string) =>
     setValues((p) => ({ ...p, [k]: v }));
 
+  const normalizeContentValue = (parameter: any, rawValue: string) => {
+    const dataType = parameter?.config?.data_type;
+    const trimmed = String(rawValue ?? "").trim();
+
+    if (!trimmed) return "";
+
+    if (dataType === "Integer" || dataType === "Decimal") {
+      const numericOnly = trimmed.replace(/[^0-9.-]/g, "");
+      return numericOnly;
+    }
+
+    return trimmed;
+  };
+
   const handleSave = async () => {
     const activeParams = environment.parameters.filter(
       (p) => p.is_active !== false && !p.is_deleted,
@@ -51,7 +65,8 @@ export default function LabEnvironmentForm({ environment, onSaved }: Props) {
 
     const requests = activeParams
       .map((p: any) => {
-        const value = values[p.env_parameter_name];
+        const rawValue = values[p.env_parameter_name];
+        const value = normalizeContentValue(p, rawValue);
         if (!value || value.trim() === "") return null;
 
         return environmentParameterValueApi.create({

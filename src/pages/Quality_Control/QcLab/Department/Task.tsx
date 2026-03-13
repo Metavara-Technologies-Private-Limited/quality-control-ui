@@ -36,6 +36,13 @@ import {
 import { COLORS } from "@/components/Task/colors";
 import { slugify } from "@/utils/slugify";
 
+const validateAlphanumericInput = (value: string): boolean => {
+  if (value === "") return true;
+  if (!/^[A-Za-z]/.test(value)) return false;
+  if (!/^[A-Za-z0-9\s]*$/.test(value)) return false;
+  return true;
+};
+
 function Task() {
   const location = useLocation();
   const parts = location.pathname.split("/").filter(Boolean);
@@ -106,9 +113,19 @@ function Task() {
       return;
     }
 
+    if (!name.trim()) {
+      toast.error("Event name is required");
+      return;
+    }
+
+    if (!validateAlphanumericInput(name.trim())) {
+      toast.error("Enter Alphanumeric only");
+      return;
+    }
+
     try {
       await taskEventApi.create({
-        name,
+        name: name.trim(),
         dep: departmentId,
       });
 
