@@ -115,7 +115,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
     setTaskDetails(task.description || "");
     setSubTasks(task.sub_tasks || []);
     setDetailsTab(0);
-  }, [open, task?.id]); 
+  }, [open, task?.id]);
 
   useEffect(() => {
     if (task?.timer_status !== "RUNNING") return;
@@ -219,11 +219,11 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
 
     files.forEach((file) => {
       if (file.type.startsWith("image/")) {
-        insertImageFromUpload(file); 
+        insertImageFromUpload(file);
       }
     });
 
-    setSelectedFiles((prev) => [...prev, ...files]); 
+    setSelectedFiles((prev) => [...prev, ...files]);
     e.target.value = "";
   };
 
@@ -234,7 +234,6 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
     return isNaN(d.getTime()) ? null : d.toISOString();
   };
 
-  console.log("task", task);
   const handleSaveDetails = async () => {
     if (!task) return;
 
@@ -266,7 +265,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
     await taskApi.update(task.id, payload);
     toast.success("Task updated");
     onClose();
-    onUpdated(); 
+    onUpdated();
   };
 
   const handleAddSubTask = () => {
@@ -275,14 +274,14 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
       return;
     }
 
-    const dueDate = newSubTask.due_date; 
+    const dueDate = newSubTask.due_date;
 
     setSubTasks((prev) => [
       ...prev,
       {
         name: newSubTask.name,
         status: newSubTask.status,
-        due_date: dueDate.toISOString(), 
+        due_date: dueDate.toISOString(),
         assignment: newSubTask.assignee === "" ? null : newSubTask.assignee,
       },
     ]);
@@ -958,9 +957,9 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                       alignItems: "center",
                       cursor: "pointer",
                       justifyContent: "flex-start",
-                      width: "fit-content", 
+                      width: "fit-content",
                       "&:hover": {
-                        opacity: 0.7, 
+                        opacity: 0.7,
                       },
                     }}
                     onClick={() => setShowSubTaskForm((prev) => !prev)}
@@ -1014,12 +1013,11 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                           <FormControl fullWidth size="small">
                             <Select
                               value={newSubTask.status}
-                              onChange={
-                                (e) =>
-                                  setNewSubTask({
-                                    ...newSubTask,
-                                    status: Number(e.target.value),
-                                  }) 
+                              onChange={(e) =>
+                                setNewSubTask({
+                                  ...newSubTask,
+                                  status: Number(e.target.value),
+                                })
                               }
                               sx={{ borderRadius: "8px" }}
                             >

@@ -146,29 +146,23 @@ const AddParameterPage = () => {
     setClearAllDialogOpen(false);
   };
 
-  // Details section appears only when at least one incubator unit AND
-  // at least one parameter card are both selected — matching Figma flow.
-  const showDetails = isEquipment && selected.length > 0 && selectedParameterIndices.length > 0;
+  const handleBackClick = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
 
-  // Count of active (non-inactive) parameters — used for the table column
-  const activeParameterCount = parameters.filter(
-    (p: any) => p.is_active !== false
-  ).length;
-
-  // Build enriched table rows: inject parameterCount from local parameters state
-  const enrichedTable = equipmentTable.map((row: any) => ({
-    ...row,
-    // Use selectedParameterIndices count if user has checked params,
-    // otherwise fall back to all active parameters count
-    parameterCount:
-      row.parameterCount != null
-        ? row.parameterCount
-        : selectedParameterIndices.length > 0
-          ? selectedParameterIndices.length
-          : activeParameterCount > 0
-            ? activeParameterCount
-            : "-",
-  }));
+    navigate(
+      isEnvironment
+        ? "/configuration/environment"
+        : "/configuration/equipment/view",
+      {
+        state: isEnvironment
+          ? { environmentId }
+          : { equipmentId: location.state?.equipmentId },
+      },
+    );
+  };
 
   return (
     <Box>
@@ -179,18 +173,7 @@ const AddParameterPage = () => {
         {/* ── Header ── */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <IconButton
-            onClick={() =>
-              navigate(
-                isEnvironment
-                  ? "/configuration/environment"
-                  : "/configuration/equipment/view",
-                {
-                  state: isEnvironment
-                    ? { environmentId }
-                    : { equipmentId: location.state?.equipmentId },
-                },
-              )
-            }
+            onClick={handleBackClick}
             sx={{
               width: 24, height: 24, padding: "10px", opacity: 1,
               color: "#374151", borderRadius: 1, mr: 1,

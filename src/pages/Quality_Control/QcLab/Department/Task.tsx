@@ -196,12 +196,13 @@ function Task() {
     return tasks;
   }, [tasks, activeFilter]);
 
-  const handleStatusClick = (
-    event: React.MouseEvent<HTMLElement>,
-    taskIndex: number,
-  ) => {
+  const handleStatusClick = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
-    console.log(taskIndex);
+  };
+
+  const handleCloseTaskDetails = () => {
+    setOpenTaskDetails(false);
+    setSelectedTaskDetails(null);
   };
 
   return (
@@ -507,7 +508,7 @@ function Task() {
                                 color: "#fff",
                                 overflow: "hidden",
                               }}
-                              onClick={(e) => handleStatusClick(e, i)}
+                              onClick={handleStatusClick}
                             >
                               <Typography
                                 sx={{
@@ -602,15 +603,14 @@ function Task() {
           />
 
           <TaskDetailsDialog
-            open={openTaskDetails}
-            onClose={() => setOpenTaskDetails(false)}
+            open={openTaskDetails && Boolean(selectedTaskDetails)}
+            onClose={handleCloseTaskDetails}
             task={selectedTaskDetails}
             onUpdated={() => {
               if (clinic?.id) {
                 dispatch(fetchTasksByClinic(clinic.id));
               }
-              setOpenTaskDetails(false);
-              setSelectedTaskDetails(null);
+              handleCloseTaskDetails();
             }}
           />
         </Box>
