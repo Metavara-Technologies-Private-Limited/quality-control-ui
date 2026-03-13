@@ -16,7 +16,6 @@ import dayjs from "dayjs";
 import { Dispatch, SetStateAction } from "react";
 import { COLORS, days, monthNames } from "./CreateEvent";
 
-
 interface ScheduleSectionProps {
   schedule: "one" | "daily" | "weekly" | "monthly";
   setSchedule: Dispatch<SetStateAction<"one" | "daily" | "weekly" | "monthly">>;
@@ -139,7 +138,8 @@ const ScheduleSection = ({
                 label="Date"
                 value={startDate}
                 onChange={handleStartDateChange}
-                minDate={dayjs()}
+                minDate={dayjs().startOf("day")}
+                disablePast
                 slotProps={{
                   textField: {
                     fullWidth: true,

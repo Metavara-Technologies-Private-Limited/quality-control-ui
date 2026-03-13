@@ -513,6 +513,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
 
                 <Box sx={{ flex: 1 }}>
                   <DatePicker
+                    disablePast
                     value={dueDate}
                     onChange={setDueDate}
                     format="DD/MM/YYYY"
@@ -890,6 +891,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
                   <Box flex={1}>
                     <DatePicker
                       label="Due Date"
+                      disablePast
                       value={newSubTask.due_date}
                       onChange={(val) =>
                         setNewSubTask({ ...newSubTask, due_date: val })

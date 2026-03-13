@@ -37,6 +37,31 @@ export function useAddParameterPopupLogic({
   onAdd: (data: any) => void;
   onClose: () => void;
 }) {
+  const resolveMandatoryFlag = (source: any): boolean => {
+    const candidates = [
+      source?.mandatory,
+      source?.is_mandatory,
+      source?.required,
+      source?.is_required,
+    ];
+
+    for (const value of candidates) {
+      if (value === true || value === 1 || value === "1" || value === "true") {
+        return true;
+      }
+      if (
+        value === false ||
+        value === 0 ||
+        value === "0" ||
+        value === "false"
+      ) {
+        return false;
+      }
+    }
+
+    return false;
+  };
+
   // Common fields
   const [title, setTitle] = useState("");
   const [mandatory, setMandatory] = useState(false);
@@ -79,7 +104,7 @@ export function useAddParameterPopupLogic({
     const dataType = initialData.field_type || initialData.data_type;
 
     setTitle(initialData.title || initialData.name || "");
-    setMandatory(initialData.mandatory || false);
+    setMandatory(resolveMandatoryFlag(initialData));
     setFieldType(dataType);
 
     if (dataType === "Integer" || dataType === "Min/Max") {

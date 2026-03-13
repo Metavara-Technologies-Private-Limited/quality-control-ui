@@ -193,6 +193,8 @@ const Dashboard = () => {
                   equipmentDetails={equipmentDetails}
                   parameterName={parameter.parameter_name}
                   unit={activeValue?.unit || ""}
+                  parameterConfig={parameter?.config || {}}
+                  parameterMeta={parameter}
                   values={parameterValues}
                   loading={valuesLoading}
                 />

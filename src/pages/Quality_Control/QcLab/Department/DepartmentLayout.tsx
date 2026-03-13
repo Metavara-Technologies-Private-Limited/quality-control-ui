@@ -56,7 +56,6 @@ const getAvatarColor = (name: string) => {
   return avatarColors[Math.abs(hash) % avatarColors.length];
 };
 
-
 /* ---------------- Layout ---------------- */
 
 const DepartmentLayout = () => {
@@ -87,6 +86,8 @@ const DepartmentLayout = () => {
     return "task";
   };
 
+  const activeTab = getActiveTab();
+
   return (
     <Box>
       {/* ---------------- Top Bar ---------------- */}
@@ -102,7 +103,7 @@ const DepartmentLayout = () => {
       >
         {/* ---------------- Tabs ---------------- */}
         <Tabs
-          value={getActiveTab()}
+          value={activeTab}
           onChange={(_, value) => navigate(value)}
           TabIndicatorProps={{
             sx: { backgroundColor: "#E17E61", height: "1px" },
@@ -132,25 +133,27 @@ const DepartmentLayout = () => {
 
         {/* ---------------- Search + Assignees ---------------- */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
-          <TextField
-            size="small"
-            placeholder="Search for equipments"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            sx={{
-              width: 300,
-              "& .MuiOutlinedInput-root": { borderRadius: "10px" },
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: "#9E9E9E", fontSize: 20 }} />
-                </InputAdornment>
-              ),
-            }}
-          />
+          {activeTab === "equipments" && (
+            <TextField
+              size="small"
+              placeholder="Search for equipments"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              sx={{
+                width: 300,
+                "& .MuiOutlinedInput-root": { borderRadius: "10px" },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: "#9E9E9E", fontSize: 20 }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          )}
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
               Assignees
             </Typography>
@@ -193,9 +196,9 @@ const DepartmentLayout = () => {
                         opacity: hasSelection && !isSelected ? 0.45 : 1,
                         marginLeft: hasSelection
                           ? isSelected
-                            ? "10px !important" 
-                            : "-10px !important" 
-                          : "-10px !important", 
+                            ? "10px !important"
+                            : "-10px !important"
+                          : "-10px !important",
                         transform: isSelected
                           ? "scale(1.25) translateY(-4px)"
                           : "scale(1)",
