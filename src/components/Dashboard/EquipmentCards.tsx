@@ -15,6 +15,7 @@ import {
   LocalFireDepartment,
   Whatshot,
   CleaningServices,
+  PriorityHighRounded,
 } from "@mui/icons-material";
 import type { Equipment } from "@/types";
 
@@ -76,9 +77,7 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
         (min != null && Number(latest.content) < min)
       ) {
         alerts.push(
-          `${param.parameter_name} ${
-            diff > 0 ? "rise" : "drop"
-          } to ${latest.content}`,
+          `${param.parameter_name} ${diff > 0 ? "rise" : "drop"} to ${latest.content}`,
         );
       }
     });
@@ -103,7 +102,16 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
   }
 
   return (
-    <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
+    <Box
+      sx={{
+        display: "flex",
+        gap: 2,
+        mb: 3,
+        pt: 1.5,
+        flexWrap: "wrap",
+        overflow: "visible",
+      }}
+    >
       {equipments.map((equipment) => {
         const isSelected = selected?.id === equipment.id;
         const alerts = getEquipmentAlerts(equipment, values || []);
@@ -139,8 +147,48 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
           >
             <Badge
               invisible={alertCount === 0}
-              badgeContent={alertCount}
-              color="error"
+              overlap="rectangular"
+              anchorOrigin={{ vertical: "top", horizontal: "right" }}
+              badgeContent={
+                <Box
+                  sx={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: "50%",
+                    backgroundColor: "#D84C4C",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Typography
+                    component="span"
+                    sx={{
+                      color: "#FFFFFF",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      lineHeight: 1,
+                      mt: "-1px",
+                    }}
+                  >
+                    !
+                  </Typography>
+                </Box>
+              }
+              sx={{
+                "& .MuiBadge-badge": {
+                  background: "transparent",
+                  minWidth: "unset",
+                  width: "auto",
+                  height: "auto",
+                  padding: 0,
+                  border: "none",
+                  boxShadow: "none",
+                  top: 4,
+                  right: 4,
+                  transform: "translate(50%, -35%)",
+                },
+              }}
             >
               <Card
                 onClick={() => onSelect(equipment)}
