@@ -15,7 +15,6 @@ import {
   LocalFireDepartment,
   Whatshot,
   CleaningServices,
-  PriorityHighRounded,
 } from "@mui/icons-material";
 import type { Equipment } from "@/types";
 

@@ -23,8 +23,6 @@ import FormatItalicIcon from "@mui/icons-material/FormatItalic";
 import FormatUnderlinedIcon from "@mui/icons-material/FormatUnderlined";
 import FormatColorTextIcon from "@mui/icons-material/FormatColorText";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import FormatAlignLeftIcon from "@mui/icons-material/FormatAlignLeft";
-import FormatAlignJustifyIcon from "@mui/icons-material/FormatAlignJustify";
 import InsertLinkIcon from "@mui/icons-material/InsertLink";
 import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
