@@ -2,6 +2,7 @@ import { Grid, TextField, Typography, MenuItem } from "@mui/material";
 import { Dispatch, SetStateAction } from "react";
 import { SelectedEquipmentData } from "@/components/Configuration/Events/AddEquipmentDialog";
 import { Assignee } from "@/types";
+import { toast } from "react-toastify";
 
 interface EventInfoSectionProps {
   eventName: string;
@@ -26,6 +27,23 @@ const EventInfoSection = ({
   setAddedEquipments,
   setAddedAssignee,
 }: EventInfoSectionProps) => {
+  const handleEventNameChange = (value: string) => {
+    const regex = /^[A-Za-z][A-Za-z0-9]*$/;
+
+    if (value === "" || regex.test(value)) {
+      setEventName(value);
+      return;
+    }
+
+    toast.error("Enter alphanumeric only", {
+      position: "top-right",
+      autoClose: 3000,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  };
+
   return (
     <>
       <Typography
@@ -48,7 +66,7 @@ const EventInfoSection = ({
             label="Name"
             size="small"
             value={eventName}
-            onChange={(e) => setEventName(e.target.value)}
+            onChange={(e) => handleEventNameChange(e.target.value)}
             InputLabelProps={{
               shrink: true,
               sx: {

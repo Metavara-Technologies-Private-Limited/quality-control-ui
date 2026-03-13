@@ -8,6 +8,7 @@ import { environmentApi, equipmentApi } from "@/services/api";
 import { ParameterContent } from "@/types";
 
 const PARAM_DRAFT_STORAGE_KEY = "equipment_parameters_draft";
+const PARAM_MANDATORY_CACHE_KEY = "parameter_mandatory_cache";
 const formatDecimal = (value: any) => {
   if (value === null || value === undefined || value === "") return null;
 
@@ -17,9 +18,52 @@ const formatDecimal = (value: any) => {
 
   return `${str}.0`;
 };
+
+const resolveMandatoryFlag = (source: any, fallback?: any): boolean => {
+  const candidates = [
+    source?.mandatory,
+    source?.is_mandatory,
+    source?.required,
+    source?.is_required,
+    source?.config?.mandatory,
+    source?.config?.is_mandatory,
+    source?.config?.required,
+    source?.config?.is_required,
+    source?.config?.content?.mandatory,
+    source?.config?.content?.is_mandatory,
+    source?.config?.content?.required,
+    source?.config?.content?.is_required,
+    source?.config?.Content?.mandatory,
+    source?.config?.Content?.is_mandatory,
+    source?.config?.Content?.required,
+    source?.config?.Content?.is_required,
+    fallback?.mandatory,
+    fallback?.is_mandatory,
+    fallback?.required,
+    fallback?.is_required,
+    fallback?.content?.mandatory,
+    fallback?.content?.is_mandatory,
+    fallback?.content?.required,
+    fallback?.content?.is_required,
+    fallback?.Content?.mandatory,
+    fallback?.Content?.is_mandatory,
+    fallback?.Content?.required,
+    fallback?.Content?.is_required,
+  ];
+
+  for (const value of candidates) {
+    if (value === true || value === 1 || value === "1" || value === "true") {
+      return true;
+    }
+    if (value === false || value === 0 || value === "0" || value === "false") {
+      return false;
+    }
+  }
+
+  return false;
+};
+
 const normalizeDropdownValue = (data: any): string[] => {
-
-
   if (Array.isArray(data)) {
     return data.map(String).filter(Boolean);
   }
@@ -73,6 +117,38 @@ export const useAddParameterLogic = () => {
 
   const equipmentQuantity = Array.from({ length: count }, (_, i) => i + 1);
 
+  const buildMandatoryParamKey = (param: any): string => {
+    if (param?.id != null) return `id:${param.id}`;
+    const name = String(
+      param?.parameter_name ??
+        param?.env_parameter_name ??
+        param?.name ??
+        param?.title ??
+        "",
+    )
+      .trim()
+      .toLowerCase();
+    return `name:${name}`;
+  };
+
+  const loadMandatoryCache = (): Record<string, Record<string, boolean>> => {
+    try {
+      const raw = localStorage.getItem(PARAM_MANDATORY_CACHE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  };
+
+  const saveMandatoryCacheForEntity = (entityKey: string, params: any[]) => {
+    const cache = loadMandatoryCache();
+    cache[entityKey] = params.reduce<Record<string, boolean>>((acc, param) => {
+      acc[buildMandatoryParamKey(param)] = resolveMandatoryFlag(param);
+      return acc;
+    }, {});
+    localStorage.setItem(PARAM_MANDATORY_CACHE_KEY, JSON.stringify(cache));
+  };
+
   // LocalStorage helpers
   const saveParametersToLocalStorage = (params: any[]) => {
     try {
@@ -115,6 +191,9 @@ export const useAddParameterLogic = () => {
       setDepartmentName(department.name);
       setDepartmentId(department.id);
 
+      const mandatoryCache = loadMandatoryCache();
+      const entityMandatoryCache = mandatoryCache[`environment:${envId}`] ?? {};
+
       const loadedParams = environment.parameters.map((p: any) => {
         let cfg = p.config || {};
         if (cfg.history?.length) {
@@ -127,6 +206,9 @@ export const useAddParameterLogic = () => {
           title: p.env_parameter_name,
           data_type: cfg.data_type,
           field_type: cfg.data_type,
+          mandatory:
+            entityMandatoryCache[buildMandatoryParamKey(p)] ??
+            resolveMandatoryFlag(p, cfg),
           default_value: cfg.default_value ?? "",
           unit: cfg.unit ?? "",
           min_value: cfg.min_value ?? "",
@@ -161,6 +243,10 @@ export const useAddParameterLogic = () => {
 
       setDepartmentName(dept?.name || "");
       setDepartmentId(dept?.id || null);
+
+      const mandatoryCache = loadMandatoryCache();
+      const entityMandatoryCache =
+        mandatoryCache[`equipment:${storeEquipment.id}`] ?? {};
 
       const loadedEquipmentTable = (storeEquipment.equipment_details || []).map(
         (detail: any, index: number) => {
@@ -199,7 +285,9 @@ export const useAddParameterLogic = () => {
             title: p.parameter_name,
             data_type: cfg.data_type,
             field_type: cfg.data_type,
-            mandatory: p.mandatory || false,
+            mandatory:
+              entityMandatoryCache[buildMandatoryParamKey(p)] ??
+              resolveMandatoryFlag(p, cfg),
           };
 
           switch (cfg.data_type) {
@@ -211,12 +299,12 @@ export const useAddParameterLogic = () => {
               param.min_value = cfg.min_value || "";
               param.max_value = cfg.max_value || "";
               break;
-case "Decimal":
-  param.default_value = formatDecimal(cfg.default_value) || "";
-  param.unit = cfg.unit || "";
-  param.min_value = formatDecimal(cfg.min_value) || "";
-  param.max_value = formatDecimal(cfg.max_value) || "";
-  break;
+            case "Decimal":
+              param.default_value = formatDecimal(cfg.default_value) || "";
+              param.unit = cfg.unit || "";
+              param.min_value = formatDecimal(cfg.min_value) || "";
+              param.max_value = formatDecimal(cfg.max_value) || "";
+              break;
             case "Text":
               param.text_type = cfg.text_type || "single";
               param.text = cfg.text || "";
@@ -299,6 +387,7 @@ case "Decimal":
         title: p.env_parameter_name,
         data_type: cfg.data_type,
         field_type: cfg.data_type,
+        mandatory: resolveMandatoryFlag(p, cfg),
         default_value: cfg.default_value ?? "",
         unit: cfg.unit ?? "",
         min_value: cfg.min_value ?? "",
@@ -421,7 +510,7 @@ case "Decimal":
       id: param.id,
       name: param.name || param.title,
       title: param.title || param.name,
-      mandatory: param.mandatory || false,
+      mandatory: resolveMandatoryFlag(param),
       field_type: param.field_type || param.data_type,
       data_type: param.data_type || param.field_type,
       default_value: param.default_value ?? param.integer_value ?? "",
@@ -535,6 +624,16 @@ case "Decimal":
     try {
       /* EQUIPMENT */
       if (isEquipment) {
+        const toMandatoryPayload = (p: any) => {
+          const isMandatory = resolveMandatoryFlag(p);
+          return {
+            mandatory: isMandatory,
+            is_mandatory: isMandatory,
+            required: isMandatory,
+            is_required: isMandatory,
+          };
+        };
+
         const equipmentPayload = {
           equipment_name: equipmentName,
           is_active: true,
@@ -549,25 +648,30 @@ case "Decimal":
             id: p.id ?? undefined,
             parameter_name: p.name || p.title || "",
             is_active: p.is_active !== false,
+            ...toMandatoryPayload(p),
             config: {
               data_type: p.data_type || p.field_type || "",
-default_value:
-  p.data_type === "Integer"
-    ? (p.default_value ?? p.integer_value ?? null)
-    : p.data_type === "Decimal"
-      ? formatDecimal(p.default_value)
+              ...toMandatoryPayload(p),
+              content: {
+                ...toMandatoryPayload(p),
+              },
+              default_value:
+                p.data_type === "Integer"
+                  ? (p.default_value ?? p.integer_value ?? null)
+                  : p.data_type === "Decimal"
+                    ? formatDecimal(p.default_value)
                     : p.data_type === "Text"
                       ? (p.text ?? null)
                       : null,
-min_value:
-  p.data_type === "Decimal"
-    ? formatDecimal(p.min_value)
-    : p.min_value ?? null,
+              min_value:
+                p.data_type === "Decimal"
+                  ? formatDecimal(p.min_value)
+                  : (p.min_value ?? null),
 
-max_value:
-  p.data_type === "Decimal"
-    ? formatDecimal(p.max_value)
-    : p.max_value ?? null,
+              max_value:
+                p.data_type === "Decimal"
+                  ? formatDecimal(p.max_value)
+                  : (p.max_value ?? null),
               integer_value: p.integer_value ?? null,
               unit: p.unit ?? null,
               percentage: p.percentage ?? null,
@@ -586,6 +690,10 @@ max_value:
             originalEquipment.id,
             equipmentPayload,
           );
+          saveMandatoryCacheForEntity(
+            `equipment:${originalEquipment.id}`,
+            parameters,
+          );
           toast.success("Equipment updated successfully!");
         } else {
           await equipmentApi.create(departmentId, equipmentPayload);
@@ -595,6 +703,16 @@ max_value:
 
       /* ENVIRONMENT */
       if (isEnvironment) {
+        const toMandatoryPayload = (p: any) => {
+          const isMandatory = resolveMandatoryFlag(p);
+          return {
+            mandatory: isMandatory,
+            is_mandatory: isMandatory,
+            required: isMandatory,
+            is_required: isMandatory,
+          };
+        };
+
         const environmentPayload = {
           environment_name: equipmentName.trim(),
           is_active: true,
@@ -602,20 +720,26 @@ max_value:
             id: p.id ?? undefined,
             env_parameter_name: p.name || p.title || "",
             is_active: p.is_active !== false,
+            ...toMandatoryPayload(p),
             config: {
-default_value:
-  p.data_type === "Decimal"
-    ? formatDecimal(p.default_value)
-    : p.default_value ?? null,              data_type: p.data_type || p.field_type || "",
-min_value:
-  p.data_type === "Decimal"
-    ? formatDecimal(p.min_value)
-    : p.min_value ?? null,
+              ...toMandatoryPayload(p),
+              content: {
+                ...toMandatoryPayload(p),
+              },
+              default_value:
+                p.data_type === "Decimal"
+                  ? formatDecimal(p.default_value)
+                  : (p.default_value ?? null),
+              data_type: p.data_type || p.field_type || "",
+              min_value:
+                p.data_type === "Decimal"
+                  ? formatDecimal(p.min_value)
+                  : (p.min_value ?? null),
 
-max_value:
-  p.data_type === "Decimal"
-    ? formatDecimal(p.max_value)
-    : p.max_value ?? null,
+              max_value:
+                p.data_type === "Decimal"
+                  ? formatDecimal(p.max_value)
+                  : (p.max_value ?? null),
               unit: p.unit ?? null,
               percentage: p.percentage ?? null,
               text: p.text ?? null,
@@ -629,6 +753,10 @@ max_value:
 
         if (isEditMode && environmentId) {
           await environmentApi.update(environmentId, environmentPayload);
+          saveMandatoryCacheForEntity(
+            `environment:${environmentId}`,
+            parameters,
+          );
           toast.success("Environment updated successfully!");
         } else {
           await environmentApi.create(departmentId, environmentPayload);
