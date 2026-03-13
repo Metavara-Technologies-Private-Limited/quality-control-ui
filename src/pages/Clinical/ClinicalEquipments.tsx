@@ -52,13 +52,7 @@ const EquipmentCard = ({
       }}
     >
       {/* Header: Equipment + Assignees */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-        }}
-      >
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {/* Equipment info */}
         <div style={{ fontSize: 13, fontWeight: 700, color: "#4B5563" }}>
           {item.detailName} :{" "}
@@ -67,22 +61,10 @@ const EquipmentCard = ({
           </span>
         </div>
 
-        {/* Assignees */}
+        {/* Assignees (shown when card is selected) */}
         {selected && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "12px",
-                fontWeight: 700,
-                color: "#4B5563",
-              }}
-            >
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "12px", fontWeight: 700, color: "#4B5563" }}>
               Assignees :
             </span>
             <div style={{ display: "flex" }}>
@@ -133,7 +115,7 @@ const EquipmentCard = ({
         )}
       </div>
 
-      {/* Dates + Recurrence */}
+      {/* Dates + Recurrence (To-Do tab) */}
       {showDates && (
         <div
           style={{
@@ -218,7 +200,11 @@ export default function ClinicalEquipments() {
   }>();
 
   const assignees = useSelector((state: RootState) => state.assignees.data);
-  const { clinicData } = useSelector((s: RootState) => s.clinic);
+
+  // ── FIX: prefer clinicData (type="clinical" depts), but fall back to
+  // rawData if clinicData doesn't have the department yet (e.g. type field
+  // not set on backend). This guarantees equipment always loads.
+  const { clinicData, rawData } = useSelector((s: RootState) => s.clinic);
   const events = useSelector((s: RootState) => s.events.data);
 
   const [activeTab, setActiveTab] = useState<"All" | "To-Do" | "Plan">("All");
@@ -226,9 +212,15 @@ export default function ClinicalEquipments() {
     useState<EquipmentItem | null>(null);
   const [selectedRadio, setSelectedRadio] = useState("");
 
-  const department = clinicData?.department.find(
-    (d) => slugify(d.name) === departmentName,
-  );
+  // Try clinicData first, fall back to rawData
+  const department = useMemo(() => {
+    return (
+      clinicData?.department.find((d) => slugify(d.name) === departmentName) ??
+      rawData?.department.find(
+        (d) => d.is_active && slugify(d.name) === departmentName,
+      )
+    );
+  }, [clinicData, rawData, departmentName]);
 
   const assigneeByName = useMemo(() => {
     const map = new Map<string, number>();
@@ -303,6 +295,7 @@ export default function ClinicalEquipments() {
     setSelectedRadio("");
   };
 
+  /* ---- Reusable Equipment Grid ---- */
   const EquipmentGrid = ({ showDates }: { showDates: boolean }) => (
     <div style={{ display: "flex", gap: 20 }}>
       <div

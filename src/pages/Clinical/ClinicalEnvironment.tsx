@@ -12,7 +12,10 @@ export default function ClinicalEnvironment() {
     searchText: string;
   }>();
 
-  // ← rawData so clinical departments are found regardless of type field
+  // ── FIX: use rawData so clinical departments (type="clinical") are found.
+  // clinicData only has type="clinical" depts but rawData has ALL depts —
+  // either works for environment lookup since rawData includes active envs.
+  // Using rawData is safest: it won't break if type field is missing/wrong.
   const { rawData } = useSelector((s: RootState) => s.clinic);
 
   const department = rawData?.department.find(
@@ -28,14 +31,27 @@ export default function ClinicalEnvironment() {
       );
   }, [department, searchText]);
 
-  const [selectedEnv, setSelectedEnv] = useState<any>(null);
+  // ── FIX: store the selected env by ID, not as an object.
+  // Storing the full object caused stale refs — after Redux re-render
+  // the component had the old snapshot, so new parameters added wouldn't show.
+  const [selectedEnvId, setSelectedEnvId] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Auto-select first env on mount / when environments change
   useEffect(() => {
-    if (environments.length) {
-      setSelectedEnv(environments[0]);
+    if (environments.length > 0 && selectedEnvId === null) {
+      setSelectedEnvId(environments[0].id);
     }
-  }, [environments]);
+  }, [environments, selectedEnvId]);
+
+  // Always derive a fresh selectedEnv from current Redux state — never stale
+  const selectedEnv = useMemo(
+    () =>
+      environments.find((e) => e.id === selectedEnvId) ??
+      environments[0] ??
+      null,
+    [environments, selectedEnvId],
+  );
 
   if (!selectedEnv) {
     return (
@@ -47,6 +63,36 @@ export default function ClinicalEnvironment() {
 
   return (
     <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
+      {/* ── Environment selector tabs (shown when multiple environments exist) ── */}
+      {environments.length > 1 && (
+        <div
+          style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}
+        >
+          {environments.map((env) => (
+            <button
+              key={env.id}
+              onClick={() => setSelectedEnvId(env.id)}
+              style={{
+                padding: "6px 14px",
+                borderRadius: 10,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                border:
+                  selectedEnv.id === env.id
+                    ? "2px solid #E17E61"
+                    : "1px solid #e5e7eb",
+                backgroundColor:
+                  selectedEnv.id === env.id ? "#fff7ed" : "#fff",
+                color: selectedEnv.id === env.id ? "#E17E61" : "#374151",
+              }}
+            >
+              {env.environment_name}
+            </button>
+          ))}
+        </div>
+      )}
+
       <h1 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>
         {selectedEnv.environment_name}
       </h1>
@@ -59,13 +105,17 @@ export default function ClinicalEnvironment() {
           height: "calc(100vh - 220px)",
         }}
       >
+        {/* LEFT: Form + Logs */}
         <div style={{ overflowY: "auto" }}>
+          {/* key={selectedEnv.id} resets form state when user switches environment */}
           <LabEnvironmentForm
+            key={selectedEnv.id}
             environment={selectedEnv}
             onSaved={() => setRefreshKey((k) => k + 1)}
           />
         </div>
 
+        {/* RIGHT: Compliance Chart */}
         <div
           style={{
             background: "#fff",
@@ -75,8 +125,9 @@ export default function ClinicalEnvironment() {
             overflowY: "auto",
           }}
         >
+          {/* key forces chart to re-fetch after save OR when env changes */}
           <LabEnvironmentComplianceChart
-            key={refreshKey}
+            key={`${selectedEnv.id}-${refreshKey}`}
             environmentId={selectedEnv.id}
             parameters={selectedEnv.parameters}
           />
