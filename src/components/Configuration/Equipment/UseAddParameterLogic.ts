@@ -81,7 +81,6 @@ export const useAddParameterLogic = () => {
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
 
-  // ← KEY FIX: use rawData so ALL departments (lab + clinical) are available
   const { rawData: clinic } = useSelector((state: RootState) => state.clinic);
 
   const entityType: "equipment" | "environment" = location.pathname.includes(
@@ -93,10 +92,8 @@ export const useAddParameterLogic = () => {
   const isEnvironment = entityType === "environment";
   const isEquipment = entityType === "equipment";
 
-  // State management
   const [equipmentName, setEquipmentName] = useState("");
   const [departmentName, setDepartmentName] = useState("");
-  // ← Initialize directly from nav state so it's available before clinic loads
   const [departmentId, setDepartmentId] = useState<number | null>(
     location.state?.departmentId ? Number(location.state.departmentId) : null,
   );
@@ -111,10 +108,7 @@ export const useAddParameterLogic = () => {
   const [nextSrNo, setNextSrNo] = useState(1);
   const [environmentId, setEnvironmentId] = useState<number | null>(null);
   const [paramToEdit, setParamToEdit] = useState<any>(null);
-  const [editingParamIndex, setEditingParamIndex] = useState<number | null>(
-    null,
-  );
-  // ✅ set by AddParameterPage to pass checked parameter count into save
+  const [editingParamIndex, setEditingParamIndex] = useState<number | null>(null);
   const [selectedParamCount, setSelectedParamCount] = useState<number>(0);
 
   const equipmentQuantity = Array.from({ length: count }, (_, i) => i + 1);
@@ -151,7 +145,6 @@ export const useAddParameterLogic = () => {
     localStorage.setItem(PARAM_MANDATORY_CACHE_KEY, JSON.stringify(cache));
   };
 
-  // LocalStorage helpers
   const saveParametersToLocalStorage = (params: any[]) => {
     try {
       localStorage.setItem(PARAM_DRAFT_STORAGE_KEY, JSON.stringify(params));
@@ -170,7 +163,6 @@ export const useAddParameterLogic = () => {
     }
   };
 
-  // Initialize data on mount
   useEffect(() => {
     const equipmentId = location.state?.equipmentId;
     const envId = location.state?.environmentId;
@@ -246,15 +238,9 @@ export const useAddParameterLogic = () => {
       setDepartmentName(dept?.name || "");
       setDepartmentId(dept?.id || null);
 
-<<<<<<< Updated upstream
       const mandatoryCache = loadMandatoryCache();
       const entityMandatoryCache =
         mandatoryCache[`equipment:${storeEquipment.id}`] ?? {};
-=======
-      const activeParamCount = (storeEquipment.parameters || []).filter(
-        (p: any) => p.is_active !== false
-      ).length;
->>>>>>> Stashed changes
 
       const loadedEquipmentTable = (storeEquipment.equipment_details || []).map(
         (detail: any, index: number) => {
@@ -267,8 +253,9 @@ export const useAddParameterLogic = () => {
             equipmentNum: srNo,
             make: detail.make || "",
             model: detail.model || "",
-            // ✅ Use parameter_count from backend if available, else fall back to activeParamCount
-            parameterCount: detail.parameter_count ?? activeParamCount,
+            // ✅ FIX: use parameter_count from backend if available, else null
+            // activeParamCount doesn't exist here — null is correct fallback
+            parameterCount: detail.parameter_count ?? null,
           };
         },
       );
@@ -302,8 +289,7 @@ export const useAddParameterLogic = () => {
 
           switch (cfg.data_type) {
             case "Integer":
-              param.default_value =
-                cfg.default_value || cfg.integer_value || "";
+              param.default_value = cfg.default_value || cfg.integer_value || "";
               param.integer_value = cfg.integer_value || "";
               param.unit = cfg.unit || "";
               param.min_value = cfg.min_value || "";
@@ -353,7 +339,6 @@ export const useAddParameterLogic = () => {
 
     setDepartmentName(location.state?.departmentName || "");
 
-    // ← KEY FIX: prefer departmentId passed directly from navigation state
     const navDeptId = location.state?.departmentId;
     if (navDeptId) {
       setDepartmentId(navDeptId);
@@ -447,17 +432,12 @@ export const useAddParameterLogic = () => {
     }
     const firstMake = selectedRows[0]?.make || "";
     const firstModel = selectedRows[0]?.model || "";
-    const sameMake = selectedRows.every(
-      (row) => (row.make || "") === firstMake,
-    );
-    const sameModel = selectedRows.every(
-      (row) => (row.model || "") === firstModel,
-    );
+    const sameMake = selectedRows.every((row) => (row.make || "") === firstMake);
+    const sameModel = selectedRows.every((row) => (row.model || "") === firstModel);
     setMake(sameMake ? firstMake : "");
     setModel(sameModel ? firstModel : "");
   }, [selected, equipmentTable]);
 
-  // Parameter management functions
   const toggleSelection = (num: number) => {
     setSelected((prev) =>
       prev.includes(num) ? prev.filter((i) => i !== num) : [...prev, num],
@@ -543,9 +523,10 @@ export const useAddParameterLogic = () => {
     }
 
     // ✅ use selectedParamCount (checked params) if set, else fall back to active params
-    const paramCount = selectedParamCount > 0
-      ? selectedParamCount
-      : parameters.filter((p: any) => p.is_active !== false).length;
+    const paramCount =
+      selectedParamCount > 0
+        ? selectedParamCount
+        : parameters.filter((p: any) => p.is_active !== false).length;
 
     setEquipmentTable((prev) => {
       let updated = [...prev];
@@ -615,10 +596,12 @@ export const useAddParameterLogic = () => {
 
     if (isEquipment) {
       const filledRows = equipmentTable.filter(
-        (row) => row.make?.trim() && row.model?.trim()
+        (row) => row.make?.trim() && row.model?.trim(),
       );
       if (filledRows.length === 0) {
-        toast.error("Please fill Make and Model for at least one equipment unit");
+        toast.error(
+          "Please fill Make and Model for at least one equipment unit",
+        );
         return;
       }
     }
@@ -651,8 +634,7 @@ export const useAddParameterLogic = () => {
               equipment_num: `${equipmentName}-${row.equipmentNum}`,
               make: row.make.trim(),
               model: row.model.trim(),
-              // ✅ THE FIX: send parameter_count to backend so it gets saved
-              // and returned on GET — this is what makes the card show the correct count
+              // ✅ send parameter_count to backend
               parameter_count: row.parameterCount ?? null,
               is_active: true,
             })),
@@ -663,13 +645,10 @@ export const useAddParameterLogic = () => {
             ...toMandatoryPayload(p),
             config: {
               data_type: p.data_type || p.field_type || "",
-<<<<<<< Updated upstream
               ...toMandatoryPayload(p),
               content: {
                 ...toMandatoryPayload(p),
               },
-=======
->>>>>>> Stashed changes
               default_value:
                 p.data_type === "Integer"
                   ? (p.default_value ?? p.integer_value ?? null)
@@ -681,20 +660,11 @@ export const useAddParameterLogic = () => {
               min_value:
                 p.data_type === "Decimal"
                   ? formatDecimal(p.min_value)
-<<<<<<< Updated upstream
                   : (p.min_value ?? null),
-
               max_value:
                 p.data_type === "Decimal"
                   ? formatDecimal(p.max_value)
                   : (p.max_value ?? null),
-=======
-                  : p.min_value ?? null,
-              max_value:
-                p.data_type === "Decimal"
-                  ? formatDecimal(p.max_value)
-                  : p.max_value ?? null,
->>>>>>> Stashed changes
               integer_value: p.integer_value ?? null,
               unit: p.unit ?? null,
               percentage: p.percentage ?? null,
@@ -745,7 +715,6 @@ export const useAddParameterLogic = () => {
             is_active: p.is_active !== false,
             ...toMandatoryPayload(p),
             config: {
-<<<<<<< Updated upstream
               ...toMandatoryPayload(p),
               content: {
                 ...toMandatoryPayload(p),
@@ -754,30 +723,15 @@ export const useAddParameterLogic = () => {
                 p.data_type === "Decimal"
                   ? formatDecimal(p.default_value)
                   : (p.default_value ?? null),
-=======
-              default_value:
-                p.data_type === "Decimal"
-                  ? formatDecimal(p.default_value)
-                  : p.default_value ?? null,
->>>>>>> Stashed changes
               data_type: p.data_type || p.field_type || "",
               min_value:
                 p.data_type === "Decimal"
                   ? formatDecimal(p.min_value)
-<<<<<<< Updated upstream
                   : (p.min_value ?? null),
-
               max_value:
                 p.data_type === "Decimal"
                   ? formatDecimal(p.max_value)
                   : (p.max_value ?? null),
-=======
-                  : p.min_value ?? null,
-              max_value:
-                p.data_type === "Decimal"
-                  ? formatDecimal(p.max_value)
-                  : p.max_value ?? null,
->>>>>>> Stashed changes
               unit: p.unit ?? null,
               percentage: p.percentage ?? null,
               text: p.text ?? null,
@@ -856,11 +810,9 @@ export const useAddParameterLogic = () => {
   };
 
   return {
-    // Entity info
     entityType,
     isEnvironment,
     isEquipment,
-    // Form state
     equipmentName,
     setEquipmentName,
     departmentName,
@@ -885,13 +837,10 @@ export const useAddParameterLogic = () => {
     paramToEdit,
     setParamToEdit,
     setEditingParamIndex,
-    // Helpers
     equipmentQuantity,
     normalizeDropdownValue,
     selectedParamCount,
     setSelectedParamCount,
-
-    // Handlers
     handleAddParameter,
     handleEditParameter,
     handleDeleteParameter: confirmDeleteParameter,
