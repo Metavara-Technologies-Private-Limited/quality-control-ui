@@ -17,7 +17,6 @@ import { Search, FileUpload, FileDownload } from "@mui/icons-material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
-// import { parameterValueApi } from "@/services/api";
 import dayjs from "dayjs";
 import * as XLSX from "xlsx";
 import { toast } from "react-toastify";
@@ -27,15 +26,27 @@ import ImportCSVPopup from "./QcLab/Department/ImportCSVPopup";
 
 const Reports = () => {
   const dispatch = useDispatch<AppDispatch>();
-  // combine lab and clinical departments so reports include both types
-  const labDepts = useSelector(
-    (s: RootState) => s.clinic.labData?.department ?? [],
-  );
-  const clinicalDepts = useSelector(
-    (s: RootState) => s.clinic.clinicData?.department ?? [],
+
+  const rawData = useSelector((s: RootState) => s.clinic.rawData);
+  const clinicData = useSelector(
+    (s: RootState) => (s.clinic as any).clinicData ?? (s.clinic as any).data,
   );
 
-  // const [logs, setLogs] = useState<any[]>([]);
+  // Safely merge all department sources, guard against undefined
+  const departments = useMemo(() => {
+    const rawDepts: any[] = rawData?.department ?? [];
+    const clinicDepts: any[] = clinicData?.department ?? [];
+    const seen = new Set<number>();
+    const merged: any[] = [];
+    [...rawDepts, ...clinicDepts].forEach((d) => {
+      if (d?.id != null && !seen.has(d.id)) {
+        seen.add(d.id);
+        merged.push(d);
+      }
+    });
+    return merged;
+  }, [rawData, clinicData]);
+
   const logs = useSelector((s: RootState) => s.reports.logs);
   const loading = useSelector((s: RootState) => s.reports.loading);
   const progress = useSelector((s: RootState) => s.reports.progress);
@@ -44,24 +55,17 @@ const Reports = () => {
   const [selectedEquipment, setSelectedEquipment] = useState<any>("all");
   const [importDialogOpen, setImportDialogOpen] = useState(false);
 
-  const departments = useMemo(
-    () => [...labDepts, ...clinicalDepts],
-    [labDepts, clinicalDepts],
-  );
-
   const normalizedSelectedDepartment =
     selectedDepartment === "all" ? "all" : Number(selectedDepartment);
 
-  /* -------- Equipment Map -------- */
-
+  /* -------- Equipment Map keyed by equipment_details.id -------- */
   const equipmentMap = useMemo(() => {
     const map = new Map<number, any>();
-
-    departments.forEach((d) => {
-      d.equipments?.forEach((eq) => {
-        eq.equipment_details?.forEach((ed) => {
+    departments.forEach((d: any) => {
+      d.equipments?.forEach((eq: any) => {
+        eq.equipment_details?.forEach((ed: any) => {
           if (ed.id != null) {
-            map.set(ed.id, {
+            map.set(Number(ed.id), {
               equipment_name: eq.equipment_name,
               equipment_num: ed.equipment_num,
               department_id: d.id,
@@ -70,44 +74,59 @@ const Reports = () => {
         });
       });
     });
-
     return map;
   }, [departments]);
 
-  /* -------- Parameter Metadata Map -------- */
-
+  /* -------- FIX: Full unit resolution — p.unit, config.unit, history, nested config -------- */
   const parameterMetaMap = useMemo(() => {
     const map = new Map<number, { name: string; unit: string }>();
-
-    departments.forEach((d) => {
-      d.equipments?.forEach((eq) => {
-        eq.parameters?.forEach((p) => {
+    departments.forEach((d: any) => {
+      d.equipments?.forEach((eq: any) => {
+        eq.parameters?.forEach((p: any) => {
           if (!p.id) return;
 
-          map.set(p.id, {
+          let unit = "-";
+          const cfg = p.config ?? {};
+
+          // 1. Check flattened param.unit first (set by useAddParameterLogic after history flatten)
+          if (p.unit) {
+            unit = p.unit;
+          }
+          // 2. Direct config.unit
+          else if (cfg.unit) {
+            unit = cfg.unit;
+          }
+          // 3. Last history entry
+          else if (Array.isArray(cfg.history) && cfg.history.length > 0) {
+            const lastHistory = cfg.history[cfg.history.length - 1];
+            unit = lastHistory?.unit ?? "-";
+          }
+          // 4. Nested config.config.unit
+          else if (cfg.config?.unit) {
+            unit = cfg.config.unit;
+          }
+
+          map.set(Number(p.id), {
             name: p.parameter_name || "Unknown Parameter",
-            unit: p.config?.unit ?? "-",
+            unit: unit || "-",
           });
         });
       });
     });
-
     return map;
   }, [departments]);
 
   /* -------- Load ALL logs -------- */
-
   const allParamIds = useMemo(() => {
     const ids = departments.flatMap(
-      (d) =>
+      (d: any) =>
         d.equipments?.flatMap(
-          (eq) =>
+          (eq: any) =>
             eq.parameters
-              ?.map((p) => Number(p.id))
-              .filter((id) => Number.isFinite(id) && id > 0) ?? [],
+              ?.map((p: any) => Number(p.id))
+              .filter((id: number) => Number.isFinite(id) && id > 0) ?? [],
         ) ?? [],
     );
-
     return Array.from(new Set(ids));
   }, [departments]);
 
@@ -120,14 +139,9 @@ const Reports = () => {
       dispatch(fetchReports(allParamIds));
     }, 5000);
 
-    const onFocus = () => {
-      dispatch(fetchReports(allParamIds));
-    };
-
+    const onFocus = () => dispatch(fetchReports(allParamIds));
     const onVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        dispatch(fetchReports(allParamIds));
-      }
+      if (document.visibilityState === "visible") dispatch(fetchReports(allParamIds));
     };
 
     window.addEventListener("focus", onFocus);
@@ -140,34 +154,51 @@ const Reports = () => {
     };
   }, [allParamIds, dispatch]);
 
-  /* -------- Build rows -------- */
+  /* -------- Equipment options for dropdown -------- */
+  const equipmentOptions = useMemo(() => {
+    return Array.from(equipmentMap.entries())
+      .filter(([, e]: [any, any]) =>
+        normalizedSelectedDepartment === "all"
+          ? true
+          : Number(e.department_id) === normalizedSelectedDepartment,
+      )
+      .map(([id, e]: [any, any]) => ({
+        value: id,
+        label: `${e.equipment_name} (${e.equipment_num})`,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [equipmentMap, normalizedSelectedDepartment]);
 
+  /* -------- Build rows -------- */
   const rows = useMemo(() => {
     const mappedRows = logs
-      .map((log, index) => {
-        const eq = equipmentMap.get(Number(log.equipment_details_id));
-        const param = parameterMetaMap.get(Number(log.parameter_id));
+      .map((log: any, index: number) => {
+        const detailId = Number(log.equipment_details ?? log.equipment_details_id);
+        const eq = equipmentMap.get(detailId);
+        const paramId = Number(log.parameter ?? log.parameter_id);
+        const param = parameterMetaMap.get(paramId);
 
         if (!eq) return null;
 
         const createdAt = dayjs(log.created_at);
+        const timestamp = createdAt.isValid() ? createdAt.valueOf() : 0;
 
         return {
-          id: log.id || index,
+          id: log.id ?? index,
           department: eq.department_id,
+          equipmentDetailsId: detailId,
           equipment: eq.equipment_num,
           parameter: param?.name ?? "-",
           unit: param?.unit ?? "-",
           value: log.content ?? "-",
-          timestamp: createdAt.valueOf(),
-          date: createdAt.isValid()
-            ? createdAt.format("DD/MM/YYYY HH:mm")
-            : "-",
+          timestamp,
+          date: createdAt.isValid() ? createdAt.format("DD/MM/YYYY HH:mm") : "-",
         };
       })
       .filter(Boolean) as any[];
 
-    mappedRows.sort((a, b) => {
+    // Sort newest first by raw timestamp
+    mappedRows.sort((a: any, b: any) => {
       const byTime = b.timestamp - a.timestamp;
       if (byTime !== 0) return byTime;
       return Number(b.id) - Number(a.id);
@@ -180,7 +211,10 @@ const Reports = () => {
       )
         return false;
 
-      if (selectedEquipment !== "all" && row.equipment !== selectedEquipment)
+      if (
+        selectedEquipment !== "all" &&
+        Number(row.equipmentDetailsId) !== Number(selectedEquipment)
+      )
         return false;
 
       if (search) {
@@ -196,85 +230,23 @@ const Reports = () => {
     logs,
     equipmentMap,
     parameterMetaMap,
-    selectedDepartment,
+    normalizedSelectedDepartment,
     selectedEquipment,
     search,
-    normalizedSelectedDepartment,
   ]);
 
-  const equipmentOptions = useMemo(() => {
-    const seen = new Set<string>();
-
-    const items = Array.from(equipmentMap.values())
-      .filter((e: any) =>
-        normalizedSelectedDepartment === "all"
-          ? true
-          : Number(e.department_id) === normalizedSelectedDepartment,
-      )
-      .filter((e: any) => {
-        const key = String(e.equipment_num);
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .map((e: any) => ({
-        value: e.equipment_num,
-        label: `${e.equipment_name} (${e.equipment_num})`,
-      }));
-
-    return items.sort((a, b) => a.label.localeCompare(b.label));
-  }, [equipmentMap, normalizedSelectedDepartment]);
-
-  const selectedDepartmentLabel = useMemo(() => {
-    if (selectedDepartment === "all") return "All Departments";
-
-    const selected = departments.find(
-      (d) => Number(d.id) === Number(selectedDepartment),
-    );
-    return selected?.name ?? "All Departments";
-  }, [departments, selectedDepartment]);
-
-  const selectedEquipmentLabel = useMemo(() => {
-    if (selectedEquipment === "all") return "All Equipments";
-
-    const selected = equipmentOptions.find(
-      (option) => option.value === selectedEquipment,
-    );
-    return selected?.label ?? "All Equipments";
-  }, [equipmentOptions, selectedEquipment]);
-
-  const departmentSelectWidth = useMemo(() => {
-    const widthInCh = Math.min(
-      30,
-      Math.max(14, selectedDepartmentLabel.length + 4),
-    );
-    return `${widthInCh}ch`;
-  }, [selectedDepartmentLabel]);
-
-  const equipmentSelectWidth = useMemo(() => {
-    const widthInCh = Math.min(
-      30,
-      Math.max(14, selectedEquipmentLabel.length + 2),
-    );
-    return `${widthInCh}ch`;
-  }, [selectedEquipmentLabel]);
-
+  // Reset equipment filter when department changes
   useEffect(() => {
     if (selectedEquipment === "all") return;
-
     const isAvailable = equipmentOptions.some(
-      (option) => option.value === selectedEquipment,
+      (o) => Number(o.value) === Number(selectedEquipment),
     );
-
-    if (!isAvailable) {
-      setSelectedEquipment("all");
-    }
+    if (!isAvailable) setSelectedEquipment("all");
   }, [equipmentOptions, selectedEquipment]);
 
   const showInitialLoading = loading && logs.length === 0;
 
   /* -------- Export Excel -------- */
-
   const handleExportExcel = () => {
     if (rows.length === 0) {
       toast.info("No data available to export");
@@ -292,21 +264,27 @@ const Reports = () => {
     const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Reports");
-
-    const fileName = `Reports_${dayjs().format("YYYY-MM-DD")}.xlsx`;
-
-    XLSX.writeFile(workbook, fileName);
+    XLSX.writeFile(workbook, `Reports_${dayjs().format("YYYY-MM-DD")}.xlsx`);
     toast.success("Reports exported successfully");
   };
 
-  /* -------- Columns -------- */
-
+  /* -------- Columns — date displays formatted string, sorts by timestamp -------- */
   const columns: GridColDef[] = [
-    { field: "date", headerName: "Date & Time", flex: 1.5, minWidth: 180 },
+    {
+      field: "date",
+      headerName: "Date & Time",
+      flex: 1.5,
+      minWidth: 180,
+      sortComparator: (v1, v2, param1, param2) => {
+        const ts1 = (param1.api.getRow(param1.id) as any)?.timestamp ?? 0;
+        const ts2 = (param2.api.getRow(param2.id) as any)?.timestamp ?? 0;
+        return ts1 - ts2;
+      },
+    },
     { field: "equipment", headerName: "Equipment", flex: 1.3, minWidth: 150 },
     { field: "parameter", headerName: "Parameter", flex: 1.3, minWidth: 150 },
-    { field: "unit", headerName: "Unit", flex: 0.8, minWidth: 100 },
-    { field: "value", headerName: "Value", flex: 1, minWidth: 120 },
+    { field: "unit",      headerName: "Unit",      flex: 0.8, minWidth: 100 },
+    { field: "value",     headerName: "Value",     flex: 1,   minWidth: 120 },
   ];
 
   return (
@@ -315,8 +293,7 @@ const Reports = () => {
         Reports
       </Typography>
 
-      {/* Filters */}
-
+      {/* ── Filters ── */}
       <Box
         sx={{
           display: "flex",
@@ -328,18 +305,20 @@ const Reports = () => {
         }}
       >
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-          <FormControl size="small" sx={{ width: departmentSelectWidth }}>
-            <InputLabel>Department</InputLabel>
 
+          {/* Department */}
+          <FormControl size="small" sx={{ minWidth: 150, maxWidth: 200 }}>
+            <InputLabel>Department</InputLabel>
             <Select
-              autoWidth
               value={selectedDepartment}
               label="Department"
-              onChange={(e) => setSelectedDepartment(e.target.value)}
+              onChange={(e) => {
+                setSelectedDepartment(e.target.value);
+                setSelectedEquipment("all");
+              }}
             >
               <MenuItem value="all">All Departments</MenuItem>
-
-              {departments.map((d) => (
+              {departments.map((d: any) => (
                 <MenuItem key={d.id} value={d.id}>
                   {d.name}
                 </MenuItem>
@@ -347,59 +326,29 @@ const Reports = () => {
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ width: equipmentSelectWidth }}>
+          {/* Equipment — compact fixed width */}
+          <FormControl size="small" sx={{ minWidth: 160, maxWidth: 200 }}>
             <InputLabel>Equipment</InputLabel>
-
             <Select
-              autoWidth={false}
               value={selectedEquipment}
               label="Equipment"
+              onChange={(e) => setSelectedEquipment(e.target.value)}
               renderValue={(value) => {
                 if (value === "all") return "All Equipments";
-
-                const selected = equipmentOptions.find(
-                  (option) => option.value === value,
+                const opt = equipmentOptions.find(
+                  (o) => Number(o.value) === Number(value),
                 );
-
                 return (
-                  <Box
-                    sx={{
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {selected?.label ?? "All Equipments"}
+                  <Box sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {opt?.label ?? "All Equipments"}
                   </Box>
                 );
               }}
-              sx={{
-                "& .MuiSelect-select": {
-                  pl: 1.25,
-                  pr: "30px !important",
-                  py: 1.1,
-                },
-              }}
-              onChange={(e) => setSelectedEquipment(e.target.value)}
             >
               <MenuItem value="all">All Equipments</MenuItem>
-
               {equipmentOptions.map((option) => (
-                <MenuItem
-                  key={option.value}
-                  value={option.value}
-                  title={option.label}
-                >
-                  <Box
-                    sx={{
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      width: "100%",
-                    }}
-                  >
-                    {option.label}
-                  </Box>
+                <MenuItem key={option.value} value={option.value} title={option.label}>
+                  {option.label}
                 </MenuItem>
               ))}
             </Select>
@@ -456,7 +405,7 @@ const Reports = () => {
         </Box>
       </Box>
 
-      {/* Table */}
+      {/* ── Loading bar ── */}
       {showInitialLoading && (
         <Box sx={{ mb: 2 }}>
           <Typography variant="body2" sx={{ mb: 1 }}>
@@ -465,9 +414,18 @@ const Reports = () => {
           <LinearProgress variant="determinate" value={progress} />
         </Box>
       )}
+
+      {/* ── Table ── */}
       <Paper sx={{ height: 520 }}>
-        <DataGrid rows={rows} columns={columns} />
+        <DataGrid
+          rows={rows}
+          columns={columns}
+          initialState={{
+            sorting: { sortModel: [{ field: "date", sort: "desc" }] },
+          }}
+        />
       </Paper>
+
       <ImportCSVPopup
         open={importDialogOpen}
         onClose={() => setImportDialogOpen(false)}

@@ -67,8 +67,6 @@ export default function LabEquipmentLogs({ equipment }: Props) {
         }
       }
 
-      // ✅ FIX: filter logs to only show entries for THIS equipment unit
-      // Each log has equipment_details_id — only keep logs matching current unit's id
       const filtered = equipment.equipment_id
         ? all.filter((log) => log.equipment_details_id === equipment.equipment_id)
         : all;
@@ -80,54 +78,75 @@ export default function LabEquipmentLogs({ equipment }: Props) {
   };
 
   useEffect(() => {
-    // ✅ Re-fetch when equipment unit changes (equipment_id or parameters change)
     loadLogs();
   }, [equipment.equipment_id, equipment.parameters]);
 
+  /* -------- FIX: Full unit resolution — checks p.unit, config.unit, history, nested config -------- */
   const parameterMetaMap = useMemo(() => {
     const map = new Map<number, { name: string; unit: string }>();
     equipment.parameters.forEach((p) => {
       if (!p.id) return;
+
+      let unit = "-";
+      const cfg = p.config ?? {};
+
+      // 1. Check flattened param.unit first (set by useAddParameterLogic after history flatten)
+      if (p.unit) {
+        unit = p.unit;
+      }
+      // 2. Direct config.unit
+      else if (cfg.unit) {
+        unit = cfg.unit;
+      }
+      // 3. Last history entry
+      else if (Array.isArray(cfg.history) && cfg.history.length > 0) {
+        const lastHistory = cfg.history[cfg.history.length - 1];
+        unit = lastHistory?.unit ?? "-";
+      }
+      // 4. Nested config.config.unit
+      else if (cfg.config?.unit) {
+        unit = cfg.config.unit;
+      }
+
       map.set(p.id, {
-        name: p.parameter_name || "Unknown Parameter",
-        unit: p.config?.unit ?? "-",
+        name: p.parameter_name || p.name || "Unknown Parameter",
+        unit: unit || "-",
       });
     });
     return map;
   }, [equipment.parameters]);
 
-  /* -------- All Rows (before filtering) -------- */
+  /* -------- All Rows — include timestamp for correct sorting -------- */
   const allRows = useMemo(() => {
-    return logs.map((log, index) => {
-      const param = parameterMetaMap.get(log.parameter_id);
-      return {
-        id: log.id || index,
-        date: dayjs(log.created_at).format("DD/MM/YYYY HH:mm"),
-        equipment:
-          equipmentDetailMap.get(log.equipment_details_id) ?? "Unknown",
-        parameter: param?.name ?? "-",
-        unit: param?.unit ?? "-",
-        value: log.content ?? "-",
-      };
-    });
+    return logs
+      .map((log, index) => {
+        const param = parameterMetaMap.get(log.parameter_id);
+        const createdAt = dayjs(log.created_at);
+        const timestamp = createdAt.isValid() ? createdAt.valueOf() : 0;
+        return {
+          id: log.id || index,
+          timestamp,
+          date: createdAt.isValid() ? createdAt.format("DD/MM/YYYY HH:mm") : "-",
+          equipment: equipmentDetailMap.get(log.equipment_details_id) ?? "Unknown",
+          parameter: param?.name ?? "-",
+          unit: param?.unit ?? "-",
+          value: log.content ?? "-",
+        };
+      })
+      .sort((a, b) => b.timestamp - a.timestamp);
   }, [logs, parameterMetaMap, equipmentDetailMap]);
 
-  /* -------- Filtered Rows with search -------- */
+  /* -------- Filtered Rows -------- */
   const rows = useMemo(() => {
-    let filtered = allRows;
-
-    if (searchTerm) {
-      filtered = filtered.filter((row) =>
-        Object.values(row).some((val) =>
-          String(val).toLowerCase().includes(searchTerm.toLowerCase()),
-        ),
-      );
-    }
-
-    return filtered;
+    if (!searchTerm) return allRows;
+    return allRows.filter((row) =>
+      Object.values(row).some((val) =>
+        String(val).toLowerCase().includes(searchTerm.toLowerCase()),
+      ),
+    );
   }, [allRows, searchTerm]);
 
-  /* -------- Export to Excel Logic -------- */
+  /* -------- Export to Excel -------- */
   const handleExportExcel = () => {
     if (rows.length === 0) {
       toast.info("No data available to export");
@@ -145,10 +164,10 @@ export default function LabEquipmentLogs({ equipment }: Props) {
     const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Equipment Logs");
-
-    const fileName = `Logs_${equipment.equipment_num || "Equipment"}_${dayjs().format("YYYY-MM-DD")}.xlsx`;
-
-    XLSX.writeFile(workbook, fileName);
+    XLSX.writeFile(
+      workbook,
+      `Logs_${equipment.equipment_num || "Equipment"}_${dayjs().format("YYYY-MM-DD")}.xlsx`,
+    );
     toast.success("Logs exported to Excel successfully");
   };
 
@@ -197,38 +216,23 @@ export default function LabEquipmentLogs({ equipment }: Props) {
     );
   }
 
+  /* -------- Columns — date displays formatted string, sorts by timestamp -------- */
   const columns: GridColDef[] = [
     {
       field: "date",
       headerName: "Date & Time",
       width: 180,
       sortable: true,
+      sortComparator: (v1, v2, param1, param2) => {
+        const ts1 = (param1.api.getRow(param1.id) as any)?.timestamp ?? 0;
+        const ts2 = (param2.api.getRow(param2.id) as any)?.timestamp ?? 0;
+        return ts1 - ts2;
+      },
     },
-    {
-      field: "equipment",
-      headerName: "Equipment",
-      width: 150,
-      sortable: true,
-    },
-    {
-      field: "parameter",
-      headerName: "Parameter",
-      width: 150,
-      sortable: true,
-    },
-    {
-      field: "unit",
-      headerName: "Unit",
-      width: 100,
-      sortable: true,
-    },
-    {
-      field: "value",
-      headerName: "Value",
-      width: 120,
-      sortable: true,
-      type: "string",
-    },
+    { field: "equipment", headerName: "Equipment", width: 150, sortable: true },
+    { field: "parameter", headerName: "Parameter", width: 150, sortable: true },
+    { field: "unit",      headerName: "Unit",      width: 100, sortable: true },
+    { field: "value",     headerName: "Value",     width: 120, sortable: true, type: "string" },
   ];
 
   return (
@@ -306,6 +310,9 @@ export default function LabEquipmentLogs({ equipment }: Props) {
           pageSizeOptions={[5, 10, 25, 50]}
           paginationModel={paginationModel}
           onPaginationModelChange={setPaginationModel}
+          initialState={{
+            sorting: { sortModel: [{ field: "date", sort: "desc" }] },
+          }}
           sx={{
             border: 0,
             "& .MuiDataGrid-columnHeaderTitle": {
