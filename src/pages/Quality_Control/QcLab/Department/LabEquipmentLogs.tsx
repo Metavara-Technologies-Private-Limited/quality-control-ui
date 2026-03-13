@@ -66,15 +66,23 @@ export default function LabEquipmentLogs({ equipment }: Props) {
           console.error(`Failed to load logs for parameter ${p.id}:`, err);
         }
       }
-      setLogs(all);
+
+      // ✅ FIX: filter logs to only show entries for THIS equipment unit
+      // Each log has equipment_details_id — only keep logs matching current unit's id
+      const filtered = equipment.equipment_id
+        ? all.filter((log) => log.equipment_details_id === equipment.equipment_id)
+        : all;
+
+      setLogs(filtered);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // ✅ Re-fetch when equipment unit changes (equipment_id or parameters change)
     loadLogs();
-  }, [equipment.parameters]);
+  }, [equipment.equipment_id, equipment.parameters]);
 
   const parameterMetaMap = useMemo(() => {
     const map = new Map<number, { name: string; unit: string }>();
