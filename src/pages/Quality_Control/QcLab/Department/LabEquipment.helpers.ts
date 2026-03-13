@@ -232,8 +232,8 @@ export const buildRawEquipmentData = ({
   return department.equipments
     .filter((eq: any) => eq.is_active)
     .flatMap((eq: any) => {
-      const total = eq.parameters?.length ?? 0;
-      const active = eq.parameters?.filter((p: any) => p.is_active).length ?? 0;
+      // Total active parameters at equipment level (denominator)
+      const total = eq.parameters?.filter((p: any) => p.is_active).length ?? 0;
 
       return eq.equipment_details
         .filter((detail: any) => {
@@ -259,6 +259,27 @@ export const buildRawEquipmentData = ({
         .map((detail: any) => {
           const metadata = equipmentMetadata[detail.id] || {};
 
+          // ✅ FIX: Use parameter_count from this specific equipment_detail (saved
+          // during configuration via UseAddParameterLogic selectedParamCount).
+          // Only fall back to equipment-level total if backend returns null/undefined.
+          // Do NOT fall back to `total` silently — show 0 if nothing was saved yet,
+          // so the user knows configuration is incomplete.
+          const detailParamCount =
+            detail.parameter_count != null && detail.parameter_count !== undefined
+              ? Number(detail.parameter_count)
+              : null;
+
+          // If detailParamCount is null (backend never saved it), fall back to total
+          // BUT only if make/model are also missing (unconfigured unit).
+          // If make/model exist but parameter_count is missing, still use total as
+          // a safe fallback (legacy data before the fix was deployed).
+          const resolvedCount =
+            detailParamCount !== null
+              ? detailParamCount               // ✅ backend has per-unit count
+              : detail.make && detail.model
+              ? total                           // legacy configured unit — show total
+              : 0;                              // unconfigured unit — show 0
+
           return {
             id: detail.id,
             name: eq.equipment_name,
@@ -266,7 +287,9 @@ export const buildRawEquipmentData = ({
             parameters: eq.parameters || [],
             make: detail.make,
             model: detail.model,
-            paramsCount: `${formatCount(active)}/${formatCount(total)}`,
+            // resolvedCount is the per-unit selected param count (numerator)
+            // total is the equipment-level active param count (denominator)
+            paramsCount: `${formatCount(resolvedCount)}/${formatCount(total)}`,
 
             assigneeNames: metadata.names || [],
             scheduleType: metadata.scheduleType,

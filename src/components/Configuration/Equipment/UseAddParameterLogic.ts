@@ -114,6 +114,8 @@ export const useAddParameterLogic = () => {
   const [editingParamIndex, setEditingParamIndex] = useState<number | null>(
     null,
   );
+  // ✅ set by AddParameterPage to pass checked parameter count into save
+  const [selectedParamCount, setSelectedParamCount] = useState<number>(0);
 
   const equipmentQuantity = Array.from({ length: count }, (_, i) => i + 1);
 
@@ -244,9 +246,15 @@ export const useAddParameterLogic = () => {
       setDepartmentName(dept?.name || "");
       setDepartmentId(dept?.id || null);
 
+<<<<<<< Updated upstream
       const mandatoryCache = loadMandatoryCache();
       const entityMandatoryCache =
         mandatoryCache[`equipment:${storeEquipment.id}`] ?? {};
+=======
+      const activeParamCount = (storeEquipment.parameters || []).filter(
+        (p: any) => p.is_active !== false
+      ).length;
+>>>>>>> Stashed changes
 
       const loadedEquipmentTable = (storeEquipment.equipment_details || []).map(
         (detail: any, index: number) => {
@@ -259,6 +267,8 @@ export const useAddParameterLogic = () => {
             equipmentNum: srNo,
             make: detail.make || "",
             model: detail.model || "",
+            // ✅ Use parameter_count from backend if available, else fall back to activeParamCount
+            parameterCount: detail.parameter_count ?? activeParamCount,
           };
         },
       );
@@ -344,12 +354,10 @@ export const useAddParameterLogic = () => {
     setDepartmentName(location.state?.departmentName || "");
 
     // ← KEY FIX: prefer departmentId passed directly from navigation state
-    // (set by AddEquipmentPopup). Fall back to name-based lookup only if needed.
     const navDeptId = location.state?.departmentId;
     if (navDeptId) {
       setDepartmentId(navDeptId);
     } else {
-      // fallback: find by name across ALL departments (rawData)
       const dept = clinic?.department.find(
         (d) =>
           d.name.toLowerCase() ===
@@ -415,35 +423,8 @@ export const useAddParameterLogic = () => {
   // Handle equipment quantity changes
   useEffect(() => {
     if (isEditMode) return;
-    if (equipmentTable.length === 0) return;
 
-    const currentMaxNum = Math.max(
-      ...equipmentTable.map((row) => row.equipmentNum),
-      0,
-    );
-
-    if (count > currentMaxNum) {
-      const newEntries: {
-        sr: number;
-        equipmentNum: number;
-        make: string;
-        model: string;
-      }[] = [];
-      for (let i = currentMaxNum + 1; i <= count; i++) {
-        newEntries.push({
-          sr: nextSrNo + newEntries.length,
-          equipmentNum: i,
-          make: "",
-          model: "",
-        });
-      }
-      if (newEntries.length) {
-        setEquipmentTable((prev) => [...prev, ...newEntries]);
-        setNextSrNo((prev) => prev + newEntries.length);
-      }
-    }
-
-    if (count < currentMaxNum) {
+    if (count < equipmentTable.length) {
       setEquipmentTable((prev) => prev.filter((r) => r.equipmentNum <= count));
       setSelected((prev) => prev.filter((n) => n <= count));
     }
@@ -561,15 +542,31 @@ export const useAddParameterLogic = () => {
       return;
     }
 
+    // ✅ use selectedParamCount (checked params) if set, else fall back to active params
+    const paramCount = selectedParamCount > 0
+      ? selectedParamCount
+      : parameters.filter((p: any) => p.is_active !== false).length;
+
     setEquipmentTable((prev) => {
       let updated = [...prev];
       let nextSr = nextSrNo;
       selected.forEach((num) => {
         const index = updated.findIndex((row) => row.equipmentNum === num);
         if (index >= 0) {
-          updated[index] = { ...updated[index], make, model };
+          updated[index] = {
+            ...updated[index],
+            make,
+            model,
+            parameterCount: paramCount,
+          };
         } else {
-          updated.push({ sr: nextSr, equipmentNum: num, make, model });
+          updated.push({
+            sr: nextSr,
+            equipmentNum: num,
+            make,
+            model,
+            parameterCount: paramCount,
+          });
           nextSr++;
         }
       });
@@ -616,6 +613,16 @@ export const useAddParameterLogic = () => {
       return;
     }
 
+    if (isEquipment) {
+      const filledRows = equipmentTable.filter(
+        (row) => row.make?.trim() && row.model?.trim()
+      );
+      if (filledRows.length === 0) {
+        toast.error("Please fill Make and Model for at least one equipment unit");
+        return;
+      }
+    }
+
     if (!departmentId) {
       toast.error("Department not found");
       return;
@@ -637,13 +644,18 @@ export const useAddParameterLogic = () => {
         const equipmentPayload = {
           equipment_name: equipmentName,
           is_active: true,
-          equipment_details: equipmentTable.map((row) => ({
-            id: row.id ?? undefined,
-            equipment_num: `${equipmentName}-${row.equipmentNum}`,
-            make: row.make || "",
-            model: row.model || "",
-            is_active: true,
-          })),
+          equipment_details: equipmentTable
+            .filter((row) => row.make?.trim() && row.model?.trim())
+            .map((row) => ({
+              id: row.id ?? undefined,
+              equipment_num: `${equipmentName}-${row.equipmentNum}`,
+              make: row.make.trim(),
+              model: row.model.trim(),
+              // ✅ THE FIX: send parameter_count to backend so it gets saved
+              // and returned on GET — this is what makes the card show the correct count
+              parameter_count: row.parameterCount ?? null,
+              is_active: true,
+            })),
           parameters: parameters.map((p) => ({
             id: p.id ?? undefined,
             parameter_name: p.name || p.title || "",
@@ -651,10 +663,13 @@ export const useAddParameterLogic = () => {
             ...toMandatoryPayload(p),
             config: {
               data_type: p.data_type || p.field_type || "",
+<<<<<<< Updated upstream
               ...toMandatoryPayload(p),
               content: {
                 ...toMandatoryPayload(p),
               },
+=======
+>>>>>>> Stashed changes
               default_value:
                 p.data_type === "Integer"
                   ? (p.default_value ?? p.integer_value ?? null)
@@ -666,12 +681,20 @@ export const useAddParameterLogic = () => {
               min_value:
                 p.data_type === "Decimal"
                   ? formatDecimal(p.min_value)
+<<<<<<< Updated upstream
                   : (p.min_value ?? null),
 
               max_value:
                 p.data_type === "Decimal"
                   ? formatDecimal(p.max_value)
                   : (p.max_value ?? null),
+=======
+                  : p.min_value ?? null,
+              max_value:
+                p.data_type === "Decimal"
+                  ? formatDecimal(p.max_value)
+                  : p.max_value ?? null,
+>>>>>>> Stashed changes
               integer_value: p.integer_value ?? null,
               unit: p.unit ?? null,
               percentage: p.percentage ?? null,
@@ -722,6 +745,7 @@ export const useAddParameterLogic = () => {
             is_active: p.is_active !== false,
             ...toMandatoryPayload(p),
             config: {
+<<<<<<< Updated upstream
               ...toMandatoryPayload(p),
               content: {
                 ...toMandatoryPayload(p),
@@ -730,16 +754,30 @@ export const useAddParameterLogic = () => {
                 p.data_type === "Decimal"
                   ? formatDecimal(p.default_value)
                   : (p.default_value ?? null),
+=======
+              default_value:
+                p.data_type === "Decimal"
+                  ? formatDecimal(p.default_value)
+                  : p.default_value ?? null,
+>>>>>>> Stashed changes
               data_type: p.data_type || p.field_type || "",
               min_value:
                 p.data_type === "Decimal"
                   ? formatDecimal(p.min_value)
+<<<<<<< Updated upstream
                   : (p.min_value ?? null),
 
               max_value:
                 p.data_type === "Decimal"
                   ? formatDecimal(p.max_value)
                   : (p.max_value ?? null),
+=======
+                  : p.min_value ?? null,
+              max_value:
+                p.data_type === "Decimal"
+                  ? formatDecimal(p.max_value)
+                  : p.max_value ?? null,
+>>>>>>> Stashed changes
               unit: p.unit ?? null,
               percentage: p.percentage ?? null,
               text: p.text ?? null,
@@ -850,6 +888,8 @@ export const useAddParameterLogic = () => {
     // Helpers
     equipmentQuantity,
     normalizeDropdownValue,
+    selectedParamCount,
+    setSelectedParamCount,
 
     // Handlers
     handleAddParameter,

@@ -41,6 +41,7 @@ export interface EquipmentDetail {
   equipment_num: string;
   make: string;
   model: string;
+  parameter_count?: number | null;  // ✅ per-unit selected parameter count
   is_active: boolean;
   created_at?: string;
   equipment_id?: number;
@@ -55,6 +56,7 @@ export interface EquipmentCreatePayload {
     equipment_num: string;
     make: string;
     model: string;
+    parameter_count?: number | null;  // ✅ included in save payload
     is_active: boolean;
   }[];
   parameters: {
