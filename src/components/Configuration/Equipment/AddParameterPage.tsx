@@ -65,11 +65,32 @@ const AddParameterPage = () => {
       const next = prev.includes(index)
         ? prev.filter((i) => i !== index)
         : [...prev, index];
-      // ✅ keep logic hook in sync so handleSaveEquipmentDetails uses correct count
+      // keep logic hook in sync so handleSaveEquipmentDetails uses correct count
       setSelectedParamCount(next.length);
       return next;
     });
   };
+
+  // Show Details section only when at least one unit AND one parameter are selected
+  const showDetails = isEquipment && selected.length > 0 && selectedParameterIndices.length > 0;
+
+  // Count of active parameters — used as fallback for table column
+  const activeParameterCount = parameters.filter(
+    (p: any) => p.is_active !== false
+  ).length;
+
+  // Enrich table rows with parameterCount
+  const enrichedTable = equipmentTable.map((row: any) => ({
+    ...row,
+    parameterCount:
+      row.parameterCount != null
+        ? row.parameterCount
+        : selectedParameterIndices.length > 0
+          ? selectedParameterIndices.length
+          : activeParameterCount > 0
+            ? activeParameterCount
+            : "-",
+  }));
 
   const renderParameterContent = (p: any) => {
     let data_type = p.data_type || p.field_type;
@@ -109,7 +130,7 @@ const AddParameterPage = () => {
           </Typography>
         );
       case "Dropdown":
-      case "Select":
+      case "Select": {
         const options = normalizeDropdownValue(config.dropdown);
         if (options.length === 0) return null;
         return (
@@ -119,6 +140,7 @@ const AddParameterPage = () => {
             ))}
           </Box>
         );
+      }
       default:
         return null;
     }
@@ -151,7 +173,6 @@ const AddParameterPage = () => {
       navigate(-1);
       return;
     }
-
     navigate(
       isEnvironment
         ? "/configuration/environment"
@@ -478,7 +499,6 @@ const EquipmentTable: React.FC<{ equipmentTable: any[]; equipmentName: string }>
             <td style={cellStyle}>{equipmentName} {row.equipmentNum}</td>
             <td style={cellStyle}>{row.make}</td>
             <td style={cellStyle}>{row.model}</td>
-            {/* ✅ Show real count — never "-" when parameters exist */}
             <td style={cellStyle}>
               {row.parameterCount !== "-" && row.parameterCount != null
                 ? String(row.parameterCount).padStart(2, "0")
