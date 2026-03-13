@@ -16,8 +16,7 @@ import { formatDueDateDisplay } from "@/components/Task/FormatDueDateDisplay";
 import { trackIcons } from "@/components/Task/trackIcons";
 import { AddEventDialog } from "@/components/Task/AddEventDialog";
 import TaskDetailsDialog from "@/components/Task/TaskDetailsDialog";
-import  AddTaskDialog  from "@/components/Task/AddTaskDialog";
-
+import AddTaskDialog from "@/components/Task/AddTaskDialog";
 
 import { ArrowRightRounded } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
@@ -40,11 +39,16 @@ import { slugify } from "@/utils/slugify";
 function Task() {
   const location = useLocation();
   const parts = location.pathname.split("/").filter(Boolean);
+  // parts[0] = "qc-lab" or "clinic-lab", parts[1] = department slug
   const deptName = parts[1].toString();
 
   const dispatch = useDispatch<AppDispatch>();
 
-  const { data: clinic } = useSelector((s: RootState) => s.clinic);
+  // ── FIX: use rawData so BOTH lab AND clinical departments are found ──
+  // Previously used `data` which is lab-only, causing clinical depts to
+  // return departmentId=null → no events loaded or saved
+  const { rawData: clinic } = useSelector((s: RootState) => s.clinic);
+
   const allTasks = useSelector(selectUITasks);
   const taskLoading = useSelector((s: RootState) => s.tasks.loading);
   const events = useSelector(selectUITaskEvents);
@@ -67,10 +71,7 @@ function Task() {
 
   const departmentId = useMemo(() => {
     if (!clinic?.department?.length) return null;
-
-    
-  const dep = clinic.department.find((d) => slugify(d.name) === deptName);
-
+    const dep = clinic.department.find((d) => slugify(d.name) === deptName);
     return dep?.id ?? null;
   }, [clinic?.department, deptName]);
 
@@ -78,7 +79,6 @@ function Task() {
     const id = setInterval(() => {
       setNow(Date.now());
     }, 1000);
-
     return () => clearInterval(id);
   }, []);
 
@@ -101,7 +101,10 @@ function Task() {
   }, [clinic?.id, dispatch]);
 
   const handleCreateEvent = async (name: string) => {
-    if (!departmentId) return;
+    if (!departmentId) {
+      toast.error("Department not found");
+      return;
+    }
 
     try {
       await taskEventApi.create({
@@ -120,7 +123,6 @@ function Task() {
 
   const tasks = useMemo(() => {
     if (!selectedEventId) return [];
-
     return allTasks.filter(
       (t) =>
         eventIds.includes(t.task_event) && t.task_event === selectedEventId,
@@ -129,18 +131,15 @@ function Task() {
 
   const eventTaskCounts = useMemo(() => {
     const counts: Record<number, { assigned: number; unassigned: number }> = {};
-
     allTasks.forEach((t) => {
       const eventId = t.task_event;
       if (!counts[eventId]) counts[eventId] = { assigned: 0, unassigned: 0 };
-
       if (t.assignment) {
         counts[eventId].assigned += 1;
       } else {
         counts[eventId].unassigned += 1;
       }
     });
-
     return counts;
   }, [allTasks]);
 
@@ -295,7 +294,6 @@ function Task() {
                   {["All", "To-Do", "In-Progress", "Complete"].map(
                     (label, i) => {
                       let IconComponent = null;
-
                       switch (label) {
                         case "All":
                           IconComponent = LayersIcon;
@@ -421,23 +419,11 @@ function Task() {
 
               <Stack spacing="2px" mt={1}>
                 {taskLoading ? (
-                  <Box
-                    sx={{
-                      p: 4,
-                      textAlign: "center",
-                      color: "#9CA3AF",
-                    }}
-                  >
+                  <Box sx={{ p: 4, textAlign: "center", color: "#9CA3AF" }}>
                     <Typography fontSize={13}>Loading tasks...</Typography>
                   </Box>
                 ) : filteredTasks.length === 0 ? (
-                  <Box
-                    sx={{
-                      p: 4,
-                      textAlign: "center",
-                      color: "#9CA3AF",
-                    }}
-                  >
+                  <Box sx={{ p: 4, textAlign: "center", color: "#9CA3AF" }}>
                     <Typography fontSize={13}>
                       No tasks found for this event
                     </Typography>
@@ -604,9 +590,9 @@ function Task() {
             task={selectedTaskDetails}
             onUpdated={() => {
               if (clinic?.id) {
-                dispatch(fetchTasksByClinic(clinic.id)); 
+                dispatch(fetchTasksByClinic(clinic.id));
               }
-              setOpenTaskDetails(false); 
+              setOpenTaskDetails(false);
               setSelectedTaskDetails(null);
             }}
           />

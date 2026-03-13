@@ -25,7 +25,9 @@ type PlanItem = {
 const formatScheduleInfo = (item: PlanItem) => {
   switch (item.scheduleType) {
     case 1:
-      return item.oneTimeDate ? `On ${new Date(item.oneTimeDate).toDateString()}` : "Daily";
+      return item.oneTimeDate
+        ? `On ${new Date(item.oneTimeDate).toDateString()}`
+        : "Daily";
     case 3:
       return item.days?.length ? `Weekly: ${item.days.join(", ")}` : "Weekly";
     case 4:
@@ -48,18 +50,28 @@ const avatarColors = [
 const getAvatarColor = (name?: string) => {
   if (!name) return avatarColors[0];
   let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
   return avatarColors[Math.abs(hash) % avatarColors.length];
 };
 
-const SCHEDULE_LABEL: Record<number, string> = { 1: "One Time", 2: "Daily", 3: "Weekly", 4: "Monthly" };
+const SCHEDULE_LABEL: Record<number, string> = {
+  1: "One Time",
+  2: "Daily",
+  3: "Weekly",
+  4: "Monthly",
+};
 
 const getScheduleLabel = (type: any) => {
   const t =
-    typeof type === "number" ? type
-    : typeof type === "string" ? Number(type)
-    : typeof type === "object" ? Number(type?.id)
-    : NaN;
+    typeof type === "number"
+      ? type
+      : typeof type === "string"
+        ? Number(type)
+        : typeof type === "object"
+          ? Number(type?.id)
+          : NaN;
   return SCHEDULE_LABEL[t] ?? "Others";
 };
 
@@ -75,7 +87,9 @@ export default function ClinicalPlanPage() {
     searchText: string;
   }>();
 
-  const { clinicData } = useSelector((s: RootState) => s.clinic);
+  // ── FIX: use rawData so clinical departments are always found,
+  // regardless of whether the type field is set correctly on backend
+  const { rawData: clinic } = useSelector((s: RootState) => s.clinic);
   const events = useSelector((s: RootState) => s.events.data);
   const assignees = useSelector((s: RootState) => s.assignees.data);
 
@@ -92,12 +106,22 @@ export default function ClinicalPlanPage() {
   const planItems = useMemo(() => {
     return events.flatMap((event) => {
       if (slugify(event.department) !== departmentName) return [];
+
       const assigneeId = assigneeIdMap[event.assignment];
-      if (selectedAssigneeIds.length > 0 && assigneeId != null && !selectedAssigneeIds.includes(assigneeId)) return [];
+      if (
+        selectedAssigneeIds.length > 0 &&
+        assigneeId != null &&
+        !selectedAssigneeIds.includes(assigneeId)
+      ) {
+        return [];
+      }
+
       return event.equipments.map((eq: any) => ({
         key: `${event.id}-${eq.equipment_details__id}`,
         eventId: event.id,
         eventName: event.event_name,
+        // ── FIX: use assignee_name (display name), not assignment (ID)
+        // This matches how LabPlanPage works
         assignment: event.assignee_name,
         scheduleLabel: getScheduleLabel(event.schedule?.type),
         scheduleType: event.schedule?.type,
@@ -127,28 +151,55 @@ export default function ClinicalPlanPage() {
   }, [planItems, searchText]);
 
   const scheduleCounts = useMemo(() => {
-    const counts: Record<ScheduleTab, number> = { "One Time": 0, Daily: 0, Weekly: 0, Monthly: 0 };
-    (Object.keys(counts) as ScheduleTab[]).forEach((tab) => { counts[tab] = groupedBySchedule[tab]?.length ?? 0; });
+    const counts: Record<ScheduleTab, number> = {
+      "One Time": 0,
+      Daily: 0,
+      Weekly: 0,
+      Monthly: 0,
+    };
+    (Object.keys(counts) as ScheduleTab[]).forEach((tab) => {
+      counts[tab] = groupedBySchedule[tab]?.length ?? 0;
+    });
     return counts;
   }, [groupedBySchedule]);
 
-  const activeTabItems = useMemo(() => groupedBySchedule[activeTab] ?? [], [groupedBySchedule, activeTab]);
+  const activeTabItems = useMemo(
+    () => groupedBySchedule[activeTab] ?? [],
+    [groupedBySchedule, activeTab],
+  );
 
   const equipmentDetails = useMemo(() => {
-    if (!selectedItem || !clinicData) return [];
-    const department = clinicData.department.find((d) => slugify(d.name) === departmentName);
+    if (!selectedItem || !clinic) return [];
+
+    const department = clinic.department.find(
+      (d) => slugify(d.name) === departmentName,
+    );
     if (!department) return [];
+
     const equipment = department.equipments.find((e) =>
       e.equipment_details.some((d) => d.id === selectedItem.equipmentDetailId),
     );
     if (!equipment) return [];
-    const detail = equipment.equipment_details.find((d) => d.id === selectedItem.equipmentDetailId);
+
+    const detail = equipment.equipment_details.find(
+      (d) => d.id === selectedItem.equipmentDetailId,
+    );
     if (!detail || detail.id == null) return [];
-    return [{ equipment_id: detail.id!, equipment_num: detail.equipment_num, make: detail.make, model: detail.model, parameters: equipment.parameters ?? [] }];
-  }, [selectedItem, clinicData, departmentName]);
+
+    return [
+      {
+        equipment_id: detail.id!,
+        equipment_num: detail.equipment_num,
+        make: detail.make,
+        model: detail.model,
+        parameters: equipment.parameters ?? [],
+      },
+    ];
+  }, [selectedItem, clinic, departmentName]);
 
   return (
     <div style={{ display: "flex", gap: 20 }}>
+      {/* LEFT */}
       <div
         style={{
           width: selectedItem ? "520px" : "100%",
@@ -161,56 +212,124 @@ export default function ClinicalPlanPage() {
           overflowY: "auto",
         }}
       >
+        {/* Schedule Tabs */}
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          {(["One Time", "Daily", "Weekly", "Monthly"] as ScheduleTab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => { setActiveTab(tab); setSelectedItem(null); setSelectedRadio(""); }}
-              style={{
-                padding: "8px 14px", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer",
-                border: activeTab === tab ? "2px solid #f97316" : "1px solid #e5e7eb",
-                backgroundColor: activeTab === tab ? "#fff7ed" : "#fff",
-                color: activeTab === tab ? "#ea580c" : "#374151",
-              }}
-            >
-              {tab} <span style={{ opacity: 0.6, fontWeight: 600 }}>({scheduleCounts[tab]})</span>
-            </button>
-          ))}
+          {(["One Time", "Daily", "Weekly", "Monthly"] as ScheduleTab[]).map(
+            (tab) => (
+              <button
+                key={tab}
+                onClick={() => {
+                  setActiveTab(tab);
+                  setSelectedItem(null);
+                  setSelectedRadio("");
+                }}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: 10,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  border:
+                    activeTab === tab
+                      ? "2px solid #f97316"
+                      : "1px solid #e5e7eb",
+                  backgroundColor: activeTab === tab ? "#fff7ed" : "#fff",
+                  color: activeTab === tab ? "#ea580c" : "#374151",
+                }}
+              >
+                {tab}{" "}
+                <span style={{ opacity: 0.6, fontWeight: 600 }}>
+                  ({scheduleCounts[tab]})
+                </span>
+              </button>
+            ),
+          )}
         </div>
 
         {activeTabItems.length === 0 ? (
-          <div style={{ textAlign: "center", marginTop: 100, color: "#94a3b8" }}>No plans found</div>
+          <div
+            style={{ textAlign: "center", marginTop: 100, color: "#94a3b8" }}
+          >
+            No plans found
+          </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: selectedItem ? "1fr" : "repeat(auto-fill, minmax(320px, 1fr))", gap: 12 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: selectedItem
+                ? "1fr"
+                : "repeat(auto-fill, minmax(320px, 1fr))",
+              gap: 12,
+            }}
+          >
             {activeTabItems.map((item) => (
               <div
                 key={item.key}
-                onClick={() => { setSelectedItem(item); setSelectedRadio(item.equipmentUnit); }}
+                onClick={() => {
+                  setSelectedItem(item);
+                  setSelectedRadio(item.equipmentUnit);
+                }}
                 style={{
-                  padding: 16, borderRadius: 12, cursor: "pointer",
-                  backgroundColor: selectedRadio === item.equipmentUnit ? "#fef3f2" : "#fff",
-                  border: selectedRadio === item.equipmentUnit ? "2px solid #f97316" : "1px solid #e5e7eb",
-                  display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8,
+                  padding: 16,
+                  borderRadius: 12,
+                  cursor: "pointer",
+                  backgroundColor:
+                    selectedRadio === item.equipmentUnit ? "#fef3f2" : "#fff",
+                  border:
+                    selectedRadio === item.equipmentUnit
+                      ? "2px solid #f97316"
+                      : "1px solid #e5e7eb",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  gap: 8,
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700 }}>{item.equipmentUnit}</div>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>{item.equipmentName}</div>
-                  <div style={{ marginTop: 6, fontSize: 12 }}><strong>Event:</strong> {item.eventName}</div>
-                  <div style={{ marginTop: 6, fontSize: 11, color: "#6b7280", lineHeight: 1.4 }}>
-                    <div><strong>Schedule:</strong> {item.scheduleLabel}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>
+                    {item.equipmentUnit}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                    {item.equipmentName}
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: 12 }}>
+                    <strong>Event:</strong> {item.eventName}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 6,
+                      fontSize: 11,
+                      color: "#6b7280",
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    <div>
+                      <strong>Schedule:</strong> {item.scheduleLabel}
+                    </div>
                     {item.startDate && item.endDate && (
-                      <div>{new Date(item.startDate).toDateString()} → {new Date(item.endDate).toDateString()}</div>
+                      <div>
+                        {new Date(item.startDate).toDateString()} →{" "}
+                        {new Date(item.endDate).toDateString()}
+                      </div>
                     )}
                     <div>{formatScheduleInfo(item)}</div>
                   </div>
                 </div>
+
                 <div
                   title={item.assignment || "Unassigned"}
                   style={{
-                    width: 28, height: 28, borderRadius: "50%", backgroundColor: getAvatarColor(item.assignment),
-                    color: "#fff", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center",
-                    justifyContent: "center", flexShrink: 0,
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    backgroundColor: getAvatarColor(item.assignment),
+                    color: "#fff",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
                   }}
                 >
                   {getInitials(item.assignment)}
@@ -221,9 +340,14 @@ export default function ClinicalPlanPage() {
         )}
       </div>
 
+      {/* RIGHT */}
       {selectedItem && (
         <div style={{ flex: 1 }}>
-          <LabEquipmentForm equipmentDetails={equipmentDetails} selectedRadio={selectedRadio} setSelectedRadio={setSelectedRadio} />
+          <LabEquipmentForm
+            equipmentDetails={equipmentDetails}
+            selectedRadio={selectedRadio}
+            setSelectedRadio={setSelectedRadio}
+          />
         </div>
       )}
     </div>
