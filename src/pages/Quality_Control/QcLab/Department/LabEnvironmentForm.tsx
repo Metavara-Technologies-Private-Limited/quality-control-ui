@@ -74,6 +74,11 @@ export default function LabEnvironmentForm({ environment, onSaved }: Props) {
       const results = await Promise.all(requests);
       console.log("✅ Save successful:", results);
 
+      // Clear the form immediately after successful save so old values
+      // cannot be submitted again on repeated clicks.
+      setValues({});
+      setLogDateTime(dayjs());
+
       toast.success("Logs saved successfully");
 
       // Wait for toast autoClose (3000ms) + buffer before calling onSaved

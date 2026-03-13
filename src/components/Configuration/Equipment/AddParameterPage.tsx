@@ -159,18 +159,7 @@ const AddParameterPage = () => {
         {/* Header */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <IconButton
-            onClick={() =>
-              navigate(
-                isEnvironment
-                  ? "/configuration/environment"
-                  : "/configuration/equipment/view",
-                {
-                  state: isEnvironment
-                    ? { environmentId }
-                    : { equipmentId: location.state?.equipmentId },
-                },
-              )
-            }
+            onClick={() => navigate(-1)}
             sx={{
               width: 24,
               height: 24,

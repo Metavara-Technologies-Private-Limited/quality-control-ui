@@ -23,9 +23,21 @@ import SearchIcon from "@mui/icons-material/Search";
 import { slugify } from "@/utils/slugify";
 
 const avatarColors = [
-  "#091E42", "#172B4D", "#0052CC", "#0747A6", "#0065FF",
-  "#004F3D", "#006644", "#00875A", "#7A1FA2", "#403294",
-  "#5E4DB2", "#BF2600", "#DE350B", "#FF5630", "#FF8B00",
+  "#091E42",
+  "#172B4D",
+  "#0052CC",
+  "#0747A6",
+  "#0065FF",
+  "#004F3D",
+  "#006644",
+  "#00875A",
+  "#7A1FA2",
+  "#403294",
+  "#5E4DB2",
+  "#BF2600",
+  "#DE350B",
+  "#FF5630",
+  "#FF8B00",
 ];
 
 const getInitials = (name: string) =>
@@ -76,6 +88,8 @@ const ClinicalDepartmentLayout = () => {
     return "task";
   };
 
+  const activeTab = getActiveTab();
+
   return (
     <Box>
       {/* ---------------- Top Bar ---------------- */}
@@ -91,7 +105,7 @@ const ClinicalDepartmentLayout = () => {
       >
         {/* ---------------- Tabs ---------------- */}
         <Tabs
-          value={getActiveTab()}
+          value={activeTab}
           onChange={(_, value) => navigate(value)}
           TabIndicatorProps={{
             sx: { backgroundColor: "#E17E61", height: "1px" },
@@ -121,25 +135,27 @@ const ClinicalDepartmentLayout = () => {
 
         {/* ---------------- Search + Assignees ---------------- */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
-          <TextField
-            size="small"
-            placeholder="Search for equipments"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            sx={{
-              width: 300,
-              "& .MuiOutlinedInput-root": { borderRadius: "10px" },
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: "#9E9E9E", fontSize: 20 }} />
-                </InputAdornment>
-              ),
-            }}
-          />
+          {activeTab === "equipments" && (
+            <TextField
+              size="small"
+              placeholder="Search for equipments"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              sx={{
+                width: 300,
+                "& .MuiOutlinedInput-root": { borderRadius: "10px" },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: "#9E9E9E", fontSize: 20 }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          )}
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
               Assignees
             </Typography>
@@ -229,7 +245,9 @@ const ClinicalDepartmentLayout = () => {
                         sx={{
                           px: 2,
                           py: 1,
-                          backgroundColor: isSelected ? "#E9F2FF" : "transparent",
+                          backgroundColor: isSelected
+                            ? "#E9F2FF"
+                            : "transparent",
                           "&:hover": {
                             backgroundColor: isSelected ? "#DEEBFF" : "#F4F5F7",
                           },
