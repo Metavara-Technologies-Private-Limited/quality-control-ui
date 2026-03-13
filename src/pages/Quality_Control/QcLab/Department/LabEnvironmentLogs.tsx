@@ -63,7 +63,7 @@ export default function LabEnvironmentLogs({ environment }: Props) {
     environment.parameters.forEach((p) => {
       map.set(p.id, {
         name: p.env_parameter_name,
-        unit: p.config?.unit ?? "-",
+        unit: p.config?.unit ?? "",
       });
     });
     return map;
@@ -73,13 +73,22 @@ export default function LabEnvironmentLogs({ environment }: Props) {
   const rows = useMemo(() => {
     const allRows = logs.map((log, index) => {
       const param = parameterMetaMap.get(log.environment_parameter_id);
+      const timestamp = dayjs(log.log_time ?? log.created_at).valueOf();
+
       return {
         id: log.id || index,
+        timestamp,
         date: dayjs(log.log_time ?? log.created_at).format("DD/MM/YYYY HH:mm"),
         parameter: param?.name ?? "-",
         unit: param?.unit ?? "-",
         value: log.content ?? "-",
       };
+    });
+
+    allRows.sort((a, b) => {
+      const byTime = b.timestamp - a.timestamp;
+      if (byTime !== 0) return byTime;
+      return Number(b.id) - Number(a.id);
     });
 
     if (!searchTerm) return allRows;
@@ -110,9 +119,18 @@ export default function LabEnvironmentLogs({ environment }: Props) {
           ]);
           if (!logDateTime.isValid()) return null;
 
+          const dataType = param.config?.data_type;
+          const rawValue = String(log.value ?? "").trim();
+          const normalizedValue =
+            dataType === "Integer" || dataType === "Decimal"
+              ? rawValue.replace(/[^0-9.-]/g, "")
+              : rawValue;
+
+          if (!normalizedValue) return null;
+
           return environmentParameterValueApi.create({
             environment_parameter: param.id,
-            content: log.value,
+            content: normalizedValue,
             log_time: logDateTime.toISOString(),
             environment: 0,
           });
