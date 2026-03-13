@@ -53,7 +53,6 @@ const EquipmentCard = ({
     >
       {/* Header: Equipment + Assignees */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {/* Equipment info */}
         <div style={{ fontSize: 13, fontWeight: 700, color: "#4B5563" }}>
           {item.detailName} :{" "}
           <span style={{ fontWeight: 500, color: "#6B7280" }}>
@@ -61,7 +60,6 @@ const EquipmentCard = ({
           </span>
         </div>
 
-        {/* Assignees (shown when card is selected) */}
         {selected && (
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <span style={{ fontSize: "12px", fontWeight: 700, color: "#4B5563" }}>
@@ -126,26 +124,12 @@ const EquipmentCard = ({
           }}
         >
           {item.eventNames && item.eventNames.length > 0 && (
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                color: "#0f172a",
-                marginBottom: 2,
-              }}
-            >
+            <div style={{ fontSize: 10, fontWeight: 600, color: "#0f172a", marginBottom: 2 }}>
               {item.eventNames[0]}
             </div>
           )}
           {item.scheduleType && (
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                color: "#2563eb",
-                marginBottom: 2,
-              }}
-            >
+            <div style={{ fontSize: 10, fontWeight: 600, color: "#2563eb", marginBottom: 2 }}>
               {getRecurrenceLabel(item)}
             </div>
           )}
@@ -201,9 +185,6 @@ export default function ClinicalEquipments() {
 
   const assignees = useSelector((state: RootState) => state.assignees.data);
 
-  // ── FIX: prefer clinicData (type="clinical" depts), but fall back to
-  // rawData if clinicData doesn't have the department yet (e.g. type field
-  // not set on backend). This guarantees equipment always loads.
   const { clinicData, rawData } = useSelector((s: RootState) => s.clinic);
   const events = useSelector((s: RootState) => s.events.data);
 
@@ -221,6 +202,13 @@ export default function ClinicalEquipments() {
       )
     );
   }, [clinicData, rawData, departmentName]);
+
+  // ✅ raw department for parameter_count lookup (same pattern as LabEquipments)
+  const rawDepartment = useMemo(() => {
+    return rawData?.department.find(
+      (d: any) => slugify(d.name) === departmentName,
+    );
+  }, [rawData, departmentName]);
 
   const assigneeByName = useMemo(() => {
     const map = new Map<string, number>();
@@ -270,18 +258,39 @@ export default function ClinicalEquipments() {
     return grouped;
   }, [rawEquipmentData, searchText]);
 
+  /* -------- Right panel data -------- */
   const equipmentDetails = useMemo(() => {
     if (!selectedEquipment) return [];
+
     return rawEquipmentData
       .filter((e) => e.name === selectedEquipment.name)
-      .map((e) => ({
-        equipment_id: e.id,
-        equipment_num: e.detailName,
-        parameters: e.parameters,
-        make: e.make,
-        model: e.model,
-      }));
-  }, [selectedEquipment, rawEquipmentData]);
+      .map((e) => {
+        // ✅ FIX: look up parameter_count for this specific equipment detail
+        // from rawData so form only shows parameters selected during configuration
+        const rawEq = rawDepartment?.equipments?.find(
+          (eq: any) => eq.equipment_name === e.name,
+        );
+        const rawDetail = rawEq?.equipment_details?.find(
+          (d: any) => d.id === e.id,
+        );
+        const paramCount: number | null = rawDetail?.parameter_count ?? null;
+
+        // Slice parameters to only show the ones selected during configuration.
+        // If parameter_count is null (legacy data), fall back to all parameters.
+        const visibleParams =
+          paramCount != null && paramCount > 0
+            ? e.parameters.slice(0, paramCount)
+            : e.parameters;
+
+        return {
+          equipment_id: e.id,
+          equipment_num: e.detailName,
+          parameters: visibleParams,
+          make: e.make,
+          model: e.model,
+        };
+      });
+  }, [selectedEquipment, rawEquipmentData, rawDepartment]);
 
   useEffect(() => {
     if (!selectedRadio && equipmentDetails.length > 0) {
@@ -310,9 +319,7 @@ export default function ClinicalEquipments() {
         }}
       >
         {Object.keys(groupedEquipments).length === 0 ? (
-          <div
-            style={{ textAlign: "center", color: "#94a3b8", paddingTop: 40 }}
-          >
+          <div style={{ textAlign: "center", color: "#94a3b8", paddingTop: 40 }}>
             {activeTab === "To-Do"
               ? "No equipment scheduled for today"
               : "No equipment found"}
@@ -329,14 +336,7 @@ export default function ClinicalEquipments() {
                 border: "2px solid #e5e7eb",
               }}
             >
-              <h3
-                style={{
-                  marginBottom: 12,
-                  fontSize: 16,
-                  fontWeight: 700,
-                  color: "#0f172a",
-                }}
-              >
+              <h3 style={{ marginBottom: 12, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>
                 {eqName}
               </h3>
               <div
@@ -383,17 +383,8 @@ export default function ClinicalEquipments() {
   if (activeTab === "Plan") {
     return (
       <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            marginBottom: 24,
-            gap: 24,
-          }}
-        >
-          <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
-            Equipments
-          </h1>
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 24, gap: 24 }}>
+          <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Equipments</h1>
           <EquipmentTabs activeTab={activeTab} onTabChange={handleTabChange} />
         </div>
         <ClinicalPlanPage />
@@ -403,14 +394,7 @@ export default function ClinicalEquipments() {
 
   return (
     <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          marginBottom: 24,
-          gap: 24,
-        }}
-      >
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 24, gap: 24 }}>
         <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Equipments</h1>
         <EquipmentTabs activeTab={activeTab} onTabChange={handleTabChange} />
       </div>

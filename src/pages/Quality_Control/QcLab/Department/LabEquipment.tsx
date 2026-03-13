@@ -18,8 +18,6 @@ import LabEquipmentForm from "./LabEquipmentForm";
 import LabPlanPage from "./LabPlanPage";
 import { slugify } from "@/utils/slugify";
 
-/* -------- Check if event is active TODAY -------- */
-
 /* -------- Equipment Card -------- */
 const EquipmentCard = ({
   item,
@@ -140,7 +138,6 @@ const EquipmentCard = ({
         )}
       </div>
 
-      {/* Dates */}
       {/* Dates + Recurrence */}
       {showDates && (
         <div
@@ -237,6 +234,7 @@ export default function LabEquipments() {
   }>();
   const assignees = useSelector((state: RootState) => state.assignees.data);
   const { data: clinic } = useSelector((s: RootState) => s.clinic);
+  const { rawData: clinicRaw } = useSelector((s: RootState) => s.clinic);
   const events = useSelector((s: RootState) => s.events.data);
 
   const [activeTab, setActiveTab] = useState<"All" | "To-Do" | "Plan">("All");
@@ -248,6 +246,11 @@ export default function LabEquipments() {
     (d) => slugify(d.name) === departmentName,
   );
 
+  // ✅ raw department from clinicRaw for parameter_count lookup
+  const rawDepartment = clinicRaw?.department.find(
+    (d: any) => slugify(d.name) === departmentName,
+  );
+
   const assigneeByName = useMemo(() => {
     const map = new Map<string, number>();
     assignees.forEach((a) => {
@@ -256,20 +259,16 @@ export default function LabEquipments() {
     return map;
   }, [assignees]);
 
-  /* -------- Build equipment → assignees + dates + event names map -------- */
   const equipmentMetadata = useMemo(
     () => buildEquipmentMetadata(events),
     [events],
   );
-
-  /* -------- Get equipment IDs active TODAY -------- */
 
   const todayActiveEquipmentIds = useMemo(
     () => getTodayActiveEquipmentIds(events),
     [events],
   );
 
-  /* -------- Build raw equipment data -------- */
   const rawEquipmentData = useMemo<EquipmentItem[]>(
     () =>
       buildRawEquipmentData({
@@ -314,14 +313,34 @@ export default function LabEquipments() {
 
     return rawEquipmentData
       .filter((e) => e.name === selectedEquipment.name)
-      .map((e) => ({
-        equipment_id: e.id,
-        equipment_num: e.detailName,
-        parameters: e.parameters,
-        make: e.make,
-        model: e.model,
-      }));
-  }, [selectedEquipment, rawEquipmentData]);
+      .map((e) => {
+        // ✅ FIX: look up parameter_count for this specific equipment detail
+        // from the raw clinic store (which has the full detail objects)
+        const rawEq = rawDepartment?.equipments?.find(
+          (eq: any) => eq.equipment_name === e.name,
+        );
+        const rawDetail = rawEq?.equipment_details?.find(
+          (d: any) => d.id === e.id,
+        );
+        const paramCount: number | null = rawDetail?.parameter_count ?? null;
+
+        // ✅ Slice parameters to only show the ones selected during configuration.
+        // If parameter_count is null (legacy data created before this fix),
+        // fall back to showing all parameters so nothing breaks.
+        const visibleParams =
+          paramCount != null && paramCount > 0
+            ? e.parameters.slice(0, paramCount)
+            : e.parameters;
+
+        return {
+          equipment_id: e.id,
+          equipment_num: e.detailName,
+          parameters: visibleParams,
+          make: e.make,
+          model: e.model,
+        };
+      });
+  }, [selectedEquipment, rawEquipmentData, rawDepartment]);
 
   useEffect(() => {
     if (!selectedRadio && equipmentDetails.length > 0) {

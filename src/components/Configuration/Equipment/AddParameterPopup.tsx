@@ -23,10 +23,8 @@ import {
 
 // ===== VALIDATIONS =====
 
-// Title → starts with alphabet, then alphanumeric
 const handleTitleChange = (value: string, setTitle: any) => {
   const regex = /^[A-Za-z][A-Za-z0-9]*$/;
-
   if (value === "" || regex.test(value)) {
     setTitle(value);
   } else {
@@ -34,10 +32,8 @@ const handleTitleChange = (value: string, setTitle: any) => {
   }
 };
 
-// Integer validation
 const handleIntegerInput = (value: string, setter: any) => {
   const regex = /^[0-9]*$/;
-
   if (regex.test(value)) {
     setter(value);
   } else {
@@ -45,10 +41,8 @@ const handleIntegerInput = (value: string, setter: any) => {
   }
 };
 
-// Decimal validation
 const handleDecimalInput = (value: string, setter: any) => {
   const regex = /^[0-9]*\.?[0-9]*$/;
-
   if (regex.test(value)) {
     setter(value);
   } else {
@@ -56,10 +50,8 @@ const handleDecimalInput = (value: string, setter: any) => {
   }
 };
 
-// convert integer → decimal format
 const normalizeDecimal = (value: string, setter: any) => {
   if (value === "") return;
-
   if (!value.includes(".")) {
     setter(`${value}.0`);
   }
@@ -75,9 +67,7 @@ interface Props {
 // Style constants
 const halfFieldSX = {
   flex: 1,
-  "& .MuiInputLabel-root.Mui-focused": {
-    color: "#232323 !important",
-  },
+  "& .MuiInputLabel-root.Mui-focused": { color: "#232323 !important" },
   "& .MuiInputLabel-root": { color: "#828282 !important" },
   "& .MuiOutlinedInput-root": {
     height: "50px",
@@ -90,9 +80,7 @@ const halfFieldSX = {
 };
 
 const commonFieldSX = {
-  "& .MuiInputLabel-root.Mui-focused": {
-    color: "#232323 !important",
-  },
+  "& .MuiInputLabel-root.Mui-focused": { color: "#232323 !important" },
   "& .MuiInputLabel-root": { color: "#828282 !important" },
   "& .MuiOutlinedInput-root": {
     height: "50px",
@@ -101,6 +89,23 @@ const commonFieldSX = {
     "& fieldset": { borderColor: "#CFD1D4" },
     "&:hover fieldset": { borderColor: "#CFD1D4" },
     "&.Mui-focused fieldset": { borderColor: "#CFD1D4 !important" },
+  },
+};
+
+// ✅ FIX: multiline variant — removes fixed height so textarea can expand naturally
+const multilineFieldSX = {
+  "& .MuiInputLabel-root.Mui-focused": { color: "#232323 !important" },
+  "& .MuiInputLabel-root": { color: "#828282 !important" },
+  "& .MuiOutlinedInput-root": {
+    // NO height constraint — let rows prop control the height
+    padding: "12px 14px",
+    "& fieldset": { borderColor: "#CFD1D4" },
+    "&:hover fieldset": { borderColor: "#CFD1D4" },
+    "&.Mui-focused fieldset": { borderColor: "#CFD1D4 !important" },
+    "& textarea": {
+      padding: 0,
+      resize: "vertical",  // allow user to resize vertically if needed
+    },
   },
 };
 
@@ -195,9 +200,7 @@ const AddParameterPopup: React.FC<Props> = ({
           InputLabelProps={{ shrink: true }}
           sx={{
             width: "380px",
-            "& .MuiInputLabel-root.Mui-focused": {
-              color: "#232323 !important",
-            },
+            "& .MuiInputLabel-root.Mui-focused": { color: "#232323 !important" },
             "& .MuiInputLabel-root": { color: "#5F646F !important" },
             "& .MuiOutlinedInput-root": {
               height: "50px",
@@ -243,9 +246,7 @@ const AddParameterPopup: React.FC<Props> = ({
           InputLabelProps={{ shrink: true }}
           sx={{
             width: "380px",
-            "& .MuiInputLabel-root.Mui-focused": {
-              color: "#232323 !important",
-            },
+            "& .MuiInputLabel-root.Mui-focused": { color: "#232323 !important" },
             "& .MuiInputLabel-root": { color: "#828282 !important" },
             "& .MuiOutlinedInput-root": {
               height: "50px",
@@ -276,7 +277,6 @@ const AddParameterPopup: React.FC<Props> = ({
                 InputLabelProps={{ shrink: true }}
                 sx={halfFieldSX}
               />
-
               <TextField
                 label="Unit"
                 select
@@ -287,32 +287,29 @@ const AddParameterPopup: React.FC<Props> = ({
                 sx={halfFieldSX}
               >
                 {UNIT_OPTIONS.map((opt) => (
-                  <MenuItem key={opt} value={opt}>
-                    {opt}
-                  </MenuItem>
+                  <MenuItem key={opt} value={opt}>{opt}</MenuItem>
                 ))}
               </TextField>
             </Box>
 
-<Box sx={{ display: "flex", gap: "16px", width: "100%" }}>
-  <TextField
-    label="Minimum Value"
-    size="small"
-    value={integerMin}
-    onChange={(e) => handleIntegerInput(e.target.value, setIntegerMin)}
-    InputLabelProps={{ shrink: true }}
-    sx={{ ...commonFieldSX, flex: 1 }}
-  />
-
-  <TextField
-    label="Maximum Value"
-    size="small"
-    value={integerMax}
-    onChange={(e) => handleIntegerInput(e.target.value, setIntegerMax)}
-    InputLabelProps={{ shrink: true }}
-    sx={{ ...commonFieldSX, flex: 1 }}
-  />
-</Box>
+            <Box sx={{ display: "flex", gap: "16px", width: "100%" }}>
+              <TextField
+                label="Minimum Value"
+                size="small"
+                value={integerMin}
+                onChange={(e) => handleIntegerInput(e.target.value, setIntegerMin)}
+                InputLabelProps={{ shrink: true }}
+                sx={{ ...commonFieldSX, flex: 1 }}
+              />
+              <TextField
+                label="Maximum Value"
+                size="small"
+                value={integerMax}
+                onChange={(e) => handleIntegerInput(e.target.value, setIntegerMax)}
+                InputLabelProps={{ shrink: true }}
+                sx={{ ...commonFieldSX, flex: 1 }}
+              />
+            </Box>
           </>
         )}
 
@@ -329,7 +326,6 @@ const AddParameterPopup: React.FC<Props> = ({
                 InputLabelProps={{ shrink: true }}
                 sx={halfFieldSX}
               />
-
               <TextField
                 label="Unit"
                 select
@@ -340,9 +336,7 @@ const AddParameterPopup: React.FC<Props> = ({
                 sx={halfFieldSX}
               >
                 {UNIT_OPTIONS.map((opt) => (
-                  <MenuItem key={opt} value={opt}>
-                    {opt}
-                  </MenuItem>
+                  <MenuItem key={opt} value={opt}>{opt}</MenuItem>
                 ))}
               </TextField>
             </Box>
@@ -357,7 +351,6 @@ const AddParameterPopup: React.FC<Props> = ({
                 InputLabelProps={{ shrink: true }}
                 sx={{ ...commonFieldSX, flex: 1 }}
               />
-
               <TextField
                 label="Maximum Value"
                 size="small"
@@ -375,9 +368,7 @@ const AddParameterPopup: React.FC<Props> = ({
         {fieldType === "Text" && (
           <>
             <Box sx={{ display: "flex", gap: 3, alignItems: "center", ml: 1 }}>
-              <label
-                style={{ display: "flex", alignItems: "center", gap: "8px" }}
-              >
+              <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <input
                   type="radio"
                   checked={textType === "single"}
@@ -389,23 +380,18 @@ const AddParameterPopup: React.FC<Props> = ({
                     height: "16px",
                     borderRadius: "50%",
                     cursor: "pointer",
-                    border: `2px solid ${
-                      textType === "single" ? "#232323" : "#d1d5db"
-                    }`,
+                    border: `2px solid ${textType === "single" ? "#232323" : "#d1d5db"}`,
                     backgroundColor: "#fff",
-                    boxShadow:
-                      textType === "single"
-                        ? "inset 0 0 0 2px #fff, inset 0 0 0 14px #E17E61"
-                        : "none",
+                    boxShadow: textType === "single"
+                      ? "inset 0 0 0 2px #fff, inset 0 0 0 14px #E17E61"
+                      : "none",
                     outline: "none",
                   }}
                 />
                 Single Line
               </label>
 
-              <label
-                style={{ display: "flex", alignItems: "center", gap: "8px" }}
-              >
+              <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <input
                   type="radio"
                   checked={textType === "multi"}
@@ -417,14 +403,11 @@ const AddParameterPopup: React.FC<Props> = ({
                     height: "16px",
                     borderRadius: "50%",
                     cursor: "pointer",
-                    border: `2px solid ${
-                      textType === "multi" ? "#232323" : "#d1d5db"
-                    }`,
+                    border: `2px solid ${textType === "multi" ? "#232323" : "#d1d5db"}`,
                     backgroundColor: "#fff",
-                    boxShadow:
-                      textType === "multi"
-                        ? "inset 0 0 0 2px #fff, inset 0 0 0 14px #E17E61"
-                        : "none",
+                    boxShadow: textType === "multi"
+                      ? "inset 0 0 0 2px #fff, inset 0 0 0 14px #E17E61"
+                      : "none",
                     outline: "none",
                   }}
                 />
@@ -432,13 +415,16 @@ const AddParameterPopup: React.FC<Props> = ({
               </label>
             </Box>
 
+            {/* ✅ FIX: use multilineFieldSX for multi, commonFieldSX for single */}
             <TextField
               value={textValue}
               onChange={(e) => setTextValue(e.target.value)}
               fullWidth
               multiline={textType === "multi"}
-              rows={textType === "multi" ? 4 : 1}
-              sx={commonFieldSX}
+              rows={textType === "multi" ? 4 : undefined}
+              minRows={textType === "single" ? undefined : undefined}
+              InputLabelProps={{ shrink: true }}
+              sx={textType === "multi" ? multilineFieldSX : commonFieldSX}
             />
           </>
         )}
@@ -448,79 +434,40 @@ const AddParameterPopup: React.FC<Props> = ({
           <RadioGroup
             row
             value={booleanType}
-            onChange={(e) =>
-              setBooleanType(e.target.value as "yesno" | "truefalse")
-            }
+            onChange={(e) => setBooleanType(e.target.value as "yesno" | "truefalse")}
             sx={{ ml: 1 }}
           >
-            <FormControlLabel
-              value="yesno"
-              control={<Radio />}
-              label="Yes/No"
-            />
-            <FormControlLabel
-              value="truefalse"
-              control={<Radio />}
-              label="True/False"
-            />
+            <FormControlLabel value="yesno" control={<Radio />} label="Yes/No" />
+            <FormControlLabel value="truefalse" control={<Radio />} label="True/False" />
           </RadioGroup>
         )}
 
         {/* ============ DROPDOWN FIELD TYPE ============ */}
         {fieldType === "Dropdown" && (
           <>
-            {/* Selection Type */}
             <RadioGroup
               row
               value={dropdownMode}
-              onChange={(e) =>
-                handleDropdownModeChange(e.target.value as "single" | "multi")
-              }
+              onChange={(e) => handleDropdownModeChange(e.target.value as "single" | "multi")}
               sx={{ ml: 1 }}
             >
-              <FormControlLabel
-                value="single"
-                control={<Radio />}
-                label="Single Selection"
-              />
-              <FormControlLabel
-                value="multi"
-                control={<Radio />}
-                label="Multi Selection"
-              />
+              <FormControlLabel value="single" control={<Radio />} label="Single Selection" />
+              <FormControlLabel value="multi" control={<Radio />} label="Multi Selection" />
             </RadioGroup>
 
-            {/* OPTIONS */}
             {dropdownOptions.map((opt, idx) => (
               <Box
                 key={idx}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  width: "100%",
-                }}
+                sx={{ display: "flex", alignItems: "center", gap: "12px", width: "100%" }}
               >
-                {/* RADIO / CHECKBOX */}
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    minWidth: "18px",
-                  }}
-                >
+                <Box sx={{ display: "flex", alignItems: "center", minWidth: "18px" }}>
                   {dropdownMode === "single" ? (
                     <input
                       type="radio"
                       name="dropdown-single-selection"
                       checked={selectedDropdownValues.includes(opt)}
                       onChange={() => setSelectedDropdownValues([opt])}
-                      style={{
-                        margin: 0,
-                        cursor: "pointer",
-                        width: "16px",
-                        height: "16px",
-                      }}
+                      style={{ margin: 0, cursor: "pointer", width: "16px", height: "16px" }}
                     />
                   ) : (
                     <input
@@ -528,27 +475,18 @@ const AddParameterPopup: React.FC<Props> = ({
                       checked={selectedDropdownValues.includes(opt)}
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setSelectedDropdownValues([
-                            ...selectedDropdownValues,
-                            opt,
-                          ]);
+                          setSelectedDropdownValues([...selectedDropdownValues, opt]);
                         } else {
                           setSelectedDropdownValues(
                             selectedDropdownValues.filter((v) => v !== opt),
                           );
                         }
                       }}
-                      style={{
-                        margin: 0,
-                        cursor: "pointer",
-                        width: "16px",
-                        height: "16px",
-                      }}
+                      style={{ margin: 0, cursor: "pointer", width: "16px", height: "16px" }}
                     />
                   )}
                 </Box>
 
-                {/* OPTION INPUT */}
                 <TextField
                   value={opt}
                   onChange={(e) => {
@@ -556,13 +494,9 @@ const AddParameterPopup: React.FC<Props> = ({
                     const oldValue = updated[idx];
                     updated[idx] = e.target.value;
                     setDropdownOptions(updated);
-
-                    // Update selected values if this option was selected
                     if (selectedDropdownValues.includes(oldValue)) {
                       setSelectedDropdownValues(
-                        selectedDropdownValues.map((v) =>
-                          v === oldValue ? e.target.value : v,
-                        ),
+                        selectedDropdownValues.map((v) => (v === oldValue ? e.target.value : v)),
                       );
                     }
                   }}
@@ -570,7 +504,6 @@ const AddParameterPopup: React.FC<Props> = ({
                   sx={{ flex: 1 }}
                 />
 
-                {/* ADD */}
                 <IconButton
                   onClick={() => setDropdownOptions([...dropdownOptions, ""])}
                   size="small"
@@ -579,18 +512,13 @@ const AddParameterPopup: React.FC<Props> = ({
                   +
                 </IconButton>
 
-                {/* DELETE */}
                 {dropdownOptions.length > 1 && (
                   <IconButton
                     onClick={() => {
                       const removedOption = dropdownOptions[idx];
-                      setDropdownOptions(
-                        dropdownOptions.filter((_, i) => i !== idx),
-                      );
+                      setDropdownOptions(dropdownOptions.filter((_, i) => i !== idx));
                       setSelectedDropdownValues(
-                        selectedDropdownValues.filter(
-                          (v) => v !== removedOption,
-                        ),
+                        selectedDropdownValues.filter((v) => v !== removedOption),
                       );
                     }}
                     size="small"
@@ -605,15 +533,7 @@ const AddParameterPopup: React.FC<Props> = ({
         )}
 
         {/* Action Buttons */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: 2,
-            px: 2,
-            mr: 2,
-          }}
-        >
+        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, px: 2, mr: 2 }}>
           <Button
             variant="contained"
             onClick={onClose}
@@ -627,10 +547,7 @@ const AddParameterPopup: React.FC<Props> = ({
               fontWeight: 600,
               fontSize: "16px",
               boxShadow: "none",
-              "&:hover": {
-                backgroundColor: "#F2F2F2",
-                boxShadow: "none",
-              },
+              "&:hover": { backgroundColor: "#F2F2F2", boxShadow: "none" },
             }}
           >
             Cancel
@@ -649,10 +566,7 @@ const AddParameterPopup: React.FC<Props> = ({
               fontWeight: 600,
               fontSize: "16px",
               boxShadow: "none",
-              "&:hover": {
-                backgroundColor: "#232323",
-                boxShadow: "none",
-              },
+              "&:hover": { backgroundColor: "#232323", boxShadow: "none" },
             }}
           >
             {initialData ? "Update" : "Save"}
