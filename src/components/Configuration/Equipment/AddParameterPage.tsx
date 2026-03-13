@@ -151,6 +151,24 @@ const AddParameterPage = () => {
     setClearAllDialogOpen(false);
   };
 
+  const handleBackClick = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+
+    navigate(
+      isEnvironment
+        ? "/configuration/environment"
+        : "/configuration/equipment/view",
+      {
+        state: isEnvironment
+          ? { environmentId }
+          : { equipmentId: location.state?.equipmentId },
+      },
+    );
+  };
+
   return (
     <Box>
       <ToastContainer />
@@ -159,18 +177,7 @@ const AddParameterPage = () => {
         {/* Header */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <IconButton
-            onClick={() =>
-              navigate(
-                isEnvironment
-                  ? "/configuration/environment"
-                  : "/configuration/equipment/view",
-                {
-                  state: isEnvironment
-                    ? { environmentId }
-                    : { equipmentId: location.state?.equipmentId },
-                },
-              )
-            }
+            onClick={handleBackClick}
             sx={{
               width: 24,
               height: 24,

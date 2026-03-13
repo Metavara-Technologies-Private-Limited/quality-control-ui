@@ -253,8 +253,8 @@ const Reports = () => {
 
   const equipmentSelectWidth = useMemo(() => {
     const widthInCh = Math.min(
-      38,
-      Math.max(14, selectedEquipmentLabel.length + 4),
+      30,
+      Math.max(14, selectedEquipmentLabel.length + 2),
     );
     return `${widthInCh}ch`;
   }, [selectedEquipmentLabel]);
@@ -351,16 +351,55 @@ const Reports = () => {
             <InputLabel>Equipment</InputLabel>
 
             <Select
-              autoWidth
+              autoWidth={false}
               value={selectedEquipment}
               label="Equipment"
+              renderValue={(value) => {
+                if (value === "all") return "All Equipments";
+
+                const selected = equipmentOptions.find(
+                  (option) => option.value === value,
+                );
+
+                return (
+                  <Box
+                    sx={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {selected?.label ?? "All Equipments"}
+                  </Box>
+                );
+              }}
+              sx={{
+                "& .MuiSelect-select": {
+                  pl: 1.25,
+                  pr: "30px !important",
+                  py: 1.1,
+                },
+              }}
               onChange={(e) => setSelectedEquipment(e.target.value)}
             >
               <MenuItem value="all">All Equipments</MenuItem>
 
               {equipmentOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
+                <MenuItem
+                  key={option.value}
+                  value={option.value}
+                  title={option.label}
+                >
+                  <Box
+                    sx={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      width: "100%",
+                    }}
+                  >
+                    {option.label}
+                  </Box>
                 </MenuItem>
               ))}
             </Select>
