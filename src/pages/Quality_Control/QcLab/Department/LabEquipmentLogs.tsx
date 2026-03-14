@@ -223,7 +223,7 @@ export default function LabEquipmentLogs({ equipment }: Props) {
       headerName: "Date & Time",
       width: 180,
       sortable: true,
-      sortComparator: (v1, v2, param1, param2) => {
+      sortComparator: (_v1, _v2, param1, param2) => {
         const ts1 = (param1.api.getRow(param1.id) as any)?.timestamp ?? 0;
         const ts2 = (param2.api.getRow(param2.id) as any)?.timestamp ?? 0;
         return ts1 - ts2;
