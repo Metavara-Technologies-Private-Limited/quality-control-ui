@@ -154,9 +154,7 @@ const Dashboard = () => {
         selected={departmentId}
         onChange={setDepartmentId}
         onSearch={setSearch}
-        onSort={() =>
-          setSort((s) => (s === null ? "asc" : s === "asc" ? "desc" : null))
-        }
+        onSort={(dir) => setSort(dir)}
         sortActive={!!sort}
         filterActive={!!search.trim()}
       />

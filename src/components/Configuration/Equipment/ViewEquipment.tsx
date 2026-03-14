@@ -59,7 +59,9 @@ const ViewEquipment = () => {
     return (
       <Box sx={{ p: 3 }}>
         <Typography>No data found</Typography>
-        <Button onClick={() => navigate(-1)} sx={{ mt: 2 }}>Go Back</Button>
+        <Button onClick={() => navigate(-1)} sx={{ mt: 2 }}>
+          Go Back
+        </Button>
       </Box>
     );
   }
@@ -74,7 +76,9 @@ const ViewEquipment = () => {
     const department = clinic.department.find((d) =>
       d.environments?.some((env) => env.id === entityId),
     );
-    const environment = department?.environments?.find((env) => env.id === entityId);
+    const environment = department?.environments?.find(
+      (env) => env.id === entityId,
+    );
     if (!environment || !department) return null;
 
     name = environment.environment_name;
@@ -104,12 +108,22 @@ const ViewEquipment = () => {
       <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1 }}>
         <IconButton
           onClick={() =>
-            navigate(isEnvironment ? "/configuration/environment" : "/configuration/equipment")
+            navigate(
+              isEnvironment
+                ? "/configuration/environment"
+                : "/configuration/equipment",
+            )
           }
           sx={{
-            width: 24, height: 24, padding: "10px", opacity: 1,
-            color: "#374151", borderRadius: 1, mr: 1,
-            boxShadow: "3px 3px 6px rgba(0,0,0,0.2)", backgroundColor: "#fff",
+            width: 24,
+            height: 24,
+            padding: "10px",
+            opacity: 1,
+            color: "#374151",
+            borderRadius: 1,
+            mr: 1,
+            boxShadow: "3px 3px 6px rgba(0,0,0,0.2)",
+            backgroundColor: "#fff",
           }}
         >
           <TurnLeftIcon sx={{ fontSize: 24, padding: "3px" }} />
@@ -125,7 +139,12 @@ const ViewEquipment = () => {
         <Chip
           label={departmentName}
           size="small"
-          sx={{ background: "#E0F1E6", color: "#3D8B61", fontWeight: 600, height: "22px" }}
+          sx={{
+            background: "#E0F1E6",
+            color: "#3D8B61",
+            fontWeight: 600,
+            height: "22px",
+          }}
         />
       </Box>
 
@@ -139,10 +158,34 @@ const ViewEquipment = () => {
           {parameters.map((p, i) => (
             <Box
               key={i}
-              sx={{ width: 216, height: 90, border: "1px solid #E5E7EB", borderRadius: "12px", px: 2, py: 1.5 }}
+              sx={{
+                width: 216,
+                height: 90,
+                border: "1px solid #E5E7EB",
+                borderRadius: "12px",
+                px: 2,
+                py: 1.5,
+                overflow: "hidden",
+              }}
             >
-              <Typography sx={{ fontWeight: 600, fontSize: 14 }}>{p.parameter_name}</Typography>
-              <Typography sx={{ fontSize: 13, color: "#374151" }}>{renderParameterDetails(p)}</Typography>
+              <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
+                {p.parameter_name}
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: 13,
+                  color: "#374151",
+                  whiteSpace: "normal",
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
+                {renderParameterDetails(p)}
+              </Typography>
             </Box>
           ))}
         </Box>
@@ -200,7 +243,12 @@ const ViewEquipment = () => {
               },
             )
           }
-          sx={{ borderRadius: "10px", background: "#505050", textTransform: "none", "&:hover": { background: "#232323" } }}
+          sx={{
+            borderRadius: "10px",
+            background: "#505050",
+            textTransform: "none",
+            "&:hover": { background: "#232323" },
+          }}
         >
           Edit
         </Button>
