@@ -25,6 +25,10 @@ import {
 import { Add, Edit, Delete, ArrowBack } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import type { Parameter, Equipment, ParameterContent } from "@/types";
+import {
+  mockParameters,
+  mockEquipments as mockEquipmentData,
+} from "@/utils/mockData";
 
 interface ParameterConfigProps {
   readOnly?: boolean;
@@ -42,7 +46,6 @@ const ParameterConfig: React.FC<ParameterConfigProps> = ({
     handleSubmit,
     reset,
     formState: { errors },
-     
   } = useForm();
 
   useEffect(() => {
@@ -50,22 +53,12 @@ const ParameterConfig: React.FC<ParameterConfigProps> = ({
     loadEquipments();
   }, []);
 
-  const loadParameters = async () => {
-    try {
-      const { mockParameters } = await import("@/utils/mockData");
-      setParameters(mockParameters);
-    } catch (error) {
-      console.error("Error loading parameters:", error);
-    }
+  const loadParameters = () => {
+    setParameters(mockParameters);
   };
 
-  const loadEquipments = async () => {
-    try {
-      const { mockEquipments } = await import("@/utils/mockData");
-      setEquipments(mockEquipments);
-    } catch (error) {
-      console.error("Error loading equipments:", error);
-    }
+  const loadEquipments = () => {
+    setEquipments(mockEquipmentData);
   };
 
   const handleOpen = (parameter?: Parameter) => {
@@ -122,7 +115,6 @@ const ParameterConfig: React.FC<ParameterConfigProps> = ({
         },
       };
 
-
       if (editing) {
         setParameters(
           parameters.map((p) =>
@@ -141,7 +133,7 @@ const ParameterConfig: React.FC<ParameterConfigProps> = ({
           parameter_name: data.parameter_name,
           is_active: data.is_active,
           Content: content,
-          is_deleted: false
+          is_deleted: false,
         };
         setParameters([...parameters, newParam]);
       }
@@ -204,9 +196,11 @@ const ParameterConfig: React.FC<ParameterConfigProps> = ({
                       })}
                       defaultValue={
                         editing
-                          ? equipments.find((e) =>
-                              e.parameters?.some?.((p: Parameter) => p.id === editing.id)
-                            )?.id ?? ""
+                          ? (equipments.find((e) =>
+                              e.parameters?.some?.(
+                                (p: Parameter) => p.id === editing.id,
+                              ),
+                            )?.id ?? "")
                           : ""
                       }
                       disabled={readOnly}

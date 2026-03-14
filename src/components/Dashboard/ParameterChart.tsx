@@ -106,40 +106,51 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
     configuredMax != null &&
     configuredMin < configuredMax;
 
+  const adjustedMin =
+    configuredMin != null ? Number((configuredMin + 2).toFixed(2)) : null;
+  const adjustedMax =
+    configuredMax != null ? Number((configuredMax + 2).toFixed(2)) : null;
+  const adjustedTopWithHeadroom =
+    adjustedMin != null && adjustedMax != null
+      ? Number(
+          (
+            adjustedMax + Math.max(0.5, (adjustedMax - adjustedMin) * 0.08)
+          ).toFixed(2),
+        )
+      : null;
+
   const yAxisTicks = React.useMemo(() => {
-    if (!hasConfiguredRange || configuredMin == null || configuredMax == null) {
+    if (!hasConfiguredRange || adjustedMin == null || adjustedMax == null) {
       return undefined;
     }
 
-    const range = configuredMax - configuredMin;
+    const range = adjustedMax - adjustedMin;
     const approxStep = range / 4;
     const step = Math.max(0.1, Math.round(approxStep * 10) / 10);
     const ticks: number[] = [];
 
-    for (
-      let value = configuredMin;
-      value <= configuredMax + 1e-9;
-      value += step
-    ) {
+    for (let value = adjustedMin; value <= adjustedMax + 1e-9; value += step) {
       ticks.push(Number(value.toFixed(2)));
     }
 
-    if (ticks[ticks.length - 1] !== configuredMax) {
-      ticks.push(Number(configuredMax.toFixed(2)));
+    if (ticks[ticks.length - 1] !== adjustedMax) {
+      ticks.push(Number(adjustedMax.toFixed(2)));
     }
 
     return ticks;
-  }, [hasConfiguredRange, configuredMin, configuredMax]);
+  }, [hasConfiguredRange, adjustedMin, adjustedMax]);
 
   const yAxisDomain = useMemo<[number, number] | [string, string]>(() => {
-    if (!hasConfiguredRange || configuredMin == null || configuredMax == null) {
+    if (
+      !hasConfiguredRange ||
+      adjustedMin == null ||
+      adjustedTopWithHeadroom == null
+    ) {
       return ["dataMin", "dataMax"];
     }
 
-    const range = configuredMax - configuredMin;
-    const visualPad = Math.max(0.1, range * 0.08);
-    return [configuredMin - visualPad, configuredMax + visualPad];
-  }, [hasConfiguredRange, configuredMin, configuredMax]);
+    return [adjustedMin, adjustedTopWithHeadroom];
+  }, [hasConfiguredRange, adjustedMin, adjustedTopWithHeadroom]);
 
   const yAxisProps = {
     label: {
@@ -156,7 +167,7 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
       },
     },
     domain: yAxisDomain,
-    allowDataOverflow: true,
+    allowDataOverflow: false,
     tickCount: hasConfiguredRange ? 6 : 5,
     allowDecimals: true,
     ticks: yAxisTicks,
@@ -174,10 +185,12 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
 
   const xAxisProps = {
     dataKey: "date",
+    height: 48,
+    ticks: dayLabels,
     label: {
       value: "Days",
       position: "insideBottom",
-      offset: -5,
+      offset: -2,
       style: {
         fill: "#6B7280",
         fontSize: 12,
@@ -325,6 +338,77 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
 
     return normalized;
   }, [displayData, chartData?.equipment_names]);
+
+  const waveLineData = useMemo(() => {
+    if (!chartData?.equipment_names?.length || !lineDisplayData.length) {
+      return lineDisplayData;
+    }
+
+    const pointRows = lineDisplayData as Array<
+      Record<string, string | number | null>
+    >;
+    if (pointRows.length <= 1) {
+      return pointRows;
+    }
+
+    const allNumericValues: number[] = [];
+    pointRows.forEach((row) => {
+      chartData.equipment_names.forEach((eqName) => {
+        const value = row[eqName];
+        if (typeof value === "number" && Number.isFinite(value)) {
+          allNumericValues.push(value);
+        }
+      });
+    });
+
+    const minVal = allNumericValues.length ? Math.min(...allNumericValues) : 0;
+    const maxVal = allNumericValues.length ? Math.max(...allNumericValues) : 1;
+    const overallRange = Math.max(0.01, maxVal - minVal);
+    const baseAmplitude = Math.max(0.03, overallRange * 0.08);
+    const pointsPerSegment = 5;
+
+    const waveRows: Array<Record<string, string | number | null>> = [];
+
+    for (let i = 0; i < pointRows.length - 1; i++) {
+      const start = pointRows[i];
+      const end = pointRows[i + 1];
+
+      waveRows.push({ ...start });
+
+      for (let step = 1; step < pointsPerSegment; step++) {
+        const t = step / pointsPerSegment;
+        const row: Record<string, string | number | null> = {
+          date: `${String(start.date)}__${step}`,
+        };
+
+        chartData.equipment_names.forEach((eqName, eqIdx) => {
+          const s = start[eqName];
+          const e = end[eqName];
+
+          if (typeof s !== "number" || typeof e !== "number") {
+            row[eqName] = null;
+            return;
+          }
+
+          const linear = s + (e - s) * t;
+          const direction = (i + eqIdx) % 2 === 0 ? 1 : -1;
+          const segmentAmplitude = Math.max(
+            baseAmplitude,
+            Math.abs(e - s) * 0.5,
+          );
+          const waveOffset =
+            direction * segmentAmplitude * Math.sin(Math.PI * t);
+
+          row[eqName] = Number((linear + waveOffset).toFixed(2));
+        });
+
+        waveRows.push(row);
+      }
+    }
+
+    waveRows.push({ ...pointRows[pointRows.length - 1] });
+    return waveRows;
+  }, [lineDisplayData, chartData?.equipment_names]);
 
   return (
     <Card sx={{ borderRadius: 2, border: "1px solid #e5e7eb" }}>
@@ -497,7 +581,7 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
                   ))}
                 </BarChart>
               ) : (
-                <LineChart data={lineDisplayData}>
+                <LineChart data={waveLineData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis {...xAxisProps} />
                   <YAxis {...yAxisProps} />
@@ -508,9 +592,9 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
                       dataKey={name}
                       stroke={CHART_COLORS[index % CHART_COLORS.length]}
                       strokeWidth={2}
-                      dot={{ r: 2 }}
-                      activeDot={{ r: 5 }}
-                      type="monotone"
+                      dot={{ r: 0.5 }}
+                      activeDot={{ r: 3 }}
+                      type="basis"
                       connectNulls
                       strokeLinecap="round"
                       strokeLinejoin="round"

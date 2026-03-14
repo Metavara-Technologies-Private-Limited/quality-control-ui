@@ -19,6 +19,7 @@ import {
 import { Add, Edit, Delete, ArrowBack } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import type { Department } from "@/types";
+import { mockDepartments } from "@/utils/mockData";
 
 interface DepartmentConfigProps {
   readOnly?: boolean;
@@ -41,13 +42,8 @@ const DepartmentConfig: React.FC<DepartmentConfigProps> = ({
     loadDepartments();
   }, []);
 
-  const loadDepartments = async () => {
-    try {
-      const { mockDepartments } = await import("@/utils/mockData");
-      setDepartments(mockDepartments);
-    } catch (error) {
-      console.error("Error loading departments:", error);
-    }
+  const loadDepartments = () => {
+    setDepartments(mockDepartments);
   };
 
   const handleOpen = (dept?: Department) => {

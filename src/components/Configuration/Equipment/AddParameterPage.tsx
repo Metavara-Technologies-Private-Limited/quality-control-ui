@@ -118,8 +118,22 @@ const AddParameterPage = () => {
           </Typography>
         );
       case "Text":
+      case "Multiline":
         return (
-          <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>
+          <Typography
+            sx={{
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "#374151",
+              whiteSpace: "normal",
+              overflowWrap: "anywhere",
+              wordBreak: "break-word",
+              display: "-webkit-box",
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
             {config.text ?? "-"}
           </Typography>
         );

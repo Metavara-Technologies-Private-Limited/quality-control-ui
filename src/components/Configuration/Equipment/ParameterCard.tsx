@@ -43,9 +43,18 @@ export const ParameterCard: React.FC<ParameterCardProps> = ({
     setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
 
-  const handleEditClick = () => { onEdit(index); handleMenuClose(); };
-  const handleDeleteClick = () => { setDeleteDialogOpen(true); handleMenuClose(); };
-  const handleConfirmDelete = () => { onDelete(index); setDeleteDialogOpen(false); };
+  const handleEditClick = () => {
+    onEdit(index);
+    handleMenuClose();
+  };
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true);
+    handleMenuClose();
+  };
+  const handleConfirmDelete = () => {
+    onDelete(index);
+    setDeleteDialogOpen(false);
+  };
   const handleStatusChange = () => {
     const isCurrentlyActive = parameter.is_active !== false;
     onStatusChange(index, !isCurrentlyActive);
@@ -79,7 +88,8 @@ export const ParameterCard: React.FC<ParameterCardProps> = ({
             fontWeight: 700,
             letterSpacing: "0.06em",
             textTransform: "uppercase",
-            backgroundColor: parameter.is_active === false ? "#FEE2E2" : "#DCFCE7",
+            backgroundColor:
+              parameter.is_active === false ? "#FEE2E2" : "#DCFCE7",
             color: parameter.is_active === false ? "#B91C1C" : "#15803D",
           }}
         >
@@ -87,7 +97,9 @@ export const ParameterCard: React.FC<ParameterCardProps> = ({
         </Box>
 
         {/* ── Checkbox + Parameter name row ── */}
-        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, pr: "70px" }}>
+        <Box
+          sx={{ display: "flex", alignItems: "flex-start", gap: 1, pr: "70px" }}
+        >
           {/* Checkbox — only rendered when onToggleSelect is provided */}
           {onToggleSelect && (
             <Box
@@ -106,7 +118,12 @@ export const ParameterCard: React.FC<ParameterCardProps> = ({
                     justifyContent: "center",
                   }}
                 >
-                  <svg width="11" height="11" fill="#3D8B61" viewBox="0 0 24 24">
+                  <svg
+                    width="11"
+                    height="11"
+                    fill="#3D8B61"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M20.285 6.708l-11.285 11.292-5.285-5.292 1.414-1.414 3.871 3.879 9.871-9.878z" />
                   </svg>
                 </Box>
@@ -123,7 +140,9 @@ export const ParameterCard: React.FC<ParameterCardProps> = ({
             </Box>
           )}
 
-          <Typography sx={{ fontWeight: 600, fontSize: "14px", wordBreak: "break-word" }}>
+          <Typography
+            sx={{ fontWeight: 600, fontSize: "14px", wordBreak: "break-word" }}
+          >
             {parameter.name || parameter.title}
           </Typography>
         </Box>
@@ -141,20 +160,27 @@ export const ParameterCard: React.FC<ParameterCardProps> = ({
           sx={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: "flex-start",
             minHeight: "35px",
             pr: 0.5,
           }}
         >
-          <Box sx={{ flexGrow: 1 }}>{renderParameterContent(parameter)}</Box>
+          <Box sx={{ flexGrow: 1, minWidth: 0, overflow: "hidden" }}>
+            {renderParameterContent(parameter)}
+          </Box>
 
           <IconButton
             size="small"
             onClick={handleMenuOpen}
             sx={{
-              width: 32, height: 32,
-              border: "1px solid #E5E7EB", borderRadius: "8px",
-              backgroundColor: "#FFFFFF", zIndex: 2, ml: 1,
+              width: 32,
+              height: 32,
+              border: "1px solid #E5E7EB",
+              borderRadius: "8px",
+              backgroundColor: "#FFFFFF",
+              zIndex: 2,
+              ml: 1,
+              flexShrink: 0,
               "&:hover": { backgroundColor: "#F9FAFB" },
             }}
           >
@@ -164,23 +190,36 @@ export const ParameterCard: React.FC<ParameterCardProps> = ({
       </Box>
 
       {/* ── Context menu ── */}
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
         <MenuItem onClick={handleStatusChange}>
           {parameter.is_active !== false ? "Inactivate" : "Activate"}
         </MenuItem>
         <MenuItem onClick={handleEditClick}>Edit</MenuItem>
-        <MenuItem sx={{ color: "error.main" }} onClick={handleDeleteClick}>Delete</MenuItem>
+        <MenuItem sx={{ color: "error.main" }} onClick={handleDeleteClick}>
+          Delete
+        </MenuItem>
       </Menu>
 
       {/* ── Delete confirmation ── */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
         <DialogTitle>Delete Parameter</DialogTitle>
         <DialogContent>
-          <Typography>Are you sure you want to delete this parameter?</Typography>
+          <Typography>
+            Are you sure you want to delete this parameter?
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleConfirmDelete} color="error">Delete</Button>
+          <Button onClick={handleConfirmDelete} color="error">
+            Delete
+          </Button>
         </DialogActions>
       </Dialog>
     </>
