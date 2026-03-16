@@ -62,7 +62,9 @@ const EquipmentCard = ({
 
         {selected && (
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "12px", fontWeight: 700, color: "#4B5563" }}>
+            <span
+              style={{ fontSize: "12px", fontWeight: 700, color: "#4B5563" }}
+            >
               Assignees :
             </span>
             <div style={{ display: "flex" }}>
@@ -124,12 +126,26 @@ const EquipmentCard = ({
           }}
         >
           {item.eventNames && item.eventNames.length > 0 && (
-            <div style={{ fontSize: 10, fontWeight: 600, color: "#0f172a", marginBottom: 2 }}>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: "#0f172a",
+                marginBottom: 2,
+              }}
+            >
               {item.eventNames[0]}
             </div>
           )}
           {item.scheduleType && (
-            <div style={{ fontSize: 10, fontWeight: 600, color: "#2563eb", marginBottom: 2 }}>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: "#2563eb",
+                marginBottom: 2,
+              }}
+            >
               {getRecurrenceLabel(item)}
             </div>
           )}
@@ -306,20 +322,23 @@ export default function ClinicalEquipments() {
 
   /* ---- Reusable Equipment Grid ---- */
   const EquipmentGrid = ({ showDates }: { showDates: boolean }) => (
-    <div style={{ display: "flex", gap: 20 }}>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
       <div
         style={{
-          width: selectedEquipment ? 470 : "100%",
+          width: selectedEquipment ? "min(470px, 100%)" : "100%",
           maxWidth: selectedEquipment ? 470 : "100%",
           transition: "width 0.25s ease",
           background: "#fff",
           borderRadius: 14,
           overflowY: "auto",
           padding: 16,
+          flexShrink: 0,
         }}
       >
         {Object.keys(groupedEquipments).length === 0 ? (
-          <div style={{ textAlign: "center", color: "#94a3b8", paddingTop: 40 }}>
+          <div
+            style={{ textAlign: "center", color: "#94a3b8", paddingTop: 40 }}
+          >
             {activeTab === "To-Do"
               ? "No equipment scheduled for today"
               : "No equipment found"}
@@ -336,7 +355,14 @@ export default function ClinicalEquipments() {
                 border: "2px solid #e5e7eb",
               }}
             >
-              <h3 style={{ marginBottom: 12, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>
+              <h3
+                style={{
+                  marginBottom: 12,
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: "#0f172a",
+                }}
+              >
                 {eqName}
               </h3>
               <div
@@ -368,7 +394,7 @@ export default function ClinicalEquipments() {
       </div>
 
       {selectedEquipment && (
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: "1 1 280px", minWidth: 0 }}>
           <LabEquipmentForm
             equipmentDetails={equipmentDetails}
             selectedRadio={selectedRadio}
@@ -383,8 +409,18 @@ export default function ClinicalEquipments() {
   if (activeTab === "Plan") {
     return (
       <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 24, gap: 24 }}>
-          <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Equipments</h1>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            marginBottom: 24,
+            gap: 12,
+          }}
+        >
+          <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
+            Equipments
+          </h1>
           <EquipmentTabs activeTab={activeTab} onTabChange={handleTabChange} />
         </div>
         <ClinicalPlanPage />
@@ -394,7 +430,15 @@ export default function ClinicalEquipments() {
 
   return (
     <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", marginBottom: 24, gap: 24 }}>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          marginBottom: 24,
+          gap: 12,
+        }}
+      >
         <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Equipments</h1>
         <EquipmentTabs activeTab={activeTab} onTabChange={handleTabChange} />
       </div>

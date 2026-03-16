@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Box, useMediaQuery, useTheme } from "@mui/material";
 import { useSelector } from "react-redux";
 import { useOutletContext } from "react-router-dom";
 import { RootState } from "@/store";
@@ -29,6 +30,8 @@ export default function LabEnvironment() {
       );
   }, [department, searchText]);
 
+  const theme = useTheme();
+  const isCompact = useMediaQuery(theme.breakpoints.down("lg"));
   const [selectedEnv, setSelectedEnv] = useState<any>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -48,35 +51,37 @@ export default function LabEnvironment() {
   }
 
   return (
-    <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
+    <Box sx={{ fontFamily: "'Montserrat', sans-serif" }}>
       <h1 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>
         {selectedEnv.environment_name}
       </h1>
 
-      <div
-        style={{
+      <Box
+        sx={{
           display: "grid",
-          gridTemplateColumns: "1.2fr 0.8fr",
-          gap: 20,
-          height: "calc(100vh - 220px)",
+          gridTemplateColumns: { xs: "1fr", lg: "1.2fr 0.8fr" },
+          gap: 2.5,
+          alignItems: "start",
         }}
       >
         {/* -------- LEFT: FORM + LOGS -------- */}
-        <div style={{ overflowY: "auto" }}>
+        <Box sx={{ minWidth: 0, overflow: "hidden" }}>
           <LabEnvironmentForm
             environment={selectedEnv}
             onSaved={() => setRefreshKey((k) => k + 1)}
           />
-        </div>
+        </Box>
 
         {/* -------- RIGHT: COMPLIANCE CHART -------- */}
-        <div
-          style={{
+        <Box
+          sx={{
             background: "#fff",
             border: "1px solid #e5e7eb",
-            borderRadius: 14,
-            padding: 16,
-            overflowY: "auto",
+            borderRadius: "14px",
+            p: 2,
+            minWidth: 0,
+            maxHeight: isCompact ? "none" : "calc(100dvh - 220px)",
+            overflowY: isCompact ? "visible" : "auto",
           }}
         >
           <LabEnvironmentComplianceChart
@@ -84,8 +89,8 @@ export default function LabEnvironment() {
             environmentId={selectedEnv.id}
             parameters={selectedEnv.parameters}
           />
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }

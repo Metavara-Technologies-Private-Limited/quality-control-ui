@@ -43,106 +43,125 @@ const DepartmentTabs = ({
   const tabsScrollRef = useRef<HTMLDivElement>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
+  const activeDepartments = departments.filter(
+    (department) => department.is_active,
+  );
+
   const handleSortClick = () => {
     const next = sortDir === "asc" ? "desc" : "asc";
     setSortDir(next);
     onSort?.(next);
   };
 
-  const activeDepartments = departments.filter((d) => d.is_active);
-
-  const scrollTabs = (dir: "left" | "right") => {
-    if (tabsScrollRef.current) {
-      tabsScrollRef.current.scrollLeft += dir === "left" ? -160 : 160;
-    }
+  const scrollTabs = (direction: "left" | "right") => {
+    if (!tabsScrollRef.current) return;
+    tabsScrollRef.current.scrollLeft += direction === "left" ? -160 : 160;
   };
 
   return (
     <Box
       sx={{
         display: "flex",
-        alignItems: "center",
+        flexDirection: { xs: "column", xl: "row" },
+        alignItems: { xs: "stretch", xl: "center" },
         mb: 3,
-        gap: 1,
+        gap: { xs: 1.5, xl: 1 },
       }}
     >
-      {/* Left scroll arrow */}
-      <IconButton
-        size="small"
-        onClick={() => scrollTabs("left")}
-        sx={{ ...iconButtonSx, flexShrink: 0 }}
-      >
-        <ChevronLeft
-          fontSize="small"
-          sx={{ color: iconColor, opacity: 0.45 }}
-        />
-      </IconButton>
-
-      {/* Scrollable tabs */}
       <Box
-        ref={tabsScrollRef}
         sx={{
-          flex: 1,
-          overflow: "hidden",
-          scrollBehavior: "smooth",
-          borderBottom: 1,
-          borderColor: "divider",
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
           minWidth: 0,
+          width: "100%",
+          flex: 1,
         }}
       >
-        <Tabs
-          value={selected ?? false}
-          onChange={(_, value) => onChange(value as number)}
-          variant="scrollable"
-          scrollButtons={false}
-          sx={{ minWidth: "max-content" }}
+        <IconButton
+          size="small"
+          onClick={() => scrollTabs("left")}
+          sx={{ ...iconButtonSx, flexShrink: 0 }}
         >
-          {activeDepartments.map((dept) => (
-            <Tab key={dept.id} label={dept.name} value={dept.id} />
-          ))}
-        </Tabs>
+          <ChevronLeft
+            fontSize="small"
+            sx={{ color: iconColor, opacity: 0.45 }}
+          />
+        </IconButton>
+
+        <Box
+          ref={tabsScrollRef}
+          sx={{
+            flex: 1,
+            overflow: "hidden",
+            scrollBehavior: "smooth",
+            borderBottom: 1,
+            borderColor: "divider",
+            minWidth: 0,
+          }}
+        >
+          <Tabs
+            value={selected ?? false}
+            onChange={(_, value) => onChange(value as number)}
+            variant="scrollable"
+            scrollButtons={false}
+            allowScrollButtonsMobile
+            sx={{ minWidth: "max-content" }}
+          >
+            {activeDepartments.map((dept) => (
+              <Tab key={dept.id} label={dept.name} value={dept.id} />
+            ))}
+          </Tabs>
+        </Box>
+
+        <IconButton
+          size="small"
+          onClick={() => scrollTabs("right")}
+          sx={{ ...iconButtonSx, flexShrink: 0 }}
+        >
+          <ChevronRight
+            fontSize="small"
+            sx={{ color: iconColor, opacity: 0.45 }}
+          />
+        </IconButton>
       </Box>
 
-      {/* Right scroll arrow */}
-      <IconButton
-        size="small"
-        onClick={() => scrollTabs("right")}
-        sx={{ ...iconButtonSx, flexShrink: 0 }}
-      >
-        <ChevronRight
-          fontSize="small"
-          sx={{ color: iconColor, opacity: 0.45 }}
-        />
-      </IconButton>
-
-      {/* Search bar */}
-      <TextField
-        inputProps={{ style: { fontSize: 14 } }}
-        placeholder="Search by Equipment name"
-        onChange={(e) => onSearch?.(e.target.value)}
-        sx={{ width: 260, flexShrink: 0 }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <Search fontSize="small" sx={{ color: iconColor }} />
-            </InputAdornment>
-          ),
-        }}
-      />
-
-      {/* Sort icon — click toggles A→Z / Z→A */}
-      <IconButton
-        size="small"
-        onClick={handleSortClick}
+      <Box
         sx={{
-          ...iconButtonSx,
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          width: { xs: "100%", sm: "auto" },
           flexShrink: 0,
-          width: 36,
-          height: 36,
         }}
       >
-        <SwapVert fontSize="small" sx={{ color: iconColor }} />
-      </IconButton>
+        <TextField
+          inputProps={{ style: { fontSize: 14 } }}
+          placeholder="Search by Equipment name"
+          onChange={(event) => onSearch?.(event.target.value)}
+          sx={{ width: { xs: "100%", sm: 280, xl: 260 }, flexShrink: 0 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search fontSize="small" sx={{ color: iconColor }} />
+              </InputAdornment>
+            ),
+          }}
+        />
+
+        <IconButton
+          size="small"
+          onClick={handleSortClick}
+          sx={{
+            ...iconButtonSx,
+            flexShrink: 0,
+            width: 36,
+            height: 36,
+          }}
+        >
+          <SwapVert fontSize="small" sx={{ color: iconColor }} />
+        </IconButton>
+      </Box>
     </Box>
   );
 };

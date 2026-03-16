@@ -34,28 +34,32 @@ export default function LabEquipmentComplianceChart({
         map[d] = { day: d, compliant: 0, nonCompliant: 0 };
       });
 
-      for (const p of parameters) {
-        if (!p.config?.min_value || !p.config?.max_value) continue;
+const responses = await Promise.all(
+  parameters.map((p) => parameterValueApi.listByParameter(p.id))
+);
 
-        const { data = [] } = await parameterValueApi.listByParameter(p.id);
+responses.forEach(({ data = [] }, index) => {
+  const p = parameters[index];
 
-        data.forEach((row: any) => {
-          if (row.equipment_details_id !== equipmentDetailId) return;
+  if (!p.config?.min_value || !p.config?.max_value) return;
 
-          const value = Number(row.content);
-          if (isNaN(value)) return;
+  data.forEach((row: any) => {
+    if (row.equipment_details_id !== equipmentDetailId) return;
 
-          const day = WEEK_DAYS[new Date(row.created_at).getDay()];
-          const min = Number(p.config.min_value);
-          const max = Number(p.config.max_value);
+    const value = Number(row.content);
+    if (isNaN(value)) return;
 
-          if (value >= min && value <= max) {
-            map[day].compliant += 1;
-          } else {
-            map[day].nonCompliant -= 1;
-          }
-        });
-      }
+    const day = WEEK_DAYS[new Date(row.created_at).getDay()];
+    const min = Number(p.config.min_value);
+    const max = Number(p.config.max_value);
+
+    if (value >= min && value <= max) {
+      map[day].compliant += 1;
+    } else {
+      map[day].nonCompliant -= 1;
+    }
+  });
+});
 
       setChartData(WEEK_DAYS.map((d) => map[d]));
     };

@@ -157,7 +157,7 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
       value: `${parameterName} (${unit})`,
       angle: -90,
       position: "insideLeft",
-      offset: 20,
+      offset: 5,
       style: {
         textAnchor: "middle",
         fill: "#374151",
@@ -531,9 +531,7 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
 
         <Box
           sx={{
-            position: "relative",
-            left: -16,
-            width: "calc(100% + 32px)",
+            mx: -2,
             mb: 2,
           }}
         >
@@ -592,7 +590,7 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
                       dataKey={name}
                       stroke={CHART_COLORS[index % CHART_COLORS.length]}
                       strokeWidth={2}
-                      dot={{ r: 0.5 }}
+                      dot={{ r: 0.3 }}
                       activeDot={{ r: 3 }}
                       type="basis"
                       connectNulls
@@ -610,4 +608,4 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
   );
 };
 
-export default ParameterChart;
+export default React.memo(ParameterChart);

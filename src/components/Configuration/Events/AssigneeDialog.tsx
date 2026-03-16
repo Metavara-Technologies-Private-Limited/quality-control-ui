@@ -34,15 +34,20 @@ const AssigneeDialog = ({
     <Dialog
       open={open}
       onClose={onClose}
+      fullWidth
       PaperProps={{
-        sx: { borderRadius: "16px", width: 520 },
+        sx: {
+          borderRadius: "16px",
+          width: { xs: "calc(100% - 24px)", sm: 520 },
+          maxWidth: "calc(100% - 24px)",
+        },
       }}
     >
       <Box
         display="flex"
         alignItems="center"
         justifyContent="space-between"
-        px={3}
+        px={{ xs: 2, sm: 3 }}
         py={2}
         borderBottom="1px solid #E5E7EB"
       >
@@ -71,7 +76,7 @@ const AssigneeDialog = ({
         </IconButton>
       </Box>
 
-      <DialogContent sx={{ px: 3, pt: 3 }}>
+      <DialogContent sx={{ px: { xs: 2, sm: 3 }, pt: 3 }}>
         <Autocomplete
           options={filteredAssignees}
           value={selectedAssignee}
@@ -99,7 +104,15 @@ const AssigneeDialog = ({
         />
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 3, gap: 2, justifyContent: "flex-end" }}>
+      <DialogActions
+        sx={{
+          px: { xs: 2, sm: 3 },
+          pb: 3,
+          gap: 2,
+          justifyContent: "flex-end",
+          flexDirection: { xs: "column-reverse", sm: "row" },
+        }}
+      >
         <Button
           onClick={onClose}
           sx={{
@@ -111,6 +124,7 @@ const AssigneeDialog = ({
             height: 44,
             fontWeight: 500,
             backgroundColor: "#FFFFFF",
+            width: { xs: "100%", sm: "auto" },
             "&:hover": { backgroundColor: "#FFFFFF" },
           }}
         >
@@ -125,6 +139,7 @@ const AssigneeDialog = ({
             borderRadius: "10px",
             backgroundColor: "#000000",
             color: "#FFFFFF",
+            width: { xs: "100%", sm: "auto" },
             px: 4,
             height: 44,
             fontWeight: 500,

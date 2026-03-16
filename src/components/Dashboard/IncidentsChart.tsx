@@ -117,7 +117,7 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({
         sx={{
           p: 2.5,
           display: "grid",
-          gridTemplateColumns: "1.2fr 1fr",
+          gridTemplateColumns: { xs: "1fr", sm: "1.2fr 1fr" },
           gap: 3,
           alignItems: "center",
         }}
@@ -137,7 +137,12 @@ const IncidentsChart: React.FC<IncidentsChartProps> = ({
                     dataKey="value"
                     innerRadius={inner}
                     outerRadius={outer}
-fill={RING_COLORS[(RING_COLORS.length - 1 - idx) % RING_COLORS.length]}                    opacity={0.7}
+                    fill={
+                      RING_COLORS[
+                        (RING_COLORS.length - 1 - idx) % RING_COLORS.length
+                      ]
+                    }
+                    opacity={0.7}
                     stroke="#fff"
                     isAnimationActive={false}
                   />
@@ -192,20 +197,22 @@ fill={RING_COLORS[(RING_COLORS.length - 1 - idx) % RING_COLORS.length]}         
               mt: 1,
             }}
           >
-{equipmentDetails.map((ed, idx) => (
-  <Box key={ed.id ?? idx} sx={{ display: "flex", gap: 1 }}>
-    <Box
-      sx={{
-        width: 10,
-        height: 10,
-        borderRadius: "50%",
-        backgroundColor:
-          RING_COLORS[(RING_COLORS.length - 1 - idx) % RING_COLORS.length],
-      }}
-    />
-    <Typography fontSize={12}>{ed.equipment_num}</Typography>
-  </Box>
-))}
+            {equipmentDetails.map((ed, idx) => (
+              <Box key={ed.id ?? idx} sx={{ display: "flex", gap: 1 }}>
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    backgroundColor:
+                      RING_COLORS[
+                        (RING_COLORS.length - 1 - idx) % RING_COLORS.length
+                      ],
+                  }}
+                />
+                <Typography fontSize={12}>{ed.equipment_num}</Typography>
+              </Box>
+            ))}
           </Box>
         </Box>
       </Box>
@@ -246,11 +253,14 @@ const SummaryRow = ({
         alignItems: "center",
         justifyContent: "center",
         color: "#fff",
+        flexShrink: 0,
       }}
     >
       {icon}
     </Box>
-    <Typography fontWeight={600}>{label}</Typography>
+    <Typography fontWeight={600} fontSize={{ xs: 11, sm: 13 }} noWrap>
+      {label}
+    </Typography>
   </Box>
 );
 

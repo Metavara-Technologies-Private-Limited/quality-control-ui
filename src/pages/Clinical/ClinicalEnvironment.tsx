@@ -5,6 +5,7 @@ import { RootState } from "@/store";
 import LabEnvironmentForm from "../Quality_Control/QcLab/Department/LabEnvironmentForm";
 import LabEnvironmentComplianceChart from "../Quality_Control/QcLab/Department/LabEnvironmentComplianceChart";
 import { slugify } from "@/utils/slugify";
+import { Box } from "@mui/material";
 
 export default function ClinicalEnvironment() {
   const { departmentName, searchText } = useOutletContext<{
@@ -62,12 +63,10 @@ export default function ClinicalEnvironment() {
   }
 
   return (
-    <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
+    <Box sx={{ fontFamily: "'Montserrat', sans-serif" }}>
       {/* ── Environment selector tabs (shown when multiple environments exist) ── */}
       {environments.length > 1 && (
-        <div
-          style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}
-        >
+        <Box sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
           {environments.map((env) => (
             <button
               key={env.id}
@@ -82,47 +81,47 @@ export default function ClinicalEnvironment() {
                   selectedEnv.id === env.id
                     ? "2px solid #E17E61"
                     : "1px solid #e5e7eb",
-                backgroundColor:
-                  selectedEnv.id === env.id ? "#fff7ed" : "#fff",
+                backgroundColor: selectedEnv.id === env.id ? "#fff7ed" : "#fff",
                 color: selectedEnv.id === env.id ? "#E17E61" : "#374151",
               }}
             >
               {env.environment_name}
             </button>
           ))}
-        </div>
+        </Box>
       )}
 
       <h1 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>
         {selectedEnv.environment_name}
       </h1>
 
-      <div
-        style={{
+      <Box
+        sx={{
           display: "grid",
-          gridTemplateColumns: "1.2fr 0.8fr",
-          gap: 20,
-          height: "calc(100vh - 220px)",
+          gridTemplateColumns: { xs: "1fr", lg: "1.2fr 0.8fr" },
+          gap: 2.5,
+          alignItems: "start",
         }}
       >
         {/* LEFT: Form + Logs */}
-        <div style={{ overflowY: "auto" }}>
+        <Box sx={{ minWidth: 0, overflowY: "visible" }}>
           {/* key={selectedEnv.id} resets form state when user switches environment */}
           <LabEnvironmentForm
             key={selectedEnv.id}
             environment={selectedEnv}
             onSaved={() => setRefreshKey((k) => k + 1)}
           />
-        </div>
+        </Box>
 
         {/* RIGHT: Compliance Chart */}
-        <div
-          style={{
+        <Box
+          sx={{
             background: "#fff",
             border: "1px solid #e5e7eb",
-            borderRadius: 14,
-            padding: 16,
-            overflowY: "auto",
+            borderRadius: 1.75,
+            p: 2,
+            overflowY: "visible",
+            minWidth: 0,
           }}
         >
           {/* key forces chart to re-fetch after save OR when env changes */}
@@ -131,8 +130,8 @@ export default function ClinicalEnvironment() {
             environmentId={selectedEnv.id}
             parameters={selectedEnv.parameters}
           />
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }

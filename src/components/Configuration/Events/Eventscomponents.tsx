@@ -34,19 +34,23 @@ const COLORS = {
 
 export const EventsHeader = ({ onCreate, onSearch }: any) => (
   <Stack
-    direction="row"
+    direction={{ xs: "column", sm: "row" }}
     justifyContent="space-between"
     mb={3}
-    alignItems="center"
+    alignItems={{ xs: "stretch", sm: "center" }}
+    gap={1.5}
   >
     <Typography fontSize={18} fontWeight={700} color={COLORS.textPrimary}>
       Events
     </Typography>
-    <Stack direction="row" spacing={2}>
+    <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
       <TextField
         size="small"
         placeholder="Search Events"
-        sx={{ width: 250, "& .MuiOutlinedInput-root": { borderRadius: "8px" } }}
+        sx={{
+          width: { xs: "100%", sm: 250 },
+          "& .MuiOutlinedInput-root": { borderRadius: "8px" },
+        }}
         InputProps={{
           startAdornment: (
             <SearchIcon sx={{ mr: 1, color: COLORS.textMuted }} />
@@ -62,6 +66,7 @@ export const EventsHeader = ({ onCreate, onSearch }: any) => (
           bgcolor: "#111827",
           borderRadius: "8px",
           px: 3,
+          width: { xs: "100%", sm: "auto" },
           "&:hover": { bgcolor: "#000" },
         }}
         onClick={onCreate}
@@ -449,43 +454,45 @@ export const EventsTable = ({
         boxShadow: "none",
       }}
     >
-      <Table>
-        <TableHead sx={{ bgcolor: COLORS.bgLight }}>
-          <TableRow>
-            <TableCell sx={{ fontWeight: 600 }}>Event Name</TableCell>
-            <TableCell sx={{ fontWeight: 600 }}>Created By</TableCell>
-            <TableCell sx={{ fontWeight: 600 }}>Created Date</TableCell>
-            <TableCell sx={{ fontWeight: 600 }}>Schedule On</TableCell>
-            <TableCell align="center" sx={{ fontWeight: 600 }}>
-              Total No Equipment
-            </TableCell>
-            <TableCell align="center" sx={{ fontWeight: 600 }}>
-              Total No Parameters
-            </TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {data.map((row: any) => (
-            <TableRow
-              key={row.id}
-              hover
-              sx={{ cursor: "pointer" }}
-              onClick={() => onRowClick(row)}
-            >
-              <TableCell>{row.name}</TableCell>
-              <TableCell>{row.createdBy}</TableCell>
-              <TableCell>{row.createdDate}</TableCell>
-              <TableCell>
-                <Typography fontSize={14}>
-                  {row.scheduleType} {row.days !== "-" ? `(${row.days})` : ""}
-                </Typography>
+      <TableContainer sx={{ overflowX: "auto" }}>
+        <Table sx={{ minWidth: 560 }}>
+          <TableHead sx={{ bgcolor: COLORS.bgLight }}>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 600 }}>Event Name</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Created By</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Created Date</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Schedule On</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 600 }}>
+                Total No Equipment
               </TableCell>
-              <TableCell align="center">{row.equipmentCount}</TableCell>
-              <TableCell align="center">{row.parameterCount}</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 600 }}>
+                Total No Parameters
+              </TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {data.map((row: any) => (
+              <TableRow
+                key={row.id}
+                hover
+                sx={{ cursor: "pointer" }}
+                onClick={() => onRowClick(row)}
+              >
+                <TableCell>{row.name}</TableCell>
+                <TableCell>{row.createdBy}</TableCell>
+                <TableCell>{row.createdDate}</TableCell>
+                <TableCell>
+                  <Typography fontSize={14}>
+                    {row.scheduleType} {row.days !== "-" ? `(${row.days})` : ""}
+                  </Typography>
+                </TableCell>
+                <TableCell align="center">{row.equipmentCount}</TableCell>
+                <TableCell align="center">{row.parameterCount}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
       <Stack
         direction="row"
         justifyContent="space-between"

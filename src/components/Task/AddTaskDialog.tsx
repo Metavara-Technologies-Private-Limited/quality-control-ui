@@ -390,14 +390,22 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
         onClose={onClose}
         maxWidth="md"
         fullWidth
-        PaperProps={{ sx: { borderRadius: "24px", p: 0 } }}
+        PaperProps={{
+          sx: {
+            borderRadius: "24px",
+            p: 0,
+            width: { xs: "calc(100% - 16px)", sm: "100%" },
+            m: { xs: 1, sm: 2 },
+          },
+        }}
       >
         <DialogContent sx={{ p: 0 }}>
           {/* Header */}
           <Stack
-            direction="row"
+            direction={{ xs: "column", sm: "row" }}
             justifyContent="space-between"
-            alignItems="center"
+            alignItems={{ xs: "flex-start", sm: "center" }}
+            gap={1}
             m={3}
           >
             <Typography fontSize={24} fontWeight={700} color="#111">
@@ -423,7 +431,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
           {/* Step 1 */}
           {step === 1 && (
             <Stack spacing={3} m={3}>
-              <Stack direction="row" spacing={3}>
+              <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
                 <Box sx={{ flex: 1 }}>
                   <TextField
                     fullWidth
@@ -481,7 +489,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
                 </Box>
               </Stack>
 
-              <Stack direction="row" spacing={3}>
+              <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
                 <Box sx={{ flex: 1 }}>
                   <FormControl fullWidth error={!!errors.assignee}>
                     <InputLabel shrink>Assignee</InputLabel>
@@ -578,9 +586,10 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
                   <Divider />
 
                   <Stack
-                    direction="row"
+                    direction={{ xs: "column", sm: "row" }}
                     justifyContent="space-between"
-                    alignItems="center"
+                    alignItems={{ xs: "stretch", sm: "center" }}
+                    gap={1}
                     p={1}
                     bgcolor="#FAFAFA"
                   >
@@ -698,7 +707,6 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
                           </Box>
                         </Box>
                       )}
-
                     </Stack>
 
                     <Stack direction="row" spacing={1}>
@@ -809,7 +817,11 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
                   Add New Sub-Task
                 </Typography>
 
-                <Stack direction="row" spacing={3} mb={2}>
+                <Stack
+                  direction={{ xs: "column", md: "row" }}
+                  spacing={3}
+                  mb={2}
+                >
                   <Box flex={1}>
                     <TextField
                       label="Name"

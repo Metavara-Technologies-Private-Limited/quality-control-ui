@@ -209,15 +209,23 @@ function Task() {
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <div>
         <Box sx={{ width: "100%" }}>
-          <Box display="flex" gap={1.5}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", lg: "row" },
+              gap: 1.5,
+              alignItems: "stretch",
+            }}
+          >
             <Box
               sx={{
-                width: 300,
-                minHeight: 520,
+                width: { xs: "100%", lg: 300 },
+                minHeight: { xs: "auto", lg: 520 },
                 border: `1px solid ${COLORS.border}`,
                 borderRadius: "14px",
                 padding: "14px",
                 background: "#FFF",
+                flexShrink: 0,
               }}
             >
               <Stack
@@ -307,8 +315,17 @@ function Task() {
                 {selectedEvent?.name}
               </Typography>
 
-              <Stack direction="row" justifyContent="space-between" mb={2}>
-                <Stack direction="row" gap="2px">
+              <Box
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 1,
+                  mb: 2,
+                }}
+              >
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: "2px" }}>
                   {["All", "To-Do", "In-Progress", "Complete"].map(
                     (label, i) => {
                       let IconComponent = null;
@@ -337,7 +354,9 @@ function Task() {
                           onClick={() => setActiveFilter(label)}
                           sx={{
                             height: 36,
-                            width: 140,
+                            minWidth: { xs: 70, sm: 100, md: 120 },
+                            px: { xs: 1, sm: 1.5 },
+                            fontSize: { xs: 11, sm: 13 },
                             border: `1px solid ${COLORS.border}`,
                             borderRadius:
                               i === 0
@@ -364,7 +383,7 @@ function Task() {
                       );
                     },
                   )}
-                </Stack>
+                </Box>
                 <Button
                   startIcon={
                     <Box
@@ -383,10 +402,12 @@ function Task() {
                   }
                   sx={{
                     height: 36,
-                    px: 3,
+                    px: 2,
                     bgcolor: "#F3F4F6",
                     borderRadius: "6px",
                     color: "#111",
+                    fontSize: { xs: 12, sm: 14 },
+                    flexShrink: 0,
                   }}
                   onClick={() => {
                     setOpenAddTask(true);
@@ -394,189 +415,192 @@ function Task() {
                 >
                   Add Task
                 </Button>
-              </Stack>
+              </Box>
 
-              <Stack direction="row" pb={1} pt={1}>
-                <Typography
-                  width="42%"
-                  fontSize={13}
-                  color="#9CA3AF"
-                  fontWeight={500}
-                >
-                  Name
-                </Typography>
-                <Typography
-                  width="20%"
-                  fontSize={13}
-                  color="#9CA3AF"
-                  fontWeight={500}
-                >
-                  Track Time
-                </Typography>
-                {showStatus && (
+              <Box sx={{ overflowX: "auto" }}>
+                <Stack direction="row" pb={1} pt={1} sx={{ minWidth: 340 }}>
                   <Typography
-                    width="16%"
+                    width="42%"
                     fontSize={13}
                     color="#9CA3AF"
                     fontWeight={500}
                   >
-                    Status
+                    Name
                   </Typography>
-                )}
-                <Typography
-                  width={showStatus ? "14%" : "30%"}
-                  fontSize={13}
-                  color="#9CA3AF"
-                  fontWeight={500}
-                >
-                  Due Date
-                </Typography>
-                <Typography width="8%" />
-              </Stack>
-              <Divider />
-
-              <Stack spacing="2px" mt={1}>
-                {taskLoading ? (
-                  <Box sx={{ p: 4, textAlign: "center", color: "#9CA3AF" }}>
-                    <Typography fontSize={13}>Loading tasks...</Typography>
-                  </Box>
-                ) : filteredTasks.length === 0 ? (
-                  <Box sx={{ p: 4, textAlign: "center", color: "#9CA3AF" }}>
-                    <Typography fontSize={13}>
-                      No tasks found for this event
+                  <Typography
+                    width="20%"
+                    fontSize={13}
+                    color="#9CA3AF"
+                    fontWeight={500}
+                  >
+                    Track Time
+                  </Typography>
+                  {showStatus && (
+                    <Typography
+                      width="16%"
+                      fontSize={13}
+                      color="#9CA3AF"
+                      fontWeight={500}
+                    >
+                      Status
                     </Typography>
-                  </Box>
-                ) : (
-                  filteredTasks.map((t, i) => {
-                    const dueInfo = formatDueDateDisplay(t.due_date ?? "");
-                    return (
-                      <Stack
-                        key={i}
-                        direction="row"
-                        alignItems="center"
-                        sx={{
-                          py: 1.2,
-                          px: 1,
-                          bgcolor: COLORS.rowBg,
-                          borderRadius: "8px",
-                          cursor: "pointer",
-                          "&:hover": {
-                            backgroundColor: "#F3F4F6",
-                          },
-                        }}
-                        onClick={() => {
-                          setSelectedTaskDetails(t);
-                          setOpenTaskDetails(true);
-                        }}
-                      >
-                        <Typography
-                          width="42%"
+                  )}
+                  <Typography
+                    width={showStatus ? "14%" : "30%"}
+                    fontSize={13}
+                    color="#9CA3AF"
+                    fontWeight={500}
+                  >
+                    Due Date
+                  </Typography>
+                  <Typography width="8%" />
+                </Stack>
+                <Divider />
+
+                <Stack spacing="2px" mt={1} sx={{ minWidth: 340 }}>
+                  {taskLoading ? (
+                    <Box sx={{ p: 4, textAlign: "center", color: "#9CA3AF" }}>
+                      <Typography fontSize={13}>Loading tasks...</Typography>
+                    </Box>
+                  ) : filteredTasks.length === 0 ? (
+                    <Box sx={{ p: 4, textAlign: "center", color: "#9CA3AF" }}>
+                      <Typography fontSize={13}>
+                        No tasks found for this event
+                      </Typography>
+                    </Box>
+                  ) : (
+                    filteredTasks.map((t, i) => {
+                      const dueInfo = formatDueDateDisplay(t.due_date ?? "");
+                      return (
+                        <Stack
+                          key={i}
+                          direction="row"
+                          alignItems="center"
                           sx={{
-                            whiteSpace: "normal",
-                            wordBreak: "break-word",
-                            lineHeight: 1.4,
+                            py: 1.2,
+                            px: 1,
+                            bgcolor: COLORS.rowBg,
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            minWidth: 340,
+                            "&:hover": {
+                              backgroundColor: "#F3F4F6",
+                            },
+                          }}
+                          onClick={() => {
+                            setSelectedTaskDetails(t);
+                            setOpenTaskDetails(true);
                           }}
                         >
-                          {t.name}
-                        </Typography>
-                        <Stack
-                          direction="row"
-                          spacing={1.2}
-                          width="20%"
-                          alignItems="center"
-                        >
-                          {trackIcons(t.timer_status || "IDLE")}
-                          <Typography fontSize={13}>
-                            {formatSeconds(getTaskTime(t))}
+                          <Typography
+                            width="42%"
+                            sx={{
+                              whiteSpace: "normal",
+                              wordBreak: "break-word",
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            {t.name}
                           </Typography>
-                        </Stack>
+                          <Stack
+                            direction="row"
+                            spacing={1.2}
+                            width="20%"
+                            alignItems="center"
+                          >
+                            {trackIcons(t.timer_status || "IDLE")}
+                            <Typography fontSize={13}>
+                              {formatSeconds(getTaskTime(t))}
+                            </Typography>
+                          </Stack>
 
-                        {showStatus && (
-                          <Box width="16%">
-                            <Box
-                              sx={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                height: 22,
-                                borderRadius: 8,
-                                bgcolor:
-                                  t.status_label === "Completed"
-                                    ? COLORS.complete
-                                    : t.status_label === "In Progress"
-                                      ? COLORS.progress
-                                      : COLORS.todo,
-                                color: "#fff",
-                                overflow: "hidden",
-                              }}
-                              onClick={handleStatusClick}
-                            >
-                              <Typography
-                                sx={{
-                                  px: 1.2,
-                                  fontSize: 12,
-                                  fontWeight: 500,
-                                  color: "#fff",
-                                }}
-                              >
-                                {t.status_label}
-                              </Typography>
-
+                          {showStatus && (
+                            <Box width="16%">
                               <Box
                                 sx={{
-                                  width: 14,
-                                  minWidth: 14,
-                                  display: "flex",
+                                  display: "inline-flex",
                                   alignItems: "center",
-                                  justifyContent: "center",
-                                  borderLeft:
-                                    "1px solid rgba(255,255,255,0.35)",
-                                  cursor: "pointer",
+                                  height: 22,
+                                  borderRadius: 8,
+                                  bgcolor:
+                                    t.status_label === "Completed"
+                                      ? COLORS.complete
+                                      : t.status_label === "In Progress"
+                                        ? COLORS.progress
+                                        : COLORS.todo,
+                                  color: "#fff",
+                                  overflow: "hidden",
                                 }}
+                                onClick={handleStatusClick}
                               >
-                                <ArrowRightRounded
-                                  sx={{ fontSize: 20, color: "#fff" }}
-                                />
+                                <Typography
+                                  sx={{
+                                    px: 1.2,
+                                    fontSize: 12,
+                                    fontWeight: 500,
+                                    color: "#fff",
+                                  }}
+                                >
+                                  {t.status_label}
+                                </Typography>
+
+                                <Box
+                                  sx={{
+                                    width: 14,
+                                    minWidth: 14,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    borderLeft:
+                                      "1px solid rgba(255,255,255,0.35)",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  <ArrowRightRounded
+                                    sx={{ fontSize: 20, color: "#fff" }}
+                                  />
+                                </Box>
                               </Box>
                             </Box>
-                          </Box>
-                        )}
-                        <Typography
-                          width={showStatus ? "14%" : "30%"}
-                          sx={{ whiteSpace: "nowrap", color: dueInfo.color }}
-                        >
-                          {dueInfo.text}
-                        </Typography>
-                        <Box
-                          width="8%"
-                          display="flex"
-                          justifyContent="flex-end"
-                        >
-                          {t.assignment ? (
-                            <Tooltip
-                              title={
-                                assignees.find((u) => u.id === t.assignment)
-                                  ?.emp_name || ""
-                              }
-                              arrow
-                            >
-                              <Avatar sx={{ width: 28, height: 28 }}>
-                                {assignees.find((u) => u.id === t.assignment)
-                                  ?.emp_name?.[0] || "?"}
-                              </Avatar>
-                            </Tooltip>
-                          ) : (
-                            <Avatar
-                              sx={{ width: 28, height: 28, bgcolor: "#ccc" }}
-                            >
-                              ?
-                            </Avatar>
                           )}
-                        </Box>
-                      </Stack>
-                    );
-                  })
-                )}
-              </Stack>
+                          <Typography
+                            width={showStatus ? "14%" : "30%"}
+                            sx={{ whiteSpace: "nowrap", color: dueInfo.color }}
+                          >
+                            {dueInfo.text}
+                          </Typography>
+                          <Box
+                            width="8%"
+                            display="flex"
+                            justifyContent="flex-end"
+                          >
+                            {t.assignment ? (
+                              <Tooltip
+                                title={
+                                  assignees.find((u) => u.id === t.assignment)
+                                    ?.emp_name || ""
+                                }
+                                arrow
+                              >
+                                <Avatar sx={{ width: 28, height: 28 }}>
+                                  {assignees.find((u) => u.id === t.assignment)
+                                    ?.emp_name?.[0] || "?"}
+                                </Avatar>
+                              </Tooltip>
+                            ) : (
+                              <Avatar
+                                sx={{ width: 28, height: 28, bgcolor: "#ccc" }}
+                              >
+                                ?
+                              </Avatar>
+                            )}
+                          </Box>
+                        </Stack>
+                      );
+                    })
+                  )}
+                </Stack>
+              </Box>
             </Box>
           </Box>
 

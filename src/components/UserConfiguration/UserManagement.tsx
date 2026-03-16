@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -21,24 +21,29 @@ import {
   FormControl,
   InputLabel,
   Chip,
-} from '@mui/material';
-import { Add, Edit, Delete } from '@mui/icons-material';
-import { useForm } from 'react-hook-form';
+} from "@mui/material";
+import { Add, Edit, Delete } from "@mui/icons-material";
+import { useForm } from "react-hook-form";
 
 interface User {
   id: number;
   user_name: string;
   email: string;
   role: string;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
 }
 
 const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const [searchTerm, setSearchTerm] = useState("");
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm();
 
   useEffect(() => {
     loadUsers();
@@ -49,38 +54,38 @@ const UserManagement = () => {
     setUsers([
       {
         id: 1,
-        user_name: 'John Doe',
-        email: 'john.doe@example.com',
-        role: 'Admin',
-        status: 'active',
+        user_name: "John Doe",
+        email: "john.doe@example.com",
+        role: "Admin",
+        status: "active",
       },
       {
         id: 2,
-        user_name: 'Jane Smith',
-        email: 'jane.smith@example.com',
-        role: 'Lab Manager',
-        status: 'active',
+        user_name: "Jane Smith",
+        email: "jane.smith@example.com",
+        role: "Lab Manager",
+        status: "active",
       },
       {
         id: 3,
-        user_name: 'Mike Johnson',
-        email: 'mike.johnson@example.com',
-        role: 'Technician',
-        status: 'active',
+        user_name: "Mike Johnson",
+        email: "mike.johnson@example.com",
+        role: "Technician",
+        status: "active",
       },
       {
         id: 4,
-        user_name: 'Sarah Williams',
-        email: 'sarah.williams@example.com',
-        role: 'Viewer',
-        status: 'inactive',
+        user_name: "Sarah Williams",
+        email: "sarah.williams@example.com",
+        role: "Viewer",
+        status: "inactive",
       },
       {
         id: 5,
-        user_name: 'David Brown',
-        email: 'david.brown@example.com',
-        role: 'Technician',
-        status: 'active',
+        user_name: "David Brown",
+        email: "david.brown@example.com",
+        role: "Technician",
+        status: "active",
       },
     ]);
   };
@@ -91,7 +96,7 @@ const UserManagement = () => {
       reset(user);
     } else {
       setEditing(null);
-      reset({ user_name: '', email: '', role: '', status: 'active' });
+      reset({ user_name: "", email: "", role: "", status: "active" });
     }
     setOpen(true);
   };
@@ -105,49 +110,62 @@ const UserManagement = () => {
   const onSubmit = async (data: any) => {
     try {
       if (editing) {
-        setUsers(users.map(u => u.id === editing.id ? { ...u, ...data } : u));
+        setUsers(
+          users.map((u) => (u.id === editing.id ? { ...u, ...data } : u)),
+        );
       } else {
         const newUser: User = {
-          id: Math.max(...users.map(u => u.id), 0) + 1,
+          id: Math.max(...users.map((u) => u.id), 0) + 1,
           ...data,
         };
         setUsers([...users, newUser]);
       }
       handleClose();
     } catch (error) {
-      console.error('Error saving user:', error);
+      console.error("Error saving user:", error);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      setUsers(users.filter(u => u.id !== id));
+    if (window.confirm("Are you sure you want to delete this user?")) {
+      setUsers(users.filter((u) => u.id !== id));
     }
   };
 
-  const filteredUsers = users.filter((user) =>
-    user.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(
+    (user) =>
+      user.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.role.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: { xs: "stretch", sm: "center" },
+          flexDirection: { xs: "column", sm: "row" },
+          gap: 1.5,
+          mb: 2,
+        }}
+      >
         <TextField
           placeholder="Search by User Name, Email, or Role"
           size="small"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ minWidth: 400 }}
+          sx={{ width: { xs: "100%", sm: 400 } }}
         />
         <Button
           variant="contained"
           startIcon={<Add />}
           onClick={() => handleOpen()}
           sx={{
-            backgroundColor: '#14b8a6',
-            '&:hover': { backgroundColor: '#0d9488' },
+            backgroundColor: "#14b8a6",
+            width: { xs: "100%", sm: "auto" },
+            "&:hover": { backgroundColor: "#0d9488" },
           }}
         >
           Add User
@@ -156,7 +174,7 @@ const UserManagement = () => {
 
       <Card>
         <CardContent>
-          <TableContainer>
+          <TableContainer sx={{ overflowX: "auto" }}>
             <Table>
               <TableHead>
                 <TableRow>
@@ -177,15 +195,18 @@ const UserManagement = () => {
                       <Chip
                         label={user.status}
                         size="small"
-                        color={user.status === 'active' ? 'success' : 'default'}
-                        sx={{ textTransform: 'capitalize' }}
+                        color={user.status === "active" ? "success" : "default"}
+                        sx={{ textTransform: "capitalize" }}
                       />
                     </TableCell>
                     <TableCell align="right">
                       <IconButton size="small" onClick={() => handleOpen(user)}>
                         <Edit fontSize="small" />
                       </IconButton>
-                      <IconButton size="small" onClick={() => handleDelete(user.id)}>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDelete(user.id)}
+                      >
                         <Delete fontSize="small" />
                       </IconButton>
                     </TableCell>
@@ -193,7 +214,11 @@ const UserManagement = () => {
                 ))}
                 {filteredUsers.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} align="center" sx={{ py: 3, color: '#6b7280' }}>
+                    <TableCell
+                      colSpan={5}
+                      align="center"
+                      sx={{ py: 3, color: "#6b7280" }}
+                    >
                       No users found
                     </TableCell>
                   </TableRow>
@@ -205,7 +230,7 @@ const UserManagement = () => {
       </Card>
 
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <DialogTitle>{editing ? 'Edit User' : 'Add User'}</DialogTitle>
+        <DialogTitle>{editing ? "Edit User" : "Add User"}</DialogTitle>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogContent>
             <TextField
@@ -214,7 +239,7 @@ const UserManagement = () => {
               label="User Name"
               fullWidth
               variant="outlined"
-              {...register('user_name', { required: 'User name is required' })}
+              {...register("user_name", { required: "User name is required" })}
               error={!!errors.user_name}
               helperText={errors.user_name?.message as string}
               sx={{ mb: 2 }}
@@ -225,7 +250,7 @@ const UserManagement = () => {
               fullWidth
               type="email"
               variant="outlined"
-              {...register('email', { required: 'Email is required' })}
+              {...register("email", { required: "Email is required" })}
               error={!!errors.email}
               helperText={errors.email?.message as string}
               sx={{ mb: 2 }}
@@ -234,8 +259,8 @@ const UserManagement = () => {
               <InputLabel>Role</InputLabel>
               <Select
                 label="Role"
-                {...register('role', { required: 'Role is required' })}
-                defaultValue={editing?.role || ''}
+                {...register("role", { required: "Role is required" })}
+                defaultValue={editing?.role || ""}
               >
                 <MenuItem value="Admin">Admin</MenuItem>
                 <MenuItem value="Lab Manager">Lab Manager</MenuItem>
@@ -247,8 +272,8 @@ const UserManagement = () => {
               <InputLabel>Status</InputLabel>
               <Select
                 label="Status"
-                {...register('status')}
-                defaultValue={editing?.status || 'active'}
+                {...register("status")}
+                defaultValue={editing?.status || "active"}
               >
                 <MenuItem value="active">Active</MenuItem>
                 <MenuItem value="inactive">Inactive</MenuItem>
@@ -257,8 +282,12 @@ const UserManagement = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose}>Cancel</Button>
-            <Button type="submit" variant="contained" sx={{ backgroundColor: '#14b8a6' }}>
-              {editing ? 'Update' : 'Add'}
+            <Button
+              type="submit"
+              variant="contained"
+              sx={{ backgroundColor: "#14b8a6" }}
+            >
+              {editing ? "Update" : "Add"}
             </Button>
           </DialogActions>
         </form>
@@ -268,4 +297,3 @@ const UserManagement = () => {
 };
 
 export default UserManagement;
-

@@ -12,11 +12,12 @@ export default function EquipmentTabs({
   return (
     <div
       style={{
-        display: "inline-flex",
+        display: "flex",
         backgroundColor: "#F8F8F8",
         padding: 4,
         borderRadius: 12,
         gap: 4,
+        flexShrink: 0,
       }}
     >
       {(["All", "To-Do", "Plan"] as TabType[]).map((tab) => (
@@ -24,13 +25,15 @@ export default function EquipmentTabs({
           key={tab}
           onClick={() => onTabChange(tab)}
           style={{
-            width: 100,
+            minWidth: 70,
             height: 36,
+            padding: "0 12px",
             borderRadius: 10,
             border: "none",
             cursor: "pointer",
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: 700,
+            whiteSpace: "nowrap",
             backgroundColor: activeTab === tab ? "#FFFFFF" : "transparent",
             color: activeTab === tab ? "#E17E61" : "#94a3b8",
           }}

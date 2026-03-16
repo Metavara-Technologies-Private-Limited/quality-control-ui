@@ -68,7 +68,9 @@ export default function LabEquipmentLogs({ equipment }: Props) {
       }
 
       const filtered = equipment.equipment_id
-        ? all.filter((log) => log.equipment_details_id === equipment.equipment_id)
+        ? all.filter(
+            (log) => log.equipment_details_id === equipment.equipment_id,
+          )
         : all;
 
       setLogs(filtered);
@@ -126,8 +128,11 @@ export default function LabEquipmentLogs({ equipment }: Props) {
         return {
           id: log.id || index,
           timestamp,
-          date: createdAt.isValid() ? createdAt.format("DD/MM/YYYY HH:mm") : "-",
-          equipment: equipmentDetailMap.get(log.equipment_details_id) ?? "Unknown",
+          date: createdAt.isValid()
+            ? createdAt.format("DD/MM/YYYY HH:mm")
+            : "-",
+          equipment:
+            equipmentDetailMap.get(log.equipment_details_id) ?? "Unknown",
           parameter: param?.name ?? "-",
           unit: param?.unit ?? "-",
           value: log.content ?? "-",
@@ -231,8 +236,14 @@ export default function LabEquipmentLogs({ equipment }: Props) {
     },
     { field: "equipment", headerName: "Equipment", width: 150, sortable: true },
     { field: "parameter", headerName: "Parameter", width: 150, sortable: true },
-    { field: "unit",      headerName: "Unit",      width: 100, sortable: true },
-    { field: "value",     headerName: "Value",     width: 120, sortable: true, type: "string" },
+    { field: "unit", headerName: "Unit", width: 100, sortable: true },
+    {
+      field: "value",
+      headerName: "Value",
+      width: 120,
+      sortable: true,
+      type: "string",
+    },
   ];
 
   return (
@@ -242,7 +253,8 @@ export default function LabEquipmentLogs({ equipment }: Props) {
         sx={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: { xs: "stretch", sm: "center" },
+          flexDirection: { xs: "column", md: "row" },
           gap: 2,
         }}
       >
@@ -251,7 +263,11 @@ export default function LabEquipmentLogs({ equipment }: Props) {
           size="small"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ width: 300, bgcolor: "#fff", borderRadius: "8px" }}
+          sx={{
+            width: { xs: "100%", md: 300 },
+            bgcolor: "#fff",
+            borderRadius: "8px",
+          }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -260,7 +276,14 @@ export default function LabEquipmentLogs({ equipment }: Props) {
             ),
           }}
         />
-        <Box sx={{ display: "flex", gap: 1 }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            flexWrap: "wrap",
+            width: { xs: "100%", md: "auto" },
+          }}
+        >
           <Button
             variant="outlined"
             startIcon={<FileUpload />}
@@ -271,6 +294,7 @@ export default function LabEquipmentLogs({ equipment }: Props) {
               color: "#505050",
               textTransform: "none",
               fontWeight: 600,
+              width: { xs: "100%", sm: "auto" },
               "&:hover": { borderColor: "#232323", backgroundColor: "#f5f5f5" },
             }}
           >
@@ -286,6 +310,7 @@ export default function LabEquipmentLogs({ equipment }: Props) {
               backgroundColor: "#505050",
               textTransform: "none",
               fontWeight: 600,
+              width: { xs: "100%", sm: "auto" },
               "&:hover": { backgroundColor: "#232323" },
             }}
           >

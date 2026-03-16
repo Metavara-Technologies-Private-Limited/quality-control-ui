@@ -217,7 +217,8 @@ export default function LabEnvironmentLogs({ environment }: Props) {
         sx={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: { xs: "stretch", sm: "center" },
+          flexDirection: { xs: "column", sm: "row" },
           gap: 2,
         }}
       >
@@ -226,7 +227,11 @@ export default function LabEnvironmentLogs({ environment }: Props) {
           size="small"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ width: 300, bgcolor: "#fff", borderRadius: "8px" }}
+          sx={{
+            width: { xs: "100%", sm: 300 },
+            bgcolor: "#fff",
+            borderRadius: "8px",
+          }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -235,7 +240,14 @@ export default function LabEnvironmentLogs({ environment }: Props) {
             ),
           }}
         />
-        <Box sx={{ display: "flex", gap: 1 }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            flexWrap: "wrap",
+            width: { xs: "100%", sm: "auto" },
+          }}
+        >
           <Button
             variant="outlined"
             startIcon={<FileUpload />}
@@ -246,6 +258,7 @@ export default function LabEnvironmentLogs({ environment }: Props) {
               color: "#505050",
               textTransform: "none",
               fontWeight: 600,
+              width: { xs: "100%", sm: "auto" },
               "&:hover": { borderColor: "#232323", backgroundColor: "#f5f5f5" },
             }}
           >
@@ -261,6 +274,7 @@ export default function LabEnvironmentLogs({ environment }: Props) {
               backgroundColor: "#505050",
               textTransform: "none",
               fontWeight: 600,
+              width: { xs: "100%", sm: "auto" },
               "&:hover": { backgroundColor: "#232323" },
             }}
           >
@@ -272,49 +286,54 @@ export default function LabEnvironmentLogs({ environment }: Props) {
       {/* DataGrid Table */}
       <Paper
         sx={{
-          height: 500,
+          height: { xs: 420, md: 500 },
           width: "100%",
           borderRadius: "12px",
           border: "1px solid #e5e7eb",
           boxShadow: "none",
+          overflow: "hidden",
         }}
       >
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          pageSizeOptions={[5, 10, 25, 50]}
-          paginationModel={paginationModel}
-          onPaginationModelChange={setPaginationModel}
-          sx={{
-            border: 0,
-            "& .MuiDataGrid-columnHeaderTitle": {
-              fontWeight: 700,
-              fontSize: "0.95rem",
-            },
-            "& .MuiDataGrid-columnHeader": {
-              fontWeight: "bold",
-              position: "sticky",
-              top: 0,
-              zIndex: 10,
-            },
-            "& .MuiDataGrid-columnHeaders": {
-              position: "sticky",
-              top: 0,
-              zIndex: 10,
-            },
-            "& .MuiDataGrid-cell": {
-              borderBottom: "1px solid #e5e7eb",
-            },
-            "& .MuiDataGrid-row:hover": {
-              backgroundColor: "#f9fafb",
-            },
-            "& .MuiDataGrid-footerContainer": {
-              borderTop: "1px solid #e5e7eb",
-            },
-          }}
-          disableRowSelectionOnClick
-          density="standard"
-        />
+        <Box sx={{ width: "100%", height: "100%", overflowX: "auto" }}>
+          <Box sx={{ minWidth: 620, height: "100%" }}>
+            <DataGrid
+              rows={rows}
+              columns={columns}
+              pageSizeOptions={[5, 10, 25, 50]}
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
+              sx={{
+                border: 0,
+                "& .MuiDataGrid-columnHeaderTitle": {
+                  fontWeight: 700,
+                  fontSize: "0.95rem",
+                },
+                "& .MuiDataGrid-columnHeader": {
+                  fontWeight: "bold",
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 10,
+                },
+                "& .MuiDataGrid-columnHeaders": {
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 10,
+                },
+                "& .MuiDataGrid-cell": {
+                  borderBottom: "1px solid #e5e7eb",
+                },
+                "& .MuiDataGrid-row:hover": {
+                  backgroundColor: "#f9fafb",
+                },
+                "& .MuiDataGrid-footerContainer": {
+                  borderTop: "1px solid #e5e7eb",
+                },
+              }}
+              disableRowSelectionOnClick
+              density="standard"
+            />
+          </Box>
+        </Box>
       </Paper>
 
       {/* Shared Import Popup */}

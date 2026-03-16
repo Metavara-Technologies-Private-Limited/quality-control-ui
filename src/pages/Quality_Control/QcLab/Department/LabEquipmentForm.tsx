@@ -109,7 +109,6 @@ export default function LabEquipmentForm({
         overflow: "hidden",
       }}
     >
-
       {/* ---------- FORM / LOGS TABS ---------- */}
       <Box
         sx={{
@@ -224,7 +223,11 @@ export default function LabEquipmentForm({
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
+              gridTemplateColumns: {
+                xs: "1fr",
+                md: "repeat(2, 1fr)",
+                xl: "repeat(3, 1fr)",
+              },
               gap: "20px",
             }}
           >
@@ -300,7 +303,7 @@ export default function LabEquipmentForm({
           </Box>
 
           {/* ---------- DATE TIME ---------- */}
-          <Box sx={{ mt: "24px", width: "260px" }}>
+          <Box sx={{ mt: "24px", width: { xs: "100%", sm: "260px" } }}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DateTimePicker
                 label="Date & Time"
@@ -325,8 +328,9 @@ export default function LabEquipmentForm({
           <Box
             sx={{
               display: "flex",
-              alignItems: "center",
-              gap: "24px",
+              alignItems: { xs: "flex-start", sm: "center" },
+              flexWrap: "wrap",
+              gap: "16px",
               marginTop: "20px",
               fontSize: "14px",
             }}
@@ -347,7 +351,16 @@ export default function LabEquipmentForm({
               </span>
             </Box>
 
-            <Box sx={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
+            <Box
+              sx={{
+                ml: { xs: 0, sm: "auto" },
+                display: "flex",
+                gap: "12px",
+                flexWrap: "wrap",
+                width: { xs: "100%", sm: "auto" },
+                justifyContent: "flex-end",
+              }}
+            >
               <button
                 onClick={handleClear}
                 disabled={isSaving}

@@ -141,7 +141,8 @@ const Reports = () => {
 
     const onFocus = () => dispatch(fetchReports(allParamIds));
     const onVisibilityChange = () => {
-      if (document.visibilityState === "visible") dispatch(fetchReports(allParamIds));
+      if (document.visibilityState === "visible")
+        dispatch(fetchReports(allParamIds));
     };
 
     window.addEventListener("focus", onFocus);
@@ -173,7 +174,9 @@ const Reports = () => {
   const rows = useMemo(() => {
     const mappedRows = logs
       .map((log: any, index: number) => {
-        const detailId = Number(log.equipment_details ?? log.equipment_details_id);
+        const detailId = Number(
+          log.equipment_details ?? log.equipment_details_id,
+        );
         const eq = equipmentMap.get(detailId);
         const paramId = Number(log.parameter ?? log.parameter_id);
         const param = parameterMetaMap.get(paramId);
@@ -192,7 +195,9 @@ const Reports = () => {
           unit: param?.unit ?? "-",
           value: log.content ?? "-",
           timestamp,
-          date: createdAt.isValid() ? createdAt.format("DD/MM/YYYY HH:mm") : "-",
+          date: createdAt.isValid()
+            ? createdAt.format("DD/MM/YYYY HH:mm")
+            : "-",
         };
       })
       .filter(Boolean) as any[];
@@ -283,13 +288,20 @@ const Reports = () => {
     },
     { field: "equipment", headerName: "Equipment", flex: 1.3, minWidth: 150 },
     { field: "parameter", headerName: "Parameter", flex: 1.3, minWidth: 150 },
-    { field: "unit",      headerName: "Unit",      flex: 0.8, minWidth: 100 },
-    { field: "value",     headerName: "Value",     flex: 1,   minWidth: 120 },
+    { field: "unit", headerName: "Unit", flex: 0.8, minWidth: 100 },
+    { field: "value", headerName: "Value", flex: 1, minWidth: 120 },
   ];
 
   return (
-    <Container maxWidth={false} sx={{ py: 2 }}>
-      <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
+    <Container maxWidth={false} sx={{ py: { xs: 1, sm: 2 } }}>
+      <Typography
+        variant="h5"
+        sx={{
+          fontWeight: 600,
+          mb: 2,
+          fontSize: { xs: "1.25rem", sm: "1.5rem" },
+        }}
+      >
         Reports
       </Typography>
 
@@ -298,16 +310,31 @@ const Reports = () => {
         sx={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: { xs: "stretch", lg: "center" },
+          flexDirection: { xs: "column", lg: "row" },
           gap: 2,
           mb: 3,
           flexWrap: "wrap",
         }}
       >
-        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            alignItems: "center",
+            flexWrap: "wrap",
+            width: { xs: "100%", lg: "auto" },
+          }}
+        >
           {/* Department */}
-          <FormControl size="small" sx={{ minWidth: 150, maxWidth: 200 }}>
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: { xs: "100%", sm: 180 },
+              maxWidth: { xs: "100%", sm: 220 },
+              flex: { xs: "1 1 100%", sm: "0 0 auto" },
+            }}
+          >
             <InputLabel>Department</InputLabel>
             <Select
               value={selectedDepartment}
@@ -327,7 +354,14 @@ const Reports = () => {
           </FormControl>
 
           {/* Equipment — compact fixed width */}
-          <FormControl size="small" sx={{ minWidth: 160, maxWidth: 200 }}>
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: { xs: "100%", sm: 180 },
+              maxWidth: { xs: "100%", sm: 240 },
+              flex: { xs: "1 1 100%", sm: "0 0 auto" },
+            }}
+          >
             <InputLabel>Equipment</InputLabel>
             <Select
               value={selectedEquipment}
@@ -339,7 +373,13 @@ const Reports = () => {
                   (o) => Number(o.value) === Number(value),
                 );
                 return (
-                  <Box sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <Box
+                    sx={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
                     {opt?.label ?? "All Equipments"}
                   </Box>
                 );
@@ -347,7 +387,11 @@ const Reports = () => {
             >
               <MenuItem value="all">All Equipments</MenuItem>
               {equipmentOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value} title={option.label}>
+                <MenuItem
+                  key={option.value}
+                  value={option.value}
+                  title={option.label}
+                >
                   {option.label}
                 </MenuItem>
               ))}
@@ -355,13 +399,22 @@ const Reports = () => {
           </FormControl>
         </Box>
 
-        <Box sx={{ display: "flex", gap: 2, alignItems: "center", ml: "auto" }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            alignItems: { xs: "stretch", sm: "center" },
+            flexDirection: { xs: "column", sm: "row" },
+            width: { xs: "100%", lg: "auto" },
+            ml: { lg: "auto" },
+          }}
+        >
           <TextField
             size="small"
             placeholder="Search across all columns..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            sx={{ width: 280 }}
+            sx={{ width: { xs: "100%", sm: 280 } }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -371,7 +424,14 @@ const Reports = () => {
             }}
           />
 
-          <Box sx={{ display: "flex", gap: 1 }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 1,
+              flexWrap: "wrap",
+              width: { xs: "100%", sm: "auto" },
+            }}
+          >
             <Button
               variant="outlined"
               startIcon={<FileUpload />}
@@ -382,6 +442,7 @@ const Reports = () => {
                 color: "#505050",
                 textTransform: "none",
                 fontWeight: 600,
+                width: { xs: "100%", sm: "auto" },
               }}
             >
               Export CSV
@@ -396,6 +457,7 @@ const Reports = () => {
                 backgroundColor: "#505050",
                 textTransform: "none",
                 fontWeight: 600,
+                width: { xs: "100%", sm: "auto" },
                 "&:hover": { backgroundColor: "#232323" },
               }}
             >
@@ -416,14 +478,20 @@ const Reports = () => {
       )}
 
       {/* ── Table ── */}
-      <Paper sx={{ height: 520 }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          initialState={{
-            sorting: { sortModel: [{ field: "date", sort: "desc" }] },
-          }}
-        />
+      <Paper
+        sx={{ height: { xs: 440, md: 520 }, width: "100%", overflow: "hidden" }}
+      >
+        <Box sx={{ width: "100%", height: "100%", overflowX: "auto" }}>
+          <Box sx={{ minWidth: 700, height: "100%" }}>
+            <DataGrid
+              rows={rows}
+              columns={columns}
+              initialState={{
+                sorting: { sortModel: [{ field: "date", sort: "desc" }] },
+              }}
+            />
+          </Box>
+        </Box>
       </Paper>
 
       <ImportCSVPopup

@@ -60,8 +60,8 @@ const EventInfoSection = ({
         Event Name
       </Typography>
 
-      <Grid container columnGap="24px" mb={3}>
-        <Grid item>
+      <Grid container spacing={2} mb={3}>
+        <Grid item xs={12} md={6}>
           <TextField
             label="Name"
             size="small"
@@ -77,7 +77,7 @@ const EventInfoSection = ({
               },
             }}
             sx={{
-              width: "380px",
+              width: "100%",
               "& .MuiOutlinedInput-root": {
                 backgroundColor: "#FFFFFF",
                 "& fieldset": {
@@ -94,7 +94,7 @@ const EventInfoSection = ({
           />
         </Grid>
 
-        <Grid item>
+        <Grid item xs={12} md={6}>
           <TextField
             label="Description"
             size="small"
@@ -110,7 +110,7 @@ const EventInfoSection = ({
               },
             }}
             sx={{
-              width: "380px",
+              width: "100%",
               "& .MuiOutlinedInput-root": {
                 backgroundColor: "#FFFFFF",
                 "& fieldset": {
@@ -129,7 +129,7 @@ const EventInfoSection = ({
       </Grid>
 
       <Grid container spacing={2} mb={3}>
-        <Grid item xs={6} sx={{ maxWidth: "380px" }}>
+        <Grid item xs={12} md={6}>
           <TextField
             select
             size="small"
@@ -157,7 +157,7 @@ const EventInfoSection = ({
               },
             }}
             sx={{
-              width: "380px",
+              width: "100%",
               "& .MuiOutlinedInput-root": {
                 color: "#111827",
                 "& fieldset": { borderColor: "#D1D5DB" },
