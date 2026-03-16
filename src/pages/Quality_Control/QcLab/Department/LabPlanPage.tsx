@@ -5,6 +5,7 @@ import { useOutletContext } from "react-router-dom";
 import { RootState } from "@/store";
 import LabEquipmentForm from "./LabEquipmentForm";
 import { slugify } from "@/utils/slugify";
+import { Box, useMediaQuery, useTheme } from "@mui/material";
 
 type PlanItem = {
   key: string;
@@ -31,9 +32,7 @@ const formatScheduleInfo = (item: PlanItem) => {
         : "Daily";
 
     case 3:
-      return item.days?.length
-        ? `Weekly: ${item.days.join(", ")}`
-        : "Weekly";
+      return item.days?.length ? `Weekly: ${item.days.join(", ")}` : "Weekly";
 
     case 4:
       return item.months?.length
@@ -49,9 +48,21 @@ const formatScheduleInfo = (item: PlanItem) => {
 
 /* ---------------- Schedule Map ---------------- */
 const avatarColors = [
-  "#091E42", "#172B4D", "#0052CC", "#0747A6", "#0065FF",
-  "#004F3D", "#006644", "#00875A", "#7A1FA2", "#403294",
-  "#5E4DB2", "#BF2600", "#DE350B", "#FF5630", "#FF8B00",
+  "#091E42",
+  "#172B4D",
+  "#0052CC",
+  "#0747A6",
+  "#0065FF",
+  "#004F3D",
+  "#006644",
+  "#00875A",
+  "#7A1FA2",
+  "#403294",
+  "#5E4DB2",
+  "#BF2600",
+  "#DE350B",
+  "#FF5630",
+  "#FF8B00",
 ];
 
 const getAvatarColor = (name?: string) => {
@@ -102,6 +113,8 @@ const getInitials = (name?: string) =>
 type ScheduleTab = "One Time" | "Daily" | "Weekly" | "Monthly";
 
 export default function LabPlanPage() {
+  const theme = useTheme();
+  const isCompact = useMediaQuery(theme.breakpoints.down("lg"));
   const { departmentName, selectedAssigneeIds, searchText } = useOutletContext<{
     departmentName: string;
     selectedAssigneeIds: number[];
@@ -160,7 +173,7 @@ export default function LabPlanPage() {
         equipmentName: eq.equipment_details__equipment__equipment_name,
         equipmentUnit: eq.equipment_details__equipment_num,
         equipmentDetailId: eq.equipment_details__id,
-      }));      
+      }));
     });
   }, [events, departmentName, selectedAssigneeIds, assigneeIdMap]);
 
@@ -238,22 +251,30 @@ export default function LabPlanPage() {
   /* ---------------- UI ---------------- */
 
   return (
-    <div style={{ display: "flex", gap: 20 }}>
+    <Box
+      sx={{
+        display: "flex",
+        gap: 2.5,
+        flexDirection: { xs: "column", lg: "row" },
+        minWidth: 0,
+      }}
+    >
       {/* LEFT */}
-      <div
-        style={{
-          width: selectedItem ? "520px" : "100%",
+      <Box
+        sx={{
+          width: selectedItem && !isCompact ? 520 : "100%",
           transition: "width 0.25s ease",
           background: "#fff",
           border: "1px solid #e5e7eb",
           borderRadius: "14px",
-          padding: 16,
-          height: "calc(100vh - 220px)",
+          p: 2,
+          minHeight: 0,
+          maxHeight: { xs: "none", lg: "calc(100dvh - 220px)" },
           overflowY: "auto",
         }}
       >
         {/* TABS */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <Box sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
           {(["One Time", "Daily", "Weekly", "Monthly"] as ScheduleTab[]).map(
             (tab) => (
               <button
@@ -284,7 +305,7 @@ export default function LabPlanPage() {
               </button>
             ),
           )}
-        </div>
+        </Box>
 
         {activeTabItems.length === 0 ? (
           <div
@@ -297,13 +318,14 @@ export default function LabPlanPage() {
             No plans found
           </div>
         ) : (
-          <div
-            style={{
+          <Box
+            sx={{
               display: "grid",
-              gridTemplateColumns: selectedItem
-                ? "1fr"
-                : "repeat(auto-fill, minmax(320px, 1fr))",
-              gap: 12,
+              gridTemplateColumns:
+                selectedItem || isCompact
+                  ? "1fr"
+                  : "repeat(auto-fill, minmax(320px, 1fr))",
+              gap: 1.5,
             }}
           >
             {activeTabItems.map((item) => (
@@ -349,26 +371,28 @@ export default function LabPlanPage() {
                   >
                     <strong>Event:</strong> {item.eventName}
                   </div>
-                    {/* Schedule info */}
-                    <div
-                      style={{
-                        marginTop: 6,
-                        fontSize: 11,
-                        color: "#6b7280",
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      <div><strong>Schedule:</strong> {item.scheduleLabel}</div>
-
-                      {item.startDate && item.endDate && (
-                        <div>
-                          {new Date(item.startDate).toDateString()} →{" "}
-                          {new Date(item.endDate).toDateString()}
-                        </div>
-                      )}
-
-                      <div>{formatScheduleInfo(item)}</div>
+                  {/* Schedule info */}
+                  <div
+                    style={{
+                      marginTop: 6,
+                      fontSize: 11,
+                      color: "#6b7280",
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    <div>
+                      <strong>Schedule:</strong> {item.scheduleLabel}
                     </div>
+
+                    {item.startDate && item.endDate && (
+                      <div>
+                        {new Date(item.startDate).toDateString()} →{" "}
+                        {new Date(item.endDate).toDateString()}
+                      </div>
+                    )}
+
+                    <div>{formatScheduleInfo(item)}</div>
+                  </div>
                 </div>
 
                 <div
@@ -391,20 +415,20 @@ export default function LabPlanPage() {
                 </div>
               </div>
             ))}
-          </div>
+          </Box>
         )}
-      </div>
+      </Box>
 
       {/* RIGHT */}
       {selectedItem && (
-        <div style={{ flex: 1 }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <LabEquipmentForm
             equipmentDetails={equipmentDetails}
             selectedRadio={selectedRadio}
             setSelectedRadio={setSelectedRadio}
           />
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

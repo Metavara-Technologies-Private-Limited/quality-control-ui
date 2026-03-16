@@ -4,17 +4,20 @@ import path from "path";
 
 export default defineConfig({
   plugins: [react()],
+
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
+
   server: {
     host: "0.0.0.0",
     port: 3006,
   },
+
   build: {
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -22,15 +25,16 @@ export default defineConfig({
           "vendor-mui": [
             "@mui/material",
             "@mui/icons-material",
-            "@mui/x-date-pickers",
+            "@mui/x-date-pickers"
           ],
           "vendor-charts": ["recharts"],
           "vendor-redux": ["@reduxjs/toolkit", "react-redux"],
-          "vendor-misc": ["dayjs", "react-toastify", "axios"],
-        },
-      },
-    },
+          "vendor-misc": ["dayjs", "axios", "react-toastify"]
+        }
+      }
+    }
   },
+
   test: {
     globals: true,
     environment: "jsdom",

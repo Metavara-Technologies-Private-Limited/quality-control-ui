@@ -379,16 +379,21 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
         maxWidth="md"
         fullWidth
         PaperProps={{
-          sx: { borderRadius: "24px" },
+          sx: {
+            borderRadius: "24px",
+            width: { xs: "calc(100% - 16px)", sm: "100%" },
+            m: { xs: 1, sm: 2 },
+          },
         }}
       >
         <DialogContent>
           <Box sx={{ p: 3 }}>
             {/* Header */}
             <Stack
-              direction="row"
+              direction={{ xs: "column", sm: "row" }}
               justifyContent="space-between"
-              alignItems="center"
+              alignItems={{ xs: "flex-start", sm: "center" }}
+              gap={1}
               mb={2}
             >
               <Typography fontSize={20} fontWeight={700}>
@@ -411,15 +416,22 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
 
             {/* Task Info */}
             <Stack spacing={2} mb={3}>
-              <Stack direction="row" spacing={4} alignItems="center">
+              <Stack
+                direction={{ xs: "column", md: "row" }}
+                spacing={2}
+                alignItems={{ xs: "stretch", md: "center" }}
+              >
                 {/* Assignee */}
                 <Stack
                   direction="row"
                   alignItems="center"
                   spacing={1}
-                  width="50%"
+                  width={{ xs: "100%", md: "50%" }}
                 >
-                  <Typography color="#9CA3AF" sx={{ minWidth: 80 }}>
+                  <Typography
+                    color="#9CA3AF"
+                    sx={{ minWidth: { xs: 68, sm: 80 } }}
+                  >
                     Assignee :
                   </Typography>
                   {assignedUser ? (
@@ -437,9 +449,12 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                   direction="row"
                   alignItems="center"
                   spacing={1}
-                  width="50%"
+                  width={{ xs: "100%", md: "50%" }}
                 >
-                  <Typography color="#9CA3AF" sx={{ minWidth: 80 }}>
+                  <Typography
+                    color="#9CA3AF"
+                    sx={{ minWidth: { xs: 68, sm: 80 } }}
+                  >
                     Status :
                   </Typography>
 
@@ -490,14 +505,21 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                 </Stack>
               </Stack>
 
-              <Stack direction="row" spacing={4} alignItems="center">
+              <Stack
+                direction={{ xs: "column", md: "row" }}
+                spacing={2}
+                alignItems={{ xs: "stretch", md: "center" }}
+              >
                 <Stack
                   direction="row"
                   alignItems="center"
                   spacing={1}
-                  width="50%"
+                  width={{ xs: "100%", md: "50%" }}
                 >
-                  <Typography color="#9CA3AF" sx={{ minWidth: 80 }}>
+                  <Typography
+                    color="#9CA3AF"
+                    sx={{ minWidth: { xs: 68, sm: 80 } }}
+                  >
                     Due Date :
                   </Typography>
                   <CalendarTodayIcon sx={{ fontSize: 18, color: "#111" }} />
@@ -510,9 +532,12 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                   direction="row"
                   alignItems="center"
                   spacing={1}
-                  width="50%"
+                  width={{ xs: "100%", md: "50%" }}
                 >
-                  <Typography color="#9CA3AF" sx={{ minWidth: 80 }}>
+                  <Typography
+                    color="#9CA3AF"
+                    sx={{ minWidth: { xs: 68, sm: 80 } }}
+                  >
                     Track Time :
                   </Typography>
                   <Stack direction="row" spacing={1} alignItems="center">
@@ -540,6 +565,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
                   padding: "4px",
                   marginBottom: "15px",
                   gap: "4px",
+                  flexWrap: "wrap",
                 }}
               >
                 {tabs.map((tab, index) => (

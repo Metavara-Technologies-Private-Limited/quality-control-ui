@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 import {
@@ -10,7 +10,10 @@ import {
   Box,
   Typography,
   IconButton,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 
 /* ===== ORIGINAL ICONS ===== */
 import ShieldTickIcon from "../../assets/icons/shield-tick.svg";
@@ -43,6 +46,7 @@ import DashboardCardBg from "../../assets/icons/dashboard_card_bg.svg";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { slugify } from "@/utils/slugify";
+import { useTab } from "@/utils/tabContext";
 
 /* ================= ICON CONFIG ================= */
 
@@ -201,9 +205,18 @@ const ICON_INDEX_MAP = [
   "compliance",
 ] as const;
 
-const Sidebar = () => {
+interface SidebarProps {
+  isMobile: boolean;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const Sidebar = ({ isMobile, isOpen, onClose }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const theme = useTheme();
+  const isTablet = useMediaQuery(theme.breakpoints.down("xl"));
+  const { activeTabIndex, setActiveTabIndex } = useTab();
 
   // Lab departments (type === "lab")
   const { data: labClinic, clinicData } = useSelector(
@@ -214,25 +227,98 @@ const Sidebar = () => {
 
   const ICON_MENU_MAP = buildIconMenuMap(labDepartments, clinicalDepartments);
 
-  const [selectedIcon, setSelectedIcon] = useState(0);
+  const [selectedIcon, setSelectedIcon] = useState(activeTabIndex);
+
+  useEffect(() => {
+    if (location.pathname.startsWith("/document-control")) {
+      setSelectedIcon(1);
+      setActiveTabIndex(1);
+      return;
+    }
+
+    if (location.pathname.startsWith("/risk-management")) {
+      setSelectedIcon(2);
+      setActiveTabIndex(2);
+      return;
+    }
+
+    if (location.pathname.startsWith("/compliance")) {
+      setSelectedIcon(3);
+      setActiveTabIndex(3);
+      return;
+    }
+
+    setSelectedIcon(0);
+    setActiveTabIndex(0);
+  }, [location.pathname, setActiveTabIndex]);
+
+  if (!isMobile && !isOpen) {
+    return null;
+  }
 
   const sectionKey = ICON_INDEX_MAP[selectedIcon];
   const menuItems = ICON_MENU_MAP[sectionKey] || [];
 
+  const handleIconSelect = (index: number) => {
+    setSelectedIcon(index);
+    setActiveTabIndex(index);
+
+    const firstMenuItem = (buildIconMenuMap(
+      labDepartments,
+      clinicalDepartments,
+    )[ICON_INDEX_MAP[index]] || [])[0];
+    const defaultPath =
+      firstMenuItem?.children?.[0]?.path || firstMenuItem?.path || "/dashboard";
+    navigate(defaultPath);
+
+    if (isMobile) {
+      onClose();
+    }
+  };
+
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    if (isMobile) {
+      onClose();
+    }
+  };
+
   return (
     <Drawer
-      variant="permanent"
+      variant={isMobile ? "temporary" : "permanent"}
+      open={isMobile ? isOpen : true}
+      onClose={onClose}
+      ModalProps={{ keepMounted: true }}
       sx={{
-        width: 240,
+        width: { xs: 312, sm: 324, xl: isTablet ? 254 : 272 },
+        flexShrink: 0,
         "& .MuiDrawer-paper": {
-          width: 250,
+          width: { xs: 312, sm: 324, xl: isTablet ? 254 : 272 },
           backgroundColor: "#FAFAFA",
           borderRight: "none",
+          boxSizing: "border-box",
+          overflowX: "hidden",
         },
       }}
     >
-      <Box sx={{ p: 2 }}>
-        <img src={ClinicLogo} width={134} alt="Clinic Logo" />
+      <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 1,
+          }}
+        >
+          <img
+            src={ClinicLogo}
+            width={isTablet ? 118 : 134}
+            alt="Clinic Logo"
+          />
+          <IconButton size="small" onClick={onClose} sx={{ opacity: 0.42 }}>
+            <MenuIcon sx={{ color: "#E17E61" }} />
+          </IconButton>
+        </Box>
       </Box>
 
       {/* ICON ROW */}
@@ -255,7 +341,7 @@ const Sidebar = () => {
                 }}
               >
                 <IconButton
-                  onClick={() => setSelectedIcon(index)}
+                  onClick={() => handleIconSelect(index)}
                   sx={{
                     width: isActive ? style.btnSize : 40,
                     height: isActive ? style.btnSize : 40,
@@ -277,7 +363,15 @@ const Sidebar = () => {
       </Box>
 
       {/* MAIN CARD */}
-      <Box sx={{ flex: 1, px: 2, mt: 2, position: "relative" }}>
+      <Box
+        sx={{
+          flex: 1,
+          px: { xs: 1.5, sm: 2 },
+          mt: 2,
+          position: "relative",
+          minHeight: 0,
+        }}
+      >
         <Box
           sx={{
             backgroundColor: "#fff",
@@ -309,6 +403,9 @@ const Sidebar = () => {
               display: "flex",
               flexDirection: "column",
               zIndex: 1,
+              minHeight: 0,
+              overflowY: "auto",
+              overflowX: "hidden",
             }}
           >
             {menuItems.map((item: any) => {
@@ -335,7 +432,7 @@ const Sidebar = () => {
                   <ListItem disablePadding>
                     <ListItemButton
                       onClick={() =>
-                        navigate(item.children?.[0]?.path || item.path)
+                        handleNavigate(item.children?.[0]?.path || item.path)
                       }
                     >
                       <ListItemText
@@ -345,6 +442,9 @@ const Sidebar = () => {
                             fontWeight: isItemActive ? 600 : 500,
                             color: isItemActive ? "#232323" : "#9e9e9e",
                             transition: "color 0.2s ease",
+                            whiteSpace: "normal",
+                            overflowWrap: "anywhere",
+                            wordBreak: "break-word",
                           },
                         }}
                       />
@@ -369,7 +469,7 @@ const Sidebar = () => {
                         return (
                           <ListItemButton
                             key={sub.key}
-                            onClick={() => navigate(sub.path)}
+                            onClick={() => handleNavigate(sub.path)}
                             sx={{
                               pl: 4,
                               display: "flex",
@@ -404,9 +504,13 @@ const Sidebar = () => {
                                 fontSize: "0.95rem",
                                 fontWeight: 600,
                                 color: isSubActive ? "#E17E61" : "#232323",
+                                whiteSpace: "normal",
+                                overflowWrap: "anywhere",
+                                wordBreak: "break-word",
+                                lineHeight: 1.25,
                               }}
                             >
-                              {sub.text}
+                              {sub.text?.replace(/_/g, " ")}
                             </Typography>
                           </ListItemButton>
                         );
@@ -432,7 +536,7 @@ const Sidebar = () => {
                         return (
                           <ListItemButton
                             key={sub.key}
-                            onClick={() => navigate(sub.path)}
+                            onClick={() => handleNavigate(sub.path)}
                             sx={{
                               pl: 4,
                               display: "flex",
@@ -467,9 +571,13 @@ const Sidebar = () => {
                                 fontSize: "0.95rem",
                                 fontWeight: 600,
                                 color: isSubActive ? "#E17E61" : "#232323",
+                                whiteSpace: "normal",
+                                overflowWrap: "anywhere",
+                                wordBreak: "break-word",
+                                lineHeight: 1.25,
                               }}
                             >
-                              {sub.text}
+                              {sub.text?.replace(/_/g, " ")}
                             </Typography>
                           </ListItemButton>
                         );
@@ -493,7 +601,7 @@ const Sidebar = () => {
                         return (
                           <ListItemButton
                             key={sub.key}
-                            onClick={() => navigate(sub.path)}
+                            onClick={() => handleNavigate(sub.path)}
                             sx={{
                               pl: 4,
                               display: "flex",
@@ -528,9 +636,13 @@ const Sidebar = () => {
                                 fontSize: "0.95rem",
                                 fontWeight: 600,
                                 color: isSubActive ? "#E17E61" : "#232323",
+                                whiteSpace: "normal",
+                                overflowWrap: "anywhere",
+                                wordBreak: "break-word",
+                                lineHeight: 1.25,
                               }}
                             >
-                              {sub.text}
+                              {sub.text?.replace(/_/g, " ")}
                             </Typography>
                           </ListItemButton>
                         );
@@ -551,7 +663,7 @@ const Sidebar = () => {
               bottom: 0,
               left: "50%",
               transform: "translateX(-50%)",
-              width: 200,
+              width: { xs: 180, xl: 200 },
               pointerEvents: "none",
               zIndex: 0,
             }}

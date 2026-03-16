@@ -88,7 +88,7 @@ const AverageParameterCards: React.FC<AverageParameterCardsProps> = ({
         sx={{
           p: 2.5,
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
           gap: 2,
         }}
       >

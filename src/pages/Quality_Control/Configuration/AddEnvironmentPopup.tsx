@@ -148,12 +148,22 @@ const AddEnvironmentPopup: React.FC<{
             })}
         </TextField>
 
-        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3, gap: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "flex-end",
+            mt: 3,
+            gap: 2,
+            flexDirection: { xs: "column-reverse", sm: "row" },
+          }}
+        >
           <Button
             variant="outlined"
             onClick={onClose}
             sx={{
-              color: "#505050", width: "100px", borderRadius: "10px",
+              color: "#505050",
+              width: { xs: "100%", sm: "100px" },
+              borderRadius: "10px",
               borderColor: "#505050",
               "&:hover": { borderColor: "#505050", backgroundColor: "white" },
               textTransform: "none",
@@ -166,8 +176,10 @@ const AddEnvironmentPopup: React.FC<{
             onClick={handleAdd}
             disabled={!departmentId}
             sx={{
-              width: "100px", borderRadius: "10px",
-              background: "#383838", textTransform: "none",
+              width: { xs: "100%", sm: "100px" },
+              borderRadius: "10px",
+              background: "#383838",
+              textTransform: "none",
               "&:hover": { background: "#2f2f2f" },
             }}
           >

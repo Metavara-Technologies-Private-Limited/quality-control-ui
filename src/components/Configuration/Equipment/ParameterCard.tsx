@@ -65,7 +65,7 @@ export const ParameterCard: React.FC<ParameterCardProps> = ({
     <>
       <Box
         sx={{
-          width: "260px",
+          width: { xs: "100%", sm: "260px" },
           border: "1px solid #E5E7EB",
           borderRadius: "12px",
           background: "#FFFFFF",

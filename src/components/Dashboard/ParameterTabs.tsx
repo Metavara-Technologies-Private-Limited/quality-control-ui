@@ -26,12 +26,22 @@ const ParameterTabs = ({
     <Box
       sx={{
         display: "flex",
-        alignItems: "center",
+        flexDirection: { xs: "column", md: "row" },
+        alignItems: { xs: "stretch", md: "center" },
         justifyContent: "space-between",
         mb: 3,
+        gap: 1.5,
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          minWidth: 0,
+          flexWrap: { xs: "wrap", md: "nowrap" },
+        }}
+      >
         <Typography
           sx={{ color: "#6b7280", fontSize: "0.875rem", fontWeight: 500 }}
         >
@@ -44,13 +54,19 @@ const ParameterTabs = ({
             borderRadius: 1,
             display: "flex",
             alignItems: "center",
+            minWidth: 0,
+            maxWidth: "100%",
           }}
         >
           <Tabs
             value={selected}
             onChange={(_, value: number) => onSelect(value)}
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
             sx={{
               minHeight: 40,
+              maxWidth: { xs: "100%", md: 560 },
               "& .MuiTab-root": {
                 textTransform: "none",
                 fontWeight: 500,
@@ -91,6 +107,7 @@ const ParameterTabs = ({
           const slug = departmentName ? slugify(departmentName) : null;
           navigate(slug ? `/qc-lab/${slug}/equipments` : "/qc-lab");
         }}
+        sx={{ alignSelf: { xs: "stretch", md: "center" } }}
       >
         Record
       </Button>

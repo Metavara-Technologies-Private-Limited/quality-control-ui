@@ -361,9 +361,10 @@ export default function LabEquipments() {
         <div
           style={{
             display: "flex",
+            flexWrap: "wrap",
             alignItems: "center",
             marginBottom: 24,
-            gap: 24,
+            gap: 12,
           }}
         >
           <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
@@ -387,9 +388,10 @@ export default function LabEquipments() {
         <div
           style={{
             display: "flex",
+            flexWrap: "wrap",
             alignItems: "center",
             marginBottom: 24,
-            gap: 24,
+            gap: 12,
           }}
         >
           <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
@@ -398,16 +400,17 @@ export default function LabEquipments() {
           <EquipmentTabs activeTab={activeTab} onTabChange={handleTabChange} />
         </div>
 
-        <div style={{ display: "flex", gap: 20 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
           <div
             style={{
-              width: selectedEquipment ? 470 : "100%",
+              width: selectedEquipment ? "min(470px, 100%)" : "100%",
               maxWidth: selectedEquipment ? 470 : "100%",
               transition: "width 0.25s ease",
               background: "#fff",
               borderRadius: 14,
               overflowY: "auto",
               padding: 16,
+              flexShrink: 0,
             }}
           >
             {Object.keys(groupedEquipments).length === 0 ? (
@@ -478,7 +481,7 @@ export default function LabEquipments() {
           </div>
 
           {selectedEquipment && (
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: "1 1 280px", minWidth: 0 }}>
               <LabEquipmentForm
                 equipmentDetails={equipmentDetails}
                 selectedRadio={selectedRadio}
@@ -507,16 +510,17 @@ export default function LabEquipments() {
         <EquipmentTabs activeTab={activeTab} onTabChange={handleTabChange} />
       </div>
 
-      <div style={{ display: "flex", gap: 20 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
         <div
           style={{
-            width: selectedEquipment ? 470 : "100%",
+            width: selectedEquipment ? "min(470px, 100%)" : "100%",
             maxWidth: selectedEquipment ? 470 : "100%",
             transition: "width 0.25s ease",
             background: "#fff",
             borderRadius: 14,
             overflowY: "auto",
             padding: 16,
+            flexShrink: 0,
           }}
         >
           {Object.keys(groupedEquipments).length === 0 ? (
@@ -587,7 +591,7 @@ export default function LabEquipments() {
         </div>
 
         {selectedEquipment && (
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: "1 1 280px", minWidth: 0 }}>
             <LabEquipmentForm
               equipmentDetails={equipmentDetails}
               selectedRadio={selectedRadio}

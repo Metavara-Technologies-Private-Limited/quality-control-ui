@@ -18,36 +18,42 @@ const ConfigurationLayout = () => {
 
   // Consolidated path detection
   const isEquipment = location.pathname.includes("/configuration/equipment");
-  const isEnvironment = location.pathname.includes("/configuration/environment");
+  const isEnvironment = location.pathname.includes(
+    "/configuration/environment",
+  );
 
   // Define showHeader (logic: show if we are in one of the two main config sections)
   const pathname = location.pathname;
 
-// show tabs ONLY on exact list pages
-const showHeader =
-  pathname === "/configuration/equipment" ||
-  pathname === "/configuration/environment";
+  // show tabs ONLY on exact list pages
+  const showHeader =
+    pathname === "/configuration/equipment" ||
+    pathname === "/configuration/environment";
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
       {/* HEADER */}
       {showHeader && (
         <Box
           sx={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: { xs: "stretch", lg: "center" },
+            flexDirection: { xs: "column", lg: "row" },
             mb: 3,
+            gap: 1.5,
           }}
         >
           {/* LEFT TABS */}
           <Box
             sx={{
               display: "inline-flex",
+              width: { xs: "100%", sm: "auto" },
               backgroundColor: "#F2F2F2",
               padding: "4px",
               borderRadius: "12px",
               gap: "4px",
+              flexWrap: { xs: "wrap", sm: "nowrap" },
             }}
           >
             {["Equipments", "Environment"].map((tab) => {
@@ -62,11 +68,12 @@ const showHeader =
                     navigate(
                       tab === "Equipments"
                         ? "/configuration/equipment"
-                        : "/configuration/environment"
+                        : "/configuration/environment",
                     )
                   }
                   style={{
                     width: "166px",
+                    maxWidth: "100%",
                     height: "36px",
                     borderRadius: "10px",
                     border: "none",
@@ -84,7 +91,14 @@ const showHeader =
           </Box>
 
           {/* RIGHT ACTIONS */}
-          <Box sx={{ display: "flex", gap: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              width: { xs: "100%", lg: "auto" },
+              flexDirection: { xs: "column", sm: "row" },
+            }}
+          >
             <TextField
               size="small"
               variant="outlined"
@@ -94,7 +108,7 @@ const showHeader =
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{
-                width: 260,
+                width: { xs: "100%", sm: 260 },
                 background: "#fff",
                 "& .MuiOutlinedInput-root fieldset": {
                   borderColor: "#505050",
@@ -114,6 +128,7 @@ const showHeader =
               }}
               sx={{
                 background: "#505050",
+                width: { xs: "100%", sm: "auto" },
                 textTransform: "none",
                 "&:hover": { background: "#232323" },
               }}

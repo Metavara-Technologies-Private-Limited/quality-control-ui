@@ -401,8 +401,8 @@ const ParameterConfig: React.FC<ParameterConfigProps> = ({
 
       <Card sx={{ borderRadius: 2, border: "1px solid #e5e7eb" }}>
         <CardContent>
-          <TableContainer>
-            <Table>
+          <TableContainer sx={{ overflowX: "auto" }}>
+            <Table sx={{ minWidth: 560 }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Parameter Name</TableCell>

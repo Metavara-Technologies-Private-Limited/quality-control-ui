@@ -1,13 +1,15 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "./store";
 import { fetchClinic } from "./store/clinicSlice";
 
 import MainLayout from "./components/Layout/MainLayout";
-import Dashboard from "./pages/Dashboard";
-import AdminDashboard from "./pages/AdminDashboard";
-import UserConfiguration from "./pages/UserConfiguration";
+
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const UserConfiguration = lazy(() => import("./pages/UserConfiguration"));
+
 import AuditTrail from "./pages/AuditTrail";
 import Reports from "./pages/Quality_Control/Reports";
 import ConfigurationLayout from "./pages/Quality_Control/Configuration/ConfigurationLayout";
@@ -47,7 +49,8 @@ function AppRoute() {
     dispatch(fetchEventsByClinic(1));
   }, [dispatch]);
 
-  return (
+return (
+  <Suspense fallback={<div>Loading...</div>}>
     <Routes>
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
@@ -121,6 +124,7 @@ function AppRoute() {
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>
+  </Suspense>
   );
 }
 

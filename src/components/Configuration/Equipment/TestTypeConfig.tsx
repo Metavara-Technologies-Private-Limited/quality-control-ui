@@ -268,8 +268,8 @@ const TestTypeConfig: React.FC<TestTypeConfigProps> = ({
 
       <Card sx={{ borderRadius: 2, border: "1px solid #e5e7eb" }}>
         <CardContent>
-          <TableContainer>
-            <Table>
+          <TableContainer sx={{ overflowX: "auto" }}>
+            <Table sx={{ minWidth: 500 }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Test Type Name</TableCell>

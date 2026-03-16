@@ -96,21 +96,30 @@ const ClinicalDepartmentLayout = () => {
       <Box
         sx={{
           display: "flex",
-          alignItems: "center",
+          alignItems: { xs: "stretch", lg: "center" },
           justifyContent: "space-between",
+          flexDirection: { xs: "column", lg: "row" },
           borderBottom: "1px solid #E5E7EB",
           mx: -3,
-          px: 3,
+          px: { xs: 1.5, sm: 3 },
+          gap: 1.5,
         }}
       >
         {/* ---------------- Tabs ---------------- */}
         <Tabs
           value={activeTab}
           onChange={(_, value) => navigate(value)}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
           TabIndicatorProps={{
             sx: { backgroundColor: "#E17E61", height: "1px" },
           }}
-          sx={{ minHeight: 30, "& .MuiTabs-flexContainer": { gap: 6 } }}
+          sx={{
+            minHeight: 30,
+            maxWidth: "100%",
+            "& .MuiTabs-flexContainer": { gap: { xs: 2, md: 6 } },
+          }}
         >
           {["equipments", "environment", "task"].map((tab) => (
             <Tab
@@ -134,7 +143,16 @@ const ClinicalDepartmentLayout = () => {
         </Tabs>
 
         {/* ---------------- Search + Assignees ---------------- */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: { xs: "stretch", sm: "center" },
+            flexDirection: { xs: "column", sm: "row" },
+            gap: 2,
+            mb: 1,
+            width: { xs: "100%", lg: "auto" },
+          }}
+        >
           {activeTab === "equipments" && (
             <TextField
               size="small"
@@ -142,7 +160,7 @@ const ClinicalDepartmentLayout = () => {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               sx={{
-                width: 300,
+                width: { xs: "100%", sm: 300 },
                 "& .MuiOutlinedInput-root": { borderRadius: "10px" },
               }}
               InputProps={{
@@ -155,7 +173,16 @@ const ClinicalDepartmentLayout = () => {
             />
           )}
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: { xs: "space-between", sm: "flex-start" },
+              gap: 2,
+              flexWrap: "wrap",
+              width: { xs: "100%", sm: "auto" },
+            }}
+          >
             <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
               Assignees
             </Typography>
@@ -226,7 +253,8 @@ const ClinicalDepartmentLayout = () => {
               transformOrigin={{ vertical: "top", horizontal: "right" }}
               PaperProps={{
                 sx: {
-                  width: 300,
+                  width: { xs: "calc(100vw - 32px)", sm: 300 },
+                  maxWidth: 300,
                   maxHeight: 450,
                   borderRadius: "8px",
                   mt: 1,
@@ -294,7 +322,7 @@ const ClinicalDepartmentLayout = () => {
       </Box>
 
       {/* ---------------- Outlet ---------------- */}
-      <Box mt={3}>
+      <Box mt={{ xs: 2, sm: 3 }}>
         <Outlet
           context={{
             departmentName,

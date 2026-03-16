@@ -9,21 +9,31 @@ import {
   Link,
   Menu,
   MenuItem,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import MenuIcon from "@mui/icons-material/Menu";
 import { useLocation, Link as RouterLink } from "react-router-dom";
 import CalendarIcon from "@/assets/icons/calendar.svg";
 import NotificationIcon from "@/assets/icons/notification.svg";
 import MessageQuestionIcon from "@/assets/icons/message-question.svg";
-import UserAvatarIcon from "@/assets/icons/ellipse_12.svg";
+import UserAvatarIcon from "@/assets/icons/Ellipse_12.webp";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { SIDEBAR_TABS } from "@/config/sidebar.config";
 import { useTab } from "@/utils/tabContext";
 
-const Header = () => {
+interface HeaderProps {
+  onMenuClick: () => void;
+  sidebarOpen: boolean;
+}
+
+const Header = ({ onMenuClick, sidebarOpen }: HeaderProps) => {
   const location = useLocation();
   const { activeTabIndex } = useTab();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("lg"));
 
   const activeTab = SIDEBAR_TABS.find(
     (tab) => tab.iconIndex === activeTabIndex,
@@ -75,8 +85,8 @@ const Header = () => {
     embryology: "Embryology",
     andrology: "Andrology",
     "cryo-preservation": "Cryo Preservation",
-    "labequipment": "Lab Equipment",
-    "environmental": "Environmental",
+    labequipment: "Lab Equipment",
+    environmental: "Environmental",
     compliance: "Compliance",
     "document-control": "Document Control",
     equipment: "Equipment",
@@ -86,6 +96,7 @@ const Header = () => {
     "risk-management": "Risk Management",
     risk_a: "Risk A",
     clinical: "Clinical",
+    "clinic-lab": "Clinical",
     "recycle-bin": "Recycle Bin",
     lab: "Lab",
     reports: "Reports",
@@ -94,26 +105,54 @@ const Header = () => {
     workflows: "Workflows",
   };
 
+  const currentPageLabel =
+    breadcrumbMap[pathnames[pathnames.length - 1]] ||
+    activeTab?.label ||
+    "Dashboard";
+
   return (
     <AppBar
       position="static"
       elevation={0}
       sx={{
         backgroundColor: "#FAFAFA",
-        borderRadius: 2,
+        borderRadius: { xs: 0, sm: 2 },
         color: "#111827",
       }}
     >
-      <Toolbar sx={{ justifyContent: "space-between", px: 3, py: 1.5 }}>
+      <Toolbar
+        sx={{
+          justifyContent: "space-between",
+          px: { xs: 1.5, sm: 2, lg: 3 },
+          py: { xs: 1, sm: 1.5 },
+          gap: 1.5,
+        }}
+      >
         {/* LEFT: Breadcrumbs */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
             gap: { xs: 1, sm: 2, md: 3 },
-            flexWrap: { xs: "wrap", sm: "nowrap" },
+            minWidth: 0,
+            flex: 1,
           }}
         >
+          {(isMobile || !sidebarOpen) && (
+            <IconButton
+              size="small"
+              onClick={onMenuClick}
+              sx={{
+                opacity: sidebarOpen ? 0.55 : 0.8,
+                width: 40,
+                height: 40,
+                flexShrink: 0,
+              }}
+            >
+              <MenuIcon sx={{ color: "#232323" }} />
+            </IconButton>
+          )}
+
           <Breadcrumbs
             separator={
               <svg
@@ -130,7 +169,7 @@ const Header = () => {
               </svg>
             }
             aria-label="breadcrumb"
-            sx={{ display: { xs: "none", sm: "flex" } }}
+            sx={{ display: { xs: "none", md: "flex" }, minWidth: 0 }}
           >
             <Link
               component={RouterLink}
@@ -184,16 +223,51 @@ const Header = () => {
               );
             })}
           </Breadcrumbs>
+
+          <Box sx={{ display: { xs: "block", md: "none" }, minWidth: 0 }}>
+            <Typography
+              sx={{
+                color: "#666666",
+                fontWeight: 500,
+                fontSize: "0.8rem",
+                lineHeight: 1.2,
+              }}
+            >
+              {activeTab?.label}
+            </Typography>
+            <Typography
+              sx={{
+                color: "#232323",
+                fontWeight: 700,
+                fontSize: "1rem",
+                lineHeight: 1.2,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                maxWidth: "100%",
+              }}
+            >
+              {currentPageLabel}
+            </Typography>
+          </Box>
         </Box>
 
         {/* RIGHT: Clinic + Icons + User */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: { xs: 0.75, sm: 1.5, lg: 2 },
+            flexShrink: 0,
+          }}
+        >
           <Typography
             variant="body2"
             sx={{
               color: "#232323",
               fontWeight: 500,
-              display: { xs: "none", md: "block" },
+              display: { xs: "none", xl: "block" },
             }}
           >
             Clinic: {clinicName || "—"}
@@ -204,13 +278,13 @@ const Header = () => {
             size="small"
             onClick={(e) => handleIconClick(e, "calendar")}
             sx={{
-              width: 48,
-              height: 48,
+              width: { xs: 40, sm: 48 },
+              height: { xs: 40, sm: 48 },
               backgroundColor: "#FFFFFF",
               borderRadius: "8px",
             }}
           >
-            <Box component="img" src={CalendarIcon} width={24} height={24} />
+            <Box component="img" src={CalendarIcon} width={20} height={20} />
           </IconButton>
 
           {/* Notifications */}
@@ -218,8 +292,8 @@ const Header = () => {
             size="small"
             onClick={(e) => handleIconClick(e, "notification")}
             sx={{
-              width: 48,
-              height: 48,
+              width: { xs: 40, sm: 48 },
+              height: { xs: 40, sm: 48 },
               backgroundColor: "#FFFFFF",
               borderRadius: "8px",
             }}
@@ -227,8 +301,8 @@ const Header = () => {
             <Box
               component="img"
               src={NotificationIcon}
-              width={24}
-              height={24}
+              width={20}
+              height={20}
             />
           </IconButton>
 
@@ -237,8 +311,8 @@ const Header = () => {
             size="small"
             onClick={(e) => handleIconClick(e, "help")}
             sx={{
-              width: 48,
-              height: 48,
+              width: { xs: 40, sm: 48 },
+              height: { xs: 40, sm: 48 },
               backgroundColor: "#FFFFFF",
               borderRadius: "8px",
             }}
@@ -246,8 +320,8 @@ const Header = () => {
             <Box
               component="img"
               src={MessageQuestionIcon}
-              width={24}
-              height={24}
+              width={20}
+              height={20}
             />
           </IconButton>
 
@@ -258,6 +332,7 @@ const Header = () => {
               alignItems: "center",
               gap: 1,
               cursor: "pointer",
+              minWidth: 0,
             }}
           >
             <Box
@@ -265,7 +340,7 @@ const Header = () => {
               src={UserAvatarIcon}
               sx={{ width: 36, height: 36, borderRadius: "50%" }}
             />
-            <Box sx={{ display: { xs: "none", sm: "block" } }}>
+            <Box sx={{ display: { xs: "none", lg: "block" } }}>
               <Typography fontSize="0.875rem" color="#232323" fontWeight={600}>
                 Kate Russell
               </Typography>

@@ -4,6 +4,7 @@ import { useOutletContext } from "react-router-dom";
 import { RootState } from "@/store";
 import LabEquipmentForm from "../Quality_Control/QcLab/Department/LabEquipmentForm";
 import { slugify } from "@/utils/slugify";
+import { Box, useMediaQuery, useTheme } from "@mui/material";
 
 type PlanItem = {
   key: string;
@@ -42,9 +43,21 @@ const formatScheduleInfo = (item: PlanItem) => {
 };
 
 const avatarColors = [
-  "#091E42", "#172B4D", "#0052CC", "#0747A6", "#0065FF",
-  "#004F3D", "#006644", "#00875A", "#7A1FA2", "#403294",
-  "#5E4DB2", "#BF2600", "#DE350B", "#FF5630", "#FF8B00",
+  "#091E42",
+  "#172B4D",
+  "#0052CC",
+  "#0747A6",
+  "#0065FF",
+  "#004F3D",
+  "#006644",
+  "#00875A",
+  "#7A1FA2",
+  "#403294",
+  "#5E4DB2",
+  "#BF2600",
+  "#DE350B",
+  "#FF5630",
+  "#FF8B00",
 ];
 
 const getAvatarColor = (name?: string) => {
@@ -76,11 +89,18 @@ const getScheduleLabel = (type: any) => {
 };
 
 const getInitials = (name?: string) =>
-  name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "?";
+  name
+    ?.split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "?";
 
 type ScheduleTab = "One Time" | "Daily" | "Weekly" | "Monthly";
 
 export default function ClinicalPlanPage() {
+  const theme = useTheme();
+  const isCompact = useMediaQuery(theme.breakpoints.down("lg"));
   const { departmentName, selectedAssigneeIds, searchText } = useOutletContext<{
     departmentName: string;
     selectedAssigneeIds: number[];
@@ -198,22 +218,30 @@ export default function ClinicalPlanPage() {
   }, [selectedItem, clinic, departmentName]);
 
   return (
-    <div style={{ display: "flex", gap: 20 }}>
+    <Box
+      sx={{
+        display: "flex",
+        gap: 2.5,
+        flexDirection: { xs: "column", lg: "row" },
+        minWidth: 0,
+      }}
+    >
       {/* LEFT */}
-      <div
-        style={{
-          width: selectedItem ? "520px" : "100%",
+      <Box
+        sx={{
+          width: selectedItem && !isCompact ? 520 : "100%",
           transition: "width 0.25s ease",
           background: "#fff",
           border: "1px solid #e5e7eb",
           borderRadius: "14px",
-          padding: 16,
-          height: "calc(100vh - 220px)",
+          p: 2,
+          minHeight: 0,
+          maxHeight: { xs: "none", lg: "calc(100dvh - 220px)" },
           overflowY: "auto",
         }}
       >
         {/* Schedule Tabs */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <Box sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
           {(["One Time", "Daily", "Weekly", "Monthly"] as ScheduleTab[]).map(
             (tab) => (
               <button
@@ -244,7 +272,7 @@ export default function ClinicalPlanPage() {
               </button>
             ),
           )}
-        </div>
+        </Box>
 
         {activeTabItems.length === 0 ? (
           <div
@@ -253,13 +281,14 @@ export default function ClinicalPlanPage() {
             No plans found
           </div>
         ) : (
-          <div
-            style={{
+          <Box
+            sx={{
               display: "grid",
-              gridTemplateColumns: selectedItem
-                ? "1fr"
-                : "repeat(auto-fill, minmax(320px, 1fr))",
-              gap: 12,
+              gridTemplateColumns:
+                selectedItem || isCompact
+                  ? "1fr"
+                  : "repeat(auto-fill, minmax(320px, 1fr))",
+              gap: 1.5,
             }}
           >
             {activeTabItems.map((item) => (
@@ -336,20 +365,20 @@ export default function ClinicalPlanPage() {
                 </div>
               </div>
             ))}
-          </div>
+          </Box>
         )}
-      </div>
+      </Box>
 
       {/* RIGHT */}
       {selectedItem && (
-        <div style={{ flex: 1 }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <LabEquipmentForm
             equipmentDetails={equipmentDetails}
             selectedRadio={selectedRadio}
             setSelectedRadio={setSelectedRadio}
           />
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

@@ -114,9 +114,12 @@ export default function LabEnvironmentForm({ environment, onSaved }: Props) {
         style={{
           display: "inline-flex",
           width: "fit-content",
+          maxWidth: "100%",
           background: "#F2F2F2",
           padding: 4,
           borderRadius: 12,
+          flexWrap: "wrap",
+          gap: 4,
         }}
       >
         {["Form", "Logs"].map((t) => (
@@ -146,7 +149,11 @@ export default function LabEnvironmentForm({ environment, onSaved }: Props) {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: "repeat(3,1fr)",
+              gridTemplateColumns: {
+                xs: "1fr",
+                md: "repeat(2,1fr)",
+                xl: "repeat(3,1fr)",
+              },
               gap: 3,
             }}
           >
@@ -220,7 +227,7 @@ export default function LabEnvironmentForm({ environment, onSaved }: Props) {
           </Box>
 
           {/* DATE TIME */}
-          <Box sx={{ mt: 3, width: 260 }}>
+          <Box sx={{ mt: 3, width: { xs: "100%", sm: 260 } }}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DateTimePicker
                 label="Date & Time"
@@ -270,6 +277,7 @@ export default function LabEnvironmentForm({ environment, onSaved }: Props) {
               display: "flex",
               justifyContent: "flex-end",
               gap: 12,
+              flexWrap: "wrap",
             }}
           >
             <button

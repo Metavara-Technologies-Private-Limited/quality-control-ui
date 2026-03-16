@@ -1,23 +1,42 @@
-import React, { useState } from 'react';
-import { Container, Grid, Box, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
-import MetricsCards from '@/components/AdminDashboard/MetricsCards';
-import StatusDonutChart from '@/components/AdminDashboard/StatusDonutChart';
-import DailyActivityChart from '@/components/AdminDashboard/DailyActivityChart';
-import RecentActivityFeed from '@/components/AdminDashboard/RecentActivityFeed';
+import React, { useState } from "react";
+import {
+  Container,
+  Grid,
+  Box,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+} from "@mui/material";
+import MetricsCards from "@/components/AdminDashboard/MetricsCards";
+import StatusDonutChart from "@/components/AdminDashboard/StatusDonutChart";
+import DailyActivityChart from "@/components/AdminDashboard/DailyActivityChart";
+import RecentActivityFeed from "@/components/AdminDashboard/RecentActivityFeed";
 
 const AdminDashboard = () => {
-  const [chartType, setChartType] = useState<'line' | 'bar'>('line');
+  const [chartType, setChartType] = useState<"line" | "bar">("line");
 
-  const handleChartTypeChange = (_: React.MouseEvent<HTMLElement>, newType: 'line' | 'bar' | null) => {
+  const handleChartTypeChange = (
+    _: React.MouseEvent<HTMLElement>,
+    newType: "line" | "bar" | null,
+  ) => {
     if (newType !== null) {
       setChartType(newType);
     }
   };
 
   return (
-    <Container maxWidth={false} sx={{ py: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 600, fontSize: '1.5rem' }}>
+    <Container maxWidth={false} sx={{ py: { xs: 1, sm: 2 } }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: { xs: "stretch", sm: "center" },
+          flexDirection: { xs: "column", sm: "row" },
+          gap: 1.5,
+          mb: 3,
+        }}
+      >
+        <Typography variant="h5" sx={{ fontWeight: 600, fontSize: "1.5rem" }}>
           Dashboard
         </Typography>
         <ToggleButtonGroup
@@ -26,17 +45,19 @@ const AdminDashboard = () => {
           onChange={handleChartTypeChange}
           size="small"
           sx={{
-            '& .MuiToggleButton-root': {
-              textTransform: 'none',
-              fontSize: '0.875rem',
-              borderColor: '#e5e7eb',
-              color: '#6b7280',
-              '&.Mui-selected': {
-                backgroundColor: '#14b8a6',
-                color: '#ffffff',
-                borderColor: '#14b8a6',
-                '&:hover': {
-                  backgroundColor: '#0d9488',
+            width: { xs: "100%", sm: "auto" },
+            "& .MuiToggleButton-root": {
+              flex: { xs: 1, sm: "0 0 auto" },
+              textTransform: "none",
+              fontSize: "0.875rem",
+              borderColor: "#e5e7eb",
+              color: "#6b7280",
+              "&.Mui-selected": {
+                backgroundColor: "#14b8a6",
+                color: "#ffffff",
+                borderColor: "#14b8a6",
+                "&:hover": {
+                  backgroundColor: "#0d9488",
                 },
               },
             },
