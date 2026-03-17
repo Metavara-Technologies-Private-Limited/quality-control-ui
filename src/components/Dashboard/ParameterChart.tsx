@@ -267,10 +267,7 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
 
       equipmentNames.forEach((eqName) => {
         const bucket = bucketMap[eqName]?.[index];
-        if (!bucket || bucket.value == null) {
-          row[eqName] = null;
-          return;
-        }
+        if (!bucket || bucket.value == null) return;
 
         // Use latest entered value for that day.
         row[eqName] = Number(bucket.value.toFixed(2));
@@ -566,7 +563,19 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
                 <BarChart data={displayData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis {...xAxisProps} />
-                  <YAxis {...yAxisProps} />
+                  <YAxis
+                    {...yAxisProps}
+                    domain={[
+                      (dataMin: number) =>
+                        hasConfiguredRange && adjustedMin != null
+                          ? Math.min(dataMin, adjustedMin)
+                          : dataMin,
+                      (dataMax: number) =>
+                        hasConfiguredRange && adjustedTopWithHeadroom != null
+                          ? Math.max(dataMax, adjustedTopWithHeadroom)
+                          : dataMax,
+                    ]}
+                  />
                   <Tooltip />
                   {chartData?.equipment_names?.map((name, index) => (
                     <Bar
@@ -575,6 +584,11 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
                       fill={CHART_COLORS[index % CHART_COLORS.length]}
                       radius={[6, 6, 0, 0]}
                       barSize={18}
+                      minPointSize={(value: unknown) =>
+                        typeof value === "number" && Number.isFinite(value)
+                          ? 4
+                          : 0
+                      }
                     />
                   ))}
                 </BarChart>

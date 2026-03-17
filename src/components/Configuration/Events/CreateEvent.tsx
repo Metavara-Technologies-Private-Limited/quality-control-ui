@@ -21,7 +21,7 @@ import { Assignee } from "@/types";
 import { toast } from "react-toastify";
 import { eventApi } from "@/services/api";
 
-import TurnLeftIcon from "@mui/icons-material/TurnLeft";
+import BackwardIcon from "@/assets/icons/Backward_icon.svg";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
@@ -310,26 +310,23 @@ const CreateEvent = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box sx={{ p: 3, backgroundColor: COLORS.bg }}>
+      <Box sx={{ p: 1, backgroundColor: COLORS.bg }}>
         <Card
-          sx={{ p: 3, borderRadius: 2, border: `1px solid ${COLORS.border}` }}
+          sx={{ p: 2, borderRadius: 2, border: `1px solid ${COLORS.border}` }}
         >
           <Box mb={2}>
-            <Box display="flex" flexDirection="column" gap="12px">
-              <IconButton
-                onClick={() => navigate("../events")}
-                sx={{
-                  width: 24,
-                  height: 24,
-                  padding: "10px",
-                  opacity: 1,
-                  color: "#374151",
-                  borderRadius: 1,
-                  boxShadow: "3px 3px 6px rgba(0,0,0,0.2)",
-                  backgroundColor: "#fff",
-                }}
-              >
-                <TurnLeftIcon sx={{ fontSize: 24, padding: "3px" }} />
+            <Box
+              display="flex"
+              flexDirection="column"
+              gap="12px"
+              alignItems="flex-start"
+            >
+              <IconButton onClick={() => navigate("../events")} sx={{ p: 0 }}>
+                <img
+                  src={BackwardIcon}
+                  alt="back"
+                  style={{ width: 40, height: 40 }}
+                />
               </IconButton>
               <Divider />
               <Typography

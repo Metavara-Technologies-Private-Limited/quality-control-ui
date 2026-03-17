@@ -24,7 +24,7 @@ import {
 // ===== VALIDATIONS =====
 
 const handleTitleChange = (value: string, setTitle: any) => {
-  const regex = /^[A-Za-z][A-Za-z0-9]*$/;
+  const regex = /^[A-Za-z][A-Za-z0-9 ]*$/;
   if (value === "" || regex.test(value)) {
     setTitle(value);
   } else {
@@ -484,10 +484,12 @@ const AddParameterPopup: React.FC<Props> = ({
               </label>
             </Box>
 
-            {/* ✅ FIX: use multilineFieldSX for multi, commonFieldSX for single */}
+            {/* TEXT FIELD */}
             <TextField
               value={textValue}
-              onChange={(e) => setTextValue(e.target.value)}
+              onChange={(e) => {
+                setTextValue(e.target.value);
+              }}
               fullWidth
               multiline={textType === "multi"}
               rows={textType === "multi" ? 4 : undefined}
