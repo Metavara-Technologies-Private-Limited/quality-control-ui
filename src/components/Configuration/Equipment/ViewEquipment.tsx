@@ -10,11 +10,16 @@ import {
   TableRow,
   IconButton,
 } from "@mui/material";
-import TurnLeftIcon from "@mui/icons-material/TurnLeft";
+import BackwardIcon from "@/assets/icons/Backward_icon.svg";
 import { useNavigate, useLocation } from "react-router-dom";
 import { EquipmentDetail, Parameter } from "@/types";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+
+const normalizeTextLines = (value: unknown): string[] => {
+  if (typeof value !== "string") return ["-"];
+  return value.replace(/\r\n/g, "\n").replace(/\\n/g, "\n").split("\n");
+};
 
 const renderParameterDetails = (p: Parameter) => {
   let content = p.config;
@@ -32,7 +37,8 @@ const renderParameterDetails = (p: Parameter) => {
     case "Percentage":
       return content.percentage ?? "-";
     case "Text":
-      return content.text ?? "-";
+    case "Multiline":
+      return normalizeTextLines(content.text ?? "-");
     case "Boolean":
       return content.boolean_type === "yesno" ? "Yes/No" : "True/False";
     case "Dropdown":
@@ -114,19 +120,12 @@ const ViewEquipment = () => {
                 : "/configuration/equipment",
             )
           }
-          sx={{
-            width: 24,
-            height: 24,
-            padding: "10px",
-            opacity: 1,
-            color: "#374151",
-            borderRadius: 1,
-            mr: 1,
-            boxShadow: "3px 3px 6px rgba(0,0,0,0.2)",
-            backgroundColor: "#fff",
-          }}
         >
-          <TurnLeftIcon sx={{ fontSize: 24, padding: "3px" }} />
+          <img
+            src={BackwardIcon}
+            alt="back"
+            style={{ width: 40, height: 40 }}
+          />
         </IconButton>
         <Typography sx={{ fontWeight: 700, fontSize: 20 }}>
           {isEnvironment ? "Environment" : "Equipments"}
@@ -155,39 +154,53 @@ const ViewEquipment = () => {
 
       {parameters.length > 0 ? (
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-          {parameters.map((p, i) => (
-            <Box
-              key={i}
-              sx={{
-                width: 216,
-                height: 90,
-                border: "1px solid #E5E7EB",
-                borderRadius: "12px",
-                px: 2,
-                py: 1.5,
-                overflow: "hidden",
-              }}
-            >
-              <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
-                {p.parameter_name}
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: 13,
-                  color: "#374151",
-                  whiteSpace: "normal",
-                  overflowWrap: "anywhere",
-                  wordBreak: "break-word",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                }}
-              >
-                {renderParameterDetails(p)}
-              </Typography>
-            </Box>
-          ))}
+          {parameters.map((p, i) =>
+            (() => {
+              const details = renderParameterDetails(p);
+              return (
+                <Box
+                  key={i}
+                  sx={{
+                    width: 216,
+                    height: 90,
+                    border: "1px solid #E5E7EB",
+                    borderRadius: "12px",
+                    px: 2,
+                    py: 1.5,
+                    overflow: "hidden",
+                  }}
+                >
+                  <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
+                    {p.parameter_name}
+                  </Typography>
+                  <Box
+                    sx={{
+                      maxHeight: 48,
+                      overflowY: "auto",
+                      mt: 0.25,
+                      pr: 0.5,
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontSize: 13,
+                        color: "#374151",
+                        whiteSpace: "pre-line",
+                        overflowWrap: "anywhere",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {Array.isArray(details)
+                        ? details.map((line: string, index: number) => (
+                            <div key={index}>{line}</div>
+                          ))
+                        : details}
+                    </Typography>
+                  </Box>
+                </Box>
+              );
+            })(),
+          )}
         </Box>
       ) : (
         <Typography color="#6B7280">No parameters added</Typography>

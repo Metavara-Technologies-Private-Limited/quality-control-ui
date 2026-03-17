@@ -84,6 +84,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<number | "">("");
+  const [taskStatus, setTaskStatus] = useState<TaskStatus>(TaskStatus.TODO);
 
   // Step 3 - sub tasks
   const [subTasks, setSubTasks] = useState<any[]>([]);
@@ -114,6 +115,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
       setDueDate(null);
       setDescriptionHtml("");
       setSelectedFiles([]);
+      setTaskStatus(TaskStatus.TODO);
       setSubTasks([]);
       setNewSubTask({
         name: "",
@@ -329,7 +331,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
         name: name.trim(),
         description: descriptionHtml,
         due_date: dueDate!.toISOString(),
-        status: TaskStatus.TODO,
+        status: taskStatus,
         sub_tasks: subTasks,
         documents: selectedFiles.map((file) => ({
           document_name: file.name,
@@ -544,6 +546,30 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
                     }}
                   />
                 </Box>
+              </Stack>
+
+              <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
+                <Box sx={{ flex: 1 }}>
+                  <FormControl fullWidth>
+                    <InputLabel shrink>Status</InputLabel>
+                    <Select
+                      value={taskStatus}
+                      onChange={(e) =>
+                        setTaskStatus(Number(e.target.value) as TaskStatus)
+                      }
+                      sx={{ borderRadius: "12px" }}
+                      label="Status"
+                      notched
+                    >
+                      {Object.entries(TASK_STATUS_MAP).map(([value, label]) => (
+                        <MenuItem key={value} value={Number(value)}>
+                          {label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+                <Box sx={{ flex: 1 }} />
               </Stack>
             </Stack>
           )}

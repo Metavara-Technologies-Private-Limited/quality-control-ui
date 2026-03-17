@@ -15,30 +15,40 @@ const initialState: ReportsState = {
   fetchedParams: [],
 };
 
-// Progressive fetch: add logs as they arrive
+// Parallel fetch; abort signal prevents stale dispatches. All logs
+// are batched into a single dispatch to minimise Redux re-renders.
 export const fetchReports = createAsyncThunk<
-  void, // no bulk return
-  number[], // paramIds
+  void,
+  number[],
   { rejectValue: string }
->("reports/fetchReports", async (paramIds, { dispatch }) => {
+>("reports/fetchReports", async (paramIds, { dispatch, signal }) => {
   let loaded = 0;
+  const allLogs: any[] = [];
 
-  for (const p of paramIds) {
-    try {
-      const res = await parameterValueApi.listByParameter(p);
-      const logs = res.data ?? [];
-      if (logs.length) {
-        dispatch(addLogs(logs)); // add immediately
+  await Promise.all(
+    paramIds.map(async (p) => {
+      if (signal.aborted) return;
+      try {
+        const res = await parameterValueApi.listByParameter(p);
+        if (!signal.aborted && res.data?.length) {
+          allLogs.push(...res.data);
+        }
+      } catch {
+        // ignore
+      } finally {
+        loaded++;
+        if (!signal.aborted) {
+          dispatch(setProgress(Math.round((loaded / paramIds.length) * 100)));
+        }
       }
-    } catch {
-      // ignore errors
-    } finally {
-      loaded++;
-      dispatch(setProgress(Math.round((loaded / paramIds.length) * 100)));
-    }
+    }),
+  );
+
+  // Single Redux dispatch → single component re-render per poll
+  if (!signal.aborted && allLogs.length > 0) {
+    dispatch(addLogs(allLogs));
   }
 });
-
 
 const reportsSlice = createSlice({
   name: "reports",

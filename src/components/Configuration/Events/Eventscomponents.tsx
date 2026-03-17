@@ -19,7 +19,7 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
-import TurnLeftIcon from "@mui/icons-material/TurnLeft";
+import BackwardIcon from "@/assets/icons/Backward_icon.svg";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
@@ -95,7 +95,7 @@ export const EventDetailView = ({ event, onBack }: any) => (
           },
         }}
       >
-        <TurnLeftIcon sx={{ fontSize: 20 }} />
+        <img src={BackwardIcon} alt="back" style={{ width: 40, height: 40 }} />
       </IconButton>
     </Stack>
 

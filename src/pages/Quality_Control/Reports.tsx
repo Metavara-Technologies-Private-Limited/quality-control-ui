@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Container,
   Typography,
@@ -54,6 +54,9 @@ const Reports = () => {
   const [selectedDepartment, setSelectedDepartment] = useState<any>("all");
   const [selectedEquipment, setSelectedEquipment] = useState<any>("all");
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [deptOpen, setDeptOpen] = useState(false);
+  const [equipOpen, setEquipOpen] = useState(false);
+  const thunkRef = useRef<any>(null);
 
   const normalizedSelectedDepartment =
     selectedDepartment === "all" ? "all" : Number(selectedDepartment);
@@ -133,22 +136,25 @@ const Reports = () => {
   useEffect(() => {
     if (!allParamIds.length) return;
 
-    dispatch(fetchReports(allParamIds));
+    const runFetch = () => {
+      // Abort the previous in-flight fetch before starting a new one
+      if (thunkRef.current) thunkRef.current.abort();
+      thunkRef.current = dispatch(fetchReports(allParamIds));
+    };
 
-    const intervalId = window.setInterval(() => {
-      dispatch(fetchReports(allParamIds));
-    }, 5000);
+    runFetch();
+    const intervalId = window.setInterval(runFetch, 3000);
 
-    const onFocus = () => dispatch(fetchReports(allParamIds));
+    const onFocus = () => runFetch();
     const onVisibilityChange = () => {
-      if (document.visibilityState === "visible")
-        dispatch(fetchReports(allParamIds));
+      if (document.visibilityState === "visible") runFetch();
     };
 
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
+      if (thunkRef.current) thunkRef.current.abort();
       window.clearInterval(intervalId);
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibilityChange);
@@ -339,6 +345,9 @@ const Reports = () => {
             <Select
               value={selectedDepartment}
               label="Department"
+              open={deptOpen}
+              onOpen={() => setDeptOpen(true)}
+              onClose={() => setDeptOpen(false)}
               onChange={(e) => {
                 setSelectedDepartment(e.target.value);
                 setSelectedEquipment("all");
@@ -366,7 +375,17 @@ const Reports = () => {
             <Select
               value={selectedEquipment}
               label="Equipment"
+              open={equipOpen}
+              onOpen={() => setEquipOpen(true)}
+              onClose={() => setEquipOpen(false)}
               onChange={(e) => setSelectedEquipment(e.target.value)}
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    maxHeight: (departments.length + 1) * 36 + 16,
+                  },
+                },
+              }}
               renderValue={(value) => {
                 if (value === "all") return "All Equipments";
                 const opt = equipmentOptions.find(
@@ -378,6 +397,7 @@ const Reports = () => {
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
+                      pointerEvents: "none",
                     }}
                   >
                     {opt?.label ?? "All Equipments"}
@@ -391,6 +411,12 @@ const Reports = () => {
                   key={option.value}
                   value={option.value}
                   title={option.label}
+                  sx={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "block",
+                    whiteSpace: "nowrap",
+                  }}
                 >
                   {option.label}
                 </MenuItem>

@@ -47,6 +47,7 @@ const Dashboard = () => {
   const [search, setSearch] = useState("");
   const [parameterValues, setParameterValues] = useState<any[]>([]);
   const [valuesLoading, setValuesLoading] = useState(false);
+  const [allDeptValues, setAllDeptValues] = useState<any[]>([]);
   const [sort, setSort] = useState<"asc" | "desc" | null>(null);
 
   /** ------------------ DEPARTMENTS ------------------ **/
@@ -142,6 +143,39 @@ const Dashboard = () => {
     loadValues();
   }, [parameterId]);
 
+  // Fetch all parameter values for the current department so every equipment
+  // card can be evaluated for alert badges (not just the selected parameter).
+  const deptParamIds = useMemo(() => {
+    if (!department) return [];
+    return department.equipments.flatMap(
+      (eq) => eq.parameters?.map((p) => p.id).filter(Boolean) ?? [],
+    );
+  }, [department]);
+
+  useEffect(() => {
+    if (!deptParamIds.length) {
+      setAllDeptValues([]);
+      return;
+    }
+    let cancelled = false;
+    const fetched: any[] = [];
+    Promise.all(
+      deptParamIds.map((id) =>
+        parameterValueApi
+          .listByParameter(id)
+          .then(({ data }) => {
+            if (!cancelled && data?.length) fetched.push(...data);
+          })
+          .catch(() => {}),
+      ),
+    ).then(() => {
+      if (!cancelled) setAllDeptValues([...fetched]);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [deptParamIds]);
+
   const equipmentDetails = equipment?.equipment_details ?? [];
   const activeValue = parameter?.config;
 
@@ -169,7 +203,7 @@ const Dashboard = () => {
             setParameterId(null);
           }}
           loading={loading}
-          values={parameterValues}
+          values={allDeptValues}
         />
       </Box>
 

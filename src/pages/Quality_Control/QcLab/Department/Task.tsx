@@ -89,14 +89,22 @@ function Task() {
     return () => clearInterval(id);
   }, []);
 
+  // Reset selected event and filter whenever the department changes so the
+  // first event in the new department is auto-selected and "All" is active.
+  useEffect(() => {
+    setSelectedEventId(null);
+    setActiveFilter("All");
+  }, [departmentId]);
+
   useEffect(() => {
     if (departmentId) {
       dispatch(fetchTaskEventsByDepartment(departmentId));
     }
   }, [departmentId, dispatch]);
 
+  // Auto-select the first event once the department's events are loaded.
   useEffect(() => {
-    if (events.length && selectedEventId === null) {
+    if (events.length > 0 && selectedEventId === null) {
       setSelectedEventId(events[0].id);
     }
   }, [events, selectedEventId]);
@@ -124,13 +132,16 @@ function Task() {
     }
 
     try {
-      await taskEventApi.create({
+      const response = await taskEventApi.create({
         name: name.trim(),
         dep: departmentId,
       });
-
+      const newEventId: number | null = response?.data?.id ?? null;
       toast.success("Task Event created");
       dispatch(fetchTaskEventsByDepartment(departmentId));
+      if (newEventId !== null) {
+        setSelectedEventId(newEventId);
+      }
     } catch {
       toast.error("Failed to create Task Event");
     }

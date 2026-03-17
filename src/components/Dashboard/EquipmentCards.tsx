@@ -58,37 +58,39 @@ const EquipmentCards: React.FC<EquipmentCardsProps> = ({
     const alerts: string[] = [];
 
     equipment.parameters?.forEach((param) => {
-      const min =
-        param.config?.min_value != null ? Number(param.config.min_value) : null;
-
-      const max =
-        param.config?.max_value != null ? Number(param.config.max_value) : null;
-
-      if (min == null && max == null) return;
-
       const relevant = values.filter(
         (v) =>
-          v.parameter_id === param.id &&
+          Number(v.parameter_id) === Number(param.id) &&
           equipment.equipment_details?.some(
-            (ed) => ed.id === v.equipment_details_id,
+            (ed) => Number(ed.id) === Number(v.equipment_details_id),
           ),
       );
 
       if (relevant.length < 2) return;
 
-      const latest = relevant[relevant.length - 1];
-      const prev = relevant[relevant.length - 2];
+      // Group by equipment_details_id (same logic as RecentActivity)
+      const grouped: Record<number, any[]> = {};
+      relevant.forEach((v) => {
+        const key = Number(v.equipment_details_id);
+        grouped[key] ??= [];
+        grouped[key].push(v);
+      });
 
-      const diff = Number(latest.content) - Number(prev.content);
-
-      if (
-        (max != null && Number(latest.content) > max) ||
-        (min != null && Number(latest.content) < min)
-      ) {
-        alerts.push(
-          `${param.parameter_name} ${diff > 0 ? "rise" : "drop"} to ${latest.content}`,
+      Object.values(grouped).forEach((items) => {
+        items.sort(
+          (a, b) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
         );
-      }
+        if (items.length < 2) return;
+        const latest = items[items.length - 1];
+        const prev = items[items.length - 2];
+        const diff = Number(latest.content) - Number(prev.content);
+        if (Math.abs(diff) >= 0.5) {
+          alerts.push(
+            `${param.parameter_name} ${diff > 0 ? "rise" : "drop"} by ${Math.abs(diff).toFixed(1)}`,
+          );
+        }
+      });
     });
 
     return alerts;
