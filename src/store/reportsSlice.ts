@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { parameterValueApi } from "@/services/api";
+import type { RootState } from "@/store";
 
 type ReportsState = {
   logs: any[];
@@ -20,25 +21,53 @@ const initialState: ReportsState = {
 export const fetchReports = createAsyncThunk<
   void,
   number[],
-  { rejectValue: string }
->("reports/fetchReports", async (paramIds, { dispatch, signal }) => {
+  { rejectValue: string; state: RootState }
+>("reports/fetchReports", async (paramIds, { dispatch, signal, getState }) => {
+  if (!paramIds.length) {
+    dispatch(setProgress(100));
+    return;
+  }
+
+  const existingLogs = getState().reports.logs;
+  const knownLogIds = new Set(
+    existingLogs.map((log: any) => log?.id).filter((id) => id != null),
+  );
+
   let loaded = 0;
+  let lastProgress = -1;
   const allLogs: any[] = [];
+  const queue = [...paramIds];
+  const concurrency = Math.min(8, queue.length);
 
   await Promise.all(
-    paramIds.map(async (p) => {
-      if (signal.aborted) return;
-      try {
-        const res = await parameterValueApi.listByParameter(p);
-        if (!signal.aborted && res.data?.length) {
-          allLogs.push(...res.data);
-        }
-      } catch {
-        // ignore
-      } finally {
-        loaded++;
-        if (!signal.aborted) {
-          dispatch(setProgress(Math.round((loaded / paramIds.length) * 100)));
+    Array.from({ length: concurrency }, async () => {
+      while (queue.length > 0) {
+        if (signal.aborted) return;
+
+        const p = queue.shift();
+        if (p == null) return;
+
+        try {
+          const res = await parameterValueApi.listByParameter(p, signal);
+          if (!signal.aborted && res.data?.length) {
+            res.data.forEach((row: any) => {
+              const rowId = row?.id;
+              if (rowId == null || knownLogIds.has(rowId)) return;
+              knownLogIds.add(rowId);
+              allLogs.push(row);
+            });
+          }
+        } catch {
+          // ignore
+        } finally {
+          loaded++;
+          if (!signal.aborted) {
+            const nextProgress = Math.round((loaded / paramIds.length) * 100);
+            if (nextProgress !== lastProgress) {
+              lastProgress = nextProgress;
+              dispatch(setProgress(nextProgress));
+            }
+          }
         }
       }
     }),
@@ -59,12 +88,12 @@ const reportsSlice = createSlice({
       action.payload.forEach((log) => {
         if (!existingIds.has(log.id)) {
           state.logs.push(log);
+          existingIds.add(log.id);
         }
       });
     },
     setProgress: (state, action: PayloadAction<number>) => {
       state.progress = action.payload;
-      state.loading = action.payload < 100;
     },
     markFetchedParams: (state, action: PayloadAction<number[]>) => {
       const merged = new Set([...state.fetchedParams, ...action.payload]);
@@ -76,6 +105,19 @@ const reportsSlice = createSlice({
       state.loading = false;
       state.fetchedParams = [];
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchReports.pending, (state) => {
+        state.loading = true;
+        state.progress = 0;
+      })
+      .addCase(fetchReports.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(fetchReports.rejected, (state) => {
+        state.loading = false;
+      });
   },
 });
 
