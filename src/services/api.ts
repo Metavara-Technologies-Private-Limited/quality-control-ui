@@ -70,21 +70,19 @@ export const equipmentApi = {
     http.post(`/equipment/${equipmentId}/activate/`),
 
   inactivateParameter: (parameterId: number) =>
-  http.patch(`/parameters/inactivate/`, {
-    type: "equipment",
-    parameter_id: parameterId,
-  }),
+    http.patch(`/parameters/inactivate/`, {
+      type: "equipment",
+      parameter_id: parameterId,
+    }),
 
-activateParameter: (parameterId: number) =>
-  http.post(`/parameters/activate/`, {
-    type: "equipment",
-    parameter_id: parameterId,
-  }),
+  activateParameter: (parameterId: number) =>
+    http.post(`/parameters/activate/`, {
+      type: "equipment",
+      parameter_id: parameterId,
+    }),
 
-softDeleteParameter: (parameterId: number) =>
+  softDeleteParameter: (parameterId: number) =>
     http.patch(`/parameters/${parameterId}/soft-delete`),
-
-
 };
 
 // APIs related to equipment details
@@ -235,8 +233,10 @@ export const parameterValueApi = {
     log_time?: string;
   }) => http.post("/parameter-values/", data),
 
-  listByParameter: async (parameterId: number) => {
-    const res = await http.get(`/parameters/${parameterId}/values/`);
+  listByParameter: async (parameterId: number, signal?: AbortSignal) => {
+    const res = await http.get(`/parameters/${parameterId}/values/`, {
+      signal,
+    });
     const normalized = (res.data || []).map((row: any) => ({
       ...row,
       created_at: row.log_time ?? row.created_at,
@@ -279,8 +279,6 @@ export const environmentApi = {
       is_active: isActive,
     }),
 };
-
-
 
 export const environmentParameterValueApi = {
   create: (data: {

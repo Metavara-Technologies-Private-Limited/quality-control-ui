@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import {
   Container,
   Typography,
@@ -57,6 +57,8 @@ const Reports = () => {
   const [deptOpen, setDeptOpen] = useState(false);
   const [equipOpen, setEquipOpen] = useState(false);
   const thunkRef = useRef<any>(null);
+  const isFetchingRef = useRef(false);
+  const deferredSearch = useDeferredValue(search);
 
   const normalizedSelectedDepartment =
     selectedDepartment === "all" ? "all" : Number(selectedDepartment);
@@ -136,18 +138,34 @@ const Reports = () => {
   useEffect(() => {
     if (!allParamIds.length) return;
 
-    const runFetch = () => {
-      // Abort the previous in-flight fetch before starting a new one
-      if (thunkRef.current) thunkRef.current.abort();
-      thunkRef.current = dispatch(fetchReports(allParamIds));
+    const runFetch = async () => {
+      // Avoid overlapping polls on slower networks.
+      if (isFetchingRef.current) return;
+      isFetchingRef.current = true;
+
+      try {
+        const thunk = dispatch(fetchReports(allParamIds));
+        thunkRef.current = thunk;
+        await thunk.unwrap();
+      } catch {
+        // Ignore intermittent polling errors and retry on next cycle.
+      } finally {
+        isFetchingRef.current = false;
+      }
     };
 
-    runFetch();
-    const intervalId = window.setInterval(runFetch, 3000);
+    void runFetch();
+    const intervalId = window.setInterval(() => {
+      void runFetch();
+    }, 10000);
 
-    const onFocus = () => runFetch();
+    const onFocus = () => {
+      void runFetch();
+    };
     const onVisibilityChange = () => {
-      if (document.visibilityState === "visible") runFetch();
+      if (document.visibilityState === "visible") {
+        void runFetch();
+      }
     };
 
     window.addEventListener("focus", onFocus);
@@ -176,8 +194,8 @@ const Reports = () => {
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [equipmentMap, normalizedSelectedDepartment]);
 
-  /* -------- Build rows -------- */
-  const rows = useMemo(() => {
+  /* -------- Build base rows once per log/meta change -------- */
+  const baseRows = useMemo(() => {
     const mappedRows = logs
       .map((log: any, index: number) => {
         const detailId = Number(
@@ -192,18 +210,30 @@ const Reports = () => {
         const createdAt = dayjs(log.created_at);
         const timestamp = createdAt.isValid() ? createdAt.valueOf() : 0;
 
+        const id =
+          log.id ??
+          `${detailId}-${paramId}-${log.created_at ?? "na"}-${log.content ?? "na"}-${index}`;
+
+        const equipment = eq.equipment_num;
+        const parameter = param?.name ?? "-";
+        const unit = param?.unit ?? "-";
+        const value = log.content ?? "-";
+        const date = createdAt.isValid()
+          ? createdAt.format("DD/MM/YYYY HH:mm")
+          : "-";
+
         return {
-          id: log.id ?? index,
+          id,
           department: eq.department_id,
           equipmentDetailsId: detailId,
-          equipment: eq.equipment_num,
-          parameter: param?.name ?? "-",
-          unit: param?.unit ?? "-",
-          value: log.content ?? "-",
+          equipment,
+          parameter,
+          unit,
+          value,
           timestamp,
-          date: createdAt.isValid()
-            ? createdAt.format("DD/MM/YYYY HH:mm")
-            : "-",
+          date,
+          searchable:
+            `${date} ${equipment} ${parameter} ${unit} ${value}`.toLowerCase(),
         };
       })
       .filter(Boolean) as any[];
@@ -215,7 +245,13 @@ const Reports = () => {
       return Number(b.id) - Number(a.id);
     });
 
-    return mappedRows.filter((row: any) => {
+    return mappedRows;
+  }, [logs, equipmentMap, parameterMetaMap]);
+
+  const rows = useMemo(() => {
+    const normalizedSearch = deferredSearch.trim().toLowerCase();
+
+    return baseRows.filter((row: any) => {
       if (
         normalizedSelectedDepartment !== "all" &&
         Number(row.department) !== normalizedSelectedDepartment
@@ -228,22 +264,17 @@ const Reports = () => {
       )
         return false;
 
-      if (search) {
-        return Object.values(row)
-          .join(" ")
-          .toLowerCase()
-          .includes(search.toLowerCase());
+      if (normalizedSearch) {
+        return row.searchable.includes(normalizedSearch);
       }
 
       return true;
     });
   }, [
-    logs,
-    equipmentMap,
-    parameterMetaMap,
+    baseRows,
     normalizedSelectedDepartment,
     selectedEquipment,
-    search,
+    deferredSearch,
   ]);
 
   // Reset equipment filter when department changes
@@ -280,23 +311,36 @@ const Reports = () => {
   };
 
   /* -------- Columns — date displays formatted string, sorts by timestamp -------- */
-  const columns: GridColDef[] = [
-    {
-      field: "date",
-      headerName: "Date & Time",
-      flex: 1.5,
-      minWidth: 180,
-      sortComparator: (_v1, _v2, param1, param2) => {
-        const ts1 = (param1.api.getRow(param1.id) as any)?.timestamp ?? 0;
-        const ts2 = (param2.api.getRow(param2.id) as any)?.timestamp ?? 0;
-        return ts1 - ts2;
+  const columns = useMemo<GridColDef[]>(
+    () => [
+      {
+        field: "date",
+        headerName: "Date & Time",
+        flex: 1.5,
+        minWidth: 180,
+        sortComparator: (_v1, _v2, param1, param2) => {
+          const ts1 = (param1.api.getRow(param1.id) as any)?.timestamp ?? 0;
+          const ts2 = (param2.api.getRow(param2.id) as any)?.timestamp ?? 0;
+          return ts1 - ts2;
+        },
       },
-    },
-    { field: "equipment", headerName: "Equipment", flex: 1.3, minWidth: 150 },
-    { field: "parameter", headerName: "Parameter", flex: 1.3, minWidth: 150 },
-    { field: "unit", headerName: "Unit", flex: 0.8, minWidth: 100 },
-    { field: "value", headerName: "Value", flex: 1, minWidth: 120 },
-  ];
+      {
+        field: "equipment",
+        headerName: "Equipment",
+        flex: 1.3,
+        minWidth: 150,
+      },
+      {
+        field: "parameter",
+        headerName: "Parameter",
+        flex: 1.3,
+        minWidth: 150,
+      },
+      { field: "unit", headerName: "Unit", flex: 0.8, minWidth: 100 },
+      { field: "value", headerName: "Value", flex: 1, minWidth: 120 },
+    ],
+    [],
+  );
 
   return (
     <Container maxWidth={false} sx={{ py: { xs: 1, sm: 2 } }}>
@@ -512,9 +556,8 @@ const Reports = () => {
             <DataGrid
               rows={rows}
               columns={columns}
-              initialState={{
-                sorting: { sortModel: [{ field: "date", sort: "desc" }] },
-              }}
+              loading={loading && rows.length === 0}
+              disableRowSelectionOnClick
             />
           </Box>
         </Box>
